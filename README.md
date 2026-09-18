@@ -1,10 +1,10 @@
 # 주말뭐해?
 
-오늘 / 이번 주말 / 다음 주말의 한국 축제·지역행사를 찾는 서비스의 첫 실행 단계입니다. **현재 모든 행사 데이터는 가상 샘플**이며 실제 방문 정보로 사용할 수 없습니다. TourAPI 키를 넣지 않았고 외부 행사 수집은 비활성입니다.
+관리용 프로젝트명은 **project-WTW**, 서비스명은 **주말뭐해?**입니다. 한국관광공사 TourAPI의 실제 행사 데이터를 기존 D1에 저장하고 현재·향후 30일의 일정을 제공하도록 전환했습니다. [공식 명세·매핑·등록 및 검증 절차](docs/TOURAPI.md).
 
 스택: Cloudflare Workers, Static Assets, D1, Cron Triggers, Cloudflare Secrets, TypeScript, React. [구조 설계](docs/ARCHITECTURE.md).
 
-**공개 샘플:** [주말뭐해?](https://weekend-mwohae.framefutures.workers.dev) · [실제 배포 및 검증 기록](docs/DEPLOYMENT.md). 공개 URL도 가상 데이터만 사용하며 TourAPI Secret은 등록하지 않았습니다.
+**공개 서비스:** [주말뭐해?](https://weekend-mwohae.framefutures.workers.dev) · [실제 배포 및 검증 기록](docs/DEPLOYMENT.md). 공개 서비스는 `APP_MODE=production`, TourAPI Secret은 기존 Worker에 등록됐으며 로컬 파일에는 저장하지 않습니다.
 
 ## 로컬 실행
 
@@ -12,11 +12,14 @@ Node.js 22.12 이상(현재 검증 환경: 24), npm을 사용합니다.
 
 ```bash
 npm ci
-npm run setup
+npm run db:migrate
+npm run db:real:snapshot  # 기존 원격 D1의 실제 데이터 복사, Cloudflare 로그인 필요
 npm run dev
 ```
 
-http://localhost:8787 에서 React와 Worker API가 같은 도메인으로 동작합니다. `setup`은 로컬 D1 마이그레이션과 실행일 기준 샘플 생성만 수행합니다. 샘플 날짜가 오래되면 다시 `npm run db:seed` 하세요. 시드는 샘플 행사만 교체하며 실제 데이터와 Cron 이력은 보존합니다.
+http://localhost:8787 에서 React와 Worker API가 같은 도메인으로 동작합니다. 기본 로컬 설정은 실제 데이터 조회 모드이며 TourAPI 외부 수집은 비활성입니다. 키 없이 원격 D1의 행사·출처·근거만 복사해 검증합니다. 스냅샷이 72시간 이상 오래되면 원격 수집 결과를 다시 복사하세요.
+
+가상 샘플 회귀 검증은 별도로 `npm run setup` 후 `npm run dev:sample`로 실행할 수 있습니다. 샘플 시드는 실제 데이터와 Cron 이력을 보존하며 production 화면에는 노출되지 않습니다. `npm run test:ui`는 기존 샘플 테스트 24개이고, 현재 실제 데이터 검증은 `npm run test:ui:real`을 사용합니다.
 
 UI 수정 시 자동 갱신을 원하면 Wrangler를 실행한 상태에서 별도 터미널에서 `npm run dev:ui`를 실행하고 http://localhost:5173 에 접속합니다. `/api`는 8787 Worker로 프록시됩니다. 8787의 Static Assets는 `npm run build` 후 갱신됩니다.
 
@@ -24,8 +27,8 @@ UI 수정 시 자동 갱신을 원하면 Wrangler를 실행한 상태에서 별�
 npm run check
 npm run test:smoke  # 8787 로컬 서버 실행 중
 npx playwright install --with-deps chromium  # 최초 브라우저 검증 준비
-npm run test:ui     # 8787 로컬 서버 실행 중, 데스크톱·모바일 검증
-curl 'http://localhost:8787/api/events?period=weekend&region=%EC%84%9C%EC%9A%B8&cost=free'
+npm run test:ui:real  # 실제 데이터 로컬 서버 실행 중, 데스크톱·모바일 검증
+curl 'http://localhost:8787/api/events?period=weekend&region=%EC%84%9C%EC%9A%B8&cost=unknown'
 curl 'http://localhost:8787/api/events?sort=distance&lat=37.5665&lng=126.978'
 curl 'http://localhost:8787/cdn-cgi/local/scheduled?cron=0+21+*+*+*'
 npx wrangler d1 execute weekend-mwohae --local --command "SELECT * FROM sync_runs ORDER BY started_at DESC LIMIT 5"
@@ -45,46 +48,39 @@ npx wrangler d1 execute weekend-mwohae --local --command "SELECT * FROM sync_run
 
 ## Secret 자리
 
-`.dev.vars.example`과 `worker/env.ts`에 `TOUR_API_KEY` 자리를 준비했습니다. 지금은 값을 입력하지 않습니다. 실제 키 도입 시 `.dev.vars`(git 제외)에 로컬 값을 넣고 운영에는 다음을 사용합니다.
+인증키는 기존 Worker의 Cloudflare Secret으로만 관리합니다. 로컬 파일과 프론트엔드에는 저장하지 않습니다.
 
 ```bash
 npx wrangler secret put TOUR_API_KEY --config wrangler.production.jsonc
 ```
 
-키를 `VITE_*`, 코드, SQL, Git에 넣지 마세요. `TOUR_API_ENABLED=false`가 기본이며 실제 수집 어댑터는 아직 구현 전입니다. 키와 설정만 바꿔도 수집을 시작하지 않도록 되어 있습니다.
+프롬프트에 승인된 **Decoding 키**를 입력합니다. 현재 기존 Worker에 등록되어 있습니다. production 설정은 Secret을 필수로 선언하며 키·최근 원격 실제 데이터가 없으면 운영 배포를 중단합니다.
 
-## 운영 전환
+## 실제 데이터 전환
 
-로컬 `wrangler.jsonc`, 공개 샘플 배포 `wrangler.sample.jsonc`, 실제 행사 운영 `wrangler.production.jsonc`를 분리했습니다. 아래는 실제 행사 서비스로 전환하는 절차이며, 현재 공개 샘플은 별도 설정으로 배포합니다.
+기존 Worker·D1·Cron·공개 URL을 사용합니다. 새 리소스 생성이나 스키마 마이그레이션은 필요하지 않습니다. [TourAPI 전환 절차](docs/TOURAPI.md)에 따라 원격 수집 → 기존 로컬 D1에 실제 응답 복사 → 기간·지역 필터 검증 → 기존 Worker 배포 → 공개 URL·로컬 결과 대조를 수행합니다. 기존 샘플은 production 모드에서 조회하지 않습니다.
 
-1. `npx wrangler login`으로 계정을 연결합니다.
-2. `npx wrangler d1 create weekend-mwohae-production`으로 운영 DB를 생성합니다.
-3. 반환된 ID를 `wrangler.production.jsonc`의 `database_id`에 입력합니다.
-4. `npx wrangler d1 migrations apply weekend-mwohae-production --remote --config wrangler.production.jsonc`로 스키마를 적용합니다. 샘플 시드는 운영에 적용하지 않습니다.
-5. 공식 데이터 수집·검증·게시 절차를 구현하고 검토합니다. 현재 운영 모드는 확인된 실제 데이터가 없으면 빈 목록을 반환합니다.
-6. `npm run deploy`를 실행합니다. 실제 D1 ID 없이는 배포를 차단하며 타입 검사·테스트·빌드를 먼저 수행합니다.
-
-운영 Cron은 매일 06:00 한국 시간입니다. 지금은 오래된 근거 처리와 실행 이력만 동작합니다. 공식 데이터 동기화는 `sync_runs.status=skipped`로 기록하고, 오류는 `failed`로 기록합니다. 운영 전환 시 도메인, 로그 경보, 데이터 수집 실패 알림, D1 복구 절차를 별도 설정해야 합니다.
+Cron은 매일 06:00 한국 시간에 오래된 근거 처리와 TourAPI 수집을 수행하고 `sync_runs`에 성공/비활성/실패를 남깁니다. 현재 공개 운영 설정은 수집 활성이고, 샘플용 배포 설정만 수집 비활성입니다. TourAPI의 미제공 요금·동행 조건은 미확인으로 유지합니다. 취소 상태가 미제공이면 화면에서 개최·취소 여부 미확인을 안내합니다.
 
 ## 디렉터리
 
 ```text
 src/                       React 화면과 스타일
 shared/domain.ts           타입, 필터 항목, 한국 날짜, 거리 계산
-worker/                    읽기 전용 API, Cron, Secret 타입, 수집 어댑터 자리
+worker/                    읽기 전용 API, Cron, Secret 타입, TourAPI 수집 어댑터
 migrations/                D1 스키마
 scripts/                   로컬 시드, 통합 smoke 검사, 운영 배포 가드
 tests/                     한국 날짜 경계, 필터 검증, 거리, 브라우저 검사
 docs/ARCHITECTURE.md        전체 구조와 정확성 정책
-wrangler.jsonc             샘플 로컬 환경
+wrangler.jsonc             실제 데이터 로컬 조회 환경
 wrangler.production.jsonc  운영 환경
 ```
 
 Cloudflare 공식 참고: [Static Assets](https://developers.cloudflare.com/workers/static-assets/), [D1 로컬 개발](https://developers.cloudflare.com/d1/build-with-d1/local-development/), [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/), [Secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
 
-## Cloudflare 공개 샘플 배포
+## 과거 샘플 배포 절차(현재 실제 서비스에 사용하지 않음)
 
-공개 샘플도 실제 Workers·Static Assets·원격 D1을 사용합니다. 화면의 가상 데이터 안내를 유지하고 TourAPI 수집은 비활성입니다. Cloudflare 계정 ID와 D1 ID는 인증용 Secret이 아니며 설정에 저장합니다.
+과거 공개 샘플도 실제 Workers·Static Assets·원격 D1을 사용했습니다. 화면의 가상 데이터 안내를 유지하고 TourAPI 수집은 비활성입니다. Cloudflare 계정 ID와 D1 ID는 인증용 Secret이 아니며 설정에 저장합니다.
 
 ```bash
 npx wrangler login --device --browser=false
@@ -99,4 +95,4 @@ npm run verify:deployment -- https://실제-배포-주소.workers.dev
 
 `verify:deployment`는 로컬 서버(8787)를 실행한 상태에서 사용합니다. 필터·페이지·상세 API와 HTML·JS·CSS를 대조하고 배포 주소에서 HTTP 검사와 Chromium 테스트 24개를 실행합니다. 배포 검증은 `test-results/deployed`에 따로 저장합니다. 원격에서는 로컬 전용 Cron 테스트 URL을 호출하지 않습니다. Cron은 배포 설정과 실행 로그로 확인합니다.
 
-원격 DB가 이미 준비된 다음 배포에서는 마이그레이션만 적용하고 `deploy:sample`을 사용합니다. 기존 DB에 시드 스크립트를 반복 실행해 데이터를 덮어쓰지 마세요. 실제 데이터로 전환할 때는 `APP_MODE=production`으로 배포하며 샘플은 추천에서 제외됩니다.
+원격 DB가 이미 준비된 다음 샘플 배포에서는 `deploy:sample`을 사용합니다. 기존 DB에 시드 스크립트를 반복 실행해 데이터를 덮어쓰지 마세요. 실제 데이터로 전환할 때는 `APP_MODE=production`으로 배포하며 샘플은 추천에서 제외됩니다.

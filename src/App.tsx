@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import {
   REGIONS,
+  koreaDate,
   AUDIENCES,
   THEMES,
   type Period,
@@ -56,8 +57,10 @@ const PERIODS: { value: Period; label: string; small: string }[] = [
   { value: "weekend", label: "이번 주말", small: "기다려온 쉬는 날" },
   { value: "next-weekend", label: "다음 주말", small: "미리 계획해요" },
 ];
-const dateLabel = (date: string) =>
-  `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}`;
+const dateLabel = (date: string) => {
+  const localDate = date.includes("T") ? koreaDate(new Date(date)) : date;
+  return `${Number(localDate.slice(5, 7))}.${Number(localDate.slice(8, 10))}`;
+};
 const tagLabel = (tag: Tag) => ({ ...AUDIENCES, ...THEMES })[tag];
 const safeUrl = (url: string | null) => {
   try {
@@ -466,7 +469,7 @@ export default function App() {
                   · {region || "전국"}
                   {mode === "sample"
                     ? " · 가상 행사 미리보기"
-                    : " · 최근 확인된 행사"}
+                    : " · 출처에 등록된 행사 · 출발 전 개최 여부 확인"}
                 </p>
               )}
             </div>
@@ -589,7 +592,9 @@ export default function App() {
                           ) : (
                             <>
                               <ShieldCheck size={13} />
-                              출처 확인 ·{" "}
+                              {event.status === "unknown"
+                                ? "취소 여부 미확인 · "
+                                : "출처 확인 · "}
                               {event.checked_at
                                 ? dateLabel(event.checked_at)
                                 : ""}
@@ -678,7 +683,8 @@ export default function App() {
             <p>
               최근 72시간 이내 확인한 근거가 있는 행사를 추천합니다. 확인 상태는
               실시간 개최를 보장하지 않으므로 출발 전 공식 공지를 확인해 주세요.
-              취소·연기된 행사는 추천에서 제외합니다.
+              출처에 취소·연기로 표시된 행사는 제외합니다. TourAPI의 개최 상태가
+              미제공이면 취소 여부 미확인으로 안내합니다.
             </p>
             <p>
               반려동물 가능 여부나 비용을 확인하지 못하면 미확인으로 표시합니다.
@@ -740,7 +746,8 @@ export default function App() {
                       scheduled: "마지막 확인: 개최 예정",
                       cancelled: "취소",
                       postponed: "연기",
-                      unknown: "미확인",
+                      unknown:
+                        "개최·취소 여부 미확인 · 출발 전 공식 공지 확인 필요",
                     }[detail.event.status]
                   }
                 </dd>

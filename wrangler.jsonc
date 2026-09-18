@@ -17,7 +17,7 @@
       "migrations_dir": "migrations",
     },
   ],
-  "vars": { "APP_MODE": "sample", "TOUR_API_ENABLED": "false" },
+  "vars": { "APP_MODE": "production", "TOUR_API_ENABLED": "false" },
   "triggers": { "crons": ["0 21 * * *"] },
   "observability": { "enabled": true },
   "dev": { "port": 8787 },

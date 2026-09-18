@@ -6,15 +6,23 @@ async function get(path, status = 200) {
   assert.match(r.headers.get("content-type") ?? "", /application\/json/);
   return r.json();
 }
-assert.equal((await get("/api/health")).database, "connected");
+const health = await get("/api/health");
+assert.equal(health.database, "connected");
 const all = await get("/api/events?limit=50");
-assert.ok(all.total > 0, "먼저 npm run setup으로 샘플을 넣으세요.");
+assert.equal(all.mode, health.mode);
+assert.ok(all.total > 0, "현재 기간의 D1 데이터와 수집 상태를 확인하세요.");
 assert.ok(
-  all.events.every((e) => e.is_sample === 1 && e.status === "scheduled"),
+  all.events.every((e) =>
+    health.mode === "sample"
+      ? e.is_sample === 1 && e.status === "scheduled"
+      : e.is_sample === 0 &&
+        e.verification === "verified" &&
+        ["scheduled", "unknown"].includes(e.status),
+  ),
 );
 for (const period of ["today", "weekend", "next-weekend"]) {
   const data = await get("/api/events?period=" + period);
-  assert.ok(data.total > 0);
+  if (health.mode === "sample") assert.ok(data.total > 0);
   assert.ok(
     data.events.every(
       (e) => e.start_date <= data.range.end && e.end_date >= data.range.start,
@@ -22,7 +30,7 @@ for (const period of ["today", "weekend", "next-weekend"]) {
   );
 }
 const filtered = await get("/api/events?region=서울&cost=free&theme=flowers");
-assert.ok(filtered.total > 0);
+if (health.mode === "sample") assert.ok(filtered.total > 0);
 assert.ok(
   filtered.events.every(
     (e) =>
@@ -30,7 +38,7 @@ assert.ok(
   ),
 );
 const pets = await get("/api/events?audience=pets");
-assert.ok(pets.total > 0);
+if (health.mode === "sample") assert.ok(pets.total > 0);
 assert.ok(pets.events.every((e) => e.pet_policy === "allowed"));
 const distance = await get(
   "/api/events?sort=distance&lat=37.5665&lng=126.978&limit=50",
@@ -61,7 +69,9 @@ const injection = await get(
 );
 assert.equal(injection.total, 0);
 const literal = await get("/api/events?q=%25");
-assert.equal(literal.total, 0);
+assert.ok(
+  literal.events.every((e) => e.title.includes("%") || e.venue.includes("%")),
+);
 assert.match(await (await fetch(base + "/")).text(), /<div id="root">/);
 assert.match(await (await fetch(base + "/explore")).text(), /<div id="root">/);
 const localRuntime = ["localhost", "127.0.0.1"].includes(

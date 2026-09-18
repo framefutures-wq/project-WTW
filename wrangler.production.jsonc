@@ -18,7 +18,8 @@
       "migrations_dir": "migrations",
     },
   ],
-  "vars": { "APP_MODE": "production", "TOUR_API_ENABLED": "false" },
+  "vars": { "APP_MODE": "production", "TOUR_API_ENABLED": "true" },
+  "secrets": { "required": ["TOUR_API_KEY"] },
   "triggers": { "crons": ["0 21 * * *"] },
   "observability": { "enabled": true },
 }

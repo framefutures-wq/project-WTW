@@ -20,7 +20,14 @@
     "deploy:sample": "node scripts/deploy.mjs --sample",
     "db:snapshot": "node scripts/sample-snapshot.mjs",
     "db:seed:remote": "node scripts/seed-remote.mjs",
-    "verify:deployment": "node scripts/verify-deployment.mjs"
+    "verify:deployment": "node scripts/verify-deployment.mjs",
+    "tourapi:sync": "node scripts/tourapi-sync.mjs",
+    "db:real:snapshot": "node scripts/real-snapshot.mjs",
+    "dev:real": "npm run build && wrangler dev --local --config wrangler.jsonc --var APP_MODE:production --test-scheduled",
+    "test:ui:real": "playwright test --config playwright.real.config.ts",
+    "verify:real": "node scripts/verify-real.mjs",
+    "test:ui:contract": "node scripts/contract-browser.mjs",
+    "dev:sample": "npm run build && wrangler dev --local --var APP_MODE:sample --test-scheduled"
   },
   "dependencies": {
     "lucide-react": "^0.577.0",

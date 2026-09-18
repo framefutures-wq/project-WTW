@@ -93,7 +93,12 @@ export default {
           database: "connected",
           mode: env.APP_MODE,
           timezone: "Asia/Seoul",
-          ingestion: "disabled",
+          ingestion:
+            env.TOUR_API_ENABLED === "true"
+              ? env.TOUR_API_KEY
+                ? "enabled"
+                : "secret_missing"
+              : "disabled",
         });
       }
       if (url.pathname === "/api/meta")
@@ -108,7 +113,7 @@ export default {
           range = dateRange(f.period);
         const where = [
           visibility(env),
-          "e.status='scheduled'",
+          "(e.status='scheduled' OR (s.kind='tourapi' AND e.status='unknown'))",
           "e.start_date<=?",
           "e.end_date>=?",
         ];

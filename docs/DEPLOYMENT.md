@@ -1,4 +1,32 @@
-# Cloudflare 샘플 배포 기록
+# Cloudflare 실제 데이터 배포 기록
+
+거절 기록 보완 후 현재 Worker 버전은 `d12e1ab8-fb39-4d72-8e2f-d97fa67294a5`다. 기존 D1에 별도 기록 테이블만 추가했으며 정상 행사 구조와 Worker·Cron·URL은 유지했다. 실행 결과는 [TOURAPI_REJECTIONS.md](TOURAPI_REJECTIONS.md)를 참고한다. 아래는 최초 실제 데이터 전환 당시의 검증 기록이다.
+
+2026-09-18 18:17 UTC(한국 날짜 2026-09-19)에 실제 데이터 전환과 공개 배포 검증을 완료했습니다. 아래 샘플 기록은 이전 이력입니다.
+
+**공개 URL:** https://weekend-mwohae.framefutures.workers.dev
+
+- 관리 이름: `project-WTW`, 서비스명: 주말뭐해?
+- 기존 Worker `weekend-mwohae`, D1 `weekend-mwohae-production`, URL과 Cron `0 21 * * *` 유지.
+- 최종 배포 버전: `01eb8499-3097-4841-9f89-bcd03e11e961`.
+- 설정: `wrangler.production.jsonc`, `APP_MODE=production`, `TOUR_API_ENABLED=true`.
+- 인증키: 기존 Worker의 `TOUR_API_KEY` Secret만 사용. 로컬·프론트엔드·Git에 키를 저장하지 않음.
+- 실제 목록 916건 조회 후 2026-09-19~2026-10-19에 겹치는 유효 행사 251건 저장. 로컬에도 동일 스냅샷 복사.
+- 양쪽 샘플은 백업 후 제거하여 0건. 출처 251건, 필드 근거 1,004건, 원격 외래키 오류 0건.
+- 실제 원문과 저장된 행사 필드 251건 전체 대조 통과.
+- TypeScript, 단위 검사 8개, workerd/D1 통합 검사, 빌드 통과.
+- 로컬 실제 데이터 Chromium 12개, 최종 공개 Chromium 12개(30.7초) 통과. 데스크톱·모바일, 기간·전체 지역·미확인 필터·상세·한국 시간 표시·레이아웃·JS 오류 검사 포함.
+- 로컬·공개 API 234개 응답과 고유 행사 123건 대조 일치. HTML·JS·CSS 동일(`index-C9yfi624.js`, `index-B4tLkMJE.css`). 양쪽 API 기본 검사 통과.
+
+2026-09-19 한국 날짜 기준 오늘 116건, 이번 주말 117건, 다음 주말 66건입니다. 공식 목록에 없는 요금·동행·주제·개최 확인값은 추측하지 않았습니다. 화면에는 개최·취소 미확인과 출발 전 공식 공지 확인 안내를 표시합니다.
+
+새 Worker·D1 생성이나 스키마 마이그레이션은 없었습니다. 실제 수집은 인증된 원격 개발용 scheduled 실행으로 검증했으며 자연 Cron 실행은 아직 관찰하지 않았습니다. 이번 배포는 현재 작업 디렉터리 변경분이며 새 Git 커밋·push는 이번 단계에서 수행하지 않았습니다.
+
+자세한 계약과 재검증 명령은 [TOURAPI.md](TOURAPI.md)를 참고하세요. 최종 결과는 `test-results/real/browser-report.json`, `test-results/real-deployed/browser-report.json`, `test-results/real/parity.json`과 공개 화면 PNG에 보관되며 Git에서 제외됩니다.
+
+---
+
+## 이전 Cloudflare 샘플 배포 기록
 
 2026-09-18 UTC에 실제 Cloudflare 계정에 배포했습니다.
 

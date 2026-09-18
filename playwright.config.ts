@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 const outputDir = process.env.TEST_OUTPUT_DIR ?? "test-results";
 export default defineConfig({
   testDir: "./tests/browser",
+  testIgnore: "tourapi-real.spec.ts",
   outputDir,
   use: {
     baseURL: process.env.TEST_BASE_URL ?? "http://127.0.0.1:8787",
