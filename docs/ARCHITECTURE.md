@@ -29,4 +29,4 @@ React + TypeScript → Cloudflare Static Assets → `/api/*` Worker → Cloudfla
 
 매일 06:00 KST(21:00 UTC) Cron: 오래된 근거를 stale로 전환하고 실행 이력을 남긴다. TourAPI 어댑터는 준비 상태 확인만 구현되어 있으며 키가 있어도 실제 수집·게시하지 않는다. 후속 단계에서 API 계약 확인, 공식 원문 검토, 중복 처리, 충돌 검토, 필드 근거 저장 후 게시를 구현한다.
 
-샘플은 명백한 가상 행사이며 로컬 DB에만 별도 seed한다. 실행 시점 기준 오늘/이번/다음 주말 샘플 날짜를 생성한다. 운영 설정은 `APP_MODE=production`으로 샘플을 조회하지 않는다. 배포 스크립트는 실제 D1 ID 입력을 요구한다. TourAPI 키는 Worker Secret으로만 보관하고 프론트엔드 환경 변수에 넣지 않는다. 운영 데이터 입력용 공개 쓰기 API는 제공하지 않는다.
+샘플은 명백한 가상 행사이며 기본 seed는 로컬 DB에만 적용한다. 실행 시점 기준 오늘/이번/다음 주말 샘플 날짜를 생성한다. 공개 샘플 검증을 위해서는 별도 `wrangler.sample.jsonc`의 `APP_MODE=sample`로 실제 원격 D1에 로컬 샘플 스냅샷을 복제해 배포한다. 실제 행사 운영 설정은 `APP_MODE=production`으로 샘플을 조회하지 않는다. 배포 스크립트는 실제 D1 ID 입력을 요구한다. TourAPI 키는 Worker Secret으로만 보관하고 프론트엔드 환경 변수에 넣지 않는다. 운영 데이터 입력용 공개 쓰기 API는 제공하지 않는다.

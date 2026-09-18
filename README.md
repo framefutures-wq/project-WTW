@@ -53,7 +53,7 @@ npx wrangler secret put TOUR_API_KEY --config wrangler.production.jsonc
 
 ## 운영 전환
 
-로컬 `wrangler.jsonc`와 운영 `wrangler.production.jsonc`를 분리했습니다. **운영 배포는 이번 단계에서 수행하지 않습니다.**
+로컬 `wrangler.jsonc`, 공개 샘플 배포 `wrangler.sample.jsonc`, 실제 행사 운영 `wrangler.production.jsonc`를 분리했습니다. 아래는 실제 행사 서비스로 전환하는 절차이며, 현재 공개 샘플은 별도 설정으로 배포합니다.
 
 1. `npx wrangler login`으로 계정을 연결합니다.
 2. `npx wrangler d1 create weekend-mwohae-production`으로 운영 DB를 생성합니다.
@@ -79,3 +79,22 @@ wrangler.production.jsonc  운영 환경
 ```
 
 Cloudflare 공식 참고: [Static Assets](https://developers.cloudflare.com/workers/static-assets/), [D1 로컬 개발](https://developers.cloudflare.com/d1/build-with-d1/local-development/), [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/), [Secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
+
+## Cloudflare 공개 샘플 배포
+
+공개 샘플도 실제 Workers·Static Assets·원격 D1을 사용합니다. 화면의 가상 데이터 안내를 유지하고 TourAPI 수집은 비활성입니다. Cloudflare 계정 ID와 D1 ID는 인증용 Secret이 아니며 설정에 저장합니다.
+
+```bash
+npx wrangler login --device --browser=false
+npm run db:snapshot
+npx wrangler d1 migrations apply weekend-mwohae-production --remote --config wrangler.sample.jsonc
+npm run db:seed:remote
+npm run deploy:sample
+npm run verify:deployment -- https://실제-배포-주소.workers.dev
+```
+
+`db:snapshot`은 현재 로컬 D1의 샘플 행사·출처·태그만 SQL로 저장합니다. `db:seed:remote`는 원격 DB가 비어 있을 때만 가져오며 기존 행사가 있으면 중단합니다. 날짜와 확인 시각까지 복제하므로 로컬과 배포 응답을 그대로 비교할 수 있습니다. 이 스냅샷은 `.wrangler/deployment`에 저장하고 Git에는 포함하지 않습니다.
+
+`verify:deployment`는 로컬 서버(8787)를 실행한 상태에서 사용합니다. 필터·페이지·상세 API와 HTML·JS·CSS를 대조하고 배포 주소에서 HTTP 검사와 Chromium 테스트 24개를 실행합니다. 배포 검증은 `test-results/deployed`에 따로 저장합니다. 원격에서는 로컬 전용 Cron 테스트 URL을 호출하지 않습니다. Cron은 배포 설정과 실행 로그로 확인합니다.
+
+원격 DB가 이미 준비된 다음 배포에서는 마이그레이션만 적용하고 `deploy:sample`을 사용합니다. 기존 DB에 시드 스크립트를 반복 실행해 데이터를 덮어쓰지 마세요. 실제 데이터로 전환할 때는 `APP_MODE=production`으로 배포하며 샘플은 추천에서 제외됩니다.

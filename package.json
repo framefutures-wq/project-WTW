@@ -16,7 +16,11 @@
     "check": "npm run typecheck && npm test && npm run build",
     "test:smoke": "node scripts/smoke.mjs",
     "test:ui": "playwright test",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:sample": "node scripts/deploy.mjs --sample",
+    "db:snapshot": "node scripts/sample-snapshot.mjs",
+    "db:seed:remote": "node scripts/seed-remote.mjs",
+    "verify:deployment": "node scripts/verify-deployment.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.577.0",
@@ -31,6 +35,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
     "esbuild": "^0.25.12",
+    "jsonc-parser": "^3.3.1",
     "miniflare": "^5.20260918.0-alpha",
     "prettier": "^3.9.8",
     "tsx": "^4.20.0",

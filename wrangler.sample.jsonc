@@ -4,6 +4,7 @@
   "account_id": "a3ced956d23f59da4cfcf41377cf3ec6",
   "main": "worker/index.ts",
   "compatibility_date": "2026-09-18",
+  "workers_dev": true,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
@@ -18,7 +19,7 @@
       "migrations_dir": "migrations",
     },
   ],
-  "vars": { "APP_MODE": "production", "TOUR_API_ENABLED": "false" },
+  "vars": { "APP_MODE": "sample", "TOUR_API_ENABLED": "false" },
   "triggers": { "crons": ["0 21 * * *"] },
   "observability": { "enabled": true },
 }

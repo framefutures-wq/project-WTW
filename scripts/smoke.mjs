@@ -64,8 +64,13 @@ const literal = await get("/api/events?q=%25");
 assert.equal(literal.total, 0);
 assert.match(await (await fetch(base + "/")).text(), /<div id="root">/);
 assert.match(await (await fetch(base + "/explore")).text(), /<div id="root">/);
-const cron = await fetch(base + "/cdn-cgi/local/scheduled?cron=0+21+*+*+*");
-assert.equal(cron.status, 200);
+const localRuntime = ["localhost", "127.0.0.1"].includes(
+  new URL(base).hostname,
+);
+if (localRuntime) {
+  const cron = await fetch(base + "/cdn-cgi/local/scheduled?cron=0+21+*+*+*");
+  assert.equal(cron.status, 200);
+}
 console.log(
-  "PASS: D1 연결, 세 날짜 구간, 필터, 반려동물, 거리순, 페이지, 상세, 취소 제외, 입력 검증, SQL 바인딩, Static Assets, SPA, Cron",
+  `PASS: D1 연결, 세 날짜 구간, 필터, 반려동물, 거리순, 페이지, 상세, 취소 제외, 입력 검증, SQL 바인딩, Static Assets, SPA${localRuntime ? ", Cron" : ""}`,
 );

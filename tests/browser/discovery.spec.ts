@@ -45,7 +45,7 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
     ),
   ).toBe(true);
   await page.screenshot({
-    path: `test-results/discovery-${test.info().project.name}.png`,
+    path: `${test.info().project.outputDir}/discovery-${test.info().project.name}.png`,
     fullPage: true,
   });
   expect(errors).toEqual([]);

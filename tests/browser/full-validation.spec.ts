@@ -224,7 +224,7 @@ test("데스크톱·모바일 화면, 모든 카드 상세, 오류와 레이아�
   ).toBeVisible();
   await page.getByRole("button", { name: "닫기", exact: true }).click();
   await page.screenshot({
-    path: `test-results/full-${info.project.name}.png`,
+    path: `${info.project.outputDir}/full-${info.project.name}.png`,
     fullPage: true,
   });
   expect(errors).toEqual([]);
