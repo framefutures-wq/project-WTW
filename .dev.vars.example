@@ -1,0 +1,3 @@
+# Worker 전용 Secret 자리. 현재 단계에서는 값을 넣지 않습니다.
+# 추후: npx wrangler secret put TOUR_API_KEY --config wrangler.production.jsonc
+# TOUR_API_KEY=

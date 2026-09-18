@@ -1,0 +1,207 @@
+import {
+  REGIONS,
+  AUDIENCES,
+  THEMES,
+  dateRange,
+  distanceKm,
+  type EventItem,
+} from "../shared/domain";
+import type { Env } from "./env";
+import { parseFilters, InputError } from "./filters";
+import { runScheduled } from "./cron";
+
+const SELECT = `SELECT e.*, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
+  (SELECT group_concat(tag) FROM event_tags WHERE event_id=e.id) AS tag_list
+  FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id`;
+function visibility(env: Env) {
+  // No sample records can escape to production, even if its DB was accidentally seeded.
+  return env.APP_MODE === "sample"
+    ? "e.is_sample=1 AND e.verification='sample'"
+    : `e.is_sample=0 AND e.verification='verified' AND s.kind!='sample' AND s.url LIKE 'https://%'
+      AND e.checked_at >= ? AND e.checked_at <= ?
+      AND NOT EXISTS (SELECT 1 FROM (SELECT 'schedule' AS field UNION ALL SELECT 'venue' UNION ALL SELECT 'status') required
+        WHERE NOT EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id
+          WHERE ev.event_id=e.id AND ev.field=required.field AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
+      AND (e.cost='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='price' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
+      AND NOT EXISTS (SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND NOT EXISTS
+        (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field=t.tag AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
+      AND (e.pet_policy='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='pet_policy' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
+      AND (e.lat IS NULL OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='coordinates' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))`;
+}
+function visibilityBindings(env: Env) {
+  if (env.APP_MODE === "sample") return [];
+  const now = new Date().toISOString(),
+    cutoff = new Date(Date.now() - 72 * 3600_000).toISOString();
+  return Array.from({ length: 6 }, () => [cutoff, now]).flat();
+}
+function serialize(
+  row: Record<string, unknown>,
+  lat: number | null = null,
+  lng: number | null = null,
+): EventItem {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    description: String(row.description),
+    region: String(row.region),
+    venue: String(row.venue),
+    address: String(row.address),
+    start_date: String(row.start_date),
+    end_date: String(row.end_date),
+    lat: row.lat as number | null,
+    lng: row.lng as number | null,
+    cost: row.cost as EventItem["cost"],
+    price_text: row.price_text as string | null,
+    pet_policy: row.pet_policy as EventItem["pet_policy"],
+    status: row.status as EventItem["status"],
+    verification: row.verification as EventItem["verification"],
+    is_sample: Number(row.is_sample),
+    checked_at: row.checked_at as string | null,
+    source_url: row.source_url as string | null,
+    source_name: row.source_name as string | null,
+    source_kind: row.source_kind as string | null,
+    tags: String(row.tag_list ?? "")
+      .split(",")
+      .filter(Boolean) as EventItem["tags"],
+    distance_km:
+      lat !== null && lng !== null && row.lat !== null && row.lng !== null
+        ? distanceKm(lat, lng, Number(row.lat), Number(row.lng))
+        : null,
+  };
+}
+function json(data: unknown, status = 200) {
+  return Response.json(data, {
+    status,
+    headers: {
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+    },
+  });
+}
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+    if (request.method !== "GET")
+      return json({ error: "읽기 전용 API입니다." }, 405);
+    try {
+      if (url.pathname === "/api/health") {
+        await env.DB.prepare("SELECT 1 FROM events LIMIT 1").all();
+        return json({
+          ok: true,
+          database: "connected",
+          mode: env.APP_MODE,
+          timezone: "Asia/Seoul",
+          ingestion: "disabled",
+        });
+      }
+      if (url.pathname === "/api/meta")
+        return json({
+          regions: REGIONS,
+          audiences: AUDIENCES,
+          themes: THEMES,
+          mode: env.APP_MODE,
+        });
+      if (url.pathname === "/api/events") {
+        const f = parseFilters(url.searchParams),
+          range = dateRange(f.period);
+        const where = [
+          visibility(env),
+          "e.status='scheduled'",
+          "e.start_date<=?",
+          "e.end_date>=?",
+        ];
+        const binds: (string | number)[] = [
+          ...visibilityBindings(env),
+          range.end,
+          range.start,
+        ];
+        for (const key of ["region", "cost"] as const)
+          if (f[key]) {
+            where.push(`e.${key}=?`);
+            binds.push(f[key]);
+          }
+        for (const tag of [f.audience, f.theme])
+          if (tag) {
+            where.push(
+              "EXISTS(SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND t.tag=?)",
+            );
+            binds.push(tag);
+          }
+        if (f.audience === "pets") where.push("e.pet_policy='allowed'");
+        if (f.q) {
+          where.push(
+            "(e.title LIKE ? ESCAPE '\\' OR e.venue LIKE ? ESCAPE '\\')",
+          );
+          const escaped = f.q.replace(/[\\%_]/g, "\\$&");
+          binds.push(`%${escaped}%`, `%${escaped}%`);
+        }
+        const { results } = await env.DB.prepare(
+          `${SELECT} WHERE ${where.join(" AND ")} ORDER BY e.start_date,e.id`,
+        )
+          .bind(...binds)
+          .all();
+        const events = results.map((row) => serialize(row, f.lat, f.lng));
+        if (f.sort === "distance")
+          events.sort(
+            (a, b) =>
+              (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) ||
+              a.start_date.localeCompare(b.start_date) ||
+              a.id.localeCompare(b.id),
+          );
+        return json({
+          events: events.slice((f.page - 1) * f.limit, f.page * f.limit),
+          total: events.length,
+          page: f.page,
+          limit: f.limit,
+          range,
+          mode: env.APP_MODE,
+        });
+      }
+      const detail = /^\/api\/events\/([a-zA-Z0-9_-]{1,80})$/.exec(
+        url.pathname,
+      );
+      if (detail) {
+        const row = await env.DB.prepare(
+          `${SELECT} WHERE e.id=? AND ${visibility(env)}`,
+        )
+          .bind(detail[1], ...visibilityBindings(env))
+          .first<Record<string, unknown>>();
+        if (!row)
+          return json({ error: "확인된 행사 정보를 찾을 수 없습니다." }, 404);
+        const evidence = await env.DB.prepare(
+          `SELECT ev.field,ev.excerpt,ev.checked_at,s.name,s.url,s.kind,s.priority
+          FROM event_evidence ev JOIN sources s ON s.id=ev.source_id WHERE ev.event_id=? ORDER BY s.priority,ev.field`,
+        )
+          .bind(detail[1])
+          .all();
+        return json({
+          event: serialize(row),
+          evidence: evidence.results,
+          mode: env.APP_MODE,
+        });
+      }
+      return json({ error: "API를 찾을 수 없습니다." }, 404);
+    } catch (error) {
+      if (error instanceof InputError)
+        return json({ error: error.message }, 400);
+      const requestId = crypto.randomUUID();
+      console.error("api_failed", {
+        requestId,
+        path: url.pathname,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      return json(
+        {
+          error: "정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          requestId,
+        },
+        503,
+      );
+    }
+  },
+  async scheduled(_controller: ScheduledController, env: Env) {
+    await runScheduled(env);
+  },
+} satisfies ExportedHandler<Env>;

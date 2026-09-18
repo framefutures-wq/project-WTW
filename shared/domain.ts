@@ -1,0 +1,90 @@
+export const REGIONS = [
+  "서울",
+  "부산",
+  "대구",
+  "인천",
+  "광주",
+  "대전",
+  "울산",
+  "세종",
+  "경기",
+  "강원",
+  "충북",
+  "충남",
+  "전북",
+  "전남",
+  "경북",
+  "경남",
+  "제주",
+] as const;
+export const AUDIENCES = {
+  kids: "아이와",
+  couple: "커플",
+  parents: "부모님과",
+  pets: "반려동물과",
+} as const;
+export const THEMES = {
+  food: "먹거리",
+  fireworks: "불꽃",
+  flowers: "꽃",
+  experience: "체험",
+  performance: "공연",
+} as const;
+export type Period = "today" | "weekend" | "next-weekend";
+export type Tag = keyof typeof AUDIENCES | keyof typeof THEMES;
+export interface EventItem {
+  id: string;
+  title: string;
+  description: string;
+  region: string;
+  venue: string;
+  address: string;
+  start_date: string;
+  end_date: string;
+  lat: number | null;
+  lng: number | null;
+  cost: "free" | "paid" | "unknown";
+  price_text: string | null;
+  pet_policy: "allowed" | "prohibited" | "unknown";
+  status: "scheduled" | "cancelled" | "postponed" | "unknown";
+  verification: "sample" | "verified" | "pending" | "stale";
+  is_sample: number;
+  checked_at: string | null;
+  source_url: string | null;
+  source_name: string | null;
+  source_kind: string | null;
+  tags: Tag[];
+  distance_km: number | null;
+}
+export interface EventResponse {
+  events: EventItem[];
+  total: number;
+  page: number;
+  limit: number;
+  range: { start: string; end: string };
+  mode: string;
+}
+export function koreaDate(now = new Date()): string {
+  return new Date(now.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
+}
+export function dateRange(period: Period, now = new Date()) {
+  const today = koreaDate(now);
+  if (period === "today") return { start: today, end: today };
+  const d = new Date(today + "T00:00:00Z");
+  const day = d.getUTCDay();
+  d.setUTCDate(
+    d.getUTCDate() +
+      (day === 0 ? -1 : 6 - day) +
+      (period === "next-weekend" ? 7 : 0),
+  );
+  const start = d.toISOString().slice(0, 10);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return { start, end: d.toISOString().slice(0, 10) };
+}
+export function distanceKm(a: number, b: number, c: number, d: number) {
+  const rad = Math.PI / 180;
+  const h =
+    Math.sin(((c - a) * rad) / 2) ** 2 +
+    Math.cos(a * rad) * Math.cos(c * rad) * Math.sin(((d - b) * rad) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(Math.min(1, h)));
+}

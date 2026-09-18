@@ -1,0 +1,41 @@
+{
+  "name": "weekend-mwohae",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && wrangler dev --local --test-scheduled",
+    "dev:ui": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts && node scripts/integration.mjs",
+    "format": "prettier --write src shared worker scripts tests docs README.md package.json tsconfig.json vite.config.ts playwright.config.ts wrangler*.jsonc .github index.html",
+    "db:migrate": "wrangler d1 migrations apply weekend-mwohae --local",
+    "db:seed": "node scripts/seed.mjs",
+    "setup": "npm run db:migrate && npm run db:seed",
+    "check": "npm run typecheck && npm test && npm run build",
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:ui": "playwright test",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.577.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260918.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "esbuild": "^0.25.12",
+    "miniflare": "^5.20260918.0-alpha",
+    "prettier": "^3.9.8",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0",
+    "wrangler": "^4.0.0"
+  }
+}
