@@ -4,6 +4,8 @@
 
 스택: Cloudflare Workers, Static Assets, D1, Cron Triggers, Cloudflare Secrets, TypeScript, React. [구조 설계](docs/ARCHITECTURE.md).
 
+**공개 샘플:** [주말뭐해?](https://weekend-mwohae.framefutures.workers.dev) · [실제 배포 및 검증 기록](docs/DEPLOYMENT.md). 공개 URL도 가상 데이터만 사용하며 TourAPI Secret은 등록하지 않았습니다.
+
 ## 로컬 실행
 
 Node.js 22.12 이상(현재 검증 환경: 24), npm을 사용합니다.
