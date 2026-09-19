@@ -50,12 +50,12 @@ const TAGS = {
   food: { group: "콘텐츠", rule: "content.food.v1", words: ["음식", "먹거리", "미식", "푸드트럭", "시식", "음식 판매", "먹거리장터", "푸드 존", "푸드존"] },
   fireworks: { group: "콘텐츠", rule: "content.fireworks.v1", words: ["불꽃놀이", "불꽃쇼", "불꽃축제", "불꽃"] },
   flower_garden: { group: "콘텐츠", rule: "content.flower_garden.v1", words: ["벚꽃", "국화", "장미", "튤립", "꽃 전시", "꽃축제", "꽃 축제", "정원", "가든"] },
-  experience: { group: "콘텐츠", rule: "content.experience.v1", words: ["만들기", "공예", "체험", "참여 프로그램", "농촌체험", "전통체험"] },
+  experience: { group: "콘텐츠", rule: "content.experience.v1", words: ["만들기", "공예체험", "공예 프로그램", "공예품", "체험", "참여 프로그램", "농촌체험", "전통체험"] },
   performance: { group: "콘텐츠", rule: "content.performance.v1", words: ["공연", "콘서트", "국악", "버스킹", "연극", "뮤지컬", "퍼포먼스", "음악회"] },
   exhibition: { group: "콘텐츠", rule: "content.exhibition.v1", words: ["전시", "작품전", "기획전", "전시회"] },
   traditional_history: { group: "콘텐츠", rule: "content.traditional_history.v1", words: ["전통문화", "문화유산", "역사", "민속", "문화재", "역사체험", "국가유산"] },
   nature_scenery: { group: "콘텐츠", rule: "content.nature_scenery.v1", words: ["자연경관", "숲", "생태", "수목원", "자연 관람", "자연체험", "경관"] },
-  night_light: { group: "콘텐츠", rule: "content.night_light.v1", words: ["야간개장", "야경", "빛축제", "조명", "미디어파사드", "라이트쇼", "빛의 터널", "야간 경관"] },
+  night_light: { group: "콘텐츠", rule: "content.night_light.v1", words: ["야간개장", "야경", "빛축제", "경관조명", "조명 콘텐츠", "조명 연출", "야간 조명", "미디어파사드", "라이트쇼", "빛의 터널", "야간 경관"] },
   photo_spot: { group: "콘텐츠", rule: "content.photo_spot.v1", words: ["포토존", "사진 촬영 명소", "사진 콘텐츠", "포토 스팟", "포토스팟"] },
   local_specialty: { group: "콘텐츠", rule: "content.local_specialty.v1", words: ["지역특산물", "농산물", "지역상품", "전통시장", "특산품 판매", "장터"] },
   education: { group: "콘텐츠", rule: "content.education.v1", words: ["교육", "해설", "강좌", "학습", "문화해설", "교육 프로그램"] },
@@ -75,6 +75,7 @@ const TAGS = {
 const NEGATIVE = /(없습니다|않습니다|아닙니다|불가|불가능|금지|운영하지|미운영|미제공|제공하지|종료|폐지|취소)/;
 const CONDITIONAL = /(우천|날씨|기상|상황에 따라|변경될 수|취소될 수|조건부|매주|회차|일별|특정일|공휴일)/;
 const ENDED = /(운영\s*종료|프로그램\s*종료|종료되었습니다|폐지)/;
+const OUTDATED = /(전년도|2025년.*(?:내용|정보).*2026년.*(?:업데이트|미정)|2026년.*(?:업데이트 중|업데이트중))/;
 
 function parseJson(value, fallback = null) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -127,6 +128,7 @@ const byEventTag = new Map();
 const conflicts = [];
 const conditional = [];
 const ended = [];
+const outdated = [];
 for (const event of events) {
   const eventTags = new Map();
   for (const [tag, rule] of Object.entries(TAGS)) {
@@ -135,6 +137,15 @@ for (const event of events) {
     for (const doc of byEvent.get(event.id) || []) {
       if (doc.field === "official_excerpt" || doc.scope === "scope_unknown") continue;
       const allowedFields = {
+        experience: ["title", "program", "subevent", "overview"],
+        performance: ["title", "program", "subevent", "overview"],
+        flower_garden: ["title", "program", "subevent", "overview"],
+        nature_scenery: ["title", "program", "subevent", "overview"],
+        traditional_history: ["title", "program", "subevent", "overview"],
+        night_light: ["title", "program", "subevent", "overview"],
+        food: ["title", "program", "subevent", "overview"],
+        local_specialty: ["title", "program", "subevent", "overview"],
+        parade: ["title", "program", "subevent", "overview"],
         children_program: ["title", "program", "subevent", "overview"],
         family_program: ["title", "program", "subevent", "overview"],
         parking: ["parking", "parkinginfo", "placeinfo"],
@@ -148,6 +159,7 @@ for (const event of events) {
       if (allowedFields && !allowedFields.includes(doc.field)) continue;
       for (const word of rule.words) for (const snippet of snippets(doc.text, word)) {
       const isConditional = CONDITIONAL.test(snippet);
+      if (OUTDATED.test(snippet)) { outdated.push({ event_id: event.id, event_title: event.title, tag, evidence_text: snippet, evidence_source: doc.source }); continue; }
       const isNegative = NEGATIVE.test(snippet) && !isConditional && !(tag === "pet_not_allowed" && /동반 불가|출입 금지|금지/.test(snippet));
       const isEnded = ENDED.test(snippet) && !isConditional && !/(행사명|축제명|역사|문화재)/.test(word);
       const item = { event_id: event.id, event_title: event.title, tag, rule_id: rule.rule, evidence_source: doc.source, evidence_text: snippet, source_type: doc.source_type, source_checked_at: doc.checked_at, scope: doc.scope, evidence_strength: doc.strength, conditional: isConditional };
@@ -204,8 +216,8 @@ const latestTourapi = events.map((e) => e.source_fetched_at).sort().at(-1) || nu
 const latestAudit = audits.map((a) => a.checked_at).sort().at(-1) || null;
 const latestOfficialLink = links.map((l) => l.checked_at).sort().at(-1) || null;
 const latestSync = syncRuns[0] || null;
-const output = { generated_at: new Date().toISOString(), snapshot: { event_count: eventCount, latest_tourapi_source_fetched_at: latestTourapi, latest_official_audit_checked_at: latestAudit, latest_official_link_checked_at: latestOfficialLink, latest_tourapi_sync: latestSync }, tag_definitions: TAGS, candidates: uniqueCandidates, tag_counts: tagCounts, group_counts: groupCounts, event_distribution: distribution, tagged_events: taggedEvents, untagged_events: eventCount - taggedEvents, coverage_percent: eventCount ? taggedEvents / eventCount * 100 : 0, average_tags: avgTags, max_tags: maxTags, conflicts, conditional_programs: conditional, date_limited_program_candidates: dateLimitedCandidates, negative_or_ended: negatives, no_tag_reasons: Object.fromEntries(Object.entries(noTagReasons).map(([k, v]) => [k, { count: v.length, examples: v.slice(0, 10).map((e) => ({ event_id: e.id, title: e.title })) }])), ai_candidate_count: aiCandidates.length, ai_candidate_examples: aiCandidates.slice(0, 20).map((e) => ({ event_id: e.id, title: e.title })), high_tag_events: highTagEvents, samples, source_counts: { events: events.length, event_evidence: evidence.length, official_audits: audits.length, official_links: links.length, official_comparisons: comparisons.length }, rules_version: "fact-tags-dry-run-v1" };
+const output = { generated_at: new Date().toISOString(), snapshot: { event_count: eventCount, latest_tourapi_source_fetched_at: latestTourapi, latest_official_audit_checked_at: latestAudit, latest_official_link_checked_at: latestOfficialLink, latest_tourapi_sync: latestSync }, tag_definitions: TAGS, candidates: uniqueCandidates, tag_counts: tagCounts, group_counts: groupCounts, event_distribution: distribution, tagged_events: taggedEvents, untagged_events: eventCount - taggedEvents, coverage_percent: eventCount ? taggedEvents / eventCount * 100 : 0, average_tags: avgTags, max_tags: maxTags, conflicts, conditional_programs: conditional, date_limited_program_candidates: dateLimitedCandidates, negative_or_ended: negatives, outdated_excluded: [...new Map(outdated.map((x) => [`${x.event_id}|${x.tag}|${x.evidence_text}`, x])).values()], no_tag_reasons: Object.fromEntries(Object.entries(noTagReasons).map(([k, v]) => [k, { count: v.length, examples: v.slice(0, 10).map((e) => ({ event_id: e.id, title: e.title })) }])), ai_candidate_count: aiCandidates.length, ai_candidate_examples: aiCandidates.slice(0, 20).map((e) => ({ event_id: e.id, title: e.title })), high_tag_events: highTagEvents, samples, source_counts: { events: events.length, event_evidence: evidence.length, official_audits: audits.length, official_links: links.length, official_comparisons: comparisons.length }, rules_version: "fact-tags-dry-run-v1" };
 mkdirSync("/tmp/wtw-fact-tag", { recursive: true });
 writeFileSync("/tmp/wtw-fact-tag/report.json", JSON.stringify(output, null, 2));
 writeFileSync(".wrangler/fact-tag-dry-run.json", JSON.stringify(output, null, 2));
-console.log(JSON.stringify({ ...output.snapshot, event_count: eventCount, tagged_events: taggedEvents, untagged_events: eventCount - taggedEvents, coverage_percent: output.coverage_percent, average_tags: avgTags, max_tags: maxTags, tag_counts: tagCounts, distribution, no_tag_reasons: Object.fromEntries(Object.entries(output.no_tag_reasons).map(([k, v]) => [k, v.count])), conflict_count: conflicts.length, conditional_count: conditional.length, date_limited_program_candidate_count: dateLimitedCandidates.length, negative_or_ended_count: negatives.length, ai_candidate_count: aiCandidates.length }, null, 2));
+console.log(JSON.stringify({ ...output.snapshot, event_count: eventCount, tagged_events: taggedEvents, untagged_events: eventCount - taggedEvents, coverage_percent: output.coverage_percent, average_tags: avgTags, max_tags: maxTags, tag_counts: tagCounts, distribution, no_tag_reasons: Object.fromEntries(Object.entries(output.no_tag_reasons).map(([k, v]) => [k, v.count])), conflict_count: conflicts.length, conditional_count: conditional.length, date_limited_program_candidate_count: dateLimitedCandidates.length, negative_or_ended_count: negatives.length, outdated_excluded_count: output.outdated_excluded.length, ai_candidate_count: aiCandidates.length }, null, 2));
