@@ -77,18 +77,18 @@ function classify(map) {
   let child;
   if (childStrong) child = result("child", "fit", "child.direct_children_program", null, map, ["children_program"], "companion.child.strong_children_program.v1");
   else if (childFamily && ["experience", "education", "sports", "exhibition", "nature_scenery"].some((tag) => has(map, tag))) child = result("child", "fit", "child.family_activity_combo", null, map, ["family_program", ...["experience", "education", "sports", "exhibition", "nature_scenery"].filter((tag) => has(map, tag)).slice(0, 1)], "companion.child.family_activity.v1");
-  else if (childFamily) child = result("child", "conditional", "child.family_program_only", "child.activity_specificity_missing", map, ["family_program"], "companion.child.family_only.v1");
-  else if (childCombo) child = result("child", "conditional", childCombo[1], "child.direct_audience_missing", map, childCombo[0], "companion.child.combo_without_audience.v1");
+  else if (childFamily) child = result("child", "unknown", null, "child.activity_specificity_missing", map, ["family_program"], "companion.child.unknown_family_only.v1");
+  else if (childCombo) child = result("child", "unknown", null, "child.direct_audience_missing", map, childCombo[0], "companion.child.unknown_combo_without_audience.v1");
   else child = result("child", "unknown", null, "child.insufficient_audience_evidence", map, [], "companion.child.unknown.v1");
 
   const couplePair = firstCombo(map, couplePairs);
   const coupleAxes = ["flower_garden", "night_light", "fireworks", "photo_spot", "nature_scenery", "performance", "exhibition", "food", "local_specialty"].filter((tag) => has(map, tag));
   const couple = couplePair && couplePair[1] === "couple.food_local"
-    ? result("couple", "conditional", "couple.food_local_axis", "couple.couple_specificity_missing", map, couplePair[0], "companion.couple.weak_combination.v1")
+    ? result("couple", "unknown", null, "couple.couple_specificity_missing", map, couplePair[0], "companion.couple.unknown_weak_combination.v1")
     : couplePair
     ? result("couple", "fit", couplePair[1], null, map, couplePair[0], "companion.couple.combination.v1")
     : coupleAxes.length === 1
-      ? result("couple", "conditional", "couple.single_experience_axis", "couple.multi_axis_evidence_missing", map, coupleAxes, "companion.couple.single_axis.v1")
+      ? result("couple", "unknown", null, "couple.multi_axis_evidence_missing", map, coupleAxes, "companion.couple.unknown_single_axis.v1")
       : result("couple", "unknown", null, "couple.insufficient_complementary_evidence", map, [], "companion.couple.unknown.v1");
 
   const content = [...parentContent].filter((tag) => has(map, tag));
@@ -96,7 +96,7 @@ function classify(map) {
   const parents = content.length && comfort.length
     ? result("parents", "fit", "parents.content_plus_comfort", null, map, [content[0], comfort[0]], "companion.parents.content_comfort.v1")
     : content.length
-      ? result("parents", "conditional", "parents.content_without_comfort_evidence", "parents.comfort_evidence_missing", map, [content[0]], "companion.parents.content_only.v1")
+      ? result("parents", "unknown", null, "parents.comfort_evidence_missing", map, [content[0]], "companion.parents.unknown_content_without_comfort.v1")
       : result("parents", "unknown", null, "parents.insufficient_content_evidence", map, [], "companion.parents.unknown.v1");
 
   const pet = has(map, "pet_allowed")
@@ -114,13 +114,17 @@ const distribution = Object.fromEntries(companions.map((companion) => [companion
 const fitByEvent = new Map(events.map((event) => [event.id, 0]));
 for (const row of rows) if ((row.companion_type !== "pet" && row.suitability_state === "fit") || (row.companion_type === "pet" && row.suitability_state === "allowed")) fitByEvent.set(row.event_id, fitByEvent.get(row.event_id) + 1);
 const multiCompanion = Object.fromEntries([0, 1, 2, 3, 4].map((n) => [String(n), [...fitByEvent.values()].filter((value) => value === n).length]));
+const rulePathCounts = Object.fromEntries([...new Set(rows.map((row) => `${row.companion_type}|${row.rule_id}`))].sort().map((key) => [key, rows.filter((row) => `${row.companion_type}|${row.rule_id}` === key).length]));
 const qa = {};
 for (const companion of companions) {
   qa[companion] = {};
-  for (const state of states[companion]) qa[companion][state] = rows.filter((row) => row.companion_type === companion && row.suitability_state === state).slice(0, 12).map((row) => ({ event_id: row.event_id, title: row.title, source_fact_tags: row.source_fact_tags.map((fact) => fact.tag), reason: row.positive_reason_codes, caution: row.caution_reason_codes, rule_id: row.rule_id }));
+  for (const state of states[companion]) {
+    const limit = companion === "parents" && state === "unknown" ? 30 : companion === "parents" && state === "fit" ? 99 : 12;
+    qa[companion][state] = rows.filter((row) => row.companion_type === companion && row.suitability_state === state).slice(0, limit).map((row) => ({ event_id: row.event_id, title: row.title, source_fact_tags: row.source_fact_tags.map((fact) => fact.tag), reason: row.positive_reason_codes, caution: row.caution_reason_codes, rule_id: row.rule_id }));
+  }
 }
 const qaEventIds = new Set(Object.values(qa).flatMap((byState) => Object.values(byState).flatMap((sample) => sample.map((row) => row.event_id))));
-const report = { generated_at: new Date().toISOString(), snapshot: { event_count: events.length, tagged_event_count: byEvent.size ? [...byEvent.values()].filter((map) => map.size).length : 0, event_tag_rows: tags.length, classifier_type: CLASSIFIER, fact_rule_version: VERSION, source: snapshotSource }, rule_version: SUITABILITY_VERSION, rules: { child: { strong: ["children_program"], combinations: childCombo.map(([pair, rule]) => ({ tags: pair, rule })) }, couple: { combinations: couplePairs.map(([pair, rule]) => ({ tags: pair, rule })) }, parents: { content: [...parentContent], comfort: [...parentComfort] }, pet: { allowed_tag: "pet_allowed", no_inference: true } }, distribution, multi_companion_fit: multiCompanion, qa_event_count: qaEventIds.size, rows, qa_samples: qa, qa_findings: { resolved_weak_combination: { pattern: "food+local_specialty", affected_events: rows.filter((row) => row.companion_type === "couple" && row.positive_reason_codes.includes("couple.food_local_axis")).length, action: "fit에서 conditional로 강등" }, remaining_false_positive_candidates: [], false_negative_candidates: [] }, unknown_rows: rows.filter((row) => row.suitability_state === "unknown") };
+const report = { generated_at: new Date().toISOString(), snapshot: { event_count: events.length, tagged_event_count: byEvent.size ? [...byEvent.values()].filter((map) => map.size).length : 0, event_tag_rows: tags.length, classifier_type: CLASSIFIER, fact_rule_version: VERSION, source: snapshotSource }, rule_version: SUITABILITY_VERSION, rules: { child: { strong: ["children_program"], combinations: childCombo.map(([pair, rule]) => ({ tags: pair, rule })) }, couple: { combinations: couplePairs.map(([pair, rule]) => ({ tags: pair, rule })) }, parents: { content: [...parentContent], comfort: [...parentComfort] }, pet: { allowed_tag: "pet_allowed", no_inference: true } }, distribution, rule_path_counts: rulePathCounts, multi_companion_fit: multiCompanion, qa_event_count: qaEventIds.size, rows, qa_samples: qa, qa_findings: { resolved_weak_combination: { pattern: "food+local_specialty", affected_events: rows.filter((row) => row.companion_type === "couple" && row.caution_reason_codes.includes("couple.couple_specificity_missing")).length, action: "fit/conditional에서 unknown으로 유지" }, remaining_false_positive_candidates: [], false_negative_candidates: [] }, unknown_rows: rows.filter((row) => row.suitability_state === "unknown") };
 mkdirSync("/tmp/wtw-companion", { recursive: true });
 writeFileSync("/tmp/wtw-companion/report.json", JSON.stringify(report, null, 2));
 writeFileSync(".wrangler/companion-suitability-dry-run.json", JSON.stringify(report, null, 2));
