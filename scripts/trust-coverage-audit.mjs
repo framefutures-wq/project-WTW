@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { assessTrust } from "./trust-status-lib.mjs";
+import { requireRemoteReadApproval } from "./remote-read-guard.mjs";
 
 const remote = process.argv.includes("--remote");
+requireRemoteReadApproval(process.argv.slice(2), "trust-coverage-audit");
 const output = ".wrangler/deployment/trust-status/coverage-audit.json";
 const args = [
   "wrangler",
@@ -38,7 +40,8 @@ for (const row of links) {
   linksByAudit.get(row.audit_id).push(row);
 }
 for (const row of comparisons) {
-  if (!comparisonsByAudit.has(row.audit_id)) comparisonsByAudit.set(row.audit_id, []);
+  if (!comparisonsByAudit.has(row.audit_id))
+    comparisonsByAudit.set(row.audit_id, []);
   comparisonsByAudit.get(row.audit_id).push(row);
 }
 const beforeByEvent = new Map(beforeRows.map((row) => [row.event_id, row]));
@@ -51,8 +54,10 @@ const add = (counts, event, category) => {
 };
 function category(event, decision) {
   const audit = auditByEvent.get(event.id);
-  const sourceLinks = audit ? linksByAudit.get(audit.id) ?? [] : [];
-  const sourceComparisons = audit ? comparisonsByAudit.get(audit.id) ?? [] : [];
+  const sourceLinks = audit ? (linksByAudit.get(audit.id) ?? []) : [];
+  const sourceComparisons = audit
+    ? (comparisonsByAudit.get(audit.id) ?? [])
+    : [];
   if (!sourceLinks.length) return "official_source_url_none";
   const official = sourceLinks.filter(
     (link) => link.official === 1 && link.access_status === "ok",
@@ -66,7 +71,9 @@ function category(event, decision) {
       return "other_http_4xx_5xx";
     return "officialness_unconfirmed";
   }
-  const mismatch = sourceComparisons.find((comparison) => comparison.result === "mismatch");
+  const mismatch = sourceComparisons.find(
+    (comparison) => comparison.result === "mismatch",
+  );
   if (mismatch?.field === "title") return "page_ok_title_comparison_failure";
   if (["start_date", "end_date"].includes(mismatch?.field))
     return "page_ok_date_comparison_failure";
@@ -78,14 +85,16 @@ function category(event, decision) {
   return "other";
 }
 const actualEvents = events.filter((event) => event.is_sample === 0);
-const before = actualEvents.map((event) => beforeByEvent.get(event.id)).filter(Boolean);
+const before = actualEvents
+  .map((event) => beforeByEvent.get(event.id))
+  .filter(Boolean);
 const decisions = actualEvents.map((event) => {
   const audit = auditByEvent.get(event.id);
   return assessTrust(
     event,
     audit,
-    audit ? linksByAudit.get(audit.id) ?? [] : [],
-    audit ? comparisonsByAudit.get(audit.id) ?? [] : [],
+    audit ? (linksByAudit.get(audit.id) ?? []) : [],
+    audit ? (comparisonsByAudit.get(audit.id) ?? []) : [],
     {},
     new Date().toISOString(),
   );
@@ -111,20 +120,29 @@ const summary = {
   total: actualEvents.length,
   before: {
     confirmed: before.filter((row) => row.trust_status === "confirmed").length,
-    needs_review: before.filter((row) => row.trust_status === "needs_review").length,
+    needs_review: before.filter((row) => row.trust_status === "needs_review")
+      .length,
     changed: before.filter((row) => row.trust_status === "changed").length,
   },
   after: {
-    confirmed: decisions.filter((row) => row.trust_status === "confirmed").length,
-    needs_review: decisions.filter((row) => row.trust_status === "needs_review").length,
+    confirmed: decisions.filter((row) => row.trust_status === "confirmed")
+      .length,
+    needs_review: decisions.filter((row) => row.trust_status === "needs_review")
+      .length,
     changed: decisions.filter((row) => row.trust_status === "changed").length,
   },
-  new_confirmed: transitions.filter((row) => row.before !== "confirmed" && row.after === "confirmed").length,
+  new_confirmed: transitions.filter(
+    (row) => row.before !== "confirmed" && row.after === "confirmed",
+  ).length,
   transitions,
   needs_review_categories: Object.fromEntries(
     Object.entries(counts).map(([name, count]) => [
       name,
-      { count, percentage_of_needs_review: Number(((count / 249) * 100).toFixed(2)), representatives: representative.get(name) ?? [] },
+      {
+        count,
+        percentage_of_needs_review: Number(((count / 249) * 100).toFixed(2)),
+        representatives: representative.get(name) ?? [],
+      },
     ]),
   ),
   unobservable_categories: {

@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { assessTrust, trustInsert } from "./trust-status-lib.mjs";
+import { requireRemoteReadApproval } from "./remote-read-guard.mjs";
 const reviews = JSON.parse(
   readFileSync(new URL("./trust-status-reviews.json", import.meta.url), "utf8"),
 );
 const remote = process.argv.includes("--remote");
+requireRemoteReadApproval(process.argv.slice(2), "trust-status");
 const apply = process.argv.includes("--apply");
 const dir = ".wrangler/deployment/trust-status";
 mkdirSync(dir, { recursive: true });

@@ -1,40 +1,20 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { chooseTourApiImage } from "./event-image-lib.mjs";
 
 const DB = "weekend-mwohae-production";
 const CONFIG = "wrangler.production.jsonc";
 const now = new Date().toISOString();
-
-function query(sql) {
-  const result = spawnSync(
-    "npx",
-    [
-      "wrangler",
-      "d1",
-      "execute",
-      DB,
-      "--remote",
-      "--config",
-      CONFIG,
-      "--command",
-      sql,
-      "--json",
-    ],
-    { encoding: "utf8" },
+const snapshotIndex = process.argv.indexOf("--snapshot");
+const snapshotPath =
+  snapshotIndex >= 0
+    ? process.argv[snapshotIndex + 1]
+    : ".wrangler/deployment/fact-tag-snapshot.json";
+if (!snapshotPath || !existsSync(snapshotPath))
+  throw new Error(
+    "image pipeline은 remote D1을 읽지 않습니다. `npm run fact-tags:snapshot` 후 --snapshot <file>을 지정하세요.",
   );
-  if (result.status !== 0)
-    throw new Error(result.stderr || "원격 D1 조회 실패");
-  return JSON.parse(result.stdout)[0]?.results ?? [];
-}
-function paged(sql, size = 50) {
-  const rows = [];
-  for (let offset = 0; ; offset += size) {
-    const page = query(`${sql} LIMIT ${size} OFFSET ${offset}`);
-    rows.push(...page);
-    if (page.length < size) return rows;
-  }
-}
+const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8"));
 const parse = (value, fallback) => {
   try {
     return JSON.parse(value);
@@ -49,14 +29,16 @@ const quote = (value) =>
       ? String(value)
       : `'${String(value).replaceAll("'", "''")}'`;
 
-const events = paged(
-  "SELECT e.id,e.title,s.fetched_at AS fetched_at,s.raw_payload FROM events e JOIN sources s ON s.id=e.primary_source_id WHERE e.is_sample=0 AND s.kind='tourapi' ORDER BY e.id",
-  50,
-);
-const audits = paged(
-  "SELECT event_id,url_inventory_json FROM official_source_audits WHERE event_id IN (SELECT id FROM events WHERE is_sample=0) ORDER BY event_id",
-  50,
-);
+const events = snapshot.events.map((event) => ({
+  id: event.id,
+  title: event.title,
+  fetched_at: event.source_fetched_at,
+  raw_payload: event.tourapi_raw,
+}));
+const audits = snapshot.audits.map((audit) => ({
+  event_id: audit.event_id,
+  url_inventory_json: audit.url_inventory_json,
+}));
 const auditByEvent = new Map(audits.map((row) => [row.event_id, row]));
 const rows = [];
 for (const event of events) {
@@ -102,6 +84,10 @@ writeFileSync(
 );
 writeFileSync(".wrangler/deployment/event-images.sql", sql);
 if (process.argv.includes("--write")) {
+  if (!process.argv.includes("--allow-remote-write"))
+    throw new Error(
+      "image pipeline remote write에는 --write --allow-remote-write가 함께 필요합니다.",
+    );
   const result = spawnSync(
     "npx",
     [

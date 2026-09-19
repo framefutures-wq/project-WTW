@@ -23,6 +23,7 @@
     "verify:deployment": "node scripts/verify-deployment.mjs",
     "tourapi:sync": "node scripts/tourapi-sync.mjs",
     "fact-tags:dry-run": "node --import tsx scripts/fact-tag-dry-run.mjs",
+    "fact-tags:snapshot": "node scripts/fact-tag-snapshot.mjs",
     "companion:dry-run": "node scripts/companion-suitability-dry-run.mjs",
     "fact-tags:apply": "node --import tsx scripts/fact-tag-operations.mjs apply",
     "fact-tags:verify": "node --import tsx scripts/fact-tag-operations.mjs verify",

@@ -16,7 +16,10 @@ import {
   FACT_RULE_VERSION,
 } from "../shared/fact-tags";
 
-const SELECT = `SELECT e.*, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
+const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
+  e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
+  e.verification,e.is_sample,e.checked_at`;
+const SELECT = `SELECT ${EVENT_FIELDS}, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
   ts.trust_status, ts.checked_at AS trust_checked_at,
   ts.changed_fields AS trust_changed_fields,
   tsl.url AS trust_source_url, tsl.final_url AS trust_source_final_url,
@@ -30,6 +33,11 @@ const SELECT = `SELECT e.*, s.url AS source_url, s.name AS source_name, s.kind A
   LEFT JOIN official_source_links tsl ON tsl.id=ts.evidence_source_id
   LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
 `;
+const availableRangeCache = new WeakMap<
+  D1Database,
+  { expiresAt: number; value: { start: string; end: string } | null }
+>();
+const AVAILABLE_RANGE_TTL_MS = 60_000;
 function visibility(env: Env) {
   // No sample records can escape to production, even if its DB was accidentally seeded.
   return env.APP_MODE === "sample"
@@ -52,6 +60,8 @@ function visibilityBindings(env: Env) {
   return Array.from({ length: 6 }, () => [cutoff, now]).flat();
 }
 async function availableDateRange(env: Env) {
+  const cached = availableRangeCache.get(env.DB);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
   const row = await env.DB.prepare(
     `SELECT MIN(e.start_date) AS start_date, MAX(e.end_date) AS end_date
      FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id
@@ -59,8 +69,15 @@ async function availableDateRange(env: Env) {
   )
     .bind(...visibilityBindings(env))
     .first<{ start_date: string | null; end_date: string | null }>();
-  if (!row?.start_date || !row.end_date) return null;
-  return { start: row.start_date, end: row.end_date };
+  const value =
+    row?.start_date && row.end_date
+      ? { start: row.start_date, end: row.end_date }
+      : null;
+  availableRangeCache.set(env.DB, {
+    value,
+    expiresAt: Date.now() + AVAILABLE_RANGE_TTL_MS,
+  });
+  return value;
 }
 function serialize(
   row: Record<string, unknown>,
@@ -116,8 +133,10 @@ function serialize(
     image_source_type: row.image_source_type as string | null,
     image_source_page_url: row.image_source_page_url as string | null,
     image_status:
-      row.image_status === "ok" || row.image_status === "missing" ||
-      row.image_status === "blocked" || row.image_status === "invalid"
+      row.image_status === "ok" ||
+      row.image_status === "missing" ||
+      row.image_status === "blocked" ||
+      row.image_status === "invalid"
         ? row.image_status
         : null,
     tags: String(row.tag_list ?? "")
@@ -172,12 +191,14 @@ export default {
         });
       if (url.pathname === "/api/events") {
         const f = parseFilters(url.searchParams),
+          includeTotal = url.searchParams.get("includeTotal") !== "0",
           range = f.customRange ?? dateRange(f.period),
           availableRange = await availableDateRange(env),
           rangeOutsideAvailable = Boolean(
             f.customRange &&
-              availableRange &&
-              (range.end < availableRange.start || range.start > availableRange.end),
+            availableRange &&
+            (range.end < availableRange.start ||
+              range.start > availableRange.end),
           );
         const where = [
           visibility(env),
@@ -198,7 +219,7 @@ export default {
         for (const tag of [f.audience, f.theme])
           if (tag) {
             where.push(
-              "EXISTS(SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND t.classifier_type='legacy' AND t.tag=?)",
+              "e.id IN (SELECT t.event_id FROM event_tags t WHERE t.classifier_type='legacy' AND t.tag=?)",
             );
             binds.push(tag);
           }
@@ -210,22 +231,48 @@ export default {
           const escaped = f.q.replace(/[\\%_]/g, "\\$&");
           binds.push(`%${escaped}%`, `%${escaped}%`);
         }
-        const { results } = await env.DB.prepare(
-          `${SELECT} WHERE ${where.join(" AND ")} ORDER BY e.start_date,e.id`,
-        )
-          .bind(...binds)
-          .all();
-        const events = results.map((row) => serialize(row, f.lat, f.lng));
-        if (f.sort === "distance")
+        const whereSql = where.join(" AND ");
+        if (f.sort === "distance") {
+          // Distance ordering needs the request coordinates for every matching event.
+          // Keep this exceptional path explicit; the default date path stays page-bounded.
+          const { results } = await env.DB.prepare(
+            `${SELECT} WHERE ${whereSql} ORDER BY e.start_date,e.id`,
+          )
+            .bind(...binds)
+            .all();
+          const events = results.map((row) => serialize(row, f.lat, f.lng));
           events.sort(
             (a, b) =>
               (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) ||
               a.start_date.localeCompare(b.start_date) ||
               a.id.localeCompare(b.id),
           );
+          return json({
+            events: events.slice((f.page - 1) * f.limit, f.page * f.limit),
+            total: events.length,
+            page: f.page,
+            limit: f.limit,
+            range,
+            available_date_range: availableRange,
+            range_outside_available: rangeOutsideAvailable,
+            mode: env.APP_MODE,
+          });
+        }
+        const page = await env.DB.prepare(
+          `${SELECT} WHERE ${whereSql} ORDER BY e.start_date,e.id LIMIT ? OFFSET ?`,
+        )
+          .bind(...binds, f.limit, (f.page - 1) * f.limit)
+          .all();
+        const count = includeTotal
+          ? await env.DB.prepare(
+              `SELECT count(*) AS total FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id WHERE ${whereSql}`,
+            )
+              .bind(...binds)
+              .first<{ total: number }>()
+          : null;
         return json({
-          events: events.slice((f.page - 1) * f.limit, f.page * f.limit),
-          total: events.length,
+          events: page.results.map((row) => serialize(row, f.lat, f.lng)),
+          ...(includeTotal ? { total: Number(count?.total ?? 0) } : {}),
           page: f.page,
           limit: f.limit,
           range,

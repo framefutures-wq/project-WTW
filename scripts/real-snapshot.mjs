@@ -1,5 +1,14 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { requireRemoteReadApproval } from "./remote-read-guard.mjs";
+
+requireRemoteReadApproval(
+  [...process.argv.slice(2), "--remote"],
+  "real-snapshot",
+);
+console.warn(
+  "real-snapshot: remote production D1 snapshot을 1회 생성합니다. 이후 분석은 생성된 local artifact만 사용하세요.",
+);
 
 function remote(sql) {
   const result = spawnSync(

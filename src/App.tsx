@@ -58,6 +58,7 @@ type Evidence = {
   kind: string;
 };
 type Detail = { event: EventItem; evidence: Evidence[] };
+type PageResponse = Omit<EventResponse, "total"> & { total?: number };
 class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -370,7 +371,7 @@ export default function App() {
       next ? `${window.location.pathname}?${next}` : window.location.pathname,
     );
   }, [period, customRange, region, audience, theme, cost, query, sort]);
-  const requestParams = (requestedPage: number) => {
+  const requestParams = (requestedPage: number, includeTotal = true) => {
     const params = new URLSearchParams({
       period: customRange ? "custom" : period,
       sort,
@@ -397,14 +398,19 @@ export default function App() {
       params.set("lat", String(location.lat));
       params.set("lng", String(location.lng));
     }
+    if (!includeTotal) params.set("includeTotal", "0");
     return params;
   };
-  const fetchPage = async (requestedPage: number, signal?: AbortSignal) => {
+  const fetchPage = async (
+    requestedPage: number,
+    signal?: AbortSignal,
+    includeTotal = true,
+  ) => {
     const response = await fetch(
-      "/api/events?" + requestParams(requestedPage),
+      "/api/events?" + requestParams(requestedPage, includeTotal),
       { signal },
     );
-    return readApi<EventResponse>(response);
+    return readApi<PageResponse>(response);
   };
   useEffect(() => {
     const controller = new AbortController();
@@ -418,7 +424,7 @@ export default function App() {
     batchProgress.current.clear();
     fetchPage(1, controller.signal)
       .then((body) => {
-        setData(body);
+        setData(body as EventResponse);
         setEvents(uniqueEvents(body.events));
         setMode(body.mode);
       })
@@ -590,8 +596,10 @@ export default function App() {
     setExtraError("");
     setFailedPage(null);
     try {
-      const body = await fetchPage(requestedPage);
-      setData(body);
+      const body = await fetchPage(requestedPage, undefined, false);
+      setData((current) =>
+        current ? { ...body, total: current.total } : (body as EventResponse),
+      );
       setEvents((current) => mergeEvents(current, body.events));
       setLoadedPages((current) => current + 1);
     } catch {
@@ -609,8 +617,10 @@ export default function App() {
     setExtraError("");
     setFailedPage(null);
     try {
-      const body = await fetchPage(nextStart);
-      setData(body);
+      const body = await fetchPage(nextStart, undefined, false);
+      setData((current) =>
+        current ? { ...body, total: current.total } : (body as EventResponse),
+      );
       setEvents(uniqueEvents(body.events));
       setBatchStart(nextStart);
       setLoadedPages(1);
@@ -638,10 +648,14 @@ export default function App() {
     try {
       const pages = await Promise.all(
         Array.from({ length: targetPages }, (_, index) =>
-          fetchPage(previousStart + index),
+          fetchPage(previousStart + index, undefined, false),
         ),
       );
-      setData(pages[pages.length - 1]);
+      setData((current) =>
+        current
+          ? { ...pages[pages.length - 1], total: current.total }
+          : (pages[pages.length - 1] as EventResponse),
+      );
       setEvents(
         uniqueEvents(pages.flatMap((body) => body.events)).slice(
           0,
@@ -673,8 +687,10 @@ export default function App() {
     setExtraLoading(true);
     setExtraError("");
     try {
-      const body = await fetchPage(failedPage);
-      setData(body);
+      const body = await fetchPage(failedPage, undefined, false);
+      setData((current) =>
+        current ? { ...body, total: current.total } : (body as EventResponse),
+      );
       setEvents((current) => mergeEvents(current, body.events));
       setLoadedPages((current) =>
         Math.max(current, failedPage - batchStart + 1),
