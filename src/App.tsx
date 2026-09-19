@@ -768,7 +768,7 @@ export default function App() {
                   }}
                 >
                   <option value="date">날짜순</option>
-                  <option value="distance">거리순</option>
+                  {location && <option value="distance">거리순</option>}
                 </select>
               </label>
             </div>
