@@ -1,11 +1,19 @@
 // Snapshot decisions use only reviewed audit evidence, never publication or payment flags.
-export const RULE_VERSION = "trust-v1";
+export const RULE_VERSION = "trust-v2";
 export const CORE = ["title", "start_date", "end_date", "venue"];
-const normalize = (value) =>
-  String(value ?? "")
-    .normalize("NFKC")
-    .replace(/\s+/gu, "")
-    .toLowerCase();
+const normalize = (field, value) => {
+  const text = String(value ?? "").normalize("NFKC").trim();
+  if (["start_date", "end_date"].includes(field)) {
+    const date = text.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
+    if (date) {
+      const iso = `${date[1]}-${date[2].padStart(2, "0")}-${date[3].padStart(2, "0")}`;
+      const parsed = new Date(`${iso}T00:00:00Z`);
+      if (!Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === iso)
+        return iso;
+    }
+  }
+  return text.replace(/[\s\p{P}\p{S}]+/gu, "").toLowerCase();
+};
 const present = (value) => typeof value === "string" && value.trim().length > 0;
 export function assessTrust(
   event,
@@ -122,7 +130,8 @@ export function assessTrust(
     }
     if (c.result !== "mismatch") continue;
     if (
-      normalize(c.tourapi_value) === normalize(c.official_value) ||
+      normalize(c.field, c.tourapi_value) ===
+        normalize(c.field, c.official_value) ||
       (reviewed && r.resolution === "equivalent")
     ) {
       confirmed.add(c.field);
@@ -153,7 +162,7 @@ export function assessTrust(
       new Set(
         valid
           .filter((c) => c.field === f)
-          .map((c) => normalize(c.official_value)),
+          .map((c) => normalize(c.field, c.official_value)),
       ).size > 1
     )
       ambiguous = true;

@@ -21,6 +21,21 @@ export const types = [
   "other",
   "unknown",
 ];
+export function normalizeComparable(field, value) {
+  if (value == null) return null;
+  const text = String(value).normalize("NFKC").trim();
+  if (["start_date", "end_date"].includes(field)) {
+    const date = text.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
+    if (date) {
+      const iso = `${date[1]}-${date[2].padStart(2, "0")}-${date[3].padStart(2, "0")}`;
+      const parsed = new Date(`${iso}T00:00:00Z`);
+      if (!Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === iso)
+        return iso;
+    }
+  }
+  // Formatting-only equivalence: punctuation and whitespace carry no identity.
+  return text.replace(/[\s\p{P}\p{S}]+/gu, "").toLowerCase();
+}
 export const hash = (value) => createHash("sha256").update(value).digest("hex");
 export function decode(value) {
   return value
@@ -293,7 +308,8 @@ export function compare(
     result:
       base.tourapiValue === null
         ? "not_comparable"
-        : base.tourapiValue === observation.value
+        : normalizeComparable(field, base.tourapiValue) ===
+            normalizeComparable(field, observation.value)
           ? "match"
           : observation.equivalent === true
             ? "match"

@@ -70,6 +70,36 @@ test("comparison needs explicit evidence and missing values never become mismatc
     "match",
   );
   assert.equal(
+    compare(
+      "title",
+      "서울·빛 축제",
+      { ...observed, value: "서울빛 축제", excerpt: "2026-09-19" },
+      page,
+      c,
+    ).result,
+    "match",
+  );
+  assert.equal(
+    compare(
+      "start_date",
+      "2026-09-19",
+      { ...observed, value: "2026.09.19" },
+      page,
+      c,
+    ).result,
+    "match",
+  );
+  assert.equal(
+    compare(
+      "start_date",
+      "2026-09-19",
+      { ...observed, value: "2026.99.99" },
+      page,
+      c,
+    ).result,
+    "mismatch",
+  );
+  assert.equal(
     compare("start_date", "2026-09-20", observed, page, c).result,
     "mismatch",
   );
