@@ -24,9 +24,11 @@ import {
   AUDIENCES,
   THEMES,
   type Period,
+  type DateRange,
   type EventItem,
   type EventResponse,
   type Tag,
+  validDate,
 } from "../shared/domain";
 import {
   formatTrustDate,
@@ -155,6 +157,13 @@ function Scene({ event }: { event: EventItem }) {
 }
 export default function App() {
   const [period, setPeriod] = useState<Period>("weekend");
+  const [customRange, setCustomRange] = useState<DateRange | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"day" | "range">("day");
+  const [pickerStart, setPickerStart] = useState("");
+  const [pickerEnd, setPickerEnd] = useState("");
+  const [pickerError, setPickerError] = useState("");
+  const [availableDateRange, setAvailableDateRange] = useState<DateRange | null>(null);
   const [region, setRegion] = useState(""),
     [audience, setAudience] = useState(""),
     [theme, setTheme] = useState(""),
@@ -180,6 +189,12 @@ export default function App() {
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
+    fetch("/api/meta")
+      .then(readApi<{ available_date_range: DateRange | null }>)
+      .then((body) => setAvailableDateRange(body.available_date_range))
+      .catch(() => setAvailableDateRange(null));
+  }, []);
+  useEffect(() => {
     const timer = setTimeout(() => {
       setQuery(search.trim());
       setPage(1);
@@ -192,11 +207,18 @@ export default function App() {
     setError("");
     setData(null);
     const params = new URLSearchParams({
-      period,
+      period: customRange ? "custom" : period,
       sort,
       page: String(page),
       limit: "9",
     });
+    if (customRange) {
+      if (customRange.start === customRange.end) params.set("date", customRange.start);
+      else {
+        params.set("startDate", customRange.start);
+        params.set("endDate", customRange.end);
+      }
+    }
     for (const [key, value] of Object.entries({
       region,
       audience,
@@ -224,6 +246,7 @@ export default function App() {
     return () => controller.abort();
   }, [
     period,
+    customRange,
     region,
     audience,
     theme,
@@ -269,6 +292,45 @@ export default function App() {
     setQuery("");
     setPage(1);
   }
+  function openPicker() {
+    const fallback = availableDateRange?.start ?? koreaDate();
+    const current = customRange ?? { start: fallback, end: fallback };
+    setPickerMode(current.start === current.end ? "day" : "range");
+    setPickerStart(current.start);
+    setPickerEnd(current.end);
+    setPickerError("");
+    setPickerOpen(true);
+  }
+  function applyPicker() {
+    const start = pickerStart,
+      end = pickerMode === "day" ? pickerStart : pickerEnd;
+    if (!validDate(start) || !validDate(end)) {
+      setPickerError("날짜를 확인해 주세요.");
+      return;
+    }
+    if (end < start) {
+      setPickerError("종료일은 시작일보다 빠를 수 없어요.");
+      return;
+    }
+    if (
+      availableDateRange &&
+      (end < availableDateRange.start || start > availableDateRange.end)
+    ) {
+      setPickerError("현재 등록된 행사 일정 범위를 벗어난 날짜입니다.");
+      return;
+    }
+    setCustomRange({ start, end });
+    setPeriod("custom");
+    setPage(1);
+    setPickerOpen(false);
+  }
+  function choosePreset(value: Period) {
+    setCustomRange(null);
+    setPickerOpen(false);
+    setPickerError("");
+    setPeriod(value);
+    setPage(1);
+  }
   function locate() {
     setGeoError("");
     if (!navigator.geolocation) {
@@ -297,6 +359,11 @@ export default function App() {
     setPage(1);
   };
   const active = Boolean(region || audience || theme || cost || query);
+  const selectedRangeLabel = customRange
+    ? customRange.start === customRange.end
+      ? `${dateLabel(customRange.start)} 행사`
+      : `${dateLabel(customRange.start)} ~ ${dateLabel(customRange.end)} 행사`
+    : `${PERIODS.find((p) => p.value === period)?.label}의 발견`;
   const close = () => {
     setSelected(null);
     setAbout(false);
@@ -370,10 +437,7 @@ export default function App() {
               <button
                 key={p.value}
                 className={period === p.value ? "period active" : "period"}
-                onClick={() => {
-                  setPeriod(p.value);
-                  setPage(1);
-                }}
+                onClick={() => choosePreset(p.value)}
                 aria-pressed={period === p.value}
               >
                 <CalendarDays size={20} />
@@ -384,7 +448,91 @@ export default function App() {
                 {period === p.value && <Check size={16} />}
               </button>
             ))}
+            <button
+              className={period === "custom" ? "period active" : "period"}
+              onClick={openPicker}
+              aria-pressed={period === "custom"}
+            >
+              <CalendarDays size={20} />
+              <span>
+                <strong>날짜 선택</strong>
+                <small>원하는 날을 골라요</small>
+              </span>
+              {period === "custom" && <Check size={16} />}
+            </button>
           </div>
+          {pickerOpen && (
+            <div className="date-picker" aria-label="날짜 선택">
+              <div className="date-picker-heading">
+                <div>
+                  <strong>어떤 날의 행사를 볼까요?</strong>
+                  <p>현재 등록된 행사 일정 안에서 선택할 수 있어요.</p>
+                </div>
+                <button className="date-picker-close" onClick={() => setPickerOpen(false)}>
+                  <X size={16} />
+                  닫기
+                </button>
+              </div>
+              <div className="date-mode" role="group" aria-label="날짜 선택 방식">
+                <button
+                  className={pickerMode === "day" ? "chosen" : ""}
+                  onClick={() => {
+                    setPickerMode("day");
+                    setPickerEnd(pickerStart);
+                    setPickerError("");
+                  }}
+                  aria-pressed={pickerMode === "day"}
+                >
+                  하루
+                </button>
+                <button
+                  className={pickerMode === "range" ? "chosen" : ""}
+                  onClick={() => {
+                    setPickerMode("range");
+                    setPickerError("");
+                  }}
+                  aria-pressed={pickerMode === "range"}
+                >
+                  기간
+                </button>
+              </div>
+              <div className="date-inputs">
+                <label>
+                  {pickerMode === "day" ? "날짜" : "시작일"}
+                  <input
+                    type="date"
+                    value={pickerStart}
+                    min={availableDateRange?.start}
+                    max={availableDateRange?.end}
+                    onChange={(e) => {
+                      setPickerStart(e.target.value);
+                      if (pickerMode === "day") setPickerEnd(e.target.value);
+                      setPickerError("");
+                    }}
+                  />
+                </label>
+                {pickerMode === "range" && (
+                  <label>
+                    종료일
+                    <input
+                      type="date"
+                      value={pickerEnd}
+                      min={pickerStart || availableDateRange?.start}
+                      max={availableDateRange?.end}
+                      onChange={(e) => {
+                        setPickerEnd(e.target.value);
+                        setPickerError("");
+                      }}
+                    />
+                  </label>
+                )}
+                <button className="primary date-apply" onClick={applyPicker}>
+                  이 날짜로 보기
+                </button>
+              </div>
+              {pickerError && <p className="date-picker-error" role="alert">{pickerError}</p>}
+            </div>
+          )}
           <div className="filter-body">
             <div className="search-row">
               <label className="region-select">
@@ -515,7 +663,7 @@ export default function App() {
             <div>
               <span className="section-kicker">YOUR NEXT LITTLE ADVENTURE</span>
               <h2>
-                {PERIODS.find((p) => p.value === period)?.label}의 발견{" "}
+                {selectedRangeLabel}{" "}
                 {data && <span>{data.total}</span>}
               </h2>
               {data && (
@@ -583,10 +731,19 @@ export default function App() {
           ) : data?.total === 0 ? (
             <div className="empty">
               <Search />
-              <h3>조건에 맞는 행사가 아직 없어요</h3>
+              <h3>
+                {data.range_outside_available
+                  ? "현재 등록된 행사 일정 범위를 벗어난 날짜입니다."
+                  : customRange
+                    ? "선택한 날짜에 등록된 행사가 없습니다."
+                    : "조건에 맞는 행사가 아직 없어요"}
+              </h3>
               <p>
-                지역이나 조건을 조금 넓혀보세요. 확인되지 않은 행사는 보여드리지
-                않아요.
+                {data.range_outside_available
+                  ? "현재 등록된 행사 일정 안에서 날짜를 선택해 주세요."
+                  : customRange
+                    ? "다른 날짜나 지역·조건으로 다시 찾아보세요."
+                    : "지역이나 조건을 조금 넓혀보세요. 확인되지 않은 행사는 보여드리지 않아요."}
               </p>
               <button className="primary" onClick={reset}>
                 필터 초기화

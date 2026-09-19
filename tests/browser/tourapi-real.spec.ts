@@ -109,6 +109,47 @@ test("오늘·이번 주말·다음 주말 화면 필터", async ({ page }) => {
     );
   }
 });
+test("직접 날짜·기간 선택과 데이터 범위 밖 요청", async ({ page, request }) => {
+  const rows = readFileSync(snapshotFile, "utf8");
+  const snapshot: EventItem[] = JSON.parse(rows).events;
+  const candidate = snapshot.find(
+    (event) => event.is_sample === 0 && event.verification === "verified",
+  );
+  expect(candidate).toBeTruthy();
+  const date = candidate!.start_date;
+  const dayResponse = await request.get(
+    `/api/events?period=custom&date=${date}&limit=50`,
+  );
+  expect(dayResponse.ok()).toBe(true);
+  const dayBody: EventResponse = await dayResponse.json();
+  expect(dayBody.range).toEqual({ start: date, end: date });
+  expect(dayBody.events.some((event) => event.id === candidate!.id)).toBe(true);
+  const rangeResponse = await request.get(
+    `/api/events?period=custom&startDate=${candidate!.start_date}&endDate=${candidate!.end_date}&limit=50`,
+  );
+  expect(rangeResponse.ok()).toBe(true);
+  const rangeBody: EventResponse = await rangeResponse.json();
+  expect(rangeBody.range).toEqual({
+    start: candidate!.start_date,
+    end: candidate!.end_date,
+  });
+  expect(rangeBody.events.some((event) => event.id === candidate!.id)).toBe(true);
+  const outside = await request.get(
+    "/api/events?period=custom&date=2099-01-01&limit=1",
+  );
+  expect(outside.ok()).toBe(true);
+  const outsideBody: EventResponse = await outside.json();
+  expect(outsideBody.total).toBe(0);
+  expect(outsideBody.range_outside_available).toBe(true);
+  expect((await request.get("/api/events?period=custom&date=2026-02-29")).status()).toBe(400);
+  await page.getByRole("button", { name: "날짜 선택" }).click();
+  await expect(page.getByLabel("날짜 선택")).toBeVisible();
+  await page.getByLabel("날짜").fill(date);
+  await page.getByRole("button", { name: "이 날짜로 보기" }).click();
+  await expect(page.getByRole("heading", { name: /행사/ })).toContainText(
+    `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}`,
+  );
+});
 test("전체 지역 화면 필터와 빈 결과", async ({ page }) => {
   for (const region of REGIONS) {
     const response = page.waitForResponse(

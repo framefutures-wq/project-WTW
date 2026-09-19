@@ -3,6 +3,7 @@ import {
   AUDIENCES,
   THEMES,
   dateRange,
+  koreaDate,
   distanceKm,
   type EventItem,
 } from "../shared/domain";
@@ -41,6 +42,17 @@ function visibilityBindings(env: Env) {
   const now = new Date().toISOString(),
     cutoff = new Date(Date.now() - 72 * 3600_000).toISOString();
   return Array.from({ length: 6 }, () => [cutoff, now]).flat();
+}
+async function availableDateRange(env: Env) {
+  const row = await env.DB.prepare(
+    `SELECT MIN(e.start_date) AS start_date, MAX(e.end_date) AS end_date
+     FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id
+     WHERE ${visibility(env)}`,
+  )
+    .bind(...visibilityBindings(env))
+    .first<{ start_date: string | null; end_date: string | null }>();
+  if (!row?.start_date || !row.end_date) return null;
+  return { start: row.start_date, end: row.end_date };
 }
 function serialize(
   row: Record<string, unknown>,
@@ -139,10 +151,18 @@ export default {
           audiences: AUDIENCES,
           themes: THEMES,
           mode: env.APP_MODE,
+          today: koreaDate(),
+          available_date_range: await availableDateRange(env),
         });
       if (url.pathname === "/api/events") {
         const f = parseFilters(url.searchParams),
-          range = dateRange(f.period);
+          range = f.customRange ?? dateRange(f.period),
+          availableRange = await availableDateRange(env),
+          rangeOutsideAvailable = Boolean(
+            f.customRange &&
+              availableRange &&
+              (range.end < availableRange.start || range.start > availableRange.end),
+          );
         const where = [
           visibility(env),
           "(e.status='scheduled' OR (s.kind='tourapi' AND e.status='unknown'))",
@@ -193,6 +213,8 @@ export default {
           page: f.page,
           limit: f.limit,
           range,
+          available_date_range: availableRange,
+          range_outside_available: rangeOutsideAvailable,
           mode: env.APP_MODE,
         });
       }

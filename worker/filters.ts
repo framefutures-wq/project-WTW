@@ -1,4 +1,11 @@
-import { AUDIENCES, THEMES, REGIONS, type Period } from "../shared/domain";
+import {
+  AUDIENCES,
+  THEMES,
+  REGIONS,
+  validDate,
+  type DateRange,
+  type Period,
+} from "../shared/domain";
 export class InputError extends Error {}
 function one(
   value: string | null,
@@ -13,9 +20,27 @@ function one(
 export function parseFilters(params: URLSearchParams) {
   const period = one(
     params.get("period"),
-    ["today", "weekend", "next-weekend"],
+    ["today", "weekend", "next-weekend", "custom"],
     "weekend",
   ) as Period;
+  const date = params.get("date"),
+    startDate = params.get("startDate"),
+    endDate = params.get("endDate");
+  let customRange: DateRange | null = null;
+  if (date !== null || startDate !== null || endDate !== null) {
+    if (period !== "custom")
+      throw new InputError("날짜 선택에는 period=custom이 필요합니다.");
+    if (date !== null && (startDate !== null || endDate !== null))
+      throw new InputError("날짜와 기간을 함께 보낼 수 없습니다.");
+    const start = date ?? startDate,
+      end = date ?? endDate;
+    if (!start || !end || !validDate(start) || !validDate(end))
+      throw new InputError("날짜 형식이 올바르지 않습니다.");
+    if (end < start) throw new InputError("종료일은 시작일보다 빠를 수 없습니다.");
+    customRange = { start, end };
+  } else if (period === "custom") {
+    throw new InputError("선택한 날짜가 없습니다.");
+  }
   const region = one(params.get("region"), [...REGIONS], "");
   const audience = one(params.get("audience"), Object.keys(AUDIENCES), "");
   const theme = one(params.get("theme"), Object.keys(THEMES), "");
@@ -52,6 +77,7 @@ export function parseFilters(params: URLSearchParams) {
     throw new InputError("검색어는 80자 이내로 입력해 주세요.");
   return {
     period,
+    customRange,
     region,
     audience,
     theme,

@@ -284,7 +284,7 @@ h1 > span {
 }
 .periods {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: #f5f6f0;
   border-bottom: 1px solid var(--line);
 }
@@ -317,6 +317,86 @@ h1 > span {
 }
 .period > svg:last-child:not(:first-child) {
   margin-left: 17px;
+}
+.date-picker {
+  padding: 19px 26px 21px;
+  border-bottom: 1px solid var(--line);
+  background: #fbfcf8;
+}
+.date-picker-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.date-picker-heading strong {
+  color: #3e5f48;
+  font-size: 13px;
+}
+.date-picker-heading p {
+  color: #849084;
+  font-size: 11px;
+  margin: 4px 0 0;
+}
+.date-picker-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #788578;
+  font-size: 11px;
+  padding: 3px;
+}
+.date-mode {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin-top: 13px;
+  border: 1px solid #e2e8dc;
+  border-radius: 7px;
+  background: #fff;
+}
+.date-mode button {
+  border-radius: 5px;
+  padding: 5px 12px;
+  color: #788578;
+  font-size: 11px;
+}
+.date-mode button.chosen {
+  background: #eaf3e5;
+  color: #3e6d49;
+  font-weight: 700;
+}
+.date-inputs {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin-top: 13px;
+}
+.date-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #7a8679;
+  font-size: 10px;
+}
+.date-inputs input {
+  height: 38px;
+  border: 1px solid #dfe6da;
+  border-radius: 7px;
+  background: #fff;
+  color: #405b47;
+  padding: 0 9px;
+  font-size: 12px;
+}
+.date-apply {
+  margin: 0 0 0 auto;
+  height: 38px;
+  white-space: nowrap;
+}
+.date-picker-error {
+  color: #a16c36;
+  font-size: 11px;
+  margin: 9px 0 0;
 }
 .filter-body {
   padding: 24px 26px;
@@ -1213,6 +1293,31 @@ footer > small {
   }
   .period small {
     font-size: 8px;
+  }
+  .date-picker {
+    padding: 16px 15px 18px;
+  }
+  .date-picker-heading strong {
+    font-size: 12px;
+  }
+  .date-picker-heading p,
+  .date-picker-close {
+    font-size: 10px;
+  }
+  .date-inputs {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .date-inputs label {
+    flex: 1;
+    min-width: 120px;
+  }
+  .date-inputs input {
+    width: 100%;
+  }
+  .date-apply {
+    width: 100%;
+    margin: 1px 0 0;
   }
   .filter-body {
     padding: 17px 15px;

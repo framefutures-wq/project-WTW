@@ -31,7 +31,8 @@ export const THEMES = {
   experience: "체험",
   performance: "공연",
 } as const;
-export type Period = "today" | "weekend" | "next-weekend";
+export type Period = "today" | "weekend" | "next-weekend" | "custom";
+export type DateRange = { start: string; end: string };
 export type Tag = keyof typeof AUDIENCES | keyof typeof THEMES;
 export type TrustStatus = "confirmed" | "needs_review" | "changed";
 export interface EventItem {
@@ -68,13 +69,21 @@ export interface EventResponse {
   total: number;
   page: number;
   limit: number;
-  range: { start: string; end: string };
+  range: DateRange;
+  available_date_range: DateRange | null;
+  range_outside_available: boolean;
   mode: string;
+}
+export function validDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 export function koreaDate(now = new Date()): string {
   return new Date(now.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
 }
 export function dateRange(period: Period, now = new Date()) {
+  if (period === "custom") throw new Error("custom period requires a date range");
   const today = koreaDate(now);
   if (period === "today") return { start: today, end: today };
   const d = new Date(today + "T00:00:00Z");
