@@ -143,8 +143,8 @@ test("직접 날짜·기간 선택과 데이터 범위 밖 요청", async ({ pag
   expect(outsideBody.range_outside_available).toBe(true);
   expect((await request.get("/api/events?period=custom&date=2026-02-29")).status()).toBe(400);
   await page.getByRole("button", { name: "날짜 선택" }).click();
-  await expect(page.getByLabel("날짜 선택")).toBeVisible();
-  await page.getByLabel("날짜").fill(date);
+  await expect(page.locator('[aria-label="날짜 선택"]').first()).toBeVisible();
+  await page.getByLabel("날짜", { exact: true }).fill(date);
   await page.getByRole("button", { name: "이 날짜로 보기" }).click();
   await expect(page.getByRole("heading", { name: /행사/ })).toContainText(
     `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}`,
