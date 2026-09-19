@@ -31,6 +31,7 @@ import {
   validDate,
 } from "../shared/domain";
 import { USER_CONTENT_FILTERS } from "../shared/content-filters";
+import { COST_STATUS_LABELS, USER_COST_FILTERS } from "../shared/cost-status";
 import {
   formatTrustDate,
   hasOfficialSource,
@@ -410,7 +411,7 @@ export default function App() {
     region ? region : null,
     audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null,
     theme ? THEMES[theme as keyof typeof THEMES] : null,
-    cost ? { free: "무료", paid: "유료", unknown: "비용 미확인" }[cost] : null,
+    cost ? COST_STATUS_LABELS[cost as keyof typeof COST_STATUS_LABELS] : null,
     query ? `검색: ${query}` : null,
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
@@ -679,10 +680,11 @@ export default function App() {
                   onChange={(e) => change(setCost, e.target.value)}
                   aria-label="비용"
                 >
-                  <option value="">전체</option>
-                  <option value="free">무료</option>
-                  <option value="paid">유료</option>
-                  <option value="unknown">미확인</option>
+                  {USER_COST_FILTERS.map((filter) => (
+                    <option key={filter.queryValue} value={filter.queryValue}>
+                      {filter.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -846,7 +848,7 @@ export default function App() {
                             ? "무료"
                             : event.cost === "paid"
                               ? "유료"
-                              : "비용 미확인"}
+                              : COST_STATUS_LABELS.unknown}
                         </span>
                       </div>
                       <h3>{event.title}</h3>

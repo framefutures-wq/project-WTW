@@ -249,8 +249,8 @@ test("전국 및 17개 지역 전체: 일치 결과와 빈 결과", async ({ pag
       page.getByLabel("지역", { exact: true }).selectOption(region),
     );
 });
-test("무료·유료·비용 미확인·전체", async ({ page, rows }) => {
-  for (const cost of ["free", "paid", "unknown", ""])
+test("무료·유료·전체", async ({ page, rows }) => {
+  for (const cost of ["free", "paid", ""])
     await change(page, rows, { period: "weekend", cost }, () =>
       page.getByLabel("비용", { exact: true }).selectOption(cost),
     );
