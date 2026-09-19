@@ -46,36 +46,7 @@ const syncRuns = query(
   "SELECT id,provider,status,started_at,finished_at,message FROM sync_runs WHERE provider='tourapi' ORDER BY started_at DESC LIMIT 10",
 );
 
-const TAGS = {
-  food: { group: "콘텐츠", rule: "content.food.v1", words: ["음식", "먹거리", "미식", "푸드트럭", "시식", "음식 판매", "먹거리장터", "푸드 존", "푸드존"] },
-  fireworks: { group: "콘텐츠", rule: "content.fireworks.v1", words: ["불꽃놀이", "불꽃쇼", "불꽃축제", "불꽃"] },
-  flower_garden: { group: "콘텐츠", rule: "content.flower_garden.v1", words: ["벚꽃", "국화", "장미", "튤립", "꽃 전시", "꽃축제", "꽃 축제", "정원", "가든"] },
-  experience: { group: "콘텐츠", rule: "content.experience.v1", words: ["만들기", "공예체험", "공예 프로그램", "공예품", "체험", "참여 프로그램", "농촌체험", "전통체험"] },
-  performance: { group: "콘텐츠", rule: "content.performance.v1", words: ["공연", "콘서트", "국악", "버스킹", "연극", "뮤지컬", "퍼포먼스", "음악회"] },
-  exhibition: { group: "콘텐츠", rule: "content.exhibition.v1", words: ["전시", "작품전", "기획전", "전시회"] },
-  traditional_history: { group: "콘텐츠", rule: "content.traditional_history.v1", words: ["전통문화", "문화유산", "역사", "민속", "문화재", "역사체험", "국가유산"] },
-  nature_scenery: { group: "콘텐츠", rule: "content.nature_scenery.v1", words: ["자연경관", "숲", "생태", "수목원", "자연 관람", "자연체험", "경관"] },
-  night_light: { group: "콘텐츠", rule: "content.night_light.v1", words: ["야간개장", "야경", "빛축제", "경관조명", "조명 콘텐츠", "조명 연출", "야간 조명", "미디어파사드", "라이트쇼", "빛의 터널", "야간 경관"] },
-  photo_spot: { group: "콘텐츠", rule: "content.photo_spot.v1", words: ["포토존", "사진 촬영 명소", "사진 콘텐츠", "포토 스팟", "포토스팟"] },
-  local_specialty: { group: "콘텐츠", rule: "content.local_specialty.v1", words: ["지역특산물", "농산물", "지역상품", "전통시장", "특산품 판매", "장터"] },
-  education: { group: "콘텐츠", rule: "content.education.v1", words: ["교육", "해설", "강좌", "학습", "문화해설", "교육 프로그램"] },
-  sports: { group: "콘텐츠", rule: "content.sports.v1", words: ["스포츠 경기", "마라톤", "체육", "운동회", "씨름", "경연대회", "걷기대회"] },
-  parade: { group: "콘텐츠", rule: "content.parade.v1", words: ["퍼레이드", "행렬", "거리행진", "거리 행진"] },
-  children_program: { group: "대상/프로그램", rule: "audience.children.v1", words: ["어린이 프로그램", "어린이 공연", "어린이 체험", "어린이 놀이터", "어린이 놀이", "아동 프로그램", "유아 프로그램", "키즈존", "키즈 프로그램"] },
-  family_program: { group: "대상/프로그램", rule: "audience.family.v1", words: ["가족 대상", "가족 참여", "가족 프로그램", "가족 체험", "온 가족"] },
-  indoor: { group: "편의/환경", rule: "environment.indoor.v1", words: ["실내", "실내 행사", "실내 전시", "전시장"] },
-  parking: { group: "편의/환경", rule: "environment.parking.v1", words: ["주차장", "주차 안내", "주차정보", "주차 정보"] },
-  shuttle: { group: "편의/환경", rule: "environment.shuttle.v1", words: ["셔틀", "셔틀버스", "셔틀 버스"] },
-  accessibility: { group: "편의/환경", rule: "environment.accessibility.v1", words: ["무장애", "휠체어", "장애인 접근", "엘리베이터", "장애인 편의"] },
-  seated_viewing: { group: "편의/환경", rule: "environment.seated_viewing.v1", words: ["객석", "좌석", "지정석", "좌석 관람"] },
-  pet_allowed: { group: "반려동물", rule: "pet.allowed.v1", words: ["반려동물 동반 가능", "반려동물 동반", "애완동물 동반 가능", "동물 동반 가능"] },
-  pet_not_allowed: { group: "반려동물", rule: "pet.not_allowed.v1", words: ["반려동물 동반 불가", "반려동물 출입 금지", "반려동물 금지", "애완동물 출입 금지"] },
-};
-
-const NEGATIVE = /(없습니다|않습니다|아닙니다|불가|불가능|금지|운영하지|미운영|미제공|제공하지|종료|폐지|취소)/;
-const CONDITIONAL = /(우천|날씨|기상|상황에 따라|변경될 수|취소될 수|조건부|매주|회차|일별|특정일|공휴일)/;
-const ENDED = /(운영\s*종료|프로그램\s*종료|종료되었습니다|폐지)/;
-const OUTDATED = /(전년도|2025년.*(?:내용|정보).*2026년.*(?:업데이트|미정)|2026년.*(?:업데이트 중|업데이트중))/;
+import { FACT_TAG_RULES as TAGS, classifyFactTags } from "../shared/fact-tags.ts";
 
 function parseJson(value, fallback = null) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -127,56 +98,16 @@ const candidates = [];
 const byEventTag = new Map();
 const conflicts = [];
 const conditional = [];
-const ended = [];
 const outdated = [];
+const negativeOrEnded = [];
 for (const event of events) {
-  const eventTags = new Map();
-  for (const [tag, rule] of Object.entries(TAGS)) {
-    const positives = [];
-    const negatives = [];
-    for (const doc of byEvent.get(event.id) || []) {
-      if (doc.field === "official_excerpt" || doc.scope === "scope_unknown") continue;
-      const allowedFields = {
-        experience: ["title", "program", "subevent", "overview"],
-        performance: ["title", "program", "subevent", "overview"],
-        flower_garden: ["title", "program", "subevent", "overview"],
-        nature_scenery: ["title", "program", "subevent", "overview"],
-        traditional_history: ["title", "program", "subevent", "overview"],
-        night_light: ["title", "program", "subevent", "overview"],
-        food: ["title", "program", "subevent", "overview"],
-        local_specialty: ["title", "program", "subevent", "overview"],
-        parade: ["title", "program", "subevent", "overview"],
-        children_program: ["title", "program", "subevent", "overview"],
-        family_program: ["title", "program", "subevent", "overview"],
-        parking: ["parking", "parkinginfo", "placeinfo"],
-        shuttle: ["shuttle", "parking", "parkinginfo", "program", "overview"],
-        accessibility: ["accessibility", "placeinfo", "program", "overview"],
-        seated_viewing: ["program", "subevent", "overview", "playtime"],
-        sports: ["title", "program", "subevent", "overview"],
-        pet_allowed: ["title", "program", "subevent", "overview", "pet_policy"],
-        pet_not_allowed: ["title", "program", "subevent", "overview", "pet_policy"],
-      }[tag];
-      if (allowedFields && !allowedFields.includes(doc.field)) continue;
-      for (const word of rule.words) for (const snippet of snippets(doc.text, word)) {
-      const isConditional = CONDITIONAL.test(snippet);
-      if (OUTDATED.test(snippet)) { outdated.push({ event_id: event.id, event_title: event.title, tag, evidence_text: snippet, evidence_source: doc.source }); continue; }
-      const isNegative = NEGATIVE.test(snippet) && !isConditional && !(tag === "pet_not_allowed" && /동반 불가|출입 금지|금지/.test(snippet));
-      const isEnded = ENDED.test(snippet) && !isConditional && !/(행사명|축제명|역사|문화재)/.test(word);
-      const item = { event_id: event.id, event_title: event.title, tag, rule_id: rule.rule, evidence_source: doc.source, evidence_text: snippet, source_type: doc.source_type, source_checked_at: doc.checked_at, scope: doc.scope, evidence_strength: doc.strength, conditional: isConditional };
-      if (isNegative) negatives.push(item); else if (isEnded) ended.push(item); else positives.push(item);
-      }
-    }
-    const uniquePositive = [...new Map(positives.map((p) => [`${p.evidence_source}|${p.evidence_text}`, p])).values()];
-    const uniqueNegative = [...new Map(negatives.map((p) => [`${p.evidence_source}|${p.evidence_text}`, p])).values()];
-    if (uniquePositive.length && uniqueNegative.length) conflicts.push({ event_id: event.id, event_title: event.title, tag, positive: uniquePositive[0], negative: uniqueNegative[0] });
-    if (uniquePositive.length) {
-      const chosen = uniquePositive[0];
-      if (chosen.conditional) conditional.push(chosen);
-      candidates.push(chosen);
-      eventTags.set(tag, chosen);
-    }
-  }
-  byEventTag.set(event.id, eventTags);
+  const result = classifyFactTags({ id: event.id, title: event.title }, byEvent.get(event.id) || []);
+  byEventTag.set(event.id, result.tags);
+  candidates.push(...result.candidates);
+  conflicts.push(...result.conflicts.map((c) => ({ event_id: event.id, event_title: event.title, tag: c.tag, positive: c.positive, negative: c.negative })));
+  conditional.push(...result.conditional);
+  outdated.push(...result.outdated);
+  negativeOrEnded.push(...result.negativeOrEnded);
 }
 
 const uniqueCandidates = [...new Map(candidates.map((c) => [`${c.event_id}|${c.tag}`, c])).values()];
@@ -210,7 +141,7 @@ for (const event of events) if (!byEventTag.get(event.id).size) {
 const samples = {};
 for (const tag of Object.keys(TAGS)) samples[tag] = uniqueCandidates.filter((c) => c.tag === tag).slice(0, 10);
 const highTagEvents = events.filter((e) => byEventTag.get(e.id).size >= 6).map((e) => ({ event_id: e.id, title: e.title, tags: [...byEventTag.get(e.id).keys()] }));
-const negatives = [...new Map([...conflicts.flatMap((c) => [c.negative]), ...ended].map((x) => [`${x.event_id}|${x.tag}|${x.evidence_text}`, x])).values()];
+const negatives = [...new Map(negativeOrEnded.map((x) => [`${x.event_id}|${x.tag}|${x.evidence_text}`, x])).values()];
 const dateLimitedCandidates = uniqueCandidates.filter((c) => c.scope === "program_level" && /(?:20\d{2}[./-]?\d{1,2}[./-]?\d{1,2}|\d{1,2}월\s*\d{1,2}일|매주|공휴일|특정일|일차|회차)/.test(c.evidence_text));
 const latestTourapi = events.map((e) => e.source_fetched_at).sort().at(-1) || null;
 const latestAudit = audits.map((a) => a.checked_at).sort().at(-1) || null;

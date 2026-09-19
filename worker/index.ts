@@ -10,6 +10,11 @@ import {
 import type { Env } from "./env";
 import { parseFilters, InputError } from "./filters";
 import { runScheduled } from "./cron";
+import {
+  classifyFactTags,
+  FACT_CLASSIFIER,
+  FACT_RULE_VERSION,
+} from "../shared/fact-tags";
 
 const SELECT = `SELECT e.*, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
   ts.trust_status, ts.checked_at AS trust_checked_at,
@@ -18,7 +23,7 @@ const SELECT = `SELECT e.*, s.url AS source_url, s.name AS source_name, s.kind A
   tsl.source_types AS trust_source_types,
   ei.image_url, ei.source_type AS image_source_type,
   ei.source_page_url AS image_source_page_url, ei.image_status,
-  (SELECT group_concat(tag) FROM event_tags WHERE event_id=e.id) AS tag_list
+  (SELECT group_concat(tag) FROM event_tags WHERE event_id=e.id AND classifier_type='legacy') AS tag_list
   FROM events e
   LEFT JOIN sources s ON s.id=e.primary_source_id
   LEFT JOIN event_trust_status ts ON ts.event_id=e.id
@@ -35,7 +40,7 @@ function visibility(env: Env) {
         WHERE NOT EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id
           WHERE ev.event_id=e.id AND ev.field=required.field AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
       AND (e.cost='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='price' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
-      AND NOT EXISTS (SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND NOT EXISTS
+      AND NOT EXISTS (SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND t.classifier_type='legacy' AND NOT EXISTS
         (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field=t.tag AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
       AND (e.pet_policy='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='pet_policy' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
       AND (e.lat IS NULL OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='coordinates' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))`;
@@ -193,7 +198,7 @@ export default {
         for (const tag of [f.audience, f.theme])
           if (tag) {
             where.push(
-              "EXISTS(SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND t.tag=?)",
+              "EXISTS(SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND t.classifier_type='legacy' AND t.tag=?)",
             );
             binds.push(tag);
           }

@@ -1,9 +1,30 @@
 import { koreaDate, type EventItem, REGIONS } from "../../shared/domain";
 import type { Env } from "../env";
+import {
+  classifyFactTags,
+  FACT_CLASSIFIER,
+  FACT_RULE_VERSION,
+} from "../../shared/fact-tags";
 
 export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
 type Row = Record<string, unknown>;
+const FACT_FIELDS = ["title", "overview", "program", "subevent", "eventplace", "placeinfo", "playtime", "parking", "parkinginfo", "agelimit", "usetimefestival"];
+function factDocuments(event: NonNullable<ReturnType<typeof mapFestival>>, raw: Row, sourceId: string, checkedAt: string) {
+  const docs = [{ text: event.title, field: "title", source: sourceId, source_type: "tourapi", checked_at: checkedAt, scope: "event_level", strength: "direct_field" }];
+  for (const field of FACT_FIELDS) {
+    const value = text(raw[field]);
+    if (value) docs.push({ text: value, field, source: sourceId, source_type: "tourapi", checked_at: checkedAt, scope: ["program", "subevent", "playtime"].includes(field) ? "program_level" : "event_level", strength: "direct_field" });
+  }
+  return docs;
+}
+function changedFactInput(previousRaw: string | null, raw: Row, event: NonNullable<ReturnType<typeof mapFestival>>, previous: Record<string, unknown> | null) {
+  if (!previous) return true;
+  const previousValues = (() => { try { return JSON.parse(previousRaw || "{}"); } catch { return {}; } })();
+  const rawChanged = FACT_FIELDS.some((field) => text(previousValues[field]) !== text(raw[field]));
+  const eventChanged = ["title", "description", "region", "venue", "address", "start_date", "end_date", "lat", "lng", "status"].some((field) => String(previous[field] ?? "") !== String((event as Record<string, unknown>)[field] ?? ""));
+  return rawChanged || eventChanged;
+}
 function object(value: unknown): Row {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("TourAPI response shape invalid");
@@ -402,6 +423,11 @@ export async function saveFestivalSnapshot(
   const statements: D1PreparedStatement[] = [];
   for (const { event: e, raw } of snapshot.candidates) {
     const source = `${e.id}-source`;
+    const previous = await db.prepare(
+      `SELECT e.*,s.raw_payload AS previous_raw FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id WHERE e.id=?`,
+    ).bind(e.id).first<Record<string, unknown> & { previous_raw: string | null }>();
+    const sourceOwned = !previous || previous.primary_source_id === source;
+    const shouldReclassify = sourceOwned && changedFactInput(previous?.previous_raw ?? null, raw, e, previous);
     // Store response fields only, never the request URL containing serviceKey.
     statements.push(
       db
@@ -475,6 +501,31 @@ export async function saveFestivalSnapshot(
           )
           .bind(e.id, source, field, excerpt, snapshot.checkedAt),
       );
+    if (shouldReclassify) {
+      const factResult = classifyFactTags(e, factDocuments(e, raw, source, snapshot.checkedAt));
+      statements.push(
+        db.prepare(
+          "DELETE FROM event_tags WHERE event_id=? AND classifier_type=? AND rule_version=?",
+        ).bind(e.id, FACT_CLASSIFIER, FACT_RULE_VERSION),
+      );
+      for (const candidate of factResult.candidates)
+        statements.push(
+          db.prepare(
+            `INSERT INTO event_tags(event_id,tag,classifier_type,rule_version,rule_id,evidence_source_ref,evidence_field,evidence_excerpt,updated_at)
+             VALUES(?,?,?,?,?,?,?,?,?)`,
+          ).bind(
+            e.id,
+            candidate.tag,
+            FACT_CLASSIFIER,
+            FACT_RULE_VERSION,
+            candidate.rule_id,
+            candidate.evidence_source,
+            candidate.field,
+            candidate.evidence_text.slice(0, 1000),
+            snapshot.checkedAt,
+          ),
+        );
+    }
   }
   // One transaction. Missing API records become stale, never guessed cancelled.
   statements.push(
