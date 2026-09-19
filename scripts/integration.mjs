@@ -96,6 +96,65 @@ try {
   const required = ["schedule", "venue", "status"];
   await fixture("verified");
   await evidence("verified", required);
+  const beforeAudit = await db
+    .prepare("SELECT * FROM events WHERE id='verified'")
+    .first();
+  await db
+    .prepare(
+      "INSERT INTO official_source_audits(id,run_id,event_id,origin_source_id,checked_at,baseline_json,detail_json,url_inventory_json,candidate_status) VALUES('audit-test','run-test','verified','official',?,'{}','{}','[]','candidates_found')",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      `INSERT INTO official_source_links(id,audit_id,url,source_types,checked_at,http_status,access_status,official,reason,excerpt,content_hash,provenance_json) VALUES('link-test','audit-test','https://example.org/event','["event_official","organizer_official"]',?,200,'ok',1,'합성 기관 근거','합성 근거','synthetic-hash','[]')`,
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      "INSERT INTO official_source_comparisons(id,audit_id,link_id,field,result,tourapi_value,official_value,evidence_url,excerpt,checked_at,reason) VALUES('comparison-test','audit-test','link-test','start_date','mismatch','2026-01-01','2026-01-02','https://example.org/event','합성 근거',?,'합성 일정 불일치')",
+    )
+    .bind(now)
+    .run();
+  assert.deepEqual(
+    await db.prepare("SELECT * FROM events WHERE id='verified'").first(),
+    beforeAudit,
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT count(*) n FROM event_evidence WHERE event_id='verified'",
+        )
+        .first()
+    ).n,
+    3,
+  );
+  await assert.rejects(() =>
+    db
+      .prepare(
+        "UPDATE official_source_links SET access_status='http_error' WHERE id='link-test'",
+      )
+      .run(),
+  );
+  await assert.rejects(() =>
+    db
+      .prepare(
+        "UPDATE official_source_comparisons SET official_value=NULL WHERE id='comparison-test'",
+      )
+      .run(),
+  );
+  await assert.rejects(() =>
+    db
+      .prepare(
+        "UPDATE official_source_audits SET event_id='missing-event' WHERE id='audit-test'",
+      )
+      .run(),
+  );
+  console.log(
+    "PASS: 공식 출처 감사 migration, 복수 유형, 비교 근거 제약, 외래키, 기존 행사·공개 근거 불변",
+  );
   await fixture("sample-hidden", { sample: true });
   await fixture("pending-hidden", { verification: "pending" });
   await evidence("pending-hidden", required);

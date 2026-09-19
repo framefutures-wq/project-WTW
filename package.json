@@ -8,7 +8,7 @@
     "dev:ui": "vite --host 0.0.0.0",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts && node scripts/integration.mjs",
+    "test": "node --import tsx --test tests/*.test.ts tests/*.test.mjs && node scripts/integration.mjs",
     "format": "prettier --write src shared worker scripts tests docs README.md package.json tsconfig.json vite.config.ts playwright.config.ts wrangler*.jsonc .github index.html",
     "db:migrate": "wrangler d1 migrations apply weekend-mwohae --local",
     "db:seed": "node scripts/seed.mjs",
