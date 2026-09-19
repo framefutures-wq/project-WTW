@@ -48,6 +48,14 @@ type Evidence = {
   kind: string;
 };
 type Detail = { event: EventItem; evidence: Evidence[] };
+class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
 async function readApi<T>(response: Response): Promise<T> {
   const body = await response.json();
   if (!response.ok) {
@@ -58,7 +66,7 @@ async function readApi<T>(response: Response): Promise<T> {
       typeof body.error === "string"
         ? body.error
         : "정보를 불러오지 못했습니다.";
-    throw new Error(message);
+    throw new ApiError(message, response.status);
   }
   return body as T;
 }
@@ -71,6 +79,14 @@ const dateLabel = (date: string) => {
   const localDate = date.includes("T") ? koreaDate(new Date(date)) : date;
   return `${Number(localDate.slice(5, 7))}.${Number(localDate.slice(8, 10))}`;
 };
+const detailDate = (date: string) => {
+  const [year, month, day] = date.split("-");
+  return year && month && day
+    ? `${year}년 ${Number(month)}월 ${Number(day)}일`
+    : date;
+};
+const detailDateRange = (start: string, end: string) =>
+  start === end ? detailDate(start) : `${detailDate(start)} ~ ${detailDate(end)}`;
 const tagLabel = (tag: Tag) => ({ ...AUDIENCES, ...THEMES })[tag];
 const safeUrl = (url: string | null | undefined) => {
   try {
@@ -191,6 +207,7 @@ export default function App() {
   const [selected, setSelected] = useState<string | null>(null),
     [detail, setDetail] = useState<Detail | null>(null),
     [detailError, setDetailError] = useState("");
+  const [detailRetry, setDetailRetry] = useState(0);
   const [mode, setMode] = useState(""),
     [about, setAbout] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null),
@@ -278,11 +295,16 @@ export default function App() {
       .then(readApi<Detail>)
       .then(setDetail)
       .catch((e) => {
-        if (e.name !== "AbortError")
-          setDetailError("상세 정보를 불러오지 못했어요. 다시 시도해 주세요.");
+        if (e.name !== "AbortError") {
+          setDetailError(
+            e instanceof ApiError && e.status === 404
+              ? "행사를 찾을 수 없어요. 목록에서 다른 행사를 확인해 주세요."
+              : "잠시 정보를 불러오지 못했어요. 다시 시도해 주세요.",
+          );
+        }
       });
     return () => controller.abort();
-  }, [selected]);
+  }, [selected, detailRetry]);
   useEffect(() => {
     if (selected || about) {
       opener.current = document.activeElement as HTMLElement;
@@ -972,7 +994,6 @@ export default function App() {
                   : "출처 확인"}
               </span>
               <h2>{detail.event.title}</h2>
-              <p>{detail.event.description}</p>
               {detail.event.is_sample === 1 && (
                 <div className="detail-warning">
                   실제 행사가 아닙니다. 일정·장소·가격·좌표 모두 기능 검증용
@@ -983,16 +1004,19 @@ export default function App() {
               <dl>
                 <dt>일정</dt>
                 <dd>
-                  {detail.event.start_date} ~ {detail.event.end_date}
+                  {detailDateRange(
+                    detail.event.start_date,
+                    detail.event.end_date,
+                  )}
                 </dd>
                 <dt>장소</dt>
                 <dd>
                   {detail.event.venue}
-                  <small>{detail.event.address}</small>
+                  {detail.event.address && <small>{detail.event.address}</small>}
                 </dd>
                 <dt>비용</dt>
                 <dd>
-                  {detail.event.price_text ?? "미확인 · 공식 공지 확인 필요"}
+                  {detail.event.price_text?.trim() || "비용 정보 확인 필요"}
                 </dd>
                 <dt>반려동물</dt>
                 <dd>
@@ -1034,6 +1058,7 @@ export default function App() {
                 <dt>출처</dt>
                 <dd>{detail.event.source_name ?? "미확인"}</dd>
               </dl>
+              {detail.event.description && <p>{detail.event.description}</p>}
               <div className="detail-tags">
                 {detail.event.tags.map((t) => (
                   <span className="chip" key={t}>
@@ -1067,17 +1092,27 @@ export default function App() {
                   ))}
                 </div>
               )}
+              <button className="detail-back" onClick={close}>
+                목록으로 돌아가기
+              </button>
             </div>
           </div>
         ) : (
           <div className="about-content">
             <Sparkles size={28} />
             <h2>
-              {detailError
-                ? "불러오지 못했어요"
+              {detailError?.startsWith("행사를 찾을")
+                ? "행사를 찾을 수 없어요"
+                : detailError
+                  ? "잠시 정보를 불러오지 못했어요"
                 : "상세 정보를 확인하고 있어요"}
             </h2>
             <p role="status">{detailError || "잠시만 기다려 주세요."}</p>
+            {detailError && !detailError.startsWith("행사를 찾을") && (
+              <button className="primary" onClick={() => setDetailRetry((n) => n + 1)}>
+                다시 시도
+              </button>
+            )}
           </div>
         )}
       </dialog>
