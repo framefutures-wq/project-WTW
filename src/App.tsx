@@ -245,7 +245,8 @@ export default function App() {
         setMode(body.mode);
       })
       .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message);
+        if (e.name !== "AbortError")
+          setError("잠시 연결이 어려워요. 잠시 후 다시 시도해 주세요.");
       })
       .finally(() => {
         if (!controller.signal.aborted) setBusy(false);
@@ -277,7 +278,8 @@ export default function App() {
       .then(readApi<Detail>)
       .then(setDetail)
       .catch((e) => {
-        if (e.name !== "AbortError") setDetailError(e.message);
+        if (e.name !== "AbortError")
+          setDetailError("상세 정보를 불러오지 못했어요. 다시 시도해 주세요.");
       });
     return () => controller.abort();
   }, [selected]);
@@ -291,12 +293,19 @@ export default function App() {
     }
   }, [selected, about]);
   function reset() {
+    setPeriod("weekend");
+    setCustomRange(null);
+    setPickerOpen(false);
+    setPickerError("");
     setRegion("");
     setAudience("");
     setTheme("");
     setCost("");
     setSearch("");
     setQuery("");
+    setLocation(null);
+    setGeoError("");
+    setSort("date");
     setPage(1);
   }
   function openPicker() {
@@ -365,12 +374,23 @@ export default function App() {
     fn(value);
     setPage(1);
   };
-  const active = Boolean(region || audience || theme || cost || query);
+  const active = Boolean(
+    customRange || region || audience || theme || cost || query || location,
+  );
   const selectedRangeLabel = customRange
     ? customRange.start === customRange.end
       ? `${dateLabel(customRange.start)} 행사`
       : `${dateLabel(customRange.start)} ~ ${dateLabel(customRange.end)} 행사`
     : `${PERIODS.find((p) => p.value === period)?.label}의 발견`;
+  const activeFilterLabels = [
+    customRange ? selectedRangeLabel : null,
+    region ? region : null,
+    audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null,
+    theme ? THEMES[theme as keyof typeof THEMES] : null,
+    cost ? { free: "무료", paid: "유료", unknown: "비용 미확인" }[cost] : null,
+    query ? `검색: ${query}` : null,
+    location ? "내 주변" : null,
+  ].filter(Boolean) as string[];
   const close = () => {
     setSelected(null);
     setAbout(false);
@@ -663,6 +683,21 @@ export default function App() {
                 </button>
               </p>
             )}
+            {activeFilterLabels.length > 0 && (
+              <div className="active-filters" aria-label="현재 선택한 조건">
+                <span className="active-filters-label">현재 조건</span>
+                <div className="active-filter-list">
+                  {activeFilterLabels.map((label) => (
+                    <span className="active-filter" key={label}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+                <button className="active-filters-reset" onClick={reset}>
+                  모두 지우기
+                </button>
+              </div>
+            )}
           </div>
         </section>
         <section className="results" aria-label="추천 행사" aria-busy={busy}>
@@ -720,7 +755,7 @@ export default function App() {
             <div className="empty">
               <Info />
               <h3>잠시 연결이 어려워요</h3>
-              <p>{error}</p>
+              <p>잠시 후 다시 시도해 주세요.</p>
               <button className="primary" onClick={() => setRetry(retry + 1)}>
                 다시 시도
               </button>
@@ -752,9 +787,16 @@ export default function App() {
                     ? "다른 날짜나 지역·조건으로 다시 찾아보세요."
                     : "지역이나 조건을 조금 넓혀보세요. 확인되지 않은 행사는 보여드리지 않아요."}
               </p>
-              <button className="primary" onClick={reset}>
-                필터 초기화
-              </button>
+              <div className="empty-actions">
+                {(customRange || data.range_outside_available) && (
+                  <button className="secondary" onClick={openPicker}>
+                    날짜 바꾸기
+                  </button>
+                )}
+                <button className="primary" onClick={reset}>
+                  필터 초기화
+                </button>
+              </div>
             </div>
           ) : (
             <div className="event-grid">

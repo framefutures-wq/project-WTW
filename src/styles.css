@@ -521,6 +521,38 @@ h1 > span {
   text-decoration: underline;
   font-size: 11px;
 }
+.active-filters {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #edf0e8;
+}
+.active-filters-label {
+  color: #6e7d70;
+  font-size: 11px;
+  font-weight: 700;
+}
+.active-filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.active-filter {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef5e9;
+  color: #41684a;
+  font-size: 11px;
+}
+.active-filters-reset {
+  color: #6d7c70;
+  font-size: 11px;
+  text-decoration: underline;
+  padding: 4px 2px;
+}
 .results {
   margin-top: 46px;
 }
@@ -999,6 +1031,24 @@ footer > small {
   gap: 8px;
   margin-top: 10px;
 }
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c9d6c2;
+  border-radius: 7px;
+  padding: 9px 16px;
+  color: var(--green);
+  background: #fff;
+  font-size: 12px;
+  margin-top: 10px;
+}
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .skeleton {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -1304,6 +1354,7 @@ footer > small {
   .period {
     padding: 15px 5px;
     gap: 7px;
+    min-width: 0;
   }
   .period > svg:first-child {
     width: 16px;
@@ -1316,6 +1367,7 @@ footer > small {
   }
   .period small {
     font-size: 8px;
+    white-space: nowrap;
   }
   .date-picker {
     padding: 16px 15px 18px;
@@ -1396,6 +1448,26 @@ footer > small {
   .cost-filter select {
     font-size: 11px;
     padding: 4px 8px;
+  }
+  .active-filters {
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 15px;
+    padding-top: 12px;
+  }
+  .active-filters-label {
+    width: 100%;
+  }
+  .active-filter {
+    font-size: 10px;
+  }
+  .active-filters-reset {
+    font-size: 10px;
+    margin-left: auto;
+  }
+  .empty-actions .primary,
+  .empty-actions .secondary {
+    flex: 1 1 140px;
   }
   .results {
     margin-top: 32px;
