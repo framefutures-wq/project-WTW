@@ -30,6 +30,7 @@ import {
   type Tag,
   validDate,
 } from "../shared/domain";
+import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import {
   formatTrustDate,
   hasOfficialSource,
@@ -660,7 +661,7 @@ export default function App() {
                 >
                   모두
                 </button>
-                {Object.entries(THEMES).map(([v, label]) => (
+                {USER_CONTENT_FILTERS.map(({ queryValue: v, label }) => (
                   <button
                     key={v}
                     className={theme === v ? "chip chosen" : "chip"}
