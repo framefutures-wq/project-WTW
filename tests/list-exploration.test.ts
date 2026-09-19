@@ -35,3 +35,18 @@ test("묶음은 event id 중복을 표시하지 않는다", () => {
     ["a", "b"],
   );
 });
+
+test("지원하는 결과 수에서 묶음 경계와 표시 범위가 안정적이다", () => {
+  for (const total of [0, 1, 7, 9, 18, 27, 36, 37, 72, 120]) {
+    const pages = totalPages(total);
+    assert.equal(pages, total === 0 ? 0 : Math.ceil(total / PAGE_SIZE));
+    assert.equal(hasNextBatch(1, total), total > MAX_VISIBLE_ITEMS);
+    if (total > MAX_VISIBLE_ITEMS) {
+      const next = batchStartPage(1);
+      assert.equal(next, 5);
+      assert.equal(Math.min(next * PAGE_SIZE, total), Math.min(45, total));
+    }
+  }
+  assert.equal(Math.min(4 * PAGE_SIZE, 120), MAX_VISIBLE_ITEMS);
+  assert.equal(Math.min(16 * PAGE_SIZE, 120), 120);
+});
