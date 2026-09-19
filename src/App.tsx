@@ -33,6 +33,14 @@ import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import { COST_STATUS_LABELS, USER_COST_FILTERS } from "../shared/cost-status";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import {
+  MAX_VISIBLE_ITEMS,
+  PAGE_SIZE,
+  PAGES_PER_BATCH,
+  hasNextBatch,
+  totalPages,
+  uniqueEvents,
+} from "../shared/list-exploration";
+import {
   formatTrustDate,
   hasOfficialSource,
   officialSourceLabel,
@@ -88,7 +96,9 @@ const detailDate = (date: string) => {
     : date;
 };
 const detailDateRange = (start: string, end: string) =>
-  start === end ? detailDate(start) : `${detailDate(start)} ~ ${detailDate(end)}`;
+  start === end
+    ? detailDate(start)
+    : `${detailDate(start)} ~ ${detailDate(end)}`;
 const tagLabel = (tag: Tag) => ({ ...AUDIENCES, ...THEMES })[tag];
 const safeUrl = (url: string | null | undefined) => {
   try {
@@ -97,11 +107,19 @@ const safeUrl = (url: string | null | undefined) => {
     return undefined;
   }
 };
-function TrustInfo({ event, card = false }: { event: EventItem; card?: boolean }) {
+function TrustInfo({
+  event,
+  card = false,
+}: {
+  event: EventItem;
+  card?: boolean;
+}) {
   if (event.is_sample === 1 || !event.trust_status) return null;
   const changed = event.trust_status === "changed";
   const sourceLabel = officialSourceLabel(event.trust_source_types);
-  const sourceLink = hasOfficialSource(event) ? safeUrl(event.trust_source_url) : undefined;
+  const sourceLink = hasOfficialSource(event)
+    ? safeUrl(event.trust_source_url)
+    : undefined;
   const checked = formatTrustDate(event.trust_checked_at);
   if (card)
     return changed ? (
@@ -114,13 +132,20 @@ function TrustInfo({ event, card = false }: { event: EventItem; card?: boolean }
       </span>
     ) : null;
   return (
-    <section className={`trust-info trust-${event.trust_status}`} aria-label="행사 신뢰정보">
+    <section
+      className={`trust-info trust-${event.trust_status}`}
+      aria-label="행사 신뢰정보"
+    >
       <div className="trust-info-heading">
         <span className="trust-info-icon">
           {changed ? <Info size={18} /> : <ShieldCheck size={18} />}
         </span>
         <div>
-          <h3>{changed ? trustChangeLabel(event.trust_changed_fields) : trustTitle(event.trust_status)}</h3>
+          <h3>
+            {changed
+              ? trustChangeLabel(event.trust_changed_fields)
+              : trustTitle(event.trust_status)}
+          </h3>
           <p>{trustDescription(event.trust_status)}</p>
         </div>
       </div>
@@ -139,7 +164,12 @@ function TrustInfo({ event, card = false }: { event: EventItem; card?: boolean }
         )}
       </dl>
       {sourceLink && (
-        <a className="trust-source-link" href={sourceLink} target="_blank" rel="noopener noreferrer">
+        <a
+          className="trust-source-link"
+          href={sourceLink}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           공식 안내 보기 <ExternalLink size={14} />
         </a>
       )}
@@ -158,51 +188,115 @@ function Scene({ event }: { event: EventItem }) {
   };
   const image = safeUrl(event.image_url);
   return (
-    <div className={`scene scene-${theme}${image && !imageFailed ? " scene-with-image" : ""}`}>
+    <div
+      className={`scene scene-${theme}${image && !imageFailed ? " scene-with-image" : ""}`}
+    >
       {image && !imageFailed && (
-        <img className="scene-image" src={image} alt={`${event.title} 대표 이미지`} loading="lazy" onError={() => setImageFailed(true)} />
+        <img
+          className="scene-image"
+          src={image}
+          alt={`${event.title} 대표 이미지`}
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+        />
       )}
-      {(!image || imageFailed) && <div className="scene-fallback" aria-hidden="true">
-      <div className="scene-sun" />
-      <div className="hill hill-one" />
-      <div className="hill hill-two" />
-      <span className="scene-symbol">{icons[theme as keyof typeof icons]}</span>
-      <span className="scene-stem" />
-      <span className="scene-dot dot-one" />
-      <span className="scene-dot dot-two" />
-      <span className="scene-caption">
-        {THEMES[theme as keyof typeof THEMES]}를 만나는 하루
-      </span>
-      <span className="sample-stamp">
-        {event.is_sample ? "가상 행사" : "주제 일러스트"}
-      </span>
-      </div>}
+      {(!image || imageFailed) && (
+        <div className="scene-fallback" aria-hidden="true">
+          <div className="scene-sun" />
+          <div className="hill hill-one" />
+          <div className="hill hill-two" />
+          <span className="scene-symbol">
+            {icons[theme as keyof typeof icons]}
+          </span>
+          <span className="scene-stem" />
+          <span className="scene-dot dot-one" />
+          <span className="scene-dot dot-two" />
+          <span className="scene-caption">
+            {THEMES[theme as keyof typeof THEMES]}를 만나는 하루
+          </span>
+          <span className="sample-stamp">
+            {event.is_sample ? "가상 행사" : "주제 일러스트"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 export default function App() {
-  const [period, setPeriod] = useState<Period>("weekend");
-  const [customRange, setCustomRange] = useState<DateRange | null>(null);
+  const initialParams = useRef(
+    typeof window === "undefined"
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search),
+  ).current;
+  const initialPeriod = initialParams.get("period");
+  const initialDate = initialParams.get("date");
+  const initialStart = initialParams.get("startDate");
+  const initialEnd = initialParams.get("endDate");
+  const initialCustomRange =
+    initialPeriod === "custom" &&
+    ((initialDate && validDate(initialDate)) ||
+      (initialStart &&
+        initialEnd &&
+        validDate(initialStart) &&
+        validDate(initialEnd)))
+      ? { start: initialDate ?? initialStart!, end: initialDate ?? initialEnd! }
+      : null;
+  const initialRegion = REGION_OPTIONS.some(
+    ({ queryValue }) => queryValue === initialParams.get("region"),
+  )
+    ? initialParams.get("region")!
+    : "";
+  const initialAudience = Object.prototype.hasOwnProperty.call(
+    AUDIENCES,
+    initialParams.get("audience") ?? "",
+  )
+    ? initialParams.get("audience")!
+    : "";
+  const initialTheme = Object.prototype.hasOwnProperty.call(
+    THEMES,
+    initialParams.get("theme") ?? "",
+  )
+    ? initialParams.get("theme")!
+    : "";
+  const initialCost = ["free", "paid"].includes(initialParams.get("cost") ?? "")
+    ? initialParams.get("cost")!
+    : "";
+  const [period, setPeriod] = useState<Period>(
+    initialPeriod === "today" ||
+      initialPeriod === "next-weekend" ||
+      (initialPeriod === "custom" && initialCustomRange)
+      ? (initialPeriod as Period)
+      : "weekend",
+  );
+  const [customRange, setCustomRange] = useState<DateRange | null>(
+    initialCustomRange,
+  );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"day" | "range">("day");
   const [pickerStart, setPickerStart] = useState("");
   const [pickerEnd, setPickerEnd] = useState("");
   const [pickerError, setPickerError] = useState("");
-  const [availableDateRange, setAvailableDateRange] = useState<DateRange | null>(null);
-  const [region, setRegion] = useState(""),
-    [audience, setAudience] = useState(""),
-    [theme, setTheme] = useState(""),
-    [cost, setCost] = useState("");
-  const [search, setSearch] = useState(""),
-    [query, setQuery] = useState("");
+  const [availableDateRange, setAvailableDateRange] =
+    useState<DateRange | null>(null);
+  const [region, setRegion] = useState(initialRegion),
+    [audience, setAudience] = useState(initialAudience),
+    [theme, setTheme] = useState(initialTheme),
+    [cost, setCost] = useState(initialCost);
+  const [search, setSearch] = useState(initialParams.get("q") ?? ""),
+    [query, setQuery] = useState(initialParams.get("q") ?? "");
   const [sort, setSort] = useState("date"),
     [location, setLocation] = useState<{ lat: number; lng: number } | null>(
       null,
     );
   const [geoBusy, setGeoBusy] = useState(false),
     [geoError, setGeoError] = useState("");
-  const [page, setPage] = useState(1),
-    [data, setData] = useState<EventResponse | null>(null);
+  const [data, setData] = useState<EventResponse | null>(null),
+    [events, setEvents] = useState<EventItem[]>([]),
+    [batchStart, setBatchStart] = useState(1),
+    [loadedPages, setLoadedPages] = useState(1),
+    [extraLoading, setExtraLoading] = useState(false),
+    [extraError, setExtraError] = useState(""),
+    [failedPage, setFailedPage] = useState<number | null>(null);
   const [busy, setBusy] = useState(true),
     [error, setError] = useState(""),
     [retry, setRetry] = useState(0);
@@ -213,7 +307,14 @@ export default function App() {
   const [mode, setMode] = useState(""),
     [about, setAbout] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null),
-    opener = useRef<HTMLElement | null>(null);
+    opener = useRef<HTMLElement | null>(null),
+    resultsRef = useRef<HTMLElement | null>(null),
+    regionFilterRef = useRef<HTMLSelectElement | null>(null),
+    contentFilterRef = useRef<HTMLDivElement | null>(null),
+    batchProgress = useRef(
+      new Map<number, { loadedPages: number; scrollY: number }>(),
+    ),
+    detailHistory = useRef(false);
   useEffect(() => {
     fetch("/api/meta")
       .then(readApi<{ available_date_range: DateRange | null }>)
@@ -223,23 +324,62 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setQuery(search.trim());
-      setPage(1);
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
   useEffect(() => {
-    const controller = new AbortController();
-    setBusy(true);
-    setError("");
-    setData(null);
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    for (const key of [
+      "period",
+      "date",
+      "startDate",
+      "endDate",
+      "region",
+      "audience",
+      "theme",
+      "cost",
+      "q",
+      "sort",
+      "page",
+      "limit",
+    ])
+      params.delete(key);
+    params.set("period", customRange ? "custom" : period);
+    if (customRange) {
+      if (customRange.start === customRange.end)
+        params.set("date", customRange.start);
+      else {
+        params.set("startDate", customRange.start);
+        params.set("endDate", customRange.end);
+      }
+    }
+    for (const [key, value] of Object.entries({
+      region,
+      audience,
+      theme,
+      cost,
+      q: query,
+    }))
+      if (value) params.set(key, value);
+    if (sort !== "date") params.set("sort", sort);
+    const next = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      next ? `${window.location.pathname}?${next}` : window.location.pathname,
+    );
+  }, [period, customRange, region, audience, theme, cost, query, sort]);
+  const requestParams = (requestedPage: number) => {
     const params = new URLSearchParams({
       period: customRange ? "custom" : period,
       sort,
-      page: String(page),
-      limit: "9",
+      page: String(requestedPage),
+      limit: String(PAGE_SIZE),
     });
     if (customRange) {
-      if (customRange.start === customRange.end) params.set("date", customRange.start);
+      if (customRange.start === customRange.end)
+        params.set("date", customRange.start);
       else {
         params.set("startDate", customRange.start);
         params.set("endDate", customRange.end);
@@ -257,10 +397,29 @@ export default function App() {
       params.set("lat", String(location.lat));
       params.set("lng", String(location.lng));
     }
-    fetch("/api/events?" + params, { signal: controller.signal })
-      .then(readApi<EventResponse>)
+    return params;
+  };
+  const fetchPage = async (requestedPage: number, signal?: AbortSignal) => {
+    const response = await fetch(
+      "/api/events?" + requestParams(requestedPage),
+      { signal },
+    );
+    return readApi<EventResponse>(response);
+  };
+  useEffect(() => {
+    const controller = new AbortController();
+    setBusy(true);
+    setError("");
+    setExtraError("");
+    setData(null);
+    setEvents([]);
+    setBatchStart(1);
+    setLoadedPages(1);
+    batchProgress.current.clear();
+    fetchPage(1, controller.signal)
       .then((body) => {
         setData(body);
+        setEvents(uniqueEvents(body.events));
         setMode(body.mode);
       })
       .catch((e) => {
@@ -281,7 +440,6 @@ export default function App() {
     query,
     sort,
     location,
-    page,
     retry,
   ]);
   useEffect(() => {
@@ -308,6 +466,23 @@ export default function App() {
     return () => controller.abort();
   }, [selected, detailRetry]);
   useEffect(() => {
+    if (!selected || detailHistory.current) return;
+    window.history.pushState(
+      { ...(window.history.state ?? {}), eventDetail: selected },
+      "",
+      window.location.href,
+    );
+    detailHistory.current = true;
+    const onPopState = () => {
+      if (detailHistory.current) {
+        detailHistory.current = false;
+        setSelected(null);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [selected]);
+  useEffect(() => {
     if (selected || about) {
       opener.current = document.activeElement as HTMLElement;
       dialog.current?.showModal();
@@ -330,7 +505,6 @@ export default function App() {
     setLocation(null);
     setGeoError("");
     setSort("date");
-    setPage(1);
   }
   function openPicker() {
     const fallback = availableDateRange?.start ?? koreaDate();
@@ -361,7 +535,6 @@ export default function App() {
     }
     setCustomRange({ start, end });
     setPeriod("custom");
-    setPage(1);
     setPickerOpen(false);
   }
   function choosePreset(value: Period) {
@@ -369,7 +542,6 @@ export default function App() {
     setPickerOpen(false);
     setPickerError("");
     setPeriod(value);
-    setPage(1);
   }
   function locate() {
     setGeoError("");
@@ -382,7 +554,6 @@ export default function App() {
       (p) => {
         setLocation({ lat: p.coords.latitude, lng: p.coords.longitude });
         setSort("distance");
-        setPage(1);
         setGeoBusy(false);
       },
       () => {
@@ -396,8 +567,133 @@ export default function App() {
   }
   const change = (fn: (v: string) => void, value: string) => {
     fn(value);
-    setPage(1);
   };
+  const rememberBatch = () => {
+    batchProgress.current.set(batchStart, {
+      loadedPages,
+      scrollY: window.scrollY,
+    });
+  };
+  const mergeEvents = (current: EventItem[], incoming: EventItem[]) =>
+    uniqueEvents([...current, ...incoming]).slice(0, MAX_VISIBLE_ITEMS);
+  async function loadMore() {
+    if (
+      !data ||
+      extraLoading ||
+      loadedPages >= PAGES_PER_BATCH ||
+      events.length >= MAX_VISIBLE_ITEMS ||
+      batchStart + loadedPages > totalPages(data.total)
+    )
+      return;
+    const requestedPage = batchStart + loadedPages;
+    setExtraLoading(true);
+    setExtraError("");
+    setFailedPage(null);
+    try {
+      const body = await fetchPage(requestedPage);
+      setData(body);
+      setEvents((current) => mergeEvents(current, body.events));
+      setLoadedPages((current) => current + 1);
+    } catch {
+      setFailedPage(requestedPage);
+      setExtraError("추가 행사를 불러오지 못했어요.");
+    } finally {
+      setExtraLoading(false);
+    }
+  }
+  async function loadNextBatch() {
+    if (!data || extraLoading || !hasNextBatch(batchStart, data.total)) return;
+    const nextStart = batchStart + PAGES_PER_BATCH;
+    rememberBatch();
+    setExtraLoading(true);
+    setExtraError("");
+    setFailedPage(null);
+    try {
+      const body = await fetchPage(nextStart);
+      setData(body);
+      setEvents(uniqueEvents(body.events));
+      setBatchStart(nextStart);
+      setLoadedPages(1);
+      requestAnimationFrame(() =>
+        resultsRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        }),
+      );
+    } catch {
+      setExtraError("다음 행사 묶음을 불러오지 못했어요.");
+    } finally {
+      setExtraLoading(false);
+    }
+  }
+  async function loadPreviousBatch() {
+    if (!data || extraLoading || batchStart <= 1) return;
+    const previousStart = Math.max(1, batchStart - PAGES_PER_BATCH);
+    const saved = batchProgress.current.get(previousStart);
+    const targetPages = Math.min(saved?.loadedPages ?? 1, PAGES_PER_BATCH);
+    rememberBatch();
+    setExtraLoading(true);
+    setExtraError("");
+    setFailedPage(null);
+    try {
+      const pages = await Promise.all(
+        Array.from({ length: targetPages }, (_, index) =>
+          fetchPage(previousStart + index),
+        ),
+      );
+      setData(pages[pages.length - 1]);
+      setEvents(
+        uniqueEvents(pages.flatMap((body) => body.events)).slice(
+          0,
+          MAX_VISIBLE_ITEMS,
+        ),
+      );
+      setBatchStart(previousStart);
+      setLoadedPages(targetPages);
+      requestAnimationFrame(() => {
+        if (saved)
+          window.scrollTo({
+            top: saved.scrollY,
+            behavior: "instant" as ScrollBehavior,
+          });
+        else
+          resultsRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+      });
+    } catch {
+      setExtraError("이전 행사 묶음을 불러오지 못했어요.");
+    } finally {
+      setExtraLoading(false);
+    }
+  }
+  async function retryExtra() {
+    if (failedPage === null || extraLoading) return;
+    setExtraLoading(true);
+    setExtraError("");
+    try {
+      const body = await fetchPage(failedPage);
+      setData(body);
+      setEvents((current) => mergeEvents(current, body.events));
+      setLoadedPages((current) =>
+        Math.max(current, failedPage - batchStart + 1),
+      );
+      setFailedPage(null);
+    } catch {
+      setExtraError("추가 행사를 불러오지 못했어요.");
+    } finally {
+      setExtraLoading(false);
+    }
+  }
+  function focusFilter(target: "region" | "theme") {
+    const element =
+      target === "region" ? regionFilterRef.current : contentFilterRef.current;
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (target === "region") element?.focus();
+    else
+      (element?.querySelector("button") as HTMLButtonElement | null)?.focus();
+  }
   const active = Boolean(
     customRange || region || audience || theme || cost || query || location,
   );
@@ -416,6 +712,10 @@ export default function App() {
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
   const close = () => {
+    if (selected && detailHistory.current) {
+      window.history.back();
+      return;
+    }
     setSelected(null);
     setAbout(false);
   };
@@ -519,12 +819,19 @@ export default function App() {
                   <strong>어떤 날의 행사를 볼까요?</strong>
                   <p>현재 등록된 행사 일정 안에서 선택할 수 있어요.</p>
                 </div>
-                <button className="date-picker-close" onClick={() => setPickerOpen(false)}>
+                <button
+                  className="date-picker-close"
+                  onClick={() => setPickerOpen(false)}
+                >
                   <X size={16} />
                   닫기
                 </button>
               </div>
-              <div className="date-mode" role="group" aria-label="날짜 선택 방식">
+              <div
+                className="date-mode"
+                role="group"
+                aria-label="날짜 선택 방식"
+              >
                 <button
                   className={pickerMode === "day" ? "chosen" : ""}
                   onClick={() => {
@@ -581,7 +888,11 @@ export default function App() {
                   이 날짜로 보기
                 </button>
               </div>
-              {pickerError && <p className="date-picker-error" role="alert">{pickerError}</p>}
+              {pickerError && (
+                <p className="date-picker-error" role="alert">
+                  {pickerError}
+                </p>
+              )}
             </div>
           )}
           <div className="filter-body">
@@ -589,6 +900,7 @@ export default function App() {
               <label className="region-select">
                 <MapPin size={18} />
                 <select
+                  ref={regionFilterRef}
                   aria-label="지역"
                   value={region}
                   onChange={(e) => change(setRegion, e.target.value)}
@@ -656,7 +968,7 @@ export default function App() {
             </div>
             <div className="filter-row">
               <span className="filter-label">무엇을</span>
-              <div className="chips">
+              <div className="chips" ref={contentFilterRef} tabIndex={-1}>
                 <button
                   className={!theme ? "chip chosen" : "chip"}
                   onClick={() => change(setTheme, "")}
@@ -703,7 +1015,6 @@ export default function App() {
                   onClick={() => {
                     setLocation(null);
                     setSort("date");
-                    setPage(1);
                   }}
                 >
                   위치 사용 해제
@@ -727,13 +1038,17 @@ export default function App() {
             )}
           </div>
         </section>
-        <section className="results" aria-label="추천 행사" aria-busy={busy}>
+        <section
+          ref={resultsRef}
+          className="results"
+          aria-label="추천 행사"
+          aria-busy={busy}
+        >
           <div className="result-heading">
             <div>
               <span className="section-kicker">YOUR NEXT LITTLE ADVENTURE</span>
               <h2>
-                {selectedRangeLabel}{" "}
-                {data && <span>{data.total}</span>}
+                {selectedRangeLabel} {data && <span>{data.total}</span>}
               </h2>
               {data && (
                 <p>
@@ -827,7 +1142,7 @@ export default function App() {
             </div>
           ) : (
             <div className="event-grid">
-              {data?.events.map((event) => (
+              {events.map((event) => (
                 <article className="event-card" key={event.id}>
                   <button
                     className="card-button"
@@ -900,26 +1215,74 @@ export default function App() {
               ))}
             </div>
           )}
-          {data && data.total > data.limit && (
-            <nav className="pagination" aria-label="결과 페이지">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-                aria-label="이전 페이지"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <span>
-                {page} / {Math.ceil(data.total / data.limit)}
-              </span>
-              <button
-                disabled={page >= Math.ceil(data.total / data.limit)}
-                onClick={() => setPage(page + 1)}
-                aria-label="다음 페이지"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </nav>
+          {data && data.total > 0 && (
+            <div className="list-exploration" aria-live="polite">
+              <p className="list-progress">
+                {batchStart > 1
+                  ? `${batchStart * PAGE_SIZE - PAGE_SIZE + 1}~${Math.min(batchStart * PAGE_SIZE - PAGE_SIZE + events.length, data.total)} / ${data.total}개`
+                  : `${Math.min(events.length, data.total)} / ${data.total}개`}
+              </p>
+              {extraError && (
+                <div className="list-load-error" role="alert">
+                  <span>{extraError}</span>
+                  {failedPage !== null && (
+                    <button
+                      className="secondary"
+                      onClick={retryExtra}
+                      disabled={extraLoading}
+                    >
+                      다시 시도
+                    </button>
+                  )}
+                </div>
+              )}
+              {loadedPages < PAGES_PER_BATCH &&
+                events.length < MAX_VISIBLE_ITEMS &&
+                batchStart + loadedPages <= totalPages(data.total) && (
+                  <button
+                    className="load-more"
+                    onClick={loadMore}
+                    disabled={extraLoading}
+                  >
+                    {extraLoading ? "불러오는 중…" : `${PAGE_SIZE}개 더 보기`}
+                  </button>
+                )}
+              {(loadedPages >= PAGES_PER_BATCH ||
+                batchStart + loadedPages > totalPages(data.total)) && (
+                <section className="exploration-cta" aria-label="탐색 전환">
+                  <h3>아직 못 정하셨나요?</h3>
+                  <p>다른 조건의 행사도 둘러볼 수 있어요.</p>
+                  <div className="exploration-actions">
+                    <button onClick={() => focusFilter("region")}>
+                      지역을 바꿔볼까요?
+                    </button>
+                    <button onClick={() => focusFilter("theme")}>
+                      다른 카테고리를 볼까요?
+                    </button>
+                    {hasNextBatch(batchStart, data.total) && (
+                      <button onClick={loadNextBatch} disabled={extraLoading}>
+                        다음 행사 보기 <ChevronRight size={16} />
+                      </button>
+                    )}
+                    {batchStart > 1 && (
+                      <button
+                        onClick={loadPreviousBatch}
+                        disabled={extraLoading}
+                      >
+                        <ChevronLeft size={16} /> 이전 행사 보기
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
+              {batchStart > 1 && loadedPages < PAGES_PER_BATCH && (
+                <div className="batch-navigation">
+                  <button onClick={loadPreviousBatch} disabled={extraLoading}>
+                    <ChevronLeft size={16} /> 이전 행사 보기
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </section>
         <aside className="principle">
@@ -1017,7 +1380,9 @@ export default function App() {
                 <dt>장소</dt>
                 <dd>
                   {detail.event.venue}
-                  {detail.event.address && <small>{detail.event.address}</small>}
+                  {detail.event.address && (
+                    <small>{detail.event.address}</small>
+                  )}
                 </dd>
                 <dt>비용</dt>
                 <dd>
@@ -1110,11 +1475,14 @@ export default function App() {
                 ? "행사를 찾을 수 없어요"
                 : detailError
                   ? "잠시 정보를 불러오지 못했어요"
-                : "상세 정보를 확인하고 있어요"}
+                  : "상세 정보를 확인하고 있어요"}
             </h2>
             <p role="status">{detailError || "잠시만 기다려 주세요."}</p>
             {detailError && !detailError.startsWith("행사를 찾을") && (
-              <button className="primary" onClick={() => setDetailRetry((n) => n + 1)}>
+              <button
+                className="primary"
+                onClick={() => setDetailRetry((n) => n + 1)}
+              >
                 다시 시도
               </button>
             )}

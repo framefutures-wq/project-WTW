@@ -1,0 +1,37 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  MAX_VISIBLE_ITEMS,
+  PAGE_SIZE,
+  PAGES_PER_BATCH,
+  batchStartPage,
+  hasNextBatch,
+  totalPages,
+  uniqueEvents,
+} from "../shared/list-exploration";
+
+test("목록 탐색 상수와 페이지 경계가 고정된다", () => {
+  assert.equal(PAGE_SIZE, 9);
+  assert.equal(PAGES_PER_BATCH, 4);
+  assert.equal(MAX_VISIBLE_ITEMS, 36);
+  assert.equal(totalPages(7), 1);
+  assert.equal(totalPages(37), 5);
+  assert.equal(batchStartPage(0), 1);
+  assert.equal(batchStartPage(1), 5);
+  assert.equal(hasNextBatch(1, 37), true);
+  assert.equal(hasNextBatch(1, 36), false);
+  assert.equal(hasNextBatch(5, 120), true);
+  assert.equal(hasNextBatch(13, 120), false);
+});
+
+test("묶음은 event id 중복을 표시하지 않는다", () => {
+  const rows = uniqueEvents([
+    { id: "a", title: "첫 행사" },
+    { id: "a", title: "중복 행사" },
+    { id: "b", title: "둘째 행사" },
+  ]);
+  assert.deepEqual(
+    rows.map((row) => row.id),
+    ["a", "b"],
+  );
+});
