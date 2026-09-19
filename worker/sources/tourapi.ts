@@ -420,8 +420,8 @@ export async function saveFestivalSnapshot(
   db: D1Database,
   snapshot: Awaited<ReturnType<typeof collectFestivals>>,
 ) {
-  const statements: D1PreparedStatement[] = [];
-  for (const { event: e, raw } of snapshot.candidates) {
+  let statements: D1PreparedStatement[] = [];
+  for (const [index, { event: e, raw }] of snapshot.candidates.entries()) {
     const source = `${e.id}-source`;
     const previous = await db.prepare(
       `SELECT e.*,s.raw_payload AS previous_raw FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id WHERE e.id=?`,
@@ -526,8 +526,12 @@ export async function saveFestivalSnapshot(
           ),
         );
     }
+    if ((index + 1) % 20 === 0) {
+      await db.batch(statements);
+      statements = [];
+    }
   }
-  // One transaction. Missing API records become stale, never guessed cancelled.
+  // Each event chunk is atomic; missing API records become stale, never guessed cancelled.
   statements.push(
     db
       .prepare(
@@ -535,7 +539,7 @@ export async function saveFestivalSnapshot(
       )
       .bind(snapshot.checkedAt, snapshot.checkedAt),
   );
-  await db.batch(statements);
+  if (statements.length) await db.batch(statements);
   return {
     imported: snapshot.candidates.length,
     rejected: snapshot.rejected,
