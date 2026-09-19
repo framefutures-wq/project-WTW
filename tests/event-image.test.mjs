@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { imageUrl, chooseTourApiImage } from "../scripts/event-image-lib.mjs";
+import { readFileSync } from "node:fs";
 
 test("official image URL filter accepts HTTPS images and rejects unsafe assets", () => {
   assert.equal(
@@ -37,4 +38,10 @@ test("TourAPI firstimage has priority over firstimage2 and stored inventory", ()
     },
   );
   assert.equal(chooseTourApiImage({}, []), null);
+});
+
+test("CSP allows only the official TourAPI image host", () => {
+  const headers = readFileSync(new URL("../public/_headers", import.meta.url), "utf8");
+  assert.match(headers, /img-src 'self' data: https:\/\/tong\.visitkorea\.or\.kr/);
+  assert.doesNotMatch(headers, /img-src \*/);
 });
