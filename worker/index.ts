@@ -11,8 +11,16 @@ import { parseFilters, InputError } from "./filters";
 import { runScheduled } from "./cron";
 
 const SELECT = `SELECT e.*, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
+  ts.trust_status, ts.checked_at AS trust_checked_at,
+  ts.changed_fields AS trust_changed_fields,
+  tsl.url AS trust_source_url, tsl.final_url AS trust_source_final_url,
+  tsl.source_types AS trust_source_types,
   (SELECT group_concat(tag) FROM event_tags WHERE event_id=e.id) AS tag_list
-  FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id`;
+  FROM events e
+  LEFT JOIN sources s ON s.id=e.primary_source_id
+  LEFT JOIN event_trust_status ts ON ts.event_id=e.id
+  LEFT JOIN official_source_links tsl ON tsl.id=ts.evidence_source_id
+`;
 function visibility(env: Env) {
   // No sample records can escape to production, even if its DB was accidentally seeded.
   return env.APP_MODE === "sample"
@@ -39,6 +47,17 @@ function serialize(
   lat: number | null = null,
   lng: number | null = null,
 ): EventItem {
+  const jsonArray = (value: unknown): string[] => {
+    if (typeof value !== "string") return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.filter((item): item is string => typeof item === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  };
   return {
     id: String(row.id),
     title: String(row.title),
@@ -60,6 +79,19 @@ function serialize(
     source_url: row.source_url as string | null,
     source_name: row.source_name as string | null,
     source_kind: row.source_kind as string | null,
+    trust_status:
+      row.trust_status === "confirmed" ||
+      row.trust_status === "needs_review" ||
+      row.trust_status === "changed"
+        ? row.trust_status
+        : null,
+    trust_checked_at: row.trust_checked_at as string | null,
+    trust_source_url:
+      (row.trust_source_final_url as string | null) ??
+      (row.trust_source_url as string | null) ??
+      null,
+    trust_source_types: jsonArray(row.trust_source_types),
+    trust_changed_fields: jsonArray(row.trust_changed_fields),
     tags: String(row.tag_list ?? "")
       .split(",")
       .filter(Boolean) as EventItem["tags"],

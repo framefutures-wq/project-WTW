@@ -28,6 +28,14 @@ import {
   type EventResponse,
   type Tag,
 } from "../shared/domain";
+import {
+  formatTrustDate,
+  hasOfficialSource,
+  officialSourceLabel,
+  trustChangeLabel,
+  trustDescription,
+  trustTitle,
+} from "./trust";
 
 type Evidence = {
   field: string;
@@ -69,6 +77,55 @@ const safeUrl = (url: string | null) => {
     return undefined;
   }
 };
+function TrustInfo({ event, card = false }: { event: EventItem; card?: boolean }) {
+  if (event.is_sample === 1 || !event.trust_status) return null;
+  const changed = event.trust_status === "changed";
+  const sourceLabel = officialSourceLabel(event.trust_source_types);
+  const sourceLink = hasOfficialSource(event) ? safeUrl(event.trust_source_url) : undefined;
+  const checked = formatTrustDate(event.trust_checked_at);
+  if (card)
+    return changed ? (
+      <span className="trust-card trust-changed">
+        <Info size={13} /> {trustChangeLabel(event.trust_changed_fields)}
+      </span>
+    ) : event.trust_status === "confirmed" ? (
+      <span className="trust-card trust-confirmed">
+        <ShieldCheck size={13} /> 공식정보 확인
+      </span>
+    ) : null;
+  return (
+    <section className={`trust-info trust-${event.trust_status}`} aria-label="행사 신뢰정보">
+      <div className="trust-info-heading">
+        <span className="trust-info-icon">
+          {changed ? <Info size={18} /> : <ShieldCheck size={18} />}
+        </span>
+        <div>
+          <h3>{changed ? trustChangeLabel(event.trust_changed_fields) : trustTitle(event.trust_status)}</h3>
+          <p>{trustDescription(event.trust_status)}</p>
+        </div>
+      </div>
+      <dl className="trust-info-meta">
+        {checked && (
+          <>
+            <dt>공식정보 마지막 확인</dt>
+            <dd>{checked}</dd>
+          </>
+        )}
+        {sourceLabel && (
+          <>
+            <dt>출처 유형</dt>
+            <dd>{sourceLabel}</dd>
+          </>
+        )}
+      </dl>
+      {sourceLink && (
+        <a className="trust-source-link" href={sourceLink} target="_blank" rel="noopener noreferrer">
+          공식 안내 보기 <ExternalLink size={14} />
+        </a>
+      )}
+    </section>
+  );
+}
 function Scene({ event }: { event: EventItem }) {
   const theme = event.tags.find((t) => t in THEMES) ?? "experience";
   const icons = {
@@ -601,6 +658,7 @@ export default function App() {
                             </>
                           )}
                         </span>
+                        <TrustInfo event={event} card />
                         <ArrowRight size={17} />
                       </div>
                     </div>
@@ -715,6 +773,7 @@ export default function App() {
                   샘플입니다.
                 </div>
               )}
+              <TrustInfo event={detail.event} />
               <dl>
                 <dt>일정</dt>
                 <dd>
@@ -783,7 +842,7 @@ export default function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  공식 출처 확인 <ExternalLink size={16} />
+                  TourAPI 원문 보기 <ExternalLink size={16} />
                 </a>
               )}
               {detail.evidence.length > 0 && (

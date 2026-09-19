@@ -33,6 +33,7 @@ export const THEMES = {
 } as const;
 export type Period = "today" | "weekend" | "next-weekend";
 export type Tag = keyof typeof AUDIENCES | keyof typeof THEMES;
+export type TrustStatus = "confirmed" | "needs_review" | "changed";
 export interface EventItem {
   id: string;
   title: string;
@@ -54,6 +55,11 @@ export interface EventItem {
   source_url: string | null;
   source_name: string | null;
   source_kind: string | null;
+  trust_status: TrustStatus | null;
+  trust_checked_at: string | null;
+  trust_source_url: string | null;
+  trust_source_types: string[];
+  trust_changed_fields: string[];
   tags: Tag[];
   distance_km: number | null;
 }
