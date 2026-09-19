@@ -19,7 +19,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  REGIONS,
   koreaDate,
   AUDIENCES,
   THEMES,
@@ -32,6 +31,7 @@ import {
 } from "../shared/domain";
 import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import { COST_STATUS_LABELS, USER_COST_FILTERS } from "../shared/cost-status";
+import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import {
   formatTrustDate,
   hasOfficialSource,
@@ -408,7 +408,7 @@ export default function App() {
     : `${PERIODS.find((p) => p.value === period)?.label}의 발견`;
   const activeFilterLabels = [
     customRange ? selectedRangeLabel : null,
-    region ? region : null,
+    region ? regionLabel(region) : null,
     audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null,
     theme ? THEMES[theme as keyof typeof THEMES] : null,
     cost ? COST_STATUS_LABELS[cost as keyof typeof COST_STATUS_LABELS] : null,
@@ -594,8 +594,10 @@ export default function App() {
                   onChange={(e) => change(setRegion, e.target.value)}
                 >
                   <option value="">전국 어디든</option>
-                  {REGIONS.map((r) => (
-                    <option key={r}>{r}</option>
+                  {REGION_OPTIONS.map(({ queryValue, label }) => (
+                    <option key={queryValue} value={queryValue}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -738,7 +740,7 @@ export default function App() {
                   {dateLabel(data.range.start)}
                   {data.range.start !== data.range.end &&
                     ` – ${dateLabel(data.range.end)}`}{" "}
-                  · {region || "전국"}
+                  · {region ? regionLabel(region) : "전국"}
                   {mode === "sample"
                     ? " · 가상 행사 미리보기"
                     : " · 출처에 등록된 행사 · 출발 전 개최 여부 확인"}
