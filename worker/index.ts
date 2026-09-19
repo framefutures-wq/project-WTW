@@ -16,11 +16,14 @@ const SELECT = `SELECT e.*, s.url AS source_url, s.name AS source_name, s.kind A
   ts.changed_fields AS trust_changed_fields,
   tsl.url AS trust_source_url, tsl.final_url AS trust_source_final_url,
   tsl.source_types AS trust_source_types,
+  ei.image_url, ei.source_type AS image_source_type,
+  ei.source_page_url AS image_source_page_url, ei.image_status,
   (SELECT group_concat(tag) FROM event_tags WHERE event_id=e.id) AS tag_list
   FROM events e
   LEFT JOIN sources s ON s.id=e.primary_source_id
   LEFT JOIN event_trust_status ts ON ts.event_id=e.id
   LEFT JOIN official_source_links tsl ON tsl.id=ts.evidence_source_id
+  LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
 `;
 function visibility(env: Env) {
   // No sample records can escape to production, even if its DB was accidentally seeded.
@@ -104,6 +107,14 @@ function serialize(
       null,
     trust_source_types: jsonArray(row.trust_source_types),
     trust_changed_fields: jsonArray(row.trust_changed_fields),
+    image_url: row.image_url as string | null,
+    image_source_type: row.image_source_type as string | null,
+    image_source_page_url: row.image_source_page_url as string | null,
+    image_status:
+      row.image_status === "ok" || row.image_status === "missing" ||
+      row.image_status === "blocked" || row.image_status === "invalid"
+        ? row.image_status
+        : null,
     tags: String(row.tag_list ?? "")
       .split(",")
       .filter(Boolean) as EventItem["tags"],

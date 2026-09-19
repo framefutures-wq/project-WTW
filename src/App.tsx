@@ -72,7 +72,7 @@ const dateLabel = (date: string) => {
   return `${Number(localDate.slice(5, 7))}.${Number(localDate.slice(8, 10))}`;
 };
 const tagLabel = (tag: Tag) => ({ ...AUDIENCES, ...THEMES })[tag];
-const safeUrl = (url: string | null) => {
+const safeUrl = (url: string | null | undefined) => {
   try {
     return url && new URL(url).protocol === "https:" ? url : undefined;
   } catch {
@@ -129,6 +129,7 @@ function TrustInfo({ event, card = false }: { event: EventItem; card?: boolean }
   );
 }
 function Scene({ event }: { event: EventItem }) {
+  const [imageFailed, setImageFailed] = useState(false);
   const theme = event.tags.find((t) => t in THEMES) ?? "experience";
   const icons = {
     flowers: "✿",
@@ -137,8 +138,13 @@ function Scene({ event }: { event: EventItem }) {
     experience: "△",
     performance: "♫",
   };
+  const image = safeUrl(event.image_url);
   return (
-    <div className={`scene scene-${theme}`} aria-hidden="true">
+    <div className={`scene scene-${theme}${image && !imageFailed ? " scene-with-image" : ""}`}>
+      {image && !imageFailed && (
+        <img className="scene-image" src={image} alt={`${event.title} 대표 이미지`} loading="lazy" onError={() => setImageFailed(true)} />
+      )}
+      {(!image || imageFailed) && <div className="scene-fallback" aria-hidden="true">
       <div className="scene-sun" />
       <div className="hill hill-one" />
       <div className="hill hill-two" />
@@ -152,6 +158,7 @@ function Scene({ event }: { event: EventItem }) {
       <span className="sample-stamp">
         {event.is_sample ? "가상 행사" : "주제 일러스트"}
       </span>
+      </div>}
     </div>
   );
 }

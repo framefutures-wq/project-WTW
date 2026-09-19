@@ -61,6 +61,10 @@ export interface EventItem {
   trust_source_url: string | null;
   trust_source_types: string[];
   trust_changed_fields: string[];
+  image_url?: string | null;
+  image_source_type?: string | null;
+  image_source_page_url?: string | null;
+  image_status?: "ok" | "missing" | "blocked" | "invalid" | null;
   tags: Tag[];
   distance_km: number | null;
 }
