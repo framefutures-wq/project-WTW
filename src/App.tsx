@@ -110,10 +110,18 @@ const detailDateRange = (start: string, end: string) =>
     ? detailDate(start)
     : `${detailDate(start)} ~ ${detailDate(end)}`;
 const detailProgramSchedule = (program: EventDetailEnrichment["programs"][number]) => {
+  const occurrence = program.occurrences[0];
+  if (occurrence) {
+    const date = occurrence.start_date === occurrence.end_date ? `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일` : `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일 ~ ${Number(occurrence.end_date.slice(5, 7))}월 ${Number(occurrence.end_date.slice(8, 10))}일`;
+    const hour = (time: string) => `${Number(time.slice(0, 2)) >= 12 ? "오후" : "오전"} ${Number(time.slice(0, 2)) % 12 || 12}:${time.slice(3)}`;
+    const time = occurrence.start_time ? occurrence.end_time ? `${hour(occurrence.start_time)} ~ ${hour(occurrence.end_time)}` : hour(occurrence.start_time) : occurrence.human_time_text;
+    return [date, time].filter(Boolean).join(" · ");
+  }
   const date = program.date ? `${Number(program.date.slice(5, 7))}월 ${Number(program.date.slice(8, 10))}일` : null;
   const time = program.start_time ? `오후 ${Number(program.start_time.slice(0, 2)) > 12 ? Number(program.start_time.slice(0, 2)) - 12 : Number(program.start_time.slice(0, 2))}:${program.start_time.slice(3)}` : null;
   return [date, time, program.schedule_text].filter(Boolean).join(" · ");
 };
+const detailProgramVenue = (program: EventDetailEnrichment["programs"][number]) => program.occurrences[0]?.venue ?? program.venue;
 const displayDistance = (distance: number | null) => {
   if (distance === null) return "거리 미확인";
   if (distance < 1) return "1km 미만";
@@ -1512,7 +1520,7 @@ export default function App() {
                       <article className="detail-program" key={program.name}>
                         <strong>{program.name}</strong>
                         {detailProgramSchedule(program) && <span>{detailProgramSchedule(program)}</span>}
-                        {program.venue && <small>{program.venue}</small>}
+                        {detailProgramVenue(program) && <small>{detailProgramVenue(program)}</small>}
                       </article>
                     ))}
                   </div>
@@ -1588,7 +1596,7 @@ export default function App() {
                       <article className="detail-program" key={program.name}>
                         <strong>{program.name}</strong>
                         {detailProgramSchedule(program) && <span>{detailProgramSchedule(program)}</span>}
-                        {program.venue && <small>{program.venue}</small>}
+                        {detailProgramVenue(program) && <small>{detailProgramVenue(program)}</small>}
                         {program.description && <p>{program.description}</p>}
                       </article>
                     ))}

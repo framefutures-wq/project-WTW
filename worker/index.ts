@@ -22,6 +22,7 @@ import {
   COMPANION_RULE_VERSION,
 } from "../shared/companion-suitability";
 import { normalizeOfficialPhone } from "../shared/contact-phone";
+import { validProgramTime } from "../shared/event-program-time";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -441,9 +442,15 @@ export default {
         const programs = await env.DB.prepare(
           `SELECT p.id,p.program_name,p.program_date,p.start_time,p.end_time,p.schedule_text,p.venue_name,p.description,p.featured,(SELECT json_group_array(tag) FROM event_program_tags WHERE program_id=p.id) AS tags FROM event_programs p WHERE p.event_id=? ORDER BY p.featured DESC,p.program_date,p.start_time,p.sort_order`,
         ).bind(detail[1]).all<Record<string, unknown>>();
+        const occurrenceRows = await env.DB.prepare(
+          `SELECT o.program_id,o.start_date,o.end_date,o.start_time,o.end_time,o.human_time_text,o.venue_name FROM event_program_occurrences o JOIN event_programs p ON p.id=o.program_id WHERE p.event_id=? ORDER BY o.start_date,o.start_time,o.sort_order`,
+        ).bind(detail[1]).all<Record<string, unknown>>();
+        const occurrencesByProgram = new Map<string, unknown[]>();
+        for (const occurrence of occurrenceRows.results) occurrencesByProgram.set(String(occurrence.program_id), [...(occurrencesByProgram.get(String(occurrence.program_id)) ?? []), occurrence]);
         const programRows = programs.results.map((program) => ({
           name: String(program.program_name), date: program.program_date as string | null, start_time: program.start_time as string | null, end_time: program.end_time as string | null, schedule_text: program.schedule_text as string | null, venue: program.venue_name as string | null, description: program.description as string | null, featured: Number(program.featured) === 1,
           tags: typeof program.tags === "string" ? (JSON.parse(program.tags) as unknown[]).filter((tag): tag is string => typeof tag === "string") : [],
+          occurrences: (occurrencesByProgram.get(String(program.id)) ?? []).filter((occurrence) => { const row = occurrence as Record<string, unknown>; return validProgramTime(row.start_time as string | null) && validProgramTime(row.end_time as string | null); }).map((occurrence) => { const row = occurrence as Record<string, unknown>; return { start_date: String(row.start_date), end_date: String(row.end_date), start_time: row.start_time as string | null, end_time: row.end_time as string | null, human_time_text: row.human_time_text as string | null, venue: row.venue_name as string | null }; }),
         }));
         return json({
           event: serialize(row),
