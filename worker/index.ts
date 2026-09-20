@@ -15,6 +15,7 @@ import {
   FACT_CLASSIFIER,
   FACT_RULE_VERSION,
 } from "../shared/fact-tags";
+import { USER_CONTENT_FILTER_BY_QUERY } from "../shared/content-filters";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -216,13 +217,20 @@ export default {
             where.push(`e.${key}=?`);
             binds.push(f[key]);
           }
-        for (const tag of [f.audience, f.theme])
-          if (tag) {
-            where.push(
-              "e.id IN (SELECT t.event_id FROM event_tags t WHERE t.classifier_type='legacy' AND t.tag=?)",
-            );
-            binds.push(tag);
-          }
+        if (f.audience) {
+          where.push(
+            "e.id IN (SELECT t.event_id FROM event_tags t WHERE t.classifier_type='legacy' AND t.tag=?)",
+          );
+          binds.push(f.audience);
+        }
+        if (f.theme) {
+          const contentTag =
+            USER_CONTENT_FILTER_BY_QUERY[f.theme]?.factTags[0] ?? f.theme;
+          where.push(
+            `e.id IN (SELECT t.event_id FROM event_tags t WHERE t.classifier_type='${FACT_CLASSIFIER}' AND t.rule_version='${FACT_RULE_VERSION}' AND t.tag=?)`,
+          );
+          binds.push(contentTag);
+        }
         if (f.audience === "pets") where.push("e.pet_policy='allowed'");
         if (f.q) {
           where.push(

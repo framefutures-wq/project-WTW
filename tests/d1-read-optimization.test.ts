@@ -7,6 +7,9 @@ test("목록 API는 날짜순 page를 DB LIMIT/OFFSET으로 제한한다", () =>
   assert.match(source, /ORDER BY e\.start_date,e\.id LIMIT \? OFFSET \?/);
   assert.match(source, /includeTotal.*!== "0"/s);
   assert.match(source, /e\.id IN \(SELECT t\.event_id FROM event_tags/);
+  assert.match(source, /FACT_CLASSIFIER/);
+  assert.match(source, /FACT_RULE_VERSION/);
+  assert.match(source, /USER_CONTENT_FILTER_BY_QUERY/);
 });
 
 test("원격 전체 읽기는 명시적인 비용 승인 flag가 필요하다", () => {

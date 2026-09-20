@@ -16,6 +16,9 @@ test("사용자 콘텐츠 필터는 기존 query 계약과 검증된 fact tag를
     assert.ok(USER_CONTENT_FILTER_BY_QUERY[filter.queryValue]);
     for (const tag of filter.factTags) assert.ok(tag in FACT_TAG_RULES);
   }
+  assert.deepEqual(USER_CONTENT_FILTER_BY_QUERY.flowers.factTags, [
+    "flower_garden",
+  ]);
 });
 
 test("사용자 필터 매핑은 내부 편의 태그나 보류 태그를 노출하지 않는다", () => {
