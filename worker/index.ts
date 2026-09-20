@@ -16,6 +16,11 @@ import {
   FACT_RULE_VERSION,
 } from "../shared/fact-tags";
 import { USER_CONTENT_FILTER_BY_QUERY } from "../shared/content-filters";
+import {
+  audienceCompanionFilter,
+  COMPANION_CLASSIFIER,
+  COMPANION_RULE_VERSION,
+} from "../shared/companion-suitability";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -218,10 +223,14 @@ export default {
             binds.push(f[key]);
           }
         if (f.audience) {
+          const companion =
+            audienceCompanionFilter[
+              f.audience as keyof typeof audienceCompanionFilter
+            ];
           where.push(
-            "e.id IN (SELECT t.event_id FROM event_tags t WHERE t.classifier_type='legacy' AND t.tag=?)",
+            `e.id IN (SELECT cs.event_id FROM event_companion_suitability cs WHERE cs.companion_type=? AND cs.suitability_state=? AND cs.classifier_type='${COMPANION_CLASSIFIER}' AND cs.rule_version='${COMPANION_RULE_VERSION}')`,
           );
-          binds.push(f.audience);
+          binds.push(companion.companion_type, companion.suitability_state);
         }
         if (f.theme) {
           const contentTag =
@@ -231,7 +240,6 @@ export default {
           );
           binds.push(contentTag);
         }
-        if (f.audience === "pets") where.push("e.pet_policy='allowed'");
         if (f.q) {
           where.push(
             "(e.title LIKE ? ESCAPE '\\' OR e.venue LIKE ? ESCAPE '\\')",

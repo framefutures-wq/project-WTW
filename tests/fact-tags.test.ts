@@ -40,15 +40,33 @@ test("new and changed events are classified atomically; unchanged events are not
     let rows = (await db.prepare("SELECT tag,classifier_type,rule_version FROM event_tags WHERE event_id=?").bind(first.id).all()).results;
     assert.deepEqual(rows.map((r) => r.tag).sort(), ["fireworks", "performance"]);
     assert(rows.every((r) => r.classifier_type === "deterministic_rule" && r.rule_version === "fact_rules_v1"));
+    let companions = (await db.prepare("SELECT companion_type,suitability_state FROM event_companion_suitability WHERE event_id=? ORDER BY companion_type").bind(first.id).all()).results;
+    assert.deepEqual(companions, [
+      { companion_type: "child", suitability_state: "unknown" },
+      { companion_type: "couple", suitability_state: "unknown" },
+      { companion_type: "parents", suitability_state: "unknown" },
+      { companion_type: "pet", suitability_state: "unknown" },
+    ]);
     await db.prepare("INSERT INTO event_tags(event_id,tag) VALUES(?,?)").bind(first.id, "food").run();
     const second = event("전시회");
     const raw2 = { ...raw1, title: second.title };
     await saveFestivalSnapshot(db, snapshot(second, raw2, "2026-09-19T00:01:00.000Z") as never);
     rows = (await db.prepare("SELECT tag,classifier_type FROM event_tags WHERE event_id=? ORDER BY classifier_type,tag").bind(first.id).all()).results;
     assert.deepEqual(rows, [{ tag: "exhibition", classifier_type: "deterministic_rule" }, { tag: "food", classifier_type: "legacy" }]);
+    companions = (await db.prepare("SELECT companion_type,suitability_state FROM event_companion_suitability WHERE event_id=? ORDER BY companion_type").bind(first.id).all()).results;
+    assert.equal(companions.find((row) => row.companion_type === "couple")?.suitability_state, "unknown");
+    await db.prepare("UPDATE event_companion_suitability SET classifier_type='manual_override',suitability_state='fit' WHERE event_id=? AND companion_type='pet'").bind(first.id).run();
     await db.prepare("INSERT INTO event_tags(event_id,tag,classifier_type,rule_version) VALUES(?,?,?,?)").bind(first.id, "experience", "deterministic_rule", "fact_rules_v1").run();
     await saveFestivalSnapshot(db, snapshot(second, raw2, "2026-09-19T00:02:00.000Z") as never);
     rows = (await db.prepare("SELECT tag,classifier_type FROM event_tags WHERE event_id=? ORDER BY classifier_type,tag").bind(first.id).all()).results;
     assert.deepEqual(rows, [{ tag: "exhibition", classifier_type: "deterministic_rule" }, { tag: "experience", classifier_type: "deterministic_rule" }, { tag: "food", classifier_type: "legacy" }]);
+    const pet = await db.prepare("SELECT classifier_type,suitability_state FROM event_companion_suitability WHERE event_id=? AND companion_type='pet'").bind(first.id).first();
+    assert.deepEqual(pet, { classifier_type: "manual_override", suitability_state: "fit" });
+    const third = event("공연 야경");
+    await saveFestivalSnapshot(db, snapshot(third, { ...raw2, title: third.title }, "2026-09-19T00:03:00.000Z") as never);
+    const couple = await db.prepare("SELECT suitability_state FROM event_companion_suitability WHERE event_id=? AND companion_type='couple'").bind(first.id).first();
+    assert.deepEqual(couple, { suitability_state: "fit" });
+    const manualPet = await db.prepare("SELECT classifier_type,suitability_state FROM event_companion_suitability WHERE event_id=? AND companion_type='pet'").bind(first.id).first();
+    assert.deepEqual(manualPet, { classifier_type: "manual_override", suitability_state: "fit" });
   } finally { await mf.dispose(); }
 });

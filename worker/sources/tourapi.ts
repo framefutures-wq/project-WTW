@@ -5,6 +5,10 @@ import {
   FACT_CLASSIFIER,
   FACT_RULE_VERSION,
 } from "../../shared/fact-tags";
+import {
+  classifyCompanionSuitability,
+  COMPANION_CLASSIFIER,
+} from "../../shared/companion-suitability";
 
 export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
@@ -503,6 +507,7 @@ export async function saveFestivalSnapshot(
       );
     if (shouldReclassify) {
       const factResult = classifyFactTags(e, factDocuments(e, raw, source, snapshot.checkedAt));
+      const companionResult = classifyCompanionSuitability(factResult.candidates);
       statements.push(
         db.prepare(
           "DELETE FROM event_tags WHERE event_id=? AND classifier_type=? AND rule_version=?",
@@ -524,6 +529,17 @@ export async function saveFestivalSnapshot(
             candidate.evidence_text.slice(0, 1000),
             snapshot.checkedAt,
           ),
+        );
+      for (const companion of companionResult)
+        statements.push(
+          db.prepare(
+            `INSERT INTO event_companion_suitability(event_id,companion_type,suitability_state,classifier_type,rule_version,rule_id,positive_reason_codes,caution_reason_codes,source_fact_tags,updated_at)
+             VALUES(?,?,?,?,?,?,?,?,?,?)
+             ON CONFLICT(event_id,companion_type) DO UPDATE SET
+               suitability_state=excluded.suitability_state,classifier_type=excluded.classifier_type,rule_version=excluded.rule_version,rule_id=excluded.rule_id,
+               positive_reason_codes=excluded.positive_reason_codes,caution_reason_codes=excluded.caution_reason_codes,source_fact_tags=excluded.source_fact_tags,updated_at=excluded.updated_at
+             WHERE event_companion_suitability.classifier_type='deterministic_rule'`,
+          ).bind(e.id, companion.companion_type, companion.suitability_state, COMPANION_CLASSIFIER, companion.rule_version, companion.rule_id, JSON.stringify(companion.positive_reason_codes), JSON.stringify(companion.caution_reason_codes), JSON.stringify(companion.source_fact_tags), snapshot.checkedAt),
         );
     }
     if ((index + 1) % 20 === 0) {

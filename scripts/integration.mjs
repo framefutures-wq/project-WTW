@@ -182,6 +182,26 @@ try {
       "INSERT INTO event_tags(event_id,tag) VALUES('no-tag-evidence-hidden','kids')",
     )
     .run();
+  await db
+    .prepare(
+      `INSERT INTO event_tags(event_id,tag,classifier_type,rule_version,rule_id,evidence_source_ref,evidence_field,evidence_excerpt)
+       VALUES('verified','experience','deterministic_rule','fact_rules_v1','fact.experience.v1','fixture','program','합성 체험 근거')`,
+    )
+    .run();
+  for (const [type, state] of [
+    ["child", "fit"],
+    ["couple", "fit"],
+    ["parents", "fit"],
+  ])
+    await db
+      .prepare(
+        `INSERT INTO event_companion_suitability(
+          event_id,companion_type,suitability_state,classifier_type,rule_version,rule_id,
+          positive_reason_codes,caution_reason_codes,source_fact_tags
+        ) VALUES('verified',?,?,'deterministic_rule','companion_rules_v1',?, '[]','[]','[]')`,
+      )
+      .bind(type, state, `companion.${type}.fixture.v1`)
+      .run();
   await fixture("no-coordinate-evidence-hidden", { lat: 37, lng: 127 });
   await evidence("no-coordinate-evidence-hidden", required);
   await fixture("no-pet-evidence-hidden", { pet: "allowed" });
@@ -190,7 +210,11 @@ try {
   await evidence("pet-verified", [...required, "pet_policy", "pets"]);
   await db
     .prepare(
-      "INSERT INTO event_tags(event_id,tag) VALUES('pet-verified','pets')",
+      `INSERT INTO event_companion_suitability(
+        event_id,companion_type,suitability_state,classifier_type,rule_version,rule_id,
+        positive_reason_codes,caution_reason_codes,source_fact_tags
+      ) VALUES('pet-verified','pet','allowed','deterministic_rule','companion_rules_v1',
+        'companion.pet.explicit_allowed.v1','[\"pet.explicit_pet_allowed\"]','[]','[]')`,
     )
     .run();
   async function get(path, status = 200) {
@@ -208,6 +232,24 @@ try {
   assert.equal(
     (await get("/api/events?period=today&audience=pets")).events[0].id,
     "pet-verified",
+  );
+  for (const audience of ["kids", "couple", "parents"])
+    assert.equal(
+      (await get(`/api/events?period=today&audience=${audience}`)).events[0].id,
+      "verified",
+    );
+  assert.equal(
+    (await get("/api/events?period=today&region=서울&audience=kids")).total,
+    1,
+  );
+  assert.equal(
+    (await get("/api/events?period=today&theme=experience&audience=kids"))
+      .total,
+    1,
+  );
+  assert.equal(
+    (await get("/api/events?period=today&cost=unknown&audience=kids")).total,
+    1,
   );
   await get("/api/events/sample-hidden", 404);
   await get("/api/events/no-evidence-hidden", 404);
