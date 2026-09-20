@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import {
   koreaDate,
+  dateRange,
   AUDIENCES,
   THEMES,
   type Period,
@@ -32,6 +33,7 @@ import {
 import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import { COST_STATUS_LABELS, USER_COST_FILTERS } from "../shared/cost-status";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
+import { formatEventDateLabel } from "../shared/event-date-display";
 import {
   MAX_VISIBLE_ITEMS,
   PAGE_SIZE,
@@ -715,9 +717,10 @@ export default function App() {
   );
   const selectedRangeLabel = customRange
     ? customRange.start === customRange.end
-      ? `${dateLabel(customRange.start)} 행사`
-      : `${dateLabel(customRange.start)} ~ ${dateLabel(customRange.end)} 행사`
-    : `${PERIODS.find((p) => p.value === period)?.label}의 발견`;
+      ? `${dateLabel(customRange.start)}에 열리는 행사`
+      : `${dateLabel(customRange.start)} ~ ${dateLabel(customRange.end)}에 열리는 행사`
+    : `${PERIODS.find((p) => p.value === period)?.label}에 열리는 행사`;
+  const eventDisplayRange = data?.range ?? customRange ?? dateRange(period);
   const activeFilterLabels = [
     customRange ? selectedRangeLabel : null,
     region ? regionLabel(region) : null,
@@ -1188,8 +1191,12 @@ export default function App() {
                       <p className="venue">{event.venue}</p>
                       <p className="event-date">
                         <CalendarDays size={14} />
-                        {dateLabel(event.start_date)} –{" "}
-                        {dateLabel(event.end_date)}
+                        {formatEventDateLabel({
+                          eventStart: event.start_date,
+                          eventEnd: event.end_date,
+                          selectedRange: eventDisplayRange,
+                          selectionMode: customRange ? "custom" : period,
+                        })}
                         {location && (
                           <span className="distance">
                             {event.distance_km === null
