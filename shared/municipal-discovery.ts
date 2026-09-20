@@ -8,6 +8,7 @@ export type MunicipalCandidate = {
   start_date: string | null;
   end_date: string | null;
   region: "경기";
+  locality: "파주" | "수원" | "고양" | "화성";
   venue: string | null;
   official_url: string;
   category: string | null;
@@ -41,7 +42,7 @@ export function parsePajuList(html: string): MunicipalCandidate[] {
     const image = absolute("https://tour.paju.go.kr", /<img[^>]+src="([^"]+)"/i.exec(row)?.[1]);
     return [{
       source: "paju", source_candidate_id: id, title, start_date, end_date, venue,
-      region: "경기", official_url: `https://tour.paju.go.kr/user/link/cultural/BD_selectCulturalView.do?cultMstSn=${id}`,
+      region: "경기", locality: "파주", official_url: `https://tour.paju.go.kr/user/link/cultural/BD_selectCulturalView.do?cultMstSn=${id}`,
       category: /\[([^\]]+)\]/.exec(clean(/<span class="titl">([\s\S]*?)<\/span>/.exec(row)?.[1] ?? ""))?.[1] ?? null,
       snippet: clean(/<span class="list-con">([\s\S]*?)<\/span>/.exec(row)?.[1] ?? "") || null,
       image_candidate: image ? { url: image, source_url: "https://tour.paju.go.kr/user/link/cultural/BD_index.do" } : null,
@@ -63,7 +64,7 @@ export function parseSuwonList(html: string): MunicipalCandidate[] {
     const url = absolute("https://www.swcf.or.kr", href)!;
     return [{
       source: "suwon", source_candidate_id: new URL(url).searchParams.get("idx") ?? url,
-      title, start_date, end_date, venue: clean(cells[3]) || null, region: "경기", official_url: url,
+      title, start_date, end_date, venue: clean(cells[3]) || null, region: "경기", locality: "수원", official_url: url,
       category: category || null, snippet: null, image_candidate: null,
       ...(!validRange(start_date, end_date) ? { parse_error: "invalid_date_range" } : {}),
     }];
@@ -88,7 +89,7 @@ export function parseGoyangList(html: string): MunicipalCandidate[] {
     if (!source_candidate_id) return [];
     const image = absolute("https://goyang.go.kr/visitgoyang/www/", /<img[^>]+src="([^"]+)"/i.exec(block)?.[1]);
     return [{ source: "goyang", source_candidate_id, title, start_date, end_date, venue,
-      region: "경기", official_url: official_url!, category: "고양특례시 대표축제", snippet: clean(/<div class="txt">([\s\S]*?)<\/div>/i.exec(block)?.[1] ?? "") || null,
+      region: "경기", locality: "고양", official_url: official_url!, category: "고양특례시 대표축제", snippet: clean(/<div class="txt">([\s\S]*?)<\/div>/i.exec(block)?.[1] ?? "") || null,
       image_candidate: image ? { url: image, source_url: "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303" } : null,
       ...(!validRange(start_date, end_date) ? { parse_error: "invalid_date_range" } : {}),
     }];
@@ -108,7 +109,8 @@ export function parseHwaseongList(html: string): MunicipalCandidate[] {
     const start = /(\d{1,2})\.\s*(\d{1,2})\./.exec(dateText);
     const rangeEnd = /[~∼-]\s*(?:(\d{1,2})\.\s*)?(\d{1,2})\./.exec(dateText);
     if (!number || !title || !venue || !/^\d+$/.test(number)) return [];
-    if (!start) return [{ source: "hwaseong", source_candidate_id: number, title, start_date: null, end_date: null, venue, region: "경기",
+    const durableId = `${year}-${normalizeMunicipalTitle(title).slice(0, 60)}`;
+    if (!start) return [{ source: "hwaseong", source_candidate_id: durableId, title, start_date: null, end_date: null, venue, locality: "화성", region: "경기",
       official_url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", category: department || null,
       snippet: host ? `주최/주관: ${host}` : null, image_candidate: null, parse_error: "unparseable_date",
     }];
@@ -116,7 +118,7 @@ export function parseHwaseongList(html: string): MunicipalCandidate[] {
     const start_date = toDate(start[1], start[2]);
     // Korean schedules can omit the end month for a same-month range.
     const end_date = rangeEnd ? toDate(rangeEnd[1] ?? start[1], rangeEnd[2]) : start_date;
-    return [{ source: "hwaseong", source_candidate_id: number, title, start_date, end_date, venue, region: "경기",
+    return [{ source: "hwaseong", source_candidate_id: durableId, title, start_date, end_date, venue, locality: "화성", region: "경기",
       official_url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", category: department || null,
       snippet: host ? `주최/주관: ${host}` : null, image_candidate: null,
       ...(!validRange(start_date, end_date) ? { parse_error: "invalid_date_range" } : {}),
@@ -128,7 +130,9 @@ export function selectMunicipalGate(candidate: MunicipalCandidate): { gate: Sele
   if (candidate.parse_error || !candidate.start_date || !candidate.end_date || !candidate.venue)
     return { gate: "REVIEW", reason: candidate.parse_error ?? "missing_required_field" };
   const text = `${candidate.title} ${candidate.category ?? ""} ${candidate.snippet ?? ""}`;
-  if (/교육|강좌|모집|워크숍|설명회|회원.?전용|온라인|대관|상영 프로그램/.test(text)) return { gate: "EXCLUDE", reason: "education_or_recruitment_or_facility_program" };
+  const education = /평생학습|교육|강좌|수강|모집|워크숍|설명회|세미나|포럼|성과공유|회원.?전용|온라인|대관|기관행사/.test(text);
+  const outing = /거리축제|불꽃|드론쇼|야시장|퍼레이드|능행차|꽃|계절|야간개장|미디어아트|체험.{0,40}(공연|먹거리)|(공연|먹거리).{0,40}체험/.test(text);
+  if (education && !outing) return { gate: "EXCLUDE", reason: "education_or_admin_without_outing_evidence" };
   if (/축제|페스티벌|문화제|미디어아트|야행|거리축제|북앤컬처|능행차/.test(text)) return { gate: "MAIN", reason: "explicit_public_festival_or_destination_event" };
   if (/제\s*\d+회.*가요제|가요제.*제\s*\d+회/.test(text)) return { gate: "MAIN", reason: "recurring_public_song_festival" };
   if (/공연|음악회|연극|합창|가요제/.test(text)) return { gate: "NEARBY_ONLY", reason: "single_public_culture_event_without_destination_signal" };
@@ -142,16 +146,26 @@ export type EnrichmentCandidate = {
   parse_error?: string;
 };
 
+/** Only explicit machine-readable detail facts can contradict list core facts; absence is not conflict. */
+export function hasMunicipalDetailCoreConflict(candidate: MunicipalCandidate, detailHtml: string): boolean {
+  const text = clean(detailHtml);
+  const years = [...text.matchAll(/\b(20\d{2})[.년-]/g)].map((match) => match[1]);
+  if (years.length && candidate.start_date && years.every((year) => year !== candidate.start_date!.slice(0, 4))) return true;
+  const detailDates = [...text.matchAll(/\b(20\d{2})[-.]\s*(\d{1,2})[-.]\s*(\d{1,2})/g)].map((match) => `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`);
+  if (detailDates.length && candidate.start_date && !detailDates.includes(candidate.start_date) && !detailDates.includes(candidate.end_date ?? "")) return true;
+  const venue = /(?:행사장|장소)\s*[:：]\s*([^\n]{2,80})/.exec(text)?.[1]?.trim();
+  return Boolean(venue && candidate.venue && !venue.includes(candidate.venue) && !candidate.venue.includes(venue));
+}
+
 export function createEnrichmentCandidate(candidate: MunicipalCandidate, detailHtml: string): EnrichmentCandidate {
   const text = clean(detailHtml);
   if (!normalizeMunicipalTitle(text).includes(normalizeMunicipalTitle(candidate.title)))
     return { summary: null, operating_hours: null, programs: [], parse_error: "detail_title_mismatch" };
   const summary = candidate.snippet ? candidate.snippet.slice(0, 280) : null;
   const hours = /(?:운영\s*시간|운영시간|행사\s*시간)\s*[:：]?\s*(\d{1,2}:\d{2})\s*[~∼-]\s*(\d{1,2}:\d{2})/.exec(text);
-  const programMatches = [...text.matchAll(/(?:공연|상영|프로그램)\s*[:：]?\s*([^\n]{0,80}?\d{1,2}:\d{2}(?:\s*[~∼-]\s*\d{1,2}:\d{2})?)/g)];
   return {
     summary,
     operating_hours: hours ? { start_time: hours[1].padStart(5, "0"), end_time: hours[2].padStart(5, "0") } : null,
-    programs: programMatches.slice(0, 4).map((match, index) => ({ name: `공식 프로그램 ${index + 1}`, schedule_text: match[1].trim() })),
+    programs: [],
   };
 }

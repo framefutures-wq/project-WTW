@@ -1,13 +1,13 @@
-import { createEnrichmentCandidate, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
+import { createEnrichmentCandidate, hasMunicipalDetailCoreConflict, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
 import type { Env } from "../env";
 
 const SOURCES = [
-  { key: "paju", url: "https://tour.paju.go.kr/user/link/cultural/BD_index.do", parse: parsePajuList },
-  { key: "suwon", url: "https://www.swcf.or.kr/?p=29", parse: parseSuwonList },
-  { key: "goyang", url: "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303", parse: parseGoyangList },
-  { key: "hwaseong", url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", parse: parseHwaseongList },
+  { key: "paju", url: "https://tour.paju.go.kr/user/link/cultural/BD_index.do", marker: "list-info", parse: parsePajuList },
+  { key: "suwon", url: "https://www.swcf.or.kr/?p=29", marker: "<table", parse: parseSuwonList },
+  { key: "goyang", url: "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303", marker: "con_item", parse: parseGoyangList },
+  { key: "hwaseong", url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", marker: "listBoard", parse: parseHwaseongList },
 ] as const;
 const MAX_PER_SOURCE = 25, MAX_PUBLISH = 10, RETRY_DAYS = 30;
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -26,16 +26,17 @@ async function official(url: string) {
 async function duplicate(env: Env, candidate: MunicipalCandidate, id: string) {
   if (!candidate.start_date || !candidate.end_date || !candidate.venue) return { decision: "REVIEW" as const, rows: 0 };
   const exact = await env.DB.prepare("SELECT id,title,region,start_date,end_date,venue,address FROM events WHERE title=? LIMIT 2").bind(candidate.title).all();
-  const nearby = await env.DB.prepare("SELECT id,title,region,start_date,end_date,venue,address FROM events WHERE is_sample=0 AND verification='verified' AND status IN ('scheduled','unknown') AND region=? AND start_date<=? AND end_date>=? LIMIT 25").bind(candidate.region, candidate.end_date, candidate.start_date).all();
-  return { decision: decideMunicipalDuplicate({ id, title: candidate.title, region: candidate.region, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, address: candidate.venue }, exact.results as any[], nearby.results as any[]), rows: (exact.meta.rows_read ?? 0) + (nearby.meta.rows_read ?? 0) };
+  const nearby = await env.DB.prepare("SELECT id,title,region,start_date,end_date,venue,address FROM events WHERE is_sample=0 AND verification='verified' AND status IN ('scheduled','unknown') AND region=? AND start_date<=? AND end_date>=? AND (venue LIKE ? OR address LIKE ?) LIMIT 26").bind(candidate.region, candidate.end_date, candidate.start_date, `%${candidate.locality}%`, `%${candidate.locality}%`).all();
+  const overflow = nearby.results.length >= 26;
+  return { decision: overflow ? "REVIEW" as const : decideMunicipalDuplicate({ id, title: candidate.title, region: candidate.region, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, address: candidate.venue }, exact.results as any[], nearby.results as any[]), rows: (exact.meta.rows_read ?? 0) + (nearby.meta.rows_read ?? 0) };
 }
 async function state(env: Env, id: string) {
-  return env.DB.prepare("SELECT last_payload_hash,decision_state FROM municipal_candidate_state WHERE candidate_id=?").bind(id).first<{ last_payload_hash: string; decision_state: AutonomousDecision }>();
+  return env.DB.prepare("SELECT last_payload_hash,decision_state,first_seen_at,retry_until FROM municipal_candidate_state WHERE candidate_id=?").bind(id).first<{ last_payload_hash: string; decision_state: AutonomousDecision; first_seen_at: string; retry_until: string | null }>();
 }
-async function saveState(env: Env, candidate: MunicipalCandidate, id: string, decision: { state: AutonomousDecision; reason: string }, payloadHash: string, now: string) {
-  const retry = decision.state === "AUTO_RETRY" ? new Date(Date.now() + RETRY_DAYS * 86400_000).toISOString() : null;
-  return env.DB.prepare("INSERT INTO municipal_candidate_state(candidate_id,source_key,first_seen_at,last_seen_at,decision_state,decision_reason,retry_until,last_payload_hash) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(candidate_id) DO UPDATE SET last_seen_at=excluded.last_seen_at,decision_state=excluded.decision_state,decision_reason=excluded.decision_reason,retry_until=excluded.retry_until,last_payload_hash=excluded.last_payload_hash")
-    .bind(id, candidate.source, now, now, decision.state, decision.reason, retry, payloadHash).run();
+async function saveState(env: Env, candidate: MunicipalCandidate, id: string, decision: { state: AutonomousDecision; reason: string }, payloadHash: string, now: string, previous: { first_seen_at: string } | null) {
+  const retry = decision.state === "AUTO_RETRY" ? new Date(new Date(previous?.first_seen_at ?? now).getTime() + RETRY_DAYS * 86400_000).toISOString() : null;
+  return env.DB.prepare("INSERT INTO municipal_candidate_state(candidate_id,source_key,first_seen_at,last_seen_at,decision_state,decision_reason,retry_until,last_payload_hash,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(candidate_id) DO UPDATE SET last_seen_at=excluded.last_seen_at,decision_state=excluded.decision_state,decision_reason=excluded.decision_reason,retry_until=excluded.retry_until,last_payload_hash=excluded.last_payload_hash,source_candidate_id=excluded.source_candidate_id,title_snapshot=excluded.title_snapshot,start_date_snapshot=excluded.start_date_snapshot,end_date_snapshot=excluded.end_date_snapshot,venue_snapshot=excluded.venue_snapshot,locality_snapshot=excluded.locality_snapshot,official_url_snapshot=excluded.official_url_snapshot")
+    .bind(id, candidate.source, now, now, decision.state, decision.reason, retry, payloadHash, candidate.source_candidate_id, candidate.title, candidate.start_date, candidate.end_date, candidate.venue, candidate.locality, candidate.official_url).run();
 }
 async function publish(env: Env, candidate: MunicipalCandidate, id: string, summaryText: string | null, now: string, existing: { id: string } | null) {
   const sid = sourceId(id), evidence = `${candidate.title} | ${candidate.start_date}~${candidate.end_date} | ${candidate.venue}`;
@@ -54,6 +55,7 @@ export async function runMunicipalAutonomous(env: Env) {
   for (const source of SOURCES) {
     try {
       const list = await official(source.url);
+      if (!list.includes(source.marker)) throw new Error("source_parse_health_failed");
       const candidates = source.parse(list).slice(0, MAX_PER_SOURCE);
       if (candidates.length >= MAX_PER_SOURCE) throw new Error("source_candidate_circuit_breaker");
       for (const candidate of candidates) {
@@ -61,9 +63,9 @@ export async function runMunicipalAutonomous(env: Env) {
         const id = candidateId(candidate.source, candidate.source_candidate_id, candidate.start_date);
         const gate = selectMunicipalGate(candidate), duplicateResult = await duplicate(env, candidate, id);
         summary.rows_read += duplicateResult.rows;
-        let detailError = false, enrichment: ReturnType<typeof createEnrichmentCandidate> | null = null;
+        let detailError = false, detailCoreConflict = false, enrichment: ReturnType<typeof createEnrichmentCandidate> | null = null;
         if (gate.gate === "MAIN" && duplicateResult.decision === "NEW" && !candidate.parse_error) {
-          try { enrichment = createEnrichmentCandidate(candidate, candidate.official_url === source.url ? list : await official(candidate.official_url)); detailError = Boolean(enrichment.parse_error); }
+          try { const detail = candidate.official_url === source.url ? list : await official(candidate.official_url); enrichment = createEnrichmentCandidate(candidate, detail); detailError = Boolean(enrichment.parse_error); detailCoreConflict = candidate.official_url !== source.url && hasMunicipalDetailCoreConflict(candidate, detail); }
           catch { detailError = true; }
         }
         const payloadHash = await hash({ title: candidate.title, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, official_url: candidate.official_url });
@@ -72,7 +74,7 @@ export async function runMunicipalAutonomous(env: Env) {
         const changedExisting = Boolean(existing && (existing.start_date !== candidate.start_date || existing.end_date !== candidate.end_date || existing.venue !== candidate.venue));
         // A changed core payload needs two identical daily observations before it replaces last-known-good.
         const coreConflict = changedExisting && previous?.last_payload_hash !== payloadHash;
-        let decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(candidate, koreaToday), trusted: true, coreValid: Boolean(candidate.title && candidate.start_date && candidate.end_date && candidate.venue && candidate.official_url), parserError: Boolean(candidate.parse_error), detailError, coreConflict });
+        let decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(candidate, koreaToday), trusted: true, coreValid: Boolean(candidate.title && candidate.start_date && candidate.end_date && candidate.venue && candidate.official_url), parserError: Boolean(candidate.parse_error), detailError, coreConflict: coreConflict || detailCoreConflict });
         if (decision.state === "AUTO_PUBLISH" && summary.inserted + summary.updated >= MAX_PUBLISH)
           decision = { state: "AUTO_RETRY", reason: "daily_publish_circuit_breaker" };
         summary[decision.state] += 1;
@@ -80,7 +82,7 @@ export async function runMunicipalAutonomous(env: Env) {
           const write = await publish(env, candidate, id, enrichment?.summary ?? candidate.snippet, now, existing ?? null);
           summary.inserted += write.inserted; summary.updated += write.updated; summary.rows_written += write.rows;
         }
-        const saved = await saveState(env, candidate, id, decision, payloadHash, now); summary.rows_written += saved.meta.changes ?? 0;
+        const saved = await saveState(env, candidate, id, decision, payloadHash, now, previous); summary.rows_written += saved.meta.changes ?? 0;
       }
     } catch (error) {
       summary.source_errors += 1;
