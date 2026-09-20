@@ -41,3 +41,8 @@ test("detail content follows the user-first hierarchy", () => {
   assert.match(styles, /detail-body > \.detail-back \{ order: 10; \}/);
   assert.doesNotMatch(app, /놓치지 마세요/);
 });
+
+test("detail can be opened from a stable event query URL", () => {
+  assert.match(app, /initialParams\.get\("event"\)/);
+  assert.match(app, /detailUrl\.searchParams\.set\("event", selected\)/);
+});

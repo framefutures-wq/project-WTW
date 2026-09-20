@@ -362,6 +362,11 @@ export default function App() {
   )
     ? initialParams.get("theme")!
     : "";
+  const initialEvent = /^[a-zA-Z0-9_-]{1,80}$/.test(
+    initialParams.get("event") ?? "",
+  )
+    ? initialParams.get("event")!
+    : null;
   const [period, setPeriod] = useState<Period>(
     initialPeriod === "today" ||
       initialPeriod === "next-weekend" ||
@@ -398,7 +403,7 @@ export default function App() {
   const [busy, setBusy] = useState(true),
     [error, setError] = useState(""),
     [retry, setRetry] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null),
+  const [selected, setSelected] = useState<string | null>(initialEvent),
     [detail, setDetail] = useState<Detail | null>(null),
     [detailError, setDetailError] = useState(""),
     [lightbox, setLightbox] = useState<{ image: string; title: string } | null>(
@@ -578,10 +583,12 @@ export default function App() {
   }, [selected, detailRetry]);
   useEffect(() => {
     if (!selected || detailHistory.current) return;
+    const detailUrl = new URL(window.location.href);
+    detailUrl.searchParams.set("event", selected);
     window.history.pushState(
       { ...(window.history.state ?? {}), eventDetail: selected },
       "",
-      window.location.href,
+      detailUrl.pathname + detailUrl.search,
     );
     detailHistory.current = true;
     const onPopState = () => {
