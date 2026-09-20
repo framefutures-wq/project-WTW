@@ -12,6 +12,7 @@ import {
   Info,
   MapPin,
   Navigation,
+  Phone,
   Search,
   ShieldCheck,
   SlidersHorizontal,
@@ -42,14 +43,7 @@ import {
   totalPages,
   uniqueEvents,
 } from "../shared/list-exploration";
-import {
-  formatTrustDate,
-  hasOfficialSource,
-  officialSourceLabel,
-  trustChangeLabel,
-  trustDescription,
-  trustTitle,
-} from "./trust";
+import { formatTrustDate, hasOfficialSource, trustChangeLabel } from "./trust";
 
 type Evidence = {
   field: string;
@@ -59,7 +53,12 @@ type Evidence = {
   url: string | null;
   kind: string;
 };
-type Detail = { event: EventItem; evidence: Evidence[] };
+type ContactPhone = { display: string; href: string };
+type Detail = {
+  event: EventItem;
+  evidence: Evidence[];
+  contact_phone: ContactPhone | null;
+};
 type PageResponse = Omit<EventResponse, "total"> & { total?: number };
 type NearbyLocation = { lat: number; lng: number };
 class ApiError extends Error {
@@ -125,11 +124,6 @@ function TrustInfo({
 }) {
   if (event.is_sample === 1 || !event.trust_status) return null;
   const changed = event.trust_status === "changed";
-  const sourceLabel = officialSourceLabel(event.trust_source_types);
-  const sourceLink = hasOfficialSource(event)
-    ? safeUrl(event.trust_source_url)
-    : undefined;
-  const checked = formatTrustDate(event.trust_checked_at);
   if (card)
     return changed ? (
       <span className="trust-card trust-changed">
@@ -140,6 +134,7 @@ function TrustInfo({
         <ShieldCheck size={13} /> 공식정보 확인
       </span>
     ) : null;
+  if (event.trust_status === "confirmed") return null;
   return (
     <section
       className={`trust-info trust-${event.trust_status}`}
@@ -153,37 +148,44 @@ function TrustInfo({
           <h3>
             {changed
               ? trustChangeLabel(event.trust_changed_fields)
-              : trustTitle(event.trust_status)}
+              : "일부 정보는 공식 확인 중이에요."}
           </h3>
-          <p>{trustDescription(event.trust_status)}</p>
+          {changed && <p>공식 안내에서 행사 정보 변경을 확인했어요.</p>}
         </div>
       </div>
-      <dl className="trust-info-meta">
-        {checked && (
-          <>
-            <dt>공식정보 마지막 확인</dt>
-            <dd>{checked}</dd>
-          </>
-        )}
-        {sourceLabel && (
-          <>
-            <dt>출처 유형</dt>
-            <dd>{sourceLabel}</dd>
-          </>
-        )}
-      </dl>
-      {sourceLink && (
-        <a
-          className="trust-source-link"
-          href={sourceLink}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          공식 안내 보기 <ExternalLink size={14} />
-        </a>
-      )}
     </section>
   );
+}
+function StatusNotice({ event }: { event: EventItem }) {
+  if (event.status === "cancelled")
+    return (
+      <div className="detail-warning">이 행사는 취소된 것으로 확인됐어요.</div>
+    );
+  if (event.status === "postponed")
+    return (
+      <div className="detail-warning">이 행사는 연기된 것으로 확인됐어요.</div>
+    );
+  if (event.status === "unknown")
+    return (
+      <div className="detail-status-note">
+        개최 여부는 출발 전 공식 안내를 확인해 주세요.
+      </div>
+    );
+  return null;
+}
+function usefulDescription(value: string) {
+  const text = value.trim();
+  return text && !/^한국관광공사 TourAPI에 등록된 행사입니다/.test(text)
+    ? text
+    : null;
+}
+function locationLines(event: EventItem) {
+  const venue = event.venue.trim();
+  const address = event.address.trim();
+  return {
+    primary: venue && venue !== address ? venue : address || venue,
+    secondary: venue && address && venue !== address ? address : null,
+  };
 }
 function Scene({ event }: { event: EventItem }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -1403,67 +1405,70 @@ export default function App() {
                   샘플입니다.
                 </div>
               )}
+              <StatusNotice event={detail.event} />
               <TrustInfo event={detail.event} />
-              <dl>
-                <dt>일정</dt>
-                <dd>
-                  {detailDateRange(
-                    detail.event.start_date,
-                    detail.event.end_date,
-                  )}
-                </dd>
-                <dt>장소</dt>
-                <dd>
-                  {detail.event.venue}
-                  {detail.event.address && (
-                    <small>{detail.event.address}</small>
-                  )}
-                </dd>
-                <dt>비용</dt>
-                <dd>
-                  {detail.event.price_text?.trim() || "비용 정보 확인 필요"}
-                </dd>
-                <dt>반려동물</dt>
-                <dd>
-                  {
-                    {
-                      allowed: "동반 가능",
-                      prohibited: "동반 불가",
-                      unknown: "미확인",
-                    }[detail.event.pet_policy]
-                  }
-                </dd>
-                <dt>확인 상태</dt>
-                <dd>
-                  {
-                    {
-                      scheduled: "마지막 확인: 개최 예정",
-                      cancelled: "취소",
-                      postponed: "연기",
-                      unknown:
-                        "개최·취소 여부 미확인 · 출발 전 공식 공지 확인 필요",
-                    }[detail.event.status]
-                  }
-                </dd>
-                <dt>확인 시각</dt>
-                <dd>
-                  {detail.event.checked_at
-                    ? new Date(detail.event.checked_at).toLocaleString(
-                        "ko-KR",
-                        { timeZone: "Asia/Seoul" },
-                      )
-                    : "미확인"}{" "}
-                  (한국 시간)
-                  {detail.event.is_sample === 1 && (
-                    <small>
-                      샘플 생성 시각이며 공식 정보 확인 시각이 아닙니다.
-                    </small>
-                  )}
-                </dd>
-                <dt>출처</dt>
-                <dd>{detail.event.source_name ?? "미확인"}</dd>
-              </dl>
-              {detail.event.description && <p>{detail.event.description}</p>}
+              {(() => {
+                const location = locationLines(detail.event);
+                const price = detail.event.price_text?.trim();
+                return (
+                  <dl>
+                    <dt>일정</dt>
+                    <dd>
+                      {detailDateRange(
+                        detail.event.start_date,
+                        detail.event.end_date,
+                      )}
+                    </dd>
+                    {location.primary && (
+                      <>
+                        <dt>장소</dt>
+                        <dd>
+                          {location.primary}
+                          {location.secondary && (
+                            <small>{location.secondary}</small>
+                          )}
+                        </dd>
+                      </>
+                    )}
+                    {price && (
+                      <>
+                        <dt>비용</dt>
+                        <dd>{price}</dd>
+                      </>
+                    )}
+                    {detail.event.pet_policy !== "unknown" && (
+                      <>
+                        <dt>반려동물</dt>
+                        <dd>
+                          {detail.event.pet_policy === "allowed"
+                            ? "동반 가능"
+                            : "동반 불가"}
+                        </dd>
+                      </>
+                    )}
+                    {detail.contact_phone && (
+                      <>
+                        <dt>문의</dt>
+                        <dd className="contact-phone">
+                          <span>{detail.contact_phone.display}</span>
+                          <a
+                            href={detail.contact_phone.href}
+                            aria-label={`${detail.contact_phone.display}로 전화하기`}
+                          >
+                            <Phone size={16} /> 전화하기
+                          </a>
+                        </dd>
+                      </>
+                    )}
+                  </dl>
+                );
+              })()}
+              {usefulDescription(detail.event.description) && (
+                <section className="detail-description">
+                  <h3>행사 소개</h3>
+                  <p>{usefulDescription(detail.event.description)}</p>
+                </section>
+              )}
               <div className="detail-tags">
                 {detail.event.tags.map((t) => (
                   <span className="chip" key={t}>
@@ -1471,32 +1476,23 @@ export default function App() {
                   </span>
                 ))}
               </div>
-              {safeUrl(detail.event.source_url) && (
-                <a
-                  className="primary source-button"
-                  href={safeUrl(detail.event.source_url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  TourAPI 원문 보기 <ExternalLink size={16} />
-                </a>
-              )}
-              {detail.evidence.length > 0 && (
-                <div className="evidence">
-                  <h3>정보 확인 근거</h3>
-                  {detail.evidence.map((e, i) => (
-                    <p key={i}>
-                      <strong>{e.field}</strong> · {e.excerpt}
-                      <small>
-                        {e.name} ·{" "}
-                        {new Date(e.checked_at).toLocaleString("ko-KR", {
-                          timeZone: "Asia/Seoul",
-                        })}
-                      </small>
-                    </p>
-                  ))}
-                </div>
-              )}
+              {hasOfficialSource(detail.event) &&
+                safeUrl(detail.event.trust_source_url) && (
+                  <a
+                    className="primary source-button"
+                    href={safeUrl(detail.event.trust_source_url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    공식 안내 보기 <ExternalLink size={16} />
+                  </a>
+                )}
+              <p className="detail-source">
+                출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
+                {formatTrustDate(detail.event.checked_at) && (
+                  <> · 마지막 확인 {formatTrustDate(detail.event.checked_at)}</>
+                )}
+              </p>
               <button className="detail-back" onClick={close}>
                 목록으로 돌아가기
               </button>

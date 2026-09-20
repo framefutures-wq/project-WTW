@@ -258,12 +258,12 @@ test("실제 행사 상세의 일정·주소·출처·미확인 상태", async (
   ).toBeVisible();
   await expect(dialog).toContainText(event.address);
   if (event.status === "unknown")
-    await expect(dialog).toContainText("개최·취소 여부 미확인");
-  await expect(dialog).toContainText(/공식정보 (확인|변경)/);
+    await expect(dialog).toContainText("개최 여부는 출발 전 공식 안내");
   await expect(dialog).toContainText("한국관광공사 TourAPI");
+  await expect(dialog.getByText("정보 확인 근거")).toHaveCount(0);
   await expect(
     dialog.getByRole("link", { name: "TourAPI 원문 보기" }),
-  ).toHaveAttribute("href", "https://www.data.go.kr/data/15101578/openapi.do");
+  ).toHaveCount(0);
 });
 test("실제 데이터 데스크톱·모바일 레이아웃과 JS 오류", async ({ page }) => {
   const errors: string[] = [];

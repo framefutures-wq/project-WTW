@@ -313,6 +313,7 @@ try {
     progresstype: "선택안함",
     mapx: "127",
     mapy: "37",
+    tel: "02-1234-5678",
   };
   const tourEvent = adapter.mapFestival(raw, new Map([["11", "서울"]]), now);
   const snapshot = {
@@ -329,6 +330,10 @@ try {
   assert.equal(real.event.is_sample, 0);
   assert.equal(real.event.status, "unknown");
   assert.equal(real.event.cost, "unknown");
+  assert.deepEqual(real.contact_phone, {
+    display: "02-1234-5678",
+    href: "tel:0212345678",
+  });
   assert.deepEqual(real.event.tags, []);
   assert.equal(real.evidence.length, 4);
   assert.equal(

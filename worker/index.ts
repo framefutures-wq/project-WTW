@@ -21,10 +21,11 @@ import {
   COMPANION_CLASSIFIER,
   COMPANION_RULE_VERSION,
 } from "../shared/companion-suitability";
+import { normalizeOfficialPhone } from "../shared/contact-phone";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
-  e.verification,e.is_sample,e.checked_at`;
+  e.verification,e.is_sample,e.primary_source_id,e.checked_at`;
 const SELECT = `SELECT ${EVENT_FIELDS}, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
   ts.trust_status, ts.checked_at AS trust_checked_at,
   ts.changed_fields AS trust_changed_fields,
@@ -416,9 +417,25 @@ export default {
         )
           .bind(detail[1])
           .all();
+        const contactSource = await env.DB.prepare(
+          "SELECT raw_payload FROM sources WHERE id=? AND kind='tourapi'",
+        )
+          .bind(row.primary_source_id)
+          .first<{ raw_payload: string | null }>();
+        let contactPhone = null;
+        try {
+          contactPhone = normalizeOfficialPhone(
+            contactSource?.raw_payload
+              ? (JSON.parse(contactSource.raw_payload) as { tel?: unknown }).tel
+              : null,
+          );
+        } catch {
+          contactPhone = null;
+        }
         return json({
           event: serialize(row),
           evidence: evidence.results,
+          contact_phone: contactPhone,
           mode: env.APP_MODE,
         });
       }
