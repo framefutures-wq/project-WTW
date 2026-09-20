@@ -1,5 +1,6 @@
 import type { Env } from "./env";
 import { tourApiReadiness, syncTourApi } from "./sources/tourapi";
+import { runMunicipalAutonomous } from "./sources/municipal";
 export async function runScheduled(env: Env) {
   const id = crypto.randomUUID(),
     now = new Date().toISOString();
@@ -28,18 +29,21 @@ export async function runScheduled(env: Env) {
       ).bind(now, cutoff),
     ]);
     const imported = await syncTourApi(env, id);
+    const municipal = await runMunicipalAutonomous(env);
     await env.DB.prepare(
       "UPDATE sync_runs SET status=?, finished_at=?,message=?,stale_count=? WHERE id=?",
     )
       .bind(
         imported ? "success" : "skipped",
         new Date().toISOString(),
-        imported ? JSON.stringify(imported) : tourApiReadiness(env),
+        JSON.stringify({ tourapi: imported ?? tourApiReadiness(env), municipal }),
         results[1].meta.changes,
         id,
       )
       .run();
   } catch (error) {
+    // Municipal sources are independently bounded; a TourAPI outage must not stop their daily retry/publish cycle.
+    const municipal = await runMunicipalAutonomous(env);
     const message =
       error instanceof Error && error.message.startsWith("TourAPI ")
         ? error.message
@@ -51,7 +55,7 @@ export async function runScheduled(env: Env) {
     await env.DB.prepare(
       "UPDATE sync_runs SET status='failed',finished_at=?,message=? WHERE id=?",
     )
-      .bind(new Date().toISOString(), message, id)
+      .bind(new Date().toISOString(), JSON.stringify({ tourapi: message, municipal }), id)
       .run();
     // An upstream error must not be rethrown with a potentially secret-bearing URL.
     throw new Error("Scheduled synchronization failed");
