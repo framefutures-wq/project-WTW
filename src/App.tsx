@@ -211,9 +211,18 @@ function Scene({
   const className = `scene scene-${theme}${detail ? " scene-detail" : ""}${image && !imageFailed ? " scene-with-image" : ""}${fit === "contain" && !detail ? " scene-contain" : ""}`;
   const content = (
     <>
+      {image && !imageFailed && (detail || fit === "contain") && (
+        <img
+          className="scene-image scene-image-backdrop"
+          src={image}
+          alt=""
+          aria-hidden="true"
+          loading={detail ? "eager" : "lazy"}
+        />
+      )}
       {image && !imageFailed && (
         <img
-          className="scene-image"
+          className="scene-image scene-image-foreground"
           src={image}
           alt={`${event.title} 대표 이미지`}
           loading={detail ? "eager" : "lazy"}
