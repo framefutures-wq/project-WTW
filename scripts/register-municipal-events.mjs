@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { canRegisterMunicipalEvent, decideMunicipalDuplicate } from "../shared/municipal-duplicate.ts";
+import { canRegisterMunicipalEvent } from "../shared/municipal-duplicate.ts";
+import { lookupMunicipalDuplicate } from "./municipal-duplicate-lookup.mjs";
 
 const DB = "weekend-mwohae-production";
 const CONFIG = "wrangler.production.jsonc";
@@ -37,13 +38,8 @@ function run(sql) {
   if (result.status !== 0) throw new Error(result.stderr || result.stdout || "remote D1 command failed");
   return JSON.parse(result.stdout)[0];
 }
-const eventColumns = "id,title,region,start_date,end_date,venue,address";
 function duplicateCheck(event) {
-  const exact = run(`SELECT ${eventColumns} FROM events WHERE title=${quote(event.title)} LIMIT 2`);
-  const nearby = run(`SELECT ${eventColumns} FROM events WHERE is_sample=0 AND verification='verified' AND status IN ('scheduled','unknown') AND region=${quote(event.region)} AND start_date<=${quote(event.end_date)} AND end_date>=${quote(event.start_date)} LIMIT 25`);
-  const decision = decideMunicipalDuplicate(event, exact.results, nearby.results);
-  const selfOnly = exact.results.every((row) => row.id === event.id);
-  return { decision: selfOnly && decision === "NEW" ? "NEW" : decision, exact, nearby };
+  return lookupMunicipalDuplicate(event, run);
 }
 export function buildSql() {
   const sql = [];
