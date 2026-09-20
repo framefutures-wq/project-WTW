@@ -1583,7 +1583,7 @@ export default function App() {
                   </dl>
                 );
               })()}
-              {usefulDescription(detail.event.description) && (
+              {!detail.enrichment?.summary && usefulDescription(detail.event.description) && (
                 <section className="detail-description">
                   <h3>행사 소개</h3>
                   <p>{usefulDescription(detail.event.description)}</p>
@@ -1604,7 +1604,7 @@ export default function App() {
                   </div>
                 </section>
               ) : null}
-              <div className="detail-tags">
+              <div className="detail-tags detail-event-tags">
                 {detail.event.tags.map((t) => (
                   <span className="chip" key={t}>
                     {tagLabel(t)}
@@ -1614,7 +1614,7 @@ export default function App() {
               {hasOfficialSource(detail.event) &&
                 safeUrl(detail.event.trust_source_url) && (
                   <a
-                    className="primary source-button"
+                    className="primary source-button detail-official-link"
                     href={safeUrl(detail.event.trust_source_url)}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -1623,7 +1623,7 @@ export default function App() {
                   </a>
                 )}
               {detail.enrichment && safeUrl(detail.enrichment.source_url) && !hasOfficialSource(detail.event) && (
-                <a className="primary source-button" href={safeUrl(detail.enrichment.source_url)} target="_blank" rel="noopener noreferrer">
+                <a className="primary source-button detail-official-link" href={safeUrl(detail.enrichment.source_url)} target="_blank" rel="noopener noreferrer">
                   공식 안내 보기 <ExternalLink size={16} />
                 </a>
               )}

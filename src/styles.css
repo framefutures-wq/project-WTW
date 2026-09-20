@@ -1232,11 +1232,19 @@ footer > small {
   display: flex;
   flex-direction: column;
 }
+.detail-body > .detail-warning,
+.detail-body > .detail-status-note,
+.detail-body > .trust-info { order: 1; }
 .detail-body > .detail-enrichment-summary { order: 2; }
+.detail-body > .detail-description:not(.detail-enrichment-summary) { order: 2; }
 .detail-body > dl { order: 3; }
 .detail-body > .detail-highlights { order: 4; }
 .detail-body > .detail-featured { order: 5; }
 .detail-body > .detail-program-list { order: 6; }
+.detail-body > .detail-event-tags { order: 7; }
+.detail-body > .detail-official-link { order: 8; }
+.detail-body > .detail-source { order: 9; }
+.detail-body > .detail-back { order: 10; }
 .detail-body h2,
 .about-content h2 {
   font-size: 27px;
@@ -1307,7 +1315,7 @@ footer > small {
   grid-template-columns: 85px 1fr;
   font-size: 12px;
   gap: 15px 10px;
-  margin: 25px 0;
+  margin: 20px 0 24px;
 }
 .detail-body dt {
   color: #8b947f;
@@ -1329,7 +1337,10 @@ footer > small {
 }
 .source-button {
   width: 100%;
-  margin-top: 24px;
+  margin-top: 18px;
+  background: #edf5ed;
+  color: #356044;
+  box-shadow: none;
 }
 .detail-status-note {
   margin: 18px 0;
@@ -1337,7 +1348,8 @@ footer > small {
   font-size: 12px;
 }
 .detail-description {
-  margin: 24px 0;
+  max-width: 58ch;
+  margin: 18px 0 20px;
 }
 .detail-description h3 {
   margin: 0 0 8px;
@@ -1345,11 +1357,12 @@ footer > small {
 }
 .detail-description p {
   margin: 0;
+  line-height: 1.7;
 }
-.detail-enrichment { margin: 1.25rem 0; }
+.detail-enrichment { margin: 1rem 0; }
 .detail-enrichment h3 { margin: 0 0 .6rem; font-size: 1rem; }
 .detail-programs { display: grid; gap: .55rem; }
-.detail-program { display: grid; gap: .18rem; padding: .75rem .85rem; border-radius: .8rem; background: var(--surface-soft, #f4f7f3); }
+.detail-program { display: grid; gap: .18rem; padding: .65rem .75rem; border-radius: .65rem; background: var(--surface-soft, #f4f7f3); }
 .detail-program strong { font-size: .95rem; }
 .detail-program span, .detail-program small { color: var(--muted, #5d675f); }
 .detail-program p { margin: .15rem 0 0; font-size: .9rem; line-height: 1.5; }
@@ -1371,7 +1384,7 @@ footer > small {
   font-weight: 700;
 }
 .detail-source {
-  margin: 20px 0 0;
+  margin: 18px 0 0;
   color: #8a9588;
   font-size: 11px;
 }

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const app = readFileSync("src/App.tsx", "utf8");
+const styles = readFileSync("src/styles.css", "utf8");
 
 test("public detail hides raw evidence and only links verified official pages", () => {
   assert.doesNotMatch(app, /TourAPI 원문 보기/);
@@ -26,4 +27,17 @@ test("detail enrichment renders only populated summaries, highlights and program
   assert.match(app, />주요 일정</);
   assert.match(app, /detailProgramSchedule/);
   assert.match(app, /detail\.enrichment\?\.programs\.some/);
+});
+
+test("detail content follows the user-first hierarchy", () => {
+  assert.match(app, /detail-official-link/);
+  assert.match(app, /detail-event-tags/);
+  assert.match(styles, /detail-body > dl \{ order: 3; \}/);
+  assert.match(styles, /detail-body > \.detail-highlights \{ order: 4; \}/);
+  assert.match(styles, /detail-body > \.detail-featured \{ order: 5; \}/);
+  assert.match(styles, /detail-body > \.detail-program-list \{ order: 6; \}/);
+  assert.match(styles, /detail-body > \.detail-official-link \{ order: 8; \}/);
+  assert.match(styles, /detail-body > \.detail-source \{ order: 9; \}/);
+  assert.match(styles, /detail-body > \.detail-back \{ order: 10; \}/);
+  assert.doesNotMatch(app, /놓치지 마세요/);
 });
