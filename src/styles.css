@@ -600,6 +600,7 @@ h1 > span {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 23px;
+  align-items: start;
 }
 .event-card {
   border: 1px solid var(--line);
@@ -910,7 +911,6 @@ h1 > span {
   display: flex;
   gap: 7px;
   flex-wrap: wrap;
-  min-height: 29px;
 }
 .card-tags span {
   background: #f7f8f3;
@@ -921,14 +921,15 @@ h1 > span {
   align-self: start;
 }
 .card-bottom {
-  margin-top: 4px;
-  padding: 8px 0 10px;
+  margin-top: 10px;
+  padding: 0 0 12px;
   display: flex;
   align-items: center;
   color: #8d9786;
 }
 .card-bottom-status {
   border-top: 1px solid #eef0e8;
+  padding-top: 8px;
 }
 .card-bottom > span {
   font-size: 9px;
@@ -1748,15 +1749,14 @@ footer > small {
   }
   .card-tags {
     gap: 4px;
-    min-height: 29px;
   }
   .card-tags span {
     font-size: 8px;
     padding: 2px 4px;
   }
   .card-bottom {
-    padding: 7px 0 8px;
-    margin-top: 2px;
+    padding-bottom: 10px;
+    margin-top: 8px;
   }
   .card-bottom > span {
     font-size: 8px;

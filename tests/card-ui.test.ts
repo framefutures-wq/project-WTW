@@ -28,5 +28,6 @@ test("card footer is compact with conditional status separation and right arrow"
   assert.match(source, /card-bottom-status/);
   assert.match(styles, /\.card-bottom-status\s*\{[^}]*border-top/);
   assert.match(styles, /\.card-bottom > svg\s*\{[^}]*margin-left: auto/);
-  assert.match(styles, /\.card-tags\s*\{[^}]*min-height: 29px/);
+  assert.match(styles, /\.event-grid\s*\{[^}]*align-items: start/);
+  assert.doesNotMatch(styles, /\.card-tags\s*\{[^}]*min-height/);
 });
