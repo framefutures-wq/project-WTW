@@ -23,7 +23,7 @@ test("detail enrichment renders only populated summaries, highlights and program
   const app = readFileSync("src/App.tsx", "utf8");
   assert.match(app, /detail\.enrichment\?\.summary/);
   assert.match(app, />주요 볼거리</);
-  assert.match(app, />놓치지 마세요</);
+  assert.match(app, />주요 일정</);
   assert.match(app, /detailProgramSchedule/);
   assert.match(app, /detail\.enrichment\?\.programs\.some/);
 });

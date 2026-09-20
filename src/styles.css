@@ -1229,7 +1229,14 @@ footer > small {
 }
 .detail-body {
   padding: 30px;
+  display: flex;
+  flex-direction: column;
 }
+.detail-body > .detail-enrichment-summary { order: 2; }
+.detail-body > dl { order: 3; }
+.detail-body > .detail-highlights { order: 4; }
+.detail-body > .detail-featured { order: 5; }
+.detail-body > .detail-program-list { order: 6; }
 .detail-body h2,
 .about-content h2 {
   font-size: 27px;

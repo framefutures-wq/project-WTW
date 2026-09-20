@@ -36,6 +36,7 @@ import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
+import { selectProgramOccurrence } from "../shared/program-occurrence-selection";
 import {
   MAX_VISIBLE_ITEMS,
   PAGE_SIZE,
@@ -110,7 +111,7 @@ const detailDateRange = (start: string, end: string) =>
     ? detailDate(start)
     : `${detailDate(start)} ~ ${detailDate(end)}`;
 const detailProgramSchedule = (program: EventDetailEnrichment["programs"][number]) => {
-  const occurrence = program.occurrences[0];
+  const occurrence = selectProgramOccurrence(program.occurrences, koreaDate());
   if (occurrence) {
     const date = occurrence.start_date === occurrence.end_date ? `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일` : `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일 ~ ${Number(occurrence.end_date.slice(5, 7))}월 ${Number(occurrence.end_date.slice(8, 10))}일`;
     const hour = (time: string) => `${Number(time.slice(0, 2)) >= 12 ? "오후" : "오전"} ${Number(time.slice(0, 2)) % 12 || 12}:${time.slice(3)}`;
@@ -121,7 +122,7 @@ const detailProgramSchedule = (program: EventDetailEnrichment["programs"][number
   const time = program.start_time ? `오후 ${Number(program.start_time.slice(0, 2)) > 12 ? Number(program.start_time.slice(0, 2)) - 12 : Number(program.start_time.slice(0, 2))}:${program.start_time.slice(3)}` : null;
   return [date, time, program.schedule_text].filter(Boolean).join(" · ");
 };
-const detailProgramVenue = (program: EventDetailEnrichment["programs"][number]) => program.occurrences[0]?.venue ?? program.venue;
+const detailProgramVenue = (program: EventDetailEnrichment["programs"][number]) => selectProgramOccurrence(program.occurrences, koreaDate())?.venue ?? program.venue;
 const displayDistance = (distance: number | null) => {
   if (distance === null) return "거리 미확인";
   if (distance < 1) return "1km 미만";
@@ -1503,7 +1504,7 @@ export default function App() {
                 </section>
               )}
               {detail.enrichment?.highlights.length ? (
-                <section className="detail-enrichment">
+                <section className="detail-enrichment detail-highlights">
                   <h3>주요 볼거리</h3>
                   <div className="detail-tags">
                     {detail.enrichment.highlights.map((highlight) => (
@@ -1513,8 +1514,8 @@ export default function App() {
                 </section>
               ) : null}
               {detail.enrichment?.programs.some((program) => program.featured) ? (
-                <section className="detail-enrichment">
-                  <h3>놓치지 마세요</h3>
+                <section className="detail-enrichment detail-featured">
+                  <h3>주요 일정</h3>
                   <div className="detail-programs">
                     {detail.enrichment.programs.filter((program) => program.featured).map((program) => (
                       <article className="detail-program" key={program.name}>
@@ -1589,7 +1590,7 @@ export default function App() {
                 </section>
               )}
               {detail.enrichment?.programs.some((program) => !program.featured) ? (
-                <section className="detail-enrichment">
+                <section className="detail-enrichment detail-program-list">
                   <h3>프로그램</h3>
                   <div className="detail-programs">
                     {detail.enrichment.programs.filter((program) => !program.featured).map((program) => (
