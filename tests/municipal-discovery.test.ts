@@ -27,11 +27,12 @@ test("Goyang representative-festival parser accepts explicit 2026 dates and keep
 });
 
 test("Hwaseong official schedule uses its explicit heading year, preserves a one-day event, and excludes education", () => {
-  assert.equal(hwaseong.length, 4);
+  assert.equal(hwaseong.length, 5);
   assert.deepEqual([hwaseong[0].start_date, hwaseong[0].end_date], ["2026-10-03", "2026-10-04"]);
   assert.equal(hwaseong[1].start_date, "2026-10-31");
   assert.equal(selectMunicipalGate(hwaseong[0]).gate, "MAIN");
-  assert.equal(selectMunicipalGate(hwaseong[3]).gate, "EXCLUDE");
+  assert.equal(hwaseong[3].parse_error, "unparseable_date");
+  assert.equal(selectMunicipalGate(hwaseong[4]).gate, "EXCLUDE");
   assert.equal(hwaseong[0].official_url, "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp");
 });
 

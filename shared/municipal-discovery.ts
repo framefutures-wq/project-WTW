@@ -30,7 +30,7 @@ const validRange = (start: string, end: string) => /^20\d{2}-\d{2}-\d{2}$/.test(
 
 export function parsePajuList(html: string): MunicipalCandidate[] {
   const rows = html.match(/<li>[\s\S]*?<\/li>/gi) ?? [];
-  return rows.flatMap((row) => {
+  return rows.flatMap<MunicipalCandidate>((row) => {
     const id = /jsCulturalView\((\d+)\)/.exec(row)?.[1];
     const title = clean(/<span class="titl">([\s\S]*?)<\/span>/.exec(row)?.[1] ?? "").replace(/^\[[^\]]+\]/, "").trim();
     const info = clean(/<span class="list-info">([\s\S]*?)<\/span>/.exec(row)?.[1] ?? "");
@@ -101,13 +101,17 @@ export function parseHwaseongList(html: string): MunicipalCandidate[] {
   const table = /<table[^>]+class="[^"]*listBoard[^"]*"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/i.exec(html)?.[1];
   if (!year || !table) return [];
   const rows = table.match(/<tr>[\s\S]*?<\/tr>/gi) ?? [];
-  return rows.flatMap((row) => {
+  return rows.flatMap<MunicipalCandidate>((row) => {
     const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((match) => clean(match[1]));
     if (cells.length < 5) return [];
     const [number, dateText, title, department, venue, host] = cells;
     const start = /(\d{1,2})\.\s*(\d{1,2})\./.exec(dateText);
     const rangeEnd = /[~∼-]\s*(?:(\d{1,2})\.\s*)?(\d{1,2})\./.exec(dateText);
-    if (!number || !title || !venue || !start || !/^\d+$/.test(number)) return [];
+    if (!number || !title || !venue || !/^\d+$/.test(number)) return [];
+    if (!start) return [{ source: "hwaseong", source_candidate_id: number, title, start_date: null, end_date: null, venue, region: "경기",
+      official_url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", category: department || null,
+      snippet: host ? `주최/주관: ${host}` : null, image_candidate: null, parse_error: "unparseable_date",
+    }];
     const toDate = (month: string, day: string) => `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
     const start_date = toDate(start[1], start[2]);
     // Korean schedules can omit the end month for a same-month range.
