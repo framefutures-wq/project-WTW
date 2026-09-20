@@ -35,6 +35,7 @@ import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import { COST_STATUS_LABELS } from "../shared/cost-status";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
+import { cardImageFit, type ImageFit } from "../shared/image-fit";
 import {
   MAX_VISIBLE_ITEMS,
   PAGE_SIZE,
@@ -187,8 +188,17 @@ function locationLines(event: EventItem) {
     secondary: venue && address && venue !== address ? address : null,
   };
 }
-function Scene({ event }: { event: EventItem }) {
+function Scene({
+  event,
+  detail = false,
+  onExpand,
+}: {
+  event: EventItem;
+  detail?: boolean;
+  onExpand?: (image: string, title: string) => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [fit, setFit] = useState<ImageFit>("cover");
   const theme = event.tags.find((t) => t in THEMES) ?? "experience";
   const icons = {
     flowers: "✿",
@@ -198,16 +208,23 @@ function Scene({ event }: { event: EventItem }) {
     performance: "♫",
   };
   const image = safeUrl(event.image_url);
-  return (
-    <div
-      className={`scene scene-${theme}${image && !imageFailed ? " scene-with-image" : ""}`}
-    >
+  const className = `scene scene-${theme}${detail ? " scene-detail" : ""}${image && !imageFailed ? " scene-with-image" : ""}${fit === "contain" && !detail ? " scene-contain" : ""}`;
+  const content = (
+    <>
       {image && !imageFailed && (
         <img
           className="scene-image"
           src={image}
           alt={`${event.title} 대표 이미지`}
-          loading="lazy"
+          loading={detail ? "eager" : "lazy"}
+          onLoad={(event) =>
+            setFit(
+              cardImageFit(
+                event.currentTarget.naturalWidth,
+                event.currentTarget.naturalHeight,
+              ),
+            )
+          }
           onError={() => setImageFailed(true)}
         />
       )}
@@ -230,8 +247,23 @@ function Scene({ event }: { event: EventItem }) {
           </span>
         </div>
       )}
-    </div>
+    </>
   );
+  if (detail && image && !imageFailed && onExpand)
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onExpand(image, event.title)}
+        aria-label={`${event.title} 대표 이미지 크게 보기`}
+      >
+        {content}
+        <span className="scene-expand-hint" aria-hidden="true">
+          ⌕
+        </span>
+      </button>
+    );
+  return <div className={className}>{content}</div>;
 }
 export default function App() {
   const initialParams = useRef(
@@ -307,7 +339,10 @@ export default function App() {
     [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState<string | null>(null),
     [detail, setDetail] = useState<Detail | null>(null),
-    [detailError, setDetailError] = useState("");
+    [detailError, setDetailError] = useState(""),
+    [lightbox, setLightbox] = useState<{ image: string; title: string } | null>(
+      null,
+    );
   const [detailRetry, setDetailRetry] = useState(0);
   const [mode, setMode] = useState(""),
     [about, setAbout] = useState(false);
@@ -319,7 +354,8 @@ export default function App() {
     batchProgress = useRef(
       new Map<number, { loadedPages: number; scrollY: number }>(),
     ),
-    detailHistory = useRef(false);
+    detailHistory = useRef(false),
+    lightboxClose = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     fetch("/api/meta")
       .then(readApi<{ available_date_range: DateRange | null }>)
@@ -505,6 +541,20 @@ export default function App() {
       opener.current?.focus();
     }
   }, [selected, about]);
+  useEffect(() => {
+    if (!lightbox) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    lightboxClose.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [lightbox]);
   function reset() {
     setPeriod("weekend");
     setCustomRange(null);
@@ -1390,7 +1440,11 @@ export default function App() {
           </div>
         ) : detail ? (
           <div>
-            <Scene event={detail.event} />
+            <Scene
+              event={detail.event}
+              detail
+              onExpand={(image, title) => setLightbox({ image, title })}
+            />
             <div className="detail-body">
               <span className="eyebrow">
                 {detail.event.region} ·{" "}
@@ -1520,6 +1574,30 @@ export default function App() {
           </div>
         )}
       </dialog>
+      {lightbox && (
+        <div
+          className="image-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${lightbox.title} 대표 이미지 크게 보기`}
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className="image-lightbox-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              ref={lightboxClose}
+              type="button"
+              onClick={() => setLightbox(null)}
+              aria-label="이미지 크게 보기 닫기"
+            >
+              <X size={22} />
+            </button>
+            <img src={lightbox.image} alt={`${lightbox.title} 대표 이미지`} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -622,7 +622,8 @@ h1 > span {
   position: relative;
 }
 .scene {
-  height: 183px;
+  aspect-ratio: 16 / 10;
+  height: auto;
   position: relative;
   overflow: hidden;
   background: #e6ebdc;
@@ -634,6 +635,35 @@ h1 > span {
   object-fit: cover;
   display: block;
   background: #e6ebdc;
+}
+.scene-contain,
+.scene-detail {
+  background: #e6ebdc;
+}
+.scene-contain .scene-image,
+.scene-detail .scene-image {
+  object-fit: contain;
+}
+.scene-detail {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+}
+.scene-expand-hint {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  z-index: 3;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: #1f332dcc;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
 }
 .scene-with-image::after {
   content: "공식 대표 이미지";
@@ -1177,7 +1207,8 @@ footer > small {
   box-shadow: 0 2px 8px #30412a20;
 }
 .detail-dialog .scene {
-  height: 210px;
+  aspect-ratio: auto;
+  height: min(42vh, 320px);
 }
 .detail-body {
   padding: 30px;
@@ -1312,6 +1343,41 @@ footer > small {
   margin: 20px 0 0;
   color: #8a9588;
   font-size: 11px;
+}
+.image-lightbox {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #14231ee8;
+}
+.image-lightbox-content {
+  position: relative;
+  display: grid;
+  width: min(100%, 1000px);
+  height: min(100%, 820px);
+  place-items: center;
+}
+.image-lightbox-content img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.image-lightbox-content button {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fffefa;
+  color: #253d35;
 }
 .detail-back {
   width: 100%;
@@ -1587,7 +1653,7 @@ footer > small {
     gap: 12px;
   }
   .scene {
-    height: 140px;
+    height: auto;
   }
   .scene-symbol {
     font-size: 85px;
@@ -1744,7 +1810,7 @@ footer > small {
     grid-template-columns: 1fr;
   }
   .scene {
-    height: 180px;
+    height: auto;
   }
   .hero h1 {
     font-size: 32px;
