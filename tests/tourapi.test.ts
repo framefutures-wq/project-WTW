@@ -99,6 +99,18 @@ test("TourAPI does not guess status, price, pet policy or audience from titles",
     null,
   );
 });
+test("TourAPI stores only explicit current event fee evidence", () => {
+  const free = mapFestival({ ...row, usetimefestival: "입장 무료" }, regions, now)!;
+  assert.equal(free.cost, "free");
+  assert.equal(free.price_text, "입장 무료");
+  const paid = mapFestival({ ...row, usefee: "성인 10,000원" }, regions, now)!;
+  assert.equal(paid.cost, "paid");
+  assert.equal(paid.price_text, "성인 10,000원");
+  assert.equal(
+    mapFestival({ ...row, usefee: "무료 주차" }, regions, now)!.cost,
+    "unknown",
+  );
+});
 test("TourAPI rejects incomplete records and invalid coordinate pairs", () => {
   for (const change of [
     { eventenddate: "" },

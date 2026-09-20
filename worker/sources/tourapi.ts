@@ -1,4 +1,5 @@
 import { koreaDate, type EventItem, REGIONS } from "../../shared/domain";
+import { assessCost } from "../../shared/cost-status";
 import type { Env } from "../env";
 import {
   classifyFactTags,
@@ -14,6 +15,10 @@ export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
 type Row = Record<string, unknown>;
 const FACT_FIELDS = ["title", "overview", "program", "subevent", "eventplace", "placeinfo", "playtime", "parking", "parkinginfo", "agelimit", "usetimefestival"];
+const COST_FIELDS = ["usetimefestival", "usefee", "usetime"];
+function costDetails(row: Row) {
+  return COST_FIELDS.map((field) => text(row[field])).filter(Boolean).join(" · ") || null;
+}
 function factDocuments(event: NonNullable<ReturnType<typeof mapFestival>>, raw: Row, sourceId: string, checkedAt: string) {
   const docs = [{ text: event.title, field: "title", source: sourceId, source_type: "tourapi", checked_at: checkedAt, scope: "event_level", strength: "direct_field" }];
   for (const field of FACT_FIELDS) {
@@ -259,6 +264,8 @@ export function mapFestival(
   if (rejectionReasons(row, regions).length || !start || !end || !region)
     return null;
   const progress = text(row.progresstype);
+  const price_text = costDetails(row);
+  const cost = assessCost(price_text, Number(start.slice(0, 4))).status;
   // "선택안함" is NOT evidence of a scheduled or non-cancelled event.
   const status: EventItem["status"] =
     progress === "취소"
@@ -293,8 +300,8 @@ export function mapFestival(
     end_date: end,
     lat: coordinates ? lat : null,
     lng: coordinates ? lng : null,
-    cost: "unknown" as const,
-    price_text: null,
+    cost,
+    price_text,
     pet_policy: "unknown" as const,
     status,
     checked_at: checkedAt,
@@ -465,8 +472,8 @@ export async function saveFestivalSnapshot(
       db
         .prepare(
           `INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at)
-      VALUES(?,?,?,?,?,?,?,?,?,?,'unknown',NULL,'unknown',?,'verified',0,?,?)
-      ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,lat=excluded.lat,lng=excluded.lng,cost='unknown',price_text=NULL,pet_policy='unknown',status=excluded.status,verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.checked_at
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'unknown',?,'verified',0,?,?)
+      ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,lat=excluded.lat,lng=excluded.lng,cost=excluded.cost,price_text=excluded.price_text,pet_policy='unknown',status=excluded.status,verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.checked_at
       WHERE events.primary_source_id=?`,
         )
         .bind(
@@ -480,6 +487,8 @@ export async function saveFestivalSnapshot(
           e.end_date,
           e.lat,
           e.lng,
+          e.cost,
+          e.price_text,
           e.status,
           source,
           snapshot.checkedAt,
@@ -491,6 +500,7 @@ export async function saveFestivalSnapshot(
       venue: `addr1=${text(raw.addr1)}, addr2=${text(raw.addr2)} (행사장 명칭은 미제공)`,
       status: `progresstype=${e.progress || "(미제공)"}${e.status === "unknown" ? " · 개최/취소 여부 미확인" : ""}`,
     };
+    if (e.cost !== "unknown" && e.price_text) evidence.price = e.price_text;
     statements.push(
       db
         .prepare("DELETE FROM event_evidence WHERE event_id=? AND source_id=?")

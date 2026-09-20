@@ -19,6 +19,8 @@ test("부가 서비스·일부 프로그램 비용은 행사 전체 상태로 �
   assert.equal(assessCost("일부 프로그램 유료").status, "unknown");
   assert.equal(assessCost("체험권 5,000원").status, "unknown");
   assert.equal(assessCost("체험비 3,000원").status, "unknown");
+  assert.equal(assessCost("음식 5,000원").status, "unknown");
+  assert.equal(assessCost("2025년 입장료 10,000원", 2026).status, "unknown");
 });
 
 test("사용자 비용 필터는 전체·무료·유료만 노출한다", () => {
