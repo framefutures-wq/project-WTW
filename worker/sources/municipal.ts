@@ -13,7 +13,8 @@ const MAX_PER_SOURCE = 25, MAX_PUBLISH = 10, MAX_RETRY_PER_RUN = 25, RETRY_DAYS 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const hash = async (value: unknown) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value))))).map((n) => n.toString(16).padStart(2, "0")).join("");
 const sourceId = (id: string) => `municipal-source-${id}`;
-const candidateId = (source: string, sourceId: string, startDate: string | null) => `municipal-${source}-${sourceId}-${startDate?.slice(0, 4) ?? "unknown"}`;
+// Durable municipal source IDs and Hwaseong's normalized canonical identity never include mutable dates.
+const candidateId = (source: string, sourceId: string, _startDate: string | null) => `municipal-${source}-${sourceId}`;
 const temporal = (candidate: MunicipalCandidate, current: string) => !candidate.end_date || candidate.end_date < current ? "EXPIRED" : candidate.start_date && candidate.start_date > current ? "UPCOMING" : "ACTIVE";
 
 type Summary = Record<AutonomousDecision | "discovered" | "inserted" | "updated" | "source_errors" | "rows_read" | "rows_written", number>;
@@ -57,6 +58,7 @@ export async function runMunicipalAutonomous(env: Env) {
       const list = await official(source.url);
       if (!list.includes(source.marker)) throw new Error("source_parse_health_failed");
       const candidates = source.parse(list).slice(0, MAX_PER_SOURCE);
+      if (!candidates.length) throw new Error("source_parse_zero_candidates");
       if (candidates.length >= MAX_PER_SOURCE) throw new Error("source_candidate_circuit_breaker");
       for (const candidate of candidates) {
         summary.discovered += 1;
@@ -106,7 +108,9 @@ export async function runMunicipalAutonomous(env: Env) {
         detail = await official(source.url);
         if (!detail.includes(source.marker)) throw new Error("source_parse_health_failed");
         const refreshed = source.parse(detail).find((item) => item.source_candidate_id === candidate.source_candidate_id);
-        if (refreshed) candidate = refreshed;
+        // Canonical lists are current authority: an absent identity may never publish from an old snapshot.
+        if (!refreshed) { summary.AUTO_RETRY += 1; continue; }
+        candidate = refreshed;
       } else detail = await official(candidate.official_url);
       const gate = selectMunicipalGate(candidate), duplicateResult = await duplicate(env, candidate, row.candidate_id);
       summary.rows_read += duplicateResult.rows;

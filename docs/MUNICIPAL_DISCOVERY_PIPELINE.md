@@ -33,7 +33,13 @@ npm run municipal:discover
 
 ## 제한과 다음 단계
 
-## Human approval flow (Phase 10B-1)
+## Autonomous production flow (Phase 10)
+
+Scheduled production does not depend on a person: official discovery → parser health → Selection Gate → bounded duplicate lookup → core-fact validation → autonomous decision. `AUTO_PUBLISH` writes verified official records; `AUTO_RETRY` persists only minimal core identity and re-fetches it on the next daily run; `AUTO_EXCLUDE`, `POLICY_SKIP`, and `EXPIRED` never publish. Missing images, prices, hours, programs, and contact values do not block a complete core event.
+
+`municipal:review` and `municipal:apply` remain optional legacy audit/debug commands only. They are not called by the scheduled production pipeline.
+
+## Legacy human approval flow (Phase 10B-1)
 
 `npm run municipal:review`는 현재 manifest에서 `MAIN + NEW + ready_for_review`만 번호·candidate ID·날짜·장소·공식 source·핵심 정보·이미지 후보와 함께 출력한다. `NEARBY_ONLY`, EXCLUDE, REVIEW, DUPLICATE는 승인 목록에 없다.
 
