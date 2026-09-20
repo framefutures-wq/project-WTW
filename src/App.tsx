@@ -31,7 +31,7 @@ import {
   validDate,
 } from "../shared/domain";
 import { USER_CONTENT_FILTERS } from "../shared/content-filters";
-import { COST_STATUS_LABELS, USER_COST_FILTERS } from "../shared/cost-status";
+import { COST_STATUS_LABELS } from "../shared/cost-status";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
 import {
@@ -267,9 +267,6 @@ export default function App() {
   )
     ? initialParams.get("theme")!
     : "";
-  const initialCost = ["free", "paid"].includes(initialParams.get("cost") ?? "")
-    ? initialParams.get("cost")!
-    : "";
   const [period, setPeriod] = useState<Period>(
     initialPeriod === "today" ||
       initialPeriod === "next-weekend" ||
@@ -289,8 +286,7 @@ export default function App() {
     useState<DateRange | null>(null);
   const [region, setRegion] = useState(initialRegion),
     [audience, setAudience] = useState(initialAudience),
-    [theme, setTheme] = useState(initialTheme),
-    [cost, setCost] = useState(initialCost);
+    [theme, setTheme] = useState(initialTheme);
   const [search, setSearch] = useState(initialParams.get("q") ?? ""),
     [query, setQuery] = useState(initialParams.get("q") ?? "");
   const [sort, setSort] = useState("date"),
@@ -345,7 +341,6 @@ export default function App() {
       "region",
       "audience",
       "theme",
-      "cost",
       "q",
       "sort",
       "page",
@@ -365,7 +360,6 @@ export default function App() {
       region,
       audience,
       theme,
-      cost,
       q: query,
     }))
       if (value) params.set(key, value);
@@ -376,7 +370,7 @@ export default function App() {
       "",
       next ? `${window.location.pathname}?${next}` : window.location.pathname,
     );
-  }, [period, customRange, region, audience, theme, cost, query, sort]);
+  }, [period, customRange, region, audience, theme, query, sort]);
   const requestParams = (requestedPage: number, includeTotal = true) => {
     const params = new URLSearchParams({
       period: customRange ? "custom" : period,
@@ -396,7 +390,6 @@ export default function App() {
       region,
       audience,
       theme,
-      cost,
       q: query,
     }))
       if (value) params.set(key, value);
@@ -456,7 +449,6 @@ export default function App() {
     region,
     audience,
     theme,
-    cost,
     query,
     sort,
     location,
@@ -519,7 +511,6 @@ export default function App() {
     setRegion("");
     setAudience("");
     setTheme("");
-    setCost("");
     setSearch("");
     setQuery("");
     setLocation(null);
@@ -733,7 +724,7 @@ export default function App() {
       (element?.querySelector("button") as HTMLButtonElement | null)?.focus();
   }
   const active = Boolean(
-    customRange || region || audience || theme || cost || query || location,
+    customRange || region || audience || theme || query || location,
   );
   const selectedRangeLabel = customRange
     ? customRange.start === customRange.end
@@ -746,7 +737,6 @@ export default function App() {
     region ? regionLabel(region) : null,
     audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null,
     theme ? THEMES[theme as keyof typeof THEMES] : null,
-    cost ? COST_STATUS_LABELS[cost as keyof typeof COST_STATUS_LABELS] : null,
     query ? `검색: ${query}` : null,
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
@@ -1039,20 +1029,6 @@ export default function App() {
                     {label}
                   </button>
                 ))}
-              </div>
-              <div className="cost-filter">
-                <span className="filter-label">비용</span>
-                <select
-                  value={cost}
-                  onChange={(e) => change(setCost, e.target.value)}
-                  aria-label="비용"
-                >
-                  {USER_COST_FILTERS.map((filter) => (
-                    <option key={filter.queryValue} value={filter.queryValue}>
-                      {filter.label}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
             {geoError && (

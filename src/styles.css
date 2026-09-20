@@ -492,20 +492,6 @@ h1 > span {
   color: #3b6948;
   font-weight: 600;
 }
-.cost-filter {
-  margin-left: auto;
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
-.cost-filter select {
-  font-size: 12px;
-  background: #fff;
-  border: 1px solid var(--line);
-  padding: 6px 10px;
-  border-radius: 6px;
-  min-width: 95px;
-}
 .inline-error {
   font-size: 12px;
   color: #a34231;
@@ -1367,9 +1353,6 @@ footer > small {
   .filter-row {
     gap: 14px;
   }
-  .cost-filter {
-    gap: 8px;
-  }
   .event-grid {
     gap: 15px;
   }
@@ -1527,17 +1510,6 @@ footer > small {
   .chip {
     font-size: 10px;
     padding: 5px 9px;
-  }
-  .cost-filter {
-    grid-column: 2;
-    margin: 5px 0 0;
-  }
-  .cost-filter .filter-label {
-    margin-top: 0;
-  }
-  .cost-filter select {
-    font-size: 11px;
-    padding: 4px 8px;
   }
   .active-filters {
     align-items: flex-start;

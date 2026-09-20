@@ -249,12 +249,6 @@ test("전국 및 17개 지역 전체: 일치 결과와 빈 결과", async ({ pag
       page.getByLabel("지역", { exact: true }).selectOption(region),
     );
 });
-test("무료·유료·전체", async ({ page, rows }) => {
-  for (const cost of ["free", "paid", ""])
-    await change(page, rows, { period: "weekend", cost }, () =>
-      page.getByLabel("비용", { exact: true }).selectOption(cost),
-    );
-});
 test("아이·커플·부모님·반려동물 및 선택 해제", async ({ page, rows }) => {
   for (const [audience, label] of Object.entries(AUDIENCES)) {
     await change(page, rows, { period: "weekend", audience }, () =>
@@ -281,20 +275,14 @@ test("먹거리·불꽃·꽃·체험·공연 및 선택 해제", async ({ page, 
     );
   }
 });
-test("지역·비용·동행·카테고리 복합 필터와 초기화", async ({ page, rows }) => {
+test("지역·동행·카테고리 복합 필터와 초기화", async ({ page, rows }) => {
   await change(page, rows, { period: "weekend", region: "서울" }, () =>
     page.getByLabel("지역", { exact: true }).selectOption("서울"),
   );
   await change(
     page,
     rows,
-    { period: "weekend", region: "서울", cost: "free" },
-    () => page.getByLabel("비용", { exact: true }).selectOption("free"),
-  );
-  await change(
-    page,
-    rows,
-    { period: "weekend", region: "서울", cost: "free", audience: "pets" },
+    { period: "weekend", region: "서울", audience: "pets" },
     () => page.getByRole("button", { name: "반려동물과", exact: true }).click(),
   );
   await change(
@@ -303,7 +291,6 @@ test("지역·비용·동행·카테고리 복합 필터와 초기화", async ({
     {
       period: "weekend",
       region: "서울",
-      cost: "free",
       audience: "pets",
       theme: "flowers",
     },
@@ -312,7 +299,7 @@ test("지역·비용·동행·카테고리 복합 필터와 초기화", async ({
   await change(
     page,
     rows,
-    { period: "weekend", region: "", cost: "", audience: "", theme: "" },
+    { period: "weekend", region: "", audience: "", theme: "" },
     () =>
       page
         .getByRole("button", { name: "필터 초기화", exact: true })
