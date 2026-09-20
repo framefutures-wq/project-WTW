@@ -61,6 +61,7 @@ type Evidence = {
 };
 type Detail = { event: EventItem; evidence: Evidence[] };
 type PageResponse = Omit<EventResponse, "total"> & { total?: number };
+type NearbyLocation = { lat: number; lng: number };
 class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -102,6 +103,11 @@ const detailDateRange = (start: string, end: string) =>
   start === end
     ? detailDate(start)
     : `${detailDate(start)} ~ ${detailDate(end)}`;
+const displayDistance = (distance: number | null) => {
+  if (distance === null) return "거리 미확인";
+  if (distance < 1) return "1km 미만";
+  return `약 ${distance < 10 ? distance.toFixed(1) : Math.round(distance)}km`;
+};
 const tagLabel = (tag: Tag) => ({ ...AUDIENCES, ...THEMES })[tag];
 const safeUrl = (url: string | null | undefined) => {
   try {
@@ -288,9 +294,7 @@ export default function App() {
   const [search, setSearch] = useState(initialParams.get("q") ?? ""),
     [query, setQuery] = useState(initialParams.get("q") ?? "");
   const [sort, setSort] = useState("date"),
-    [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-      null,
-    );
+    [location, setLocation] = useState<NearbyLocation | null>(null);
   const [geoBusy, setGeoBusy] = useState(false),
     [geoError, setGeoError] = useState("");
   const [data, setData] = useState<EventResponse | null>(null),
@@ -365,7 +369,7 @@ export default function App() {
       q: query,
     }))
       if (value) params.set(key, value);
-    if (sort !== "date") params.set("sort", sort);
+    if (sort !== "date" && !location) params.set("sort", sort);
     const next = params.toString();
     window.history.replaceState(
       window.history.state,
@@ -396,10 +400,6 @@ export default function App() {
       q: query,
     }))
       if (value) params.set(key, value);
-    if (location) {
-      params.set("lat", String(location.lat));
-      params.set("lng", String(location.lng));
-    }
     if (!includeTotal) params.set("includeTotal", "0");
     return params;
   };
@@ -408,10 +408,22 @@ export default function App() {
     signal?: AbortSignal,
     includeTotal = true,
   ) => {
-    const response = await fetch(
-      "/api/events?" + requestParams(requestedPage, includeTotal),
-      { signal },
-    );
+    const params = requestParams(requestedPage, includeTotal);
+    const nearbyBody = Object.fromEntries(params);
+    delete nearbyBody.sort;
+    delete nearbyBody.includeTotal;
+    const response = location
+      ? await fetch("/api/events/nearby", {
+          method: "POST",
+          signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...nearbyBody,
+            lat: location.lat,
+            lng: location.lng,
+          }),
+        })
+      : await fetch("/api/events?" + params, { signal });
     return readApi<PageResponse>(response);
   };
   useEffect(() => {
@@ -560,17 +572,25 @@ export default function App() {
     setGeoBusy(true);
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        setLocation({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setLocation({
+          lat: Number(p.coords.latitude.toFixed(3)),
+          lng: Number(p.coords.longitude.toFixed(3)),
+        });
+        setRegion("");
         setSort("distance");
         setGeoBusy(false);
       },
-      () => {
+      (error) => {
         setGeoError(
-          "위치를 확인하지 못했어요. 브라우저 위치 권한을 확인해 주세요.",
+          error.code === error.PERMISSION_DENIED
+            ? "위치 권한이 꺼져 있어요. 지역을 선택해서 찾아볼 수 있어요."
+            : error.code === error.TIMEOUT
+              ? "위치를 확인하지 못했어요. 다시 시도해 주세요."
+              : "위치를 확인하지 못했어요. 다시 시도해 주세요.",
         );
         setGeoBusy(false);
       },
-      { timeout: 10000, maximumAge: 300000 },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
   }
   const change = (fn: (v: string) => void, value: string) => {
@@ -922,7 +942,13 @@ export default function App() {
                   ref={regionFilterRef}
                   aria-label="지역"
                   value={region}
-                  onChange={(e) => change(setRegion, e.target.value)}
+                  onChange={(e) => {
+                    if (location) {
+                      setLocation(null);
+                      setSort("date");
+                    }
+                    change(setRegion, e.target.value);
+                  }}
                 >
                   <option value="">전국 어디든</option>
                   {REGION_OPTIONS.map(({ queryValue, label }) => (
@@ -952,14 +978,22 @@ export default function App() {
               </label>
               <button
                 className="location-button"
-                onClick={locate}
+                onClick={() => {
+                  if (location) {
+                    setLocation(null);
+                    setSort("date");
+                    return;
+                  }
+                  locate();
+                }}
                 disabled={geoBusy}
+                aria-pressed={Boolean(location)}
               >
                 <Navigation size={16} />
                 {geoBusy
                   ? "확인 중…"
                   : location
-                    ? "위치 새로 확인"
+                    ? "내 주변 해제"
                     : "내 주변 찾기"}
               </button>
             </div>
@@ -1028,8 +1062,8 @@ export default function App() {
             )}
             {location && (
               <p className="distance-note">
-                현재 위치는 저장하지 않으며 거리 계산 요청에만 사용합니다.
-                거리는 직선거리입니다.{" "}
+                위치는 이 탭의 메모리에만 두며, 거리 계산에는 반올림한 좌표만
+                사용합니다. 거리는 직선거리입니다.{" "}
                 <button
                   onClick={() => {
                     setLocation(null);
@@ -1075,9 +1109,12 @@ export default function App() {
                   {data.range.start !== data.range.end &&
                     ` – ${dateLabel(data.range.end)}`}{" "}
                   · {region ? regionLabel(region) : "전국"}
+                  {location && " · 내 주변 · 가까운순 · 직선거리 기준"}
                   {mode === "sample"
                     ? " · 가상 행사 미리보기"
                     : " · 출처에 등록된 행사 · 출발 전 개최 여부 확인"}
+                  {data.nearby_candidate_limited &&
+                    " · 주변 후보가 많아 가까운 일부만 보여드려요"}
                 </p>
               )}
             </div>
@@ -1088,23 +1125,22 @@ export default function App() {
                   필터 초기화
                 </button>
               )}
-              <label className="sort">
-                <ArrowDownUp size={15} />
-                <select
-                  aria-label="정렬"
-                  value={sort}
-                  onChange={(e) => {
-                    if (e.target.value === "distance" && !location) {
-                      locate();
-                      return;
-                    }
-                    change(setSort, e.target.value);
-                  }}
-                >
-                  <option value="date">날짜순</option>
-                  {location && <option value="distance">거리순</option>}
-                </select>
-              </label>
+              {location ? (
+                <span className="sort" aria-label="정렬: 가까운순">
+                  <Navigation size={15} /> 가까운순
+                </span>
+              ) : (
+                <label className="sort">
+                  <ArrowDownUp size={15} />
+                  <select
+                    aria-label="정렬"
+                    value={sort}
+                    onChange={(e) => change(setSort, e.target.value)}
+                  >
+                    <option value="date">날짜순</option>
+                  </select>
+                </label>
+              )}
             </div>
           </div>
           <div role="status" className="sr-only">
@@ -1201,7 +1237,7 @@ export default function App() {
                           <span className="distance">
                             {event.distance_km === null
                               ? "거리 미확인"
-                              : `${event.distance_km.toFixed(1)} km`}
+                              : displayDistance(event.distance_km)}
                           </span>
                         )}
                       </p>

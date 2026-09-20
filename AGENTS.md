@@ -15,6 +15,8 @@
 
 테스트 실패, 미완성 작업, 해결되지 않은 오류 또는 아래 예외가 있으면 자동 commit·push·배포를 진행하지 말고 원인과 현재 상태를 먼저 보고한다. 이 예외를 임의로 무시하거나 사용자 작업을 삭제해 clean 상태를 만들지 않는다.
 
+테스트 assertion 실패는 배포를 중단한다. 다만 optional browser smoke가 application과 무관한 missing OS dependency 때문에 browser process를 시작하지 못한 경우에는, core tests·integration·build가 모두 통과하고 사용자가 명시적으로 승인한 때에만 `NOT RUN / ENVIRONMENT UNAVAILABLE`로 기록하고 진행할 수 있다. 이 경우 production 시각 QA는 별도로 수행한다.
+
 ### GitHub 저장
 
 정상 완료된 변경사항이 있으면 적절한 commit message로 commit하고, GitHub `framefutures-wq/project-WTW`의 `main` 브랜치에 push한다. 현재 repository와 `origin` remote를 유지하며 새 repository를 만들거나 remote를 임의로 변경하지 않는다. push 후 원격 `main`을 확인하여 로컬 HEAD와 `origin/main`이 동일하고 working tree가 clean인지 검증한다.

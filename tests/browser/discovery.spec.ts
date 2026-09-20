@@ -55,11 +55,9 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await context.setGeolocation({ latitude: 37.5665, longitude: 126.978 });
   await page.goto("/");
   await page.getByRole("button", { name: "내 주변 찾기" }).click();
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue(
-    "distance",
-  );
-  await expect(page.locator(".event-card").first()).toContainText("0.0 km");
-  await page.getByRole("button", { name: "위치 사용 해제" }).click();
+  await expect(page.getByLabel("정렬: 가까운순")).toBeVisible();
+  await expect(page.locator(".event-card").first()).toContainText("1km 미만");
+  await page.getByRole("button", { name: "내 주변 해제" }).click();
   await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("date");
   await expect(page.locator(".distance")).toHaveCount(0);
 });

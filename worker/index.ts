@@ -8,7 +8,7 @@ import {
   type EventItem,
 } from "../shared/domain";
 import type { Env } from "./env";
-import { parseFilters, InputError } from "./filters";
+import { parseFilters, parseNearbyFilters, InputError } from "./filters";
 import { runScheduled } from "./cron";
 import {
   classifyFactTags,
@@ -168,7 +168,8 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
-    if (request.method !== "GET")
+    const isNearby = url.pathname === "/api/events/nearby";
+    if (request.method !== "GET" && !(isNearby && request.method === "POST"))
       return json({ error: "읽기 전용 API입니다." }, 405);
     try {
       if (url.pathname === "/api/health") {
@@ -195,6 +196,107 @@ export default {
           today: koreaDate(),
           available_date_range: await availableDateRange(env),
         });
+      if (isNearby) {
+        let body: unknown;
+        try {
+          body = await request.json();
+        } catch {
+          throw new InputError("위치 요청 형식이 올바르지 않습니다.");
+        }
+        const f = parseNearbyFilters(body);
+        if (f.lat === null || f.lng === null)
+          throw new InputError("위치 좌표가 필요합니다.");
+        const range = f.customRange ?? dateRange(f.period);
+        const availableRange = await availableDateRange(env);
+        const rangeOutsideAvailable = Boolean(
+          f.customRange &&
+            availableRange &&
+            (range.end < availableRange.start || range.start > availableRange.end),
+        );
+        const where = [
+          visibility(env),
+          "(e.status='scheduled' OR (s.kind='tourapi' AND e.status='unknown'))",
+          "e.start_date<=?",
+          "e.end_date>=?",
+          "e.lat IS NOT NULL AND e.lng IS NOT NULL",
+        ];
+        const binds: (string | number)[] = [
+          ...visibilityBindings(env),
+          range.end,
+          range.start,
+        ];
+        for (const key of ["cost"] as const)
+          if (f[key]) {
+            where.push(`e.${key}=?`);
+            binds.push(f[key]);
+          }
+        if (f.audience) {
+          const companion =
+            audienceCompanionFilter[
+              f.audience as keyof typeof audienceCompanionFilter
+            ];
+          where.push(
+            `e.id IN (SELECT cs.event_id FROM event_companion_suitability cs WHERE cs.companion_type=? AND cs.suitability_state=? AND cs.classifier_type='${COMPANION_CLASSIFIER}' AND cs.rule_version='${COMPANION_RULE_VERSION}')`,
+          );
+          binds.push(companion.companion_type, companion.suitability_state);
+        }
+        if (f.theme) {
+          const contentTag =
+            USER_CONTENT_FILTER_BY_QUERY[f.theme]?.factTags[0] ?? f.theme;
+          where.push(
+            `e.id IN (SELECT t.event_id FROM event_tags t WHERE t.classifier_type='${FACT_CLASSIFIER}' AND t.rule_version='${FACT_RULE_VERSION}' AND t.tag=?)`,
+          );
+          binds.push(contentTag);
+        }
+        if (f.q) {
+          where.push(
+            "(e.title LIKE ? ESCAPE '\\' OR e.venue LIKE ? ESCAPE '\\')",
+          );
+          const escaped = f.q.replace(/[\\%_]/g, "\\$&");
+          binds.push(`%${escaped}%`, `%${escaped}%`);
+        }
+        const latitudeRadius = 200 / 111.32;
+        const longitudeRadius = Math.min(
+          180,
+          200 / Math.max(111.32 * Math.cos((f.lat * Math.PI) / 180), 0.01),
+        );
+        where.push("e.lat BETWEEN ? AND ?", "e.lng BETWEEN ? AND ?");
+        binds.push(
+          f.lat - latitudeRadius,
+          f.lat + latitudeRadius,
+          f.lng - longitudeRadius,
+          f.lng + longitudeRadius,
+        );
+        const CANDIDATE_LIMIT = 500;
+        const { results } = await env.DB.prepare(
+          `${SELECT} WHERE ${where.join(" AND ")} ORDER BY e.start_date,e.end_date,e.id LIMIT ?`,
+        )
+          .bind(...binds, CANDIDATE_LIMIT + 1)
+          .all();
+        const candidateLimited = results.length > CANDIDATE_LIMIT;
+        const events = results
+          .slice(0, CANDIDATE_LIMIT)
+          .map((row) => serialize(row, f.lat, f.lng))
+          .filter((event) => event.distance_km !== null && event.distance_km <= 200)
+          .sort(
+            (a, b) =>
+              (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) ||
+              a.start_date.localeCompare(b.start_date) ||
+              a.end_date.localeCompare(b.end_date) ||
+              a.id.localeCompare(b.id),
+          );
+        return json({
+          events: events.slice((f.page - 1) * f.limit, f.page * f.limit),
+          total: events.length,
+          page: f.page,
+          limit: f.limit,
+          range,
+          available_date_range: availableRange,
+          range_outside_available: rangeOutsideAvailable,
+          nearby_candidate_limited: candidateLimited,
+          mode: env.APP_MODE,
+        });
+      }
       if (url.pathname === "/api/events") {
         const f = parseFilters(url.searchParams),
           includeTotal = url.searchParams.get("includeTotal") !== "0",

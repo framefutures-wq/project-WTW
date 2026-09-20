@@ -90,3 +90,35 @@ export function parseFilters(params: URLSearchParams) {
     limit: integer("limit", 12, 50),
   };
 }
+
+export function parseNearbyFilters(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new InputError("위치 요청 형식이 올바르지 않습니다.");
+  const body = value as Record<string, unknown>;
+  const allowed = new Set([
+    "lat",
+    "lng",
+    "period",
+    "date",
+    "startDate",
+    "endDate",
+    "audience",
+    "theme",
+    "cost",
+    "q",
+    "page",
+    "limit",
+  ]);
+  if (Object.keys(body).some((key) => !allowed.has(key)))
+    throw new InputError("지원하지 않는 위치 요청 값입니다.");
+  const params = new URLSearchParams();
+  for (const key of allowed) {
+    const value = body[key];
+    if (value === undefined || value === null) continue;
+    if (typeof value !== "string" && typeof value !== "number")
+      throw new InputError("위치 요청 값이 올바르지 않습니다.");
+    params.set(key, String(value));
+  }
+  params.set("sort", "distance");
+  return parseFilters(params);
+}

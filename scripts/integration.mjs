@@ -217,14 +217,29 @@ try {
         'companion.pet.explicit_allowed.v1','[\"pet.explicit_pet_allowed\"]','[]','[]')`,
     )
     .run();
+  await fixture("nearby-first", { lat: 37.566, lng: 126.978 });
+  await fixture("nearby-second", { lat: 37.666, lng: 126.978 });
+  await evidence("nearby-first", [...required, "coordinates"]);
+  await evidence("nearby-second", [...required, "coordinates"]);
   async function get(path, status = 200) {
     const r = await mf.dispatchFetch("http://localhost" + path);
+    assert.equal(r.status, status, path);
+    return r.json();
+  }
+  async function post(path, body, status = 200) {
+    const r = await mf.dispatchFetch("http://localhost" + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
     assert.equal(r.status, status, path);
     return r.json();
   }
   const data = await get("/api/events?period=today");
   assert.deepEqual(data.events.map((e) => e.id).sort(), [
     "free-verified",
+    "nearby-first",
+    "nearby-second",
     "pet-verified",
     "verified",
   ]);
@@ -242,6 +257,23 @@ try {
     (await get("/api/events?period=today&region=서울&audience=kids")).total,
     1,
   );
+  const nearby = await post("/api/events/nearby", {
+    lat: 37.566,
+    lng: 126.978,
+    period: "today",
+    limit: 1,
+  });
+  assert.equal(nearby.events[0].id, "nearby-first");
+  const nearbyNext = await post("/api/events/nearby", {
+    lat: 37.566,
+    lng: 126.978,
+    period: "today",
+    page: 2,
+    limit: 1,
+  });
+  assert.equal(nearbyNext.events[0].id, "nearby-second");
+  assert.equal(nearby.events[0].distance_km < nearbyNext.events[0].distance_km, true);
+  await post("/api/events/nearby", { lat: 91, lng: 127 }, 400);
   assert.equal(
     (await get("/api/events?period=today&theme=experience&audience=kids"))
       .total,

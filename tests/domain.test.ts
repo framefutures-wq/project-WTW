@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { koreaDate, dateRange, distanceKm } from "../shared/domain";
-import { parseFilters } from "../worker/filters";
+import { parseFilters, parseNearbyFilters } from "../worker/filters";
 test("한국 날짜 경계와 토·일 주말 정의", () => {
   assert.equal(koreaDate(new Date("2026-09-18T15:01:00Z")), "2026-09-19");
   assert.deepEqual(dateRange("weekend", new Date("2026-09-20T02:00:00Z")), {
@@ -45,4 +45,17 @@ test("직선거리 계산", () => {
   assert.ok(
     Math.abs(distanceKm(37.5665, 126.978, 35.1796, 129.0756) - 325) < 5,
   );
+  assert.ok(Number.isNaN(distanceKm(Number.NaN, 127, 37, 127)));
+});
+test("nearby POST body validates coordinates and filter contract", () => {
+  assert.deepEqual(
+    parseNearbyFilters({ lat: 37.567, lng: 126.978, period: "today" }).lat,
+    37.567,
+  );
+  for (const body of [
+    { lat: 37 },
+    { lat: 91, lng: 127 },
+    { lat: "37", lng: 127, unexpected: true },
+  ])
+    assert.throws(() => parseNearbyFilters(body));
 });

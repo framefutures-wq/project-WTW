@@ -77,6 +77,7 @@ export interface EventResponse {
   available_date_range: DateRange | null;
   range_outside_available: boolean;
   mode: string;
+  nearby_candidate_limited?: boolean;
 }
 export function validDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
