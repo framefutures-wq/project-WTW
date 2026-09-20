@@ -55,3 +55,22 @@ TourAPI 중복은 행사명 exact match로만 확인했다. 이름 변형·유�
 5. 사람 검토를 통과한 소수 후보만 다음 단계에서 공식정보를 보강한다.
 
 이 흐름은 전국 crawl, 자동 인기점수, 대량 등록 없이도 지자체 공식 행사를 보충할 가능성을 보여 준다.
+
+## Phase 9B — 안전한 등록 경로 검증
+
+2026-09-20에 `events(title)` 검색 인덱스(`idx_events_duplicate_title`)를 비파괴 migration으로 추가했다. 등록 전에는 후보별로 다음의 두 단계만 수행한다.
+
+1. `title = ?` exact match — 다른 ID가 있으면 `DUPLICATE`로 등록을 막는다.
+2. exact match가 없을 때만 `is_sample`, `verification`, `status`, `region`, 날짜 겹침으로 최대 25건을 조회한다. 이 작은 후보 집합 안에서 연도·회차·공백·일부 문장부호만 정규화해 같은 제목과 같은 장소/주소면 `LIKELY_DUPLICATE`, 제목만 같고 장소가 다르면 `REVIEW`로 막는다.
+
+production `EXPLAIN QUERY PLAN`은 exact lookup에 `idx_events_duplicate_title`, 지역·날짜 후보 조회에 기존 `idx_events_discovery`를 사용함을 확인했다. 이 경로는 후보별 전체 행사 문자열 탐색을 하지 않는다.
+
+closed manifest의 다음 MAIN 3건은 공식 source와 최소 상세정보를 다시 확인한 뒤 모두 `NEW` 판정을 받아 idempotent upsert로 등록했다.
+
+| 행사 | event ID | 공식 source | 기간 | 등록 정보 |
+| --- | --- | --- | --- | --- |
+| 2026년 제18회 문산거리축제 | `municipal-paju-munsan-street-2026` | [파주시 공식 상세](https://tour.paju.go.kr/user/link/cultural/BD_selectCulturalView.do?cultMstSn=940) | 9/19~20 | 장소·무료·12:00~21:00·요약·체험/공연 highlights·무대 프로그램 |
+| 2026년 제11회 심학산 둘레길 축제 | `municipal-paju-simhaksan-trail-2026` | [파주시 공식 목록](https://tour.paju.go.kr/user/link/cultural/BD_index.do) | 10/3 | 장소·무료·요약·공연/체험/먹거리 highlights |
+| 2026 수원화성 미디어아트 | `municipal-suwon-hwaseong-media-art-2026` | [수원문화재단 공식 상세](https://www.swcf.or.kr/?p=317) | 9/19~10/6 | 장소·18:00~22:00·요약·야간 미디어아트/체험 highlights·화서문 상영 일정 |
+
+파주윈드오케스트라 가을음악회와 수문장 마켓 페스티벌은 `NEARBY_ONLY`이므로, 수원 재즈프린지 페스타는 기준일에 종료되어 이번 production 등록에서 제외했다. 등록 스크립트는 기본값이 plan이며 `apply`는 closed manifest의 `MAIN + NEW + municipal-*`만 쓰고, 나머지 판정은 모두 차단한다.

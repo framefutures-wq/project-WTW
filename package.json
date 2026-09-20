@@ -36,6 +36,7 @@
     "dev:real": "npm run build && wrangler dev --local --config wrangler.jsonc --var APP_MODE:production --test-scheduled",
     "test:ui:real": "playwright test --config playwright.real.config.ts",
     "verify:real": "node scripts/verify-real.mjs",
+    "municipal:register": "node --import tsx scripts/register-municipal-events.mjs",
     "test:ui:contract": "node scripts/contract-browser.mjs",
     "dev:sample": "npm run build && wrangler dev --local --var APP_MODE:sample --test-scheduled"
   },
