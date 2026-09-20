@@ -32,7 +32,6 @@ import {
   validDate,
 } from "../shared/domain";
 import { USER_CONTENT_FILTERS } from "../shared/content-filters";
-import { COST_STATUS_LABELS } from "../shared/cost-status";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
@@ -44,7 +43,12 @@ import {
   totalPages,
   uniqueEvents,
 } from "../shared/list-exploration";
-import { formatTrustDate, hasOfficialSource, trustChangeLabel } from "./trust";
+import {
+  cardStatusLabel,
+  formatTrustDate,
+  hasOfficialSource,
+  trustChangeLabel,
+} from "./trust";
 
 type Evidence = {
   field: string;
@@ -123,18 +127,17 @@ function TrustInfo({
   event: EventItem;
   card?: boolean;
 }) {
-  if (event.is_sample === 1 || !event.trust_status) return null;
-  const changed = event.trust_status === "changed";
-  if (card)
-    return changed ? (
+  if (event.is_sample === 1) return null;
+  if (card) {
+    const label = cardStatusLabel(event);
+    return label ? (
       <span className="trust-card trust-changed">
-        <Info size={13} /> {trustChangeLabel(event.trust_changed_fields)}
-      </span>
-    ) : event.trust_status === "confirmed" ? (
-      <span className="trust-card trust-confirmed">
-        <ShieldCheck size={13} /> 공식정보 확인
+        <Info size={13} /> {label}
       </span>
     ) : null;
+  }
+  if (!event.trust_status) return null;
+  const changed = event.trust_status === "changed";
   if (event.trust_status === "confirmed") return null;
   return (
     <section
@@ -1274,17 +1277,6 @@ export default function App() {
                           <MapPin size={13} />
                           {event.region}
                         </span>
-                        <span
-                          className={
-                            event.cost === "free" ? "price free" : "price"
-                          }
-                        >
-                          {event.cost === "free"
-                            ? "무료"
-                            : event.cost === "paid"
-                              ? "유료"
-                              : COST_STATUS_LABELS.unknown}
-                        </span>
                       </div>
                       <h3>{event.title}</h3>
                       <p className="venue">{event.venue}</p>
@@ -1310,25 +1302,14 @@ export default function App() {
                         ))}
                       </div>
                       <div className="card-bottom">
-                        <span>
-                          {event.is_sample ? (
-                            <>
-                              <Info size={13} />
-                              실제 행사가 아닌 샘플
-                            </>
-                          ) : (
-                            <>
-                              <ShieldCheck size={13} />
-                              {event.status === "unknown"
-                                ? "취소 여부 미확인 · "
-                                : "출처 확인 · "}
-                              {event.checked_at
-                                ? dateLabel(event.checked_at)
-                                : ""}
-                            </>
-                          )}
-                        </span>
-                        <TrustInfo event={event} card />
+                        {event.is_sample ? (
+                          <span>
+                            <Info size={13} />
+                            실제 행사가 아닌 샘플
+                          </span>
+                        ) : (
+                          <TrustInfo event={event} card />
+                        )}
                         <ArrowRight size={17} />
                       </div>
                     </div>

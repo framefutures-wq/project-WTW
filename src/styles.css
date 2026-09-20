@@ -861,7 +861,7 @@ h1 > span {
 }
 .card-meta {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   font-size: 10px;
   color: #88917f;

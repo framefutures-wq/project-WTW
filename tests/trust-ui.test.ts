@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  cardStatusLabel,
   formatTrustDate,
   hasOfficialSource,
   officialSourceLabel,
@@ -67,6 +68,31 @@ test("changed fixture gets a concrete field label without exposing internal reas
   assert.equal(trustChangeLabel(item.trust_changed_fields), "장소 변경 확인");
   assert.equal(trustTitle(item.trust_status), "공식정보 변경 확인");
   assert.doesNotMatch(trustDescription(item.trust_status), /429|timeout|HTTP/);
+});
+
+test("cards stay quiet for normal and unconfirmed events", () => {
+  assert.equal(cardStatusLabel(event()), null);
+  assert.equal(
+    cardStatusLabel(event({ status: "scheduled", trust_status: "confirmed" })),
+    null,
+  );
+});
+
+test("cards show only confirmed visit-impacting changes", () => {
+  assert.equal(cardStatusLabel(event({ status: "cancelled" })), "행사 취소");
+  assert.equal(cardStatusLabel(event({ status: "postponed" })), "행사 연기");
+  assert.equal(
+    cardStatusLabel(
+      event({ trust_status: "changed", trust_changed_fields: ["start_date"] }),
+    ),
+    "일정 변경",
+  );
+  assert.equal(
+    cardStatusLabel(
+      event({ trust_status: "changed", trust_changed_fields: ["venue"] }),
+    ),
+    "장소 변경",
+  );
 });
 
 test("unknown or unverified source type cannot create an official link", () => {

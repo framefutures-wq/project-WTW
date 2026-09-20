@@ -30,6 +30,35 @@ export function trustChangeLabel(fields: string[]) {
   return "행사정보 변경 확인";
 }
 
+export function cardStatusLabel(
+  event: Pick<EventItem, "status" | "trust_status" | "trust_changed_fields">,
+) {
+  if (
+    event.status === "cancelled" ||
+    event.trust_changed_fields.includes("cancelled")
+  )
+    return "행사 취소";
+  if (
+    event.status === "postponed" ||
+    event.trust_changed_fields.includes("postponed")
+  )
+    return "행사 연기";
+  if (event.trust_status !== "changed") return null;
+  if (
+    event.trust_changed_fields.includes("start_date") ||
+    event.trust_changed_fields.includes("end_date")
+  )
+    return "일정 변경";
+  if (
+    event.trust_changed_fields.includes("venue") ||
+    event.trust_changed_fields.includes("address")
+  )
+    return "장소 변경";
+  if (event.trust_changed_fields.includes("operation_change"))
+    return "운영 변경";
+  return "행사정보 변경";
+}
+
 export function formatTrustDate(value: string | null) {
   if (!value) return null;
   const date = new Date(value);
