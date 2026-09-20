@@ -9,7 +9,7 @@ const SOURCES = [
   { key: "goyang", url: "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303", marker: "con_item", parse: parseGoyangList },
   { key: "hwaseong", url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", marker: "listBoard", parse: parseHwaseongList },
 ] as const;
-const MAX_PER_SOURCE = 25, MAX_PUBLISH = 10, RETRY_DAYS = 30;
+const MAX_PER_SOURCE = 25, MAX_PUBLISH = 10, MAX_RETRY_PER_RUN = 25, RETRY_DAYS = 30;
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const hash = async (value: unknown) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value))))).map((n) => n.toString(16).padStart(2, "0")).join("");
 const sourceId = (id: string) => `municipal-source-${id}`;
@@ -51,7 +51,7 @@ async function publish(env: Env, candidate: MunicipalCandidate, id: string, summ
 }
 
 export async function runMunicipalAutonomous(env: Env) {
-  const summary = emptySummary(), now = new Date().toISOString(), koreaToday = today();
+  const summary = emptySummary(), now = new Date().toISOString(), koreaToday = today(), processed = new Set<string>();
   for (const source of SOURCES) {
     try {
       const list = await official(source.url);
@@ -61,6 +61,7 @@ export async function runMunicipalAutonomous(env: Env) {
       for (const candidate of candidates) {
         summary.discovered += 1;
         const id = candidateId(candidate.source, candidate.source_candidate_id, candidate.start_date);
+        processed.add(id);
         const gate = selectMunicipalGate(candidate), duplicateResult = await duplicate(env, candidate, id);
         summary.rows_read += duplicateResult.rows;
         let detailError = false, detailCoreConflict = false, enrichment: ReturnType<typeof createEnrichmentCandidate> | null = null;
@@ -89,6 +90,43 @@ export async function runMunicipalAutonomous(env: Env) {
       console.error("municipal_source_failed", { source: source.key, error: error instanceof Error ? error.name : "unknown" });
     }
   }
+  // Retry candidates are intentionally re-fetched from their minimal core snapshot even when absent from today's listing.
+  const retries = await env.DB.prepare("SELECT candidate_id,source_key,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot,first_seen_at,retry_until,last_payload_hash FROM municipal_candidate_state WHERE decision_state='AUTO_RETRY' AND retry_until IS NOT NULL AND retry_until>=? ORDER BY retry_until LIMIT ?").bind(now, MAX_RETRY_PER_RUN).all<{
+    candidate_id: string; source_key: MunicipalCandidate["source"]; source_candidate_id: string; title_snapshot: string; start_date_snapshot: string | null; end_date_snapshot: string | null; venue_snapshot: string | null; locality_snapshot: MunicipalCandidate["locality"]; official_url_snapshot: string; first_seen_at: string; retry_until: string; last_payload_hash: string;
+  }>();
+  summary.rows_read += retries.meta.rows_read ?? 0;
+  for (const row of retries.results) {
+    if (processed.has(row.candidate_id)) continue;
+    try {
+      const source = SOURCES.find((item) => item.key === row.source_key);
+      if (!source || !row.title_snapshot || !row.venue_snapshot || !row.official_url_snapshot) continue;
+      let candidate: MunicipalCandidate = { source: row.source_key, source_candidate_id: row.source_candidate_id, title: row.title_snapshot, start_date: row.start_date_snapshot, end_date: row.end_date_snapshot, venue: row.venue_snapshot, locality: row.locality_snapshot, region: "경기", official_url: row.official_url_snapshot, category: null, snippet: null, image_candidate: null };
+      let detail: string;
+      if (candidate.official_url === source.url) {
+        detail = await official(source.url);
+        if (!detail.includes(source.marker)) throw new Error("source_parse_health_failed");
+        const refreshed = source.parse(detail).find((item) => item.source_candidate_id === candidate.source_candidate_id);
+        if (refreshed) candidate = refreshed;
+      } else detail = await official(candidate.official_url);
+      const gate = selectMunicipalGate(candidate), duplicateResult = await duplicate(env, candidate, row.candidate_id);
+      summary.rows_read += duplicateResult.rows;
+      const enrichment = createEnrichmentCandidate(candidate, detail);
+      const decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(candidate, koreaToday), trusted: true, coreValid: Boolean(candidate.title && candidate.start_date && candidate.end_date && candidate.venue && candidate.official_url), parserError: Boolean(candidate.parse_error), detailError: Boolean(enrichment.parse_error), coreConflict: candidate.official_url !== source.url && hasMunicipalDetailCoreConflict(candidate, detail) });
+      summary[decision.state] += 1;
+      const payloadHash = await hash({ title: candidate.title, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, official_url: candidate.official_url });
+      const existing = await env.DB.prepare("SELECT id FROM events WHERE id=? LIMIT 1").bind(row.candidate_id).first<{ id: string }>();
+      if (decision.state === "AUTO_PUBLISH" && summary.inserted + summary.updated < MAX_PUBLISH) {
+        const write = await publish(env, candidate, row.candidate_id, enrichment.summary, now, existing); summary.inserted += write.inserted; summary.updated += write.updated; summary.rows_written += write.rows;
+      }
+      const saved = await saveState(env, candidate, row.candidate_id, decision, payloadHash, now, row); summary.rows_written += saved.meta.changes ?? 0;
+      processed.add(row.candidate_id);
+    } catch {
+      // Fetch failure is retryable; retain fixed retry_until and last-known-good publication.
+      summary.AUTO_RETRY += 1;
+    }
+  }
+  const expiredRetries = await env.DB.prepare("UPDATE municipal_candidate_state SET decision_state='AUTO_EXCLUDE',decision_reason='retry_ttl_expired' WHERE decision_state='AUTO_RETRY' AND retry_until IS NOT NULL AND retry_until<?").bind(now).run();
+  summary.rows_written += expiredRetries.meta.changes ?? 0;
   console.log("municipal_autonomous_summary", summary);
   return summary;
 }
