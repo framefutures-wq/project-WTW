@@ -25,6 +25,9 @@ export type PrivateSourceKey = keyof typeof PRIVATE_SOURCE_REGISTRY;
 export type CandidateEligibility = "eligible" | "not_eligible" | "needs_review";
 export type DuplicateStatus =
   "new_candidate" | "probable_duplicate" | "ambiguous_duplicate";
+export type CanonicalIdentityStability = "stable" | "fallback_unstable";
+export type DateEvidenceClassification =
+  "reliable_event_date" | "ambiguous_date" | "missing_date";
 
 const PRODUCT_OR_PROMOTION =
   /(이용권|입장권|야간권|할인|쿠폰|멤버십|주차|레스토랑|식사|패키지|상품|굿즈|정기권|대여)/;
@@ -120,6 +123,75 @@ export function normalizeTitle(value: string) {
     .toLowerCase()
     .replace(/[^0-9a-z가-힣]+/g, "")
     .trim();
+}
+
+/**
+ * Prefer an official item identifier when the source actually exposes one.
+ * A URL path plus heading is only a discovery fallback: content headings can
+ * change while the underlying organizer item remains the same.
+ */
+export function canonicalPrivateIdentity(input: {
+  sourceKey: PrivateSourceKey;
+  sourceUrl: string;
+  title: string;
+  officialItemId?: string | null;
+}): { canonicalSourceId: string; stability: CanonicalIdentityStability } {
+  const itemId = input.officialItemId?.trim();
+  if (itemId) {
+    return {
+      canonicalSourceId: `${input.sourceKey}:item:${itemId}`,
+      stability: "stable",
+    };
+  }
+  const path = new URL(input.sourceUrl).pathname;
+  return {
+    canonicalSourceId: `${path}#${normalizeTitle(input.title).slice(0, 80) || "untitled"}`,
+    stability: "fallback_unstable",
+  };
+}
+
+export function classifyPrivateDateEvidence(input: {
+  sourcePageType: string;
+  startDate: string | null;
+  endDate: string | null;
+  completeDateRanges: Array<{ start: string; end: string }>;
+}): { classification: DateEvidenceClassification; reason: string } {
+  // A reservation product can expose a sale or valid-use range. It is never
+  // enough to establish an event's operating period.
+  if (input.sourcePageType === "official_reservation_product") {
+    return {
+      classification: "ambiguous_date",
+      reason:
+        "예약/상품 페이지의 판매·이용 가능 기간은 행사 운영기간으로 사용할 수 없음",
+    };
+  }
+  if (input.completeDateRanges.length > 1) {
+    return {
+      classification: "ambiguous_date",
+      reason: "복수의 비연속 운영기간을 단일 범위로 평탄화하면 안 됨",
+    };
+  }
+  if (
+    input.completeDateRanges.length === 1 &&
+    input.startDate &&
+    input.endDate
+  ) {
+    return {
+      classification: "reliable_event_date",
+      reason: "공식 행사 프로그램 페이지의 단일 완전 운영기간",
+    };
+  }
+  if (input.sourcePageType === "official_season_program") {
+    return {
+      classification: "ambiguous_date",
+      reason:
+        "개별 프로그램의 완전한 시작·종료 기간이 페이지에서 확인되지 않음",
+    };
+  }
+  return {
+    classification: "missing_date",
+    reason: "공식 페이지에서 행사 운영기간을 확인하지 못함",
+  };
 }
 
 export function dateOverlap(

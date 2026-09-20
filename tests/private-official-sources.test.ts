@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   PRIVATE_SOURCE_REGISTRY,
+  canonicalPrivateIdentity,
   classifyDuplicate,
+  classifyPrivateDateEvidence,
   classifyPrivateEligibility,
   classifyPrivateFacts,
   isAllowedPrivateOfficialUrl,
@@ -107,5 +109,52 @@ test("duplicate classification stays conservative without an exact venue match",
       },
     ]),
     "probable_duplicate",
+  );
+});
+
+test("canonical identity uses an official item id and marks heading fallback unstable", () => {
+  assert.deepEqual(
+    canonicalPrivateIdentity({
+      sourceKey: "everland",
+      sourceUrl: "https://web.everland.com/pick/2026/event.html?idx=7",
+      title: "봄 불꽃쇼",
+      officialItemId: "EV-2026-7",
+    }),
+    { canonicalSourceId: "everland:item:EV-2026-7", stability: "stable" },
+  );
+  assert.deepEqual(
+    canonicalPrivateIdentity({
+      sourceKey: "everland",
+      sourceUrl: "https://web.everland.com/pick/2026/event.html?idx=7",
+      title: "봄 불꽃쇼",
+    }),
+    {
+      canonicalSourceId: "/pick/2026/event.html#봄불꽃쇼",
+      stability: "fallback_unstable",
+    },
+  );
+});
+
+test("sale periods and split operating windows cannot become an event date", () => {
+  assert.equal(
+    classifyPrivateDateEvidence({
+      sourcePageType: "official_reservation_product",
+      startDate: "2026-09-01",
+      endDate: "2026-09-30",
+      completeDateRanges: [{ start: "2026-09-01", end: "2026-09-30" }],
+    }).classification,
+    "ambiguous_date",
+  );
+  assert.equal(
+    classifyPrivateDateEvidence({
+      sourcePageType: "official_event_program",
+      startDate: "2026-07-24",
+      endDate: "2026-08-16",
+      completeDateRanges: [
+        { start: "2026-07-24", end: "2026-07-25" },
+        { start: "2026-07-31", end: "2026-08-16" },
+      ],
+    }).classification,
+    "ambiguous_date",
   );
 });

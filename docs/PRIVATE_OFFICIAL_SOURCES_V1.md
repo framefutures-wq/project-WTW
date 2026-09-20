@@ -70,7 +70,7 @@ parser 실패는 빈 행사나 취소로 해석하지 않는다. 이전 결과�
 
 ## Phase 7-2 판단
 
-자동수집 진입에는 날짜 추출, stable item identity, TourAPI 중복 비교, parent/sub-event 판정, parser failure 감지가 모두 안정적이어야 한다. 현재는 seed가 제한적이고 일부 공개 페이지에 완전한 기간/item id가 없으며 TourAPI local snapshot 없이 duplicate를 확정할 수 없으므로, dry-run 결과에 따라 **C. 자동수집 비추천** 또는 제한적 수동 검토만 가능하다고 판단한다.
+자동수집 진입에는 날짜 추출, stable item identity, TourAPI 중복 비교, parent/sub-event 판정, parser failure 감지가 모두 안정적이어야 한다. 날짜가 여러 비연속 구간이면 이를 하나의 연속 행사 기간으로 합치지 않는다. 예약/상품 페이지의 판매·이용 가능 기간도 행사 기간으로 사용하지 않는다. 현재는 seed가 제한적이고 일부 공개 페이지에 완전한 기간/item id가 없으므로, dry-run 결과에 따라 **C. 자동수집 비추천** 또는 제한적 수동 검토만 가능하다고 판단한다.
 
 ## 2026-09-20 dry-run 결과
 
@@ -87,4 +87,34 @@ parser 실패는 빈 행사나 취소로 해석하지 않는다. 이전 결과�
 | parent / sub-event 후보                                  |      8 / 3 |
 | 연락처 / 가격 / 이미지 URL 추출                          |  0 / 0 / 0 |
 
-`experience=1`은 공식 예약 페이지의 윙즈 오브 메모리 상품 텍스트에서 나온 검토 후보이며, 완전한 행사 기간이 없어 `needs_review`다. eligible 3건은 모두 ended라 운영 등록 대상이 아니다. TourAPI local snapshot을 제공하지 않았으므로 duplicate는 전부 `ambiguous_duplicate`로 남겼다. 이번 dry-run의 D1 read/write는 0회, migration 0, Cron 변경 0이다.
+`experience=1`은 공식 예약 페이지의 윙즈 오브 메모리 상품 텍스트에서 나온 검토 후보이며, 완전한 행사 기간이 없어 `needs_review`다. eligible 3건은 모두 ended라 운영 등록 대상이 아니다. 이번 dry-run의 D1 read/write는 0회, migration 0, Cron 변경 0이다.
+
+## 2026-09-20 Phase 7-1B production readiness audit
+
+Phase 7-1 결과를 다시 만들지 않고 같은 공식 seed를 제한적으로 다시 요청했다. 4개 페이지가 같은 11개 후보를 반환했고, 로그인·CAPTCHA·anti-bot 우회는 사용하지 않았다. 이 감사는 production D1에 쓰지 않았고, TourAPI 중복 비교에 필요한 필드만 한 번 읽어 로컬 `.wrangler/everland-production-readiness.json` 보고서로 남겼다.
+
+| 후보                                   | 페이지 유형        | 날짜 판정                                  | eligibility  | fact tags                         | 구조                    | TourAPI 중복 |
+| -------------------------------------- | ------------------ | ------------------------------------------ | ------------ | --------------------------------- | ----------------------- | ------------ |
+| 슈팅 워터펀 시즌 2 : 게임 속으로       | 공식 프로그램      | reliable (2026-06-19~08-30)                | eligible     | performance, seated_viewing       | sub 후보                | new          |
+| 밤밤맨 키즈 워터파티                   | 공식 프로그램      | reliable (2026-06-19~08-30)                | eligible     | 없음                              | sub 후보                | new          |
+| 밤밤 썸머 나이트                       | 공식 프로그램      | ambiguous: 2개 비연속 기간                 | eligible     | performance                       | sub 후보                | ambiguous    |
+| BLOOD CITY ZERO                        | 공식 landing       | missing                                    | needs_review | 없음                              | parent 후보             | ambiguous    |
+| 에버랜드 스페셜 불꽃쇼 : 빛의 수호자들 | 공식 시즌 프로그램 | ambiguous: 종료일 없음                     | needs_review | fireworks, nature_scenery, parade | parent 후보             | ambiguous    |
+| 에버랜드 서커스 : 윙즈 오브 메모리     | 공식 시즌 프로그램 | ambiguous: 종료일 없음                     | needs_review | performance, parade               | parent 후보             | ambiguous    |
+| 카니발 판타지 퍼레이드                 | 공식 시즌 프로그램 | ambiguous: 종료일 없음                     | needs_review | performance, parade               | parent 후보             | ambiguous    |
+| 레니와 라라의 매지컬 스케치북          | 공식 시즌 프로그램 | ambiguous: 종료일 없음                     | needs_review | performance, parade               | parent 후보             | ambiguous    |
+| 문라이트 퍼레이드                      | 공식 시즌 프로그램 | ambiguous: 종료일 없음                     | needs_review | parade                            | parent 후보             | ambiguous    |
+| 야간권                                 | 공식 예약 상품     | ambiguous: 판매/이용 기간은 행사 기간 아님 | not_eligible | night_light                       | parent 플래그 대상 아님 | ambiguous    |
+| 윙즈 오브 메모리                       | 공식 예약 상품     | ambiguous: 판매/이용 기간은 행사 기간 아님 | needs_review | experience                        | parent 후보             | ambiguous    |
+
+날짜 판정은 reliable 2, ambiguous 8, missing 1이다. 특히 `밤밤 썸머 나이트`의 두 공식 운영 구간을 `2026-07-24~08-16`이라는 하나의 연속 기간으로 저장하면 안 된다. 예약 페이지의 기간도 판매·이용 가능 기간일 수 있으므로 행사 기간으로 사용하지 않는다.
+
+현재 canonical identity는 `URL pathname + normalized heading` fallback이며 11건 모두 `fallback_unstable`이다. seed URL의 `idx`, `index_id`, `menu_id`는 개별 행사에 안정적으로 연결되는 공식 item ID로 확인하지 못했다. Phase 7-2에서는 공식 item ID를 확보했을 때만 `source_key + official item ID`를 stable identity로 사용한다.
+
+TourAPI 중복 비교는 `events`와 primary `sources`에서 `id`, title, start/end date, venue, address, lat/lng, primary source ID, source URL만 읽은 단일 bounded snapshot 263행으로 수행했다. 결과는 probable 0, new 2, ambiguous 9다. 날짜가 부족한 9건은 자동 merge 또는 publish 대상으로 만들지 않는다.
+
+현재의 parent 8 / sub 3 플래그는 dry-run 분류다. sub 3건은 고유 이름과 완전한 운영기간이 확인된 물놀이 프로그램이다. 나머지 parent 플래그는 parent-child 관계를 확정한 뜻이 아니며, 특히 상품 페이지 항목은 행사 parent가 아니다. 실제 parent-child 저장은 독립 이름과 일정·시간·장소·참여조건 중 충분한 근거가 있을 때만 Phase 7-2에서 검토한다.
+
+robots 재확인에서는 `www.everland.com`이 `Allow: /`, `reservation.everland.com`이 마이페이지·결제 경로만 금지했다. `web.everland.com/robots.txt`는 유효한 robots 정책 대신 오류 HTML을 반환했다. `www.everland.com/terms`도 JavaScript shell만 반환해 약관상 자동수집 허용 범위를 확인할 수 없었다. 이는 법적 판단이 아니라, 제한된 공개 seed의 dry-run 이상으로 자동수집 범위를 넓히지 않는 근거다.
+
+따라서 Phase 7-2 판단은 **C. 자동수집 비추천**을 유지한다. 완전한 행사 날짜, 안정 item ID, 신뢰할 수 있는 장소 추출, 명시적인 자동 접근 정책을 함께 확보하기 전에는 수동 검토용 discovery로만 사용한다.

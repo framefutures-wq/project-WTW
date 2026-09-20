@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { classifyFactTags } from "../shared/fact-tags.ts";
 import {
   PRIVATE_SOURCE_REGISTRY,
+  canonicalPrivateIdentity,
   classifyDuplicate,
   classifyPrivateEligibility,
   isAllowedPrivateOfficialUrl,
@@ -31,10 +32,6 @@ function clean(value) {
     .replace(/&quot;/gi, '"')
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function slug(value) {
-  return normalizeTitle(value).slice(0, 80) || "untitled";
 }
 
 function parseDateRange(text) {
@@ -129,14 +126,40 @@ function knownEverlandBlocks(sourceUrl, html) {
     .filter((block) => block.text);
 }
 
-function inferVenue(text) {
-  const match = text.match(/(?:장소|운영장소)\s*([^|]{2,80})/);
-  return match ? match[1].trim() : null;
+function hasKnownEverlandStructure(sourceUrl) {
+  const path = new URL(sourceUrl).pathname;
+  return (
+    path.includes("water-festival/show.html") ||
+    path.includes("tulip_festival/entertainment.html") ||
+    path.includes("blood-city-zero/map.html") ||
+    path.includes("/web/el.do")
+  );
+}
+
+function sourcePageType(sourceUrl) {
+  const url = new URL(sourceUrl);
+  if (url.hostname === "reservation.everland.com")
+    return "official_reservation_product";
+  if (url.pathname.includes("water-festival")) return "official_event_program";
+  if (url.pathname.includes("tulip_festival")) return "official_season_program";
+  return "official_event_landing";
+}
+
+function inferVenue() {
+  // Page-wide cleaned text joins neighbouring program metadata. Do not turn a
+  // following program's copy into a venue. A page-specific extraction is
+  // required before venue data can be emitted.
+  return null;
 }
 
 function candidateFromBlock(sourceUrl, block) {
   const range = parseDateRange(block.text);
-  const canonicalSourceId = `${new URL(sourceUrl).pathname}#${slug(block.title)}`;
+  const identity = canonicalPrivateIdentity({
+    sourceKey: "everland",
+    sourceUrl,
+    title: block.title,
+  });
+  const canonicalSourceId = identity.canonicalSourceId;
   const eligibilityResult = classifyPrivateEligibility({
     title: block.title,
     startDate: range.start,
@@ -170,7 +193,9 @@ function candidateFromBlock(sourceUrl, block) {
     sourceKey: "everland",
     sourceType: PRIVATE_SOURCE_REGISTRY.everland.sourceType,
     sourceUrl,
+    sourcePageType: sourcePageType(sourceUrl),
     canonicalSourceId,
+    canonicalIdentityStability: identity.stability,
     title: block.title,
     startDate: range.start,
     endDate: range.end,
@@ -211,10 +236,14 @@ const pages = [];
 const candidates = [];
 for (const url of SEEDS) {
   const html = await fetchPage(url);
-  const blocks = knownEverlandBlocks(url, html);
-  const pageCandidates = (blocks.length ? blocks : htmlBlocks(html)).map(
-    (block) => candidateFromBlock(url, block),
-  );
+  const knownBlocks = knownEverlandBlocks(url, html);
+  if (hasKnownEverlandStructure(url) && !knownBlocks.length) {
+    throw new Error(
+      `parser structure failure: no expected content blocks at ${url}`,
+    );
+  }
+  const blocks = knownBlocks.length ? knownBlocks : htmlBlocks(html);
+  const pageCandidates = blocks.map((block) => candidateFromBlock(url, block));
   pages.push({ url, status: "fetched", candidates: pageCandidates.length });
   candidates.push(...pageCandidates);
 }
