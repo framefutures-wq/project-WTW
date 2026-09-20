@@ -31,4 +31,10 @@ npm run municipal:discover
 
 ## 제한과 다음 단계
 
+## Human approval flow (Phase 10B-1)
+
+`npm run municipal:review`는 현재 manifest에서 `MAIN + NEW + ready_for_review`만 번호·candidate ID·날짜·장소·공식 source·핵심 정보·이미지 후보와 함께 출력한다. `NEARBY_ONLY`, EXCLUDE, REVIEW, DUPLICATE는 승인 목록에 없다.
+
+`npm run municipal:apply -- --approve <candidate-id> --manifest <fingerprint>`는 fingerprint가 현재 manifest와 같고, 명시적 ID가 최대 3개이며, 각 후보가 아직 MAIN/NEW/ready인 경우에만 현재 D1 duplicate 검사를 다시 수행한다. approve 누락, `all`류 값, stale manifest, unknown ID, 새 duplicate는 모두 write 전에 실패한다. Phase 10B-1에서는 production writer 자체가 disabled이며 다음 사람 승인 후에도 등록은 Phase 10B-2 범위다.
+
 두 source adapter는 현재 HTML 구조에 한정된다. 필수 필드나 title identity가 불완전하면 REVIEW/PARSE_ERROR로 두며 추측하지 않는다. source가 목록에서 동일 행사를 중복 게재하면 source-level로 한 번만 남긴다. Cron, apply mode, production write는 Phase 10A 범위 밖이다.

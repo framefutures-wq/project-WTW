@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createEnrichmentCandidate, parsePajuList, parseSuwonList, selectMunicipalGate } from "../shared/municipal-discovery.ts";
 import { lookupMunicipalDuplicate } from "./municipal-duplicate-lookup.mjs";
+import { manifestFingerprint, stableMunicipalCandidateId } from "../shared/municipal-approval.ts";
 
 const DB = "weekend-mwohae-production";
 const CONFIG = "wrangler.production.jsonc";
@@ -61,7 +62,7 @@ export async function runMunicipalDiscovery({ fetchOfficialPage = fetchOfficial,
     }
     const enrichmentParseError = enrichment_candidate && typeof enrichment_candidate === "object" && "parse_error" in enrichment_candidate;
     const ready_for_review = eligible && Boolean(candidate.title && candidate.start_date && candidate.end_date && candidate.venue && candidate.official_url) && !enrichmentParseError;
-    results.push({ ...candidate, selection_gate: selection.gate, selection_reason: selection.reason, duplicate_status: duplicate.decision, duplicate_matches: [...duplicate.exact.results, ...duplicate.nearby.results].map(({ id, title }) => ({ id, title })), enrichment_candidate, ready_for_review });
+    results.push({ ...candidate, candidate_id: stableMunicipalCandidateId(candidate.source, candidate.source_candidate_id, candidate.start_date), selection_gate: selection.gate, selection_reason: selection.reason, duplicate_status: duplicate.decision, duplicate_matches: [...duplicate.exact.results, ...duplicate.nearby.results].map(({ id, title }) => ({ id, title })), enrichment_candidate, ready_for_review });
   }
   const count = (key, value) => results.filter((item) => item[key] === value).length;
   return {
@@ -72,7 +73,7 @@ export async function runMunicipalDiscovery({ fetchOfficialPage = fetchOfficial,
       duplicates: Object.fromEntries(["DUPLICATE", "LIKELY_DUPLICATE", "NEW", "REVIEW"].map((value) => [value, count("duplicate_status", value)])),
       ready_for_review: results.filter((item) => item.ready_for_review).length, ...metrics, d1_rows_written: 0,
     },
-    candidates: results,
+    fingerprint: manifestFingerprint(results), candidates: results,
   };
 }
 
