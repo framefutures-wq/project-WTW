@@ -1,15 +1,19 @@
-import { mkdirSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { createEnrichmentCandidate, parsePajuList, parseSuwonList, selectMunicipalGate } from "../shared/municipal-discovery.ts";
+import { setDefaultResultOrder } from "node:dns";
+import { createEnrichmentCandidate, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate } from "../shared/municipal-discovery.ts";
 import { lookupMunicipalDuplicate } from "./municipal-duplicate-lookup.mjs";
 import { manifestFingerprint, stableMunicipalCandidateId, temporalStatus, seoulToday } from "../shared/municipal-approval.ts";
 
 const DB = "weekend-mwohae-production";
 const CONFIG = "wrangler.production.jsonc";
 const DETAIL_LIMIT = 10;
+// Several municipal hosts publish unreachable IPv6 records. Prefer IPv4 without changing source URLs.
+setDefaultResultOrder("ipv4first");
 const LIST_URLS = {
   paju: "https://tour.paju.go.kr/user/link/cultural/BD_index.do",
   suwon: "https://www.swcf.or.kr/?p=29",
+  goyang: "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303",
+  hwaseong: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp",
 };
 const sourceUnique = (candidates) => [...new Map(candidates.map((candidate) => [`${candidate.source}|${candidate.title}|${candidate.start_date}|${candidate.end_date}|${candidate.venue}`, candidate])).values()];
 
@@ -34,11 +38,18 @@ async function fetchOfficial(url, cache, metrics) {
 export async function runMunicipalDiscovery({ fetchOfficialPage = fetchOfficial, execute = d1Read } = {}) {
   const metrics = { official_requests: 0, d1_rows_read: 0, parser_errors: 0, detail_requests: 0 };
   const cache = new Map();
-  const [pajuHtml, suwonHtml] = await Promise.all([
+  const [pajuHtml, suwonHtml, goyangHtml, hwaseongHtml] = await Promise.all([
     fetchOfficialPage(LIST_URLS.paju, cache, metrics),
     fetchOfficialPage(LIST_URLS.suwon, cache, metrics),
+    fetchOfficialPage(LIST_URLS.goyang, cache, metrics),
+    fetchOfficialPage(LIST_URLS.hwaseong, cache, metrics),
   ]);
-  const discovered = [...sourceUnique(parsePajuList(pajuHtml)).slice(0, 9), ...sourceUnique(parseSuwonList(suwonHtml)).slice(0, 8)];
+  const discovered = [
+    ...sourceUnique(parsePajuList(pajuHtml)).slice(0, 10),
+    ...sourceUnique(parseSuwonList(suwonHtml)).slice(0, 10),
+    ...sourceUnique(parseGoyangList(goyangHtml)).slice(0, 10),
+    ...sourceUnique(parseHwaseongList(hwaseongHtml)).slice(0, 10),
+  ];
   const results = [];
   for (const candidate of discovered) {
     const selection = selectMunicipalGate(candidate);
@@ -68,7 +79,7 @@ export async function runMunicipalDiscovery({ fetchOfficialPage = fetchOfficial,
   return {
     generated_at: new Date().toISOString(), mode: "dry-run", production_write: false, sources: LIST_URLS,
     summary: {
-      discovered: results.length, by_source: { paju: results.filter((item) => item.source === "paju").length, suwon: results.filter((item) => item.source === "suwon").length },
+      discovered: results.length, by_source: Object.fromEntries(Object.keys(LIST_URLS).map((source) => [source, results.filter((item) => item.source === source).length])),
       gates: Object.fromEntries(["MAIN", "NEARBY_ONLY", "EXCLUDE", "REVIEW"].map((value) => [value, count("selection_gate", value)])),
       duplicates: Object.fromEntries(["DUPLICATE", "LIKELY_DUPLICATE", "NEW", "REVIEW"].map((value) => [value, count("duplicate_status", value)])),
       ready_for_review: results.filter((item) => item.ready_for_review).length, ...metrics, d1_rows_written: 0,
@@ -76,16 +87,3 @@ export async function runMunicipalDiscovery({ fetchOfficialPage = fetchOfficial,
     fingerprint: manifestFingerprint(results), candidates: results,
   };
 }
-
-async function main() {
-  if (process.argv.slice(2).some((arg) => arg !== "--dry-run")) throw new Error("usage: npm run municipal:discover [-- --dry-run]");
-  const report = await runMunicipalDiscovery();
-  mkdirSync(".wrangler", { recursive: true });
-  writeFileSync(".wrangler/municipal-discovery-dry-run.json", JSON.stringify(report, null, 2));
-  console.log(JSON.stringify({ mode: report.mode, ...report.summary, output: ".wrangler/municipal-discovery-dry-run.json" }, null, 2));
-}
-if (process.argv.some((arg) => arg.endsWith("municipal-discover.mjs")))
-  void main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });

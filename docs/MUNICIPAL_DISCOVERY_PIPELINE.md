@@ -2,12 +2,14 @@
 
 ## 목적과 범위
 
-이 도구는 TourAPI를 대체하지 않는다. 파주시·수원시의 **공식 목록**에서 소수의 행사 후보를 발견하고, 사람이 다음 등록 단계를 검토할 수 있도록 정리하는 dry-run이다. production DB에는 어떤 `INSERT`, `UPDATE`, `DELETE`도 실행하지 않는다.
+이 도구는 TourAPI를 대체하지 않는다. 파주시·수원시·고양시·화성시의 **공식 목록**에서 소수의 행사 후보를 발견하고, 사람이 다음 등록 단계를 검토할 수 있도록 정리하는 dry-run이다. production DB에는 어떤 `INSERT`, `UPDATE`, `DELETE`도 실행하지 않는다.
 
 ## 지원 source와 흐름
 
 - 파주시: `tour.paju.go.kr` 이달의 문화행사 목록과 후보별 공식 상세
 - 수원시: `swcf.or.kr` 수원문화재단 행사정보 목록과 후보별 공식 상세
+- 고양시: `goyang.go.kr/visitgoyang` 대표축제 목록. 2026년처럼 연도가 명시된 기간과 후보별 공식 링크만 수집하며, 매년 반복 안내는 추측하지 않는다.
+- 화성시: `tour.hscity.go.kr` 2026년 주요 축제·행사 일정. 시 공식 표 자체가 후보의 canonical detail source이며, 개별 상세 페이지가 없는 행사는 표에 명시된 값만 후보화한다.
 
 1. 지역별 목록을 한 번 가져와 최소 필드(제목, 날짜, 장소, 공식 URL, category/snippet)를 parser로 추출한다.
 2. deterministic Selection Gate로 `MAIN`, `NEARBY_ONLY`, `EXCLUDE`, `REVIEW`를 부여한다. 교육·모집·워크숍·시설 편성은 EXCLUDE, 축제·페스티벌·야행 등은 MAIN, 애매하면 REVIEW다.
@@ -27,7 +29,7 @@ detail parser는 공식 page의 명시적 행사 운영시간만 `operating_hour
 npm run municipal:discover
 ```
 
-기본값은 dry-run이며 결과는 git-ignored `.wrangler/municipal-discovery-dry-run.json`에 저장된다. 공식 요청 상한은 목록 2건과 상세 최대 10건(총 20건 이하)이다. parser 테스트는 `fixtures/municipal-discovery-*.html`만 사용한다.
+기본값은 dry-run이며 결과는 git-ignored `.wrangler/municipal-discovery-dry-run.json`에 저장된다. 공식 요청 상한은 목록 4건과 상세 최대 10건(총 20건 이하)이다. parser 테스트는 `fixtures/municipal-discovery-*.html`만 사용한다.
 
 ## 제한과 다음 단계
 

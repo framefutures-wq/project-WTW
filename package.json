@@ -37,7 +37,7 @@
     "test:ui:real": "playwright test --config playwright.real.config.ts",
     "verify:real": "node scripts/verify-real.mjs",
     "municipal:register": "node --import tsx scripts/register-municipal-events.mjs",
-    "municipal:discover": "node --import tsx scripts/municipal-discover.mjs --dry-run",
+    "municipal:discover": "node --import tsx scripts/municipal-discover-run.mjs --dry-run",
     "municipal:review": "node --import tsx scripts/municipal-review.mjs",
     "municipal:apply": "node --import tsx scripts/municipal-apply.mjs",
     "test:ui:contract": "node scripts/contract-browser.mjs",
