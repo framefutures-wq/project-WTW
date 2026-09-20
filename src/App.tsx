@@ -188,6 +188,48 @@ function locationLines(event: EventItem) {
     secondary: venue && address && venue !== address ? address : null,
   };
 }
+export function EventImageLayers({
+  image,
+  title,
+  backdrop,
+  loading,
+  onImageLoad,
+  onImageError,
+}: {
+  image: string;
+  title: string;
+  backdrop: boolean;
+  loading: "eager" | "lazy";
+  onImageLoad?: (width: number, height: number) => void;
+  onImageError?: () => void;
+}) {
+  return (
+    <>
+      {backdrop && (
+        <img
+          className="scene-image scene-image-backdrop"
+          src={image}
+          alt=""
+          aria-hidden="true"
+          loading={loading}
+        />
+      )}
+      <img
+        className="scene-image scene-image-foreground"
+        src={image}
+        alt={`${title} 대표 이미지`}
+        loading={loading}
+        onLoad={(event) =>
+          onImageLoad?.(
+            event.currentTarget.naturalWidth,
+            event.currentTarget.naturalHeight,
+          )
+        }
+        onError={onImageError}
+      />
+    </>
+  );
+}
 function Scene({
   event,
   detail = false,
@@ -211,30 +253,14 @@ function Scene({
   const className = `scene scene-${theme}${detail ? " scene-detail" : ""}${image && !imageFailed ? " scene-with-image" : ""}${fit === "contain" && !detail ? " scene-contain" : ""}`;
   const content = (
     <>
-      {image && !imageFailed && (detail || fit === "contain") && (
-        <img
-          className="scene-image scene-image-backdrop"
-          src={image}
-          alt=""
-          aria-hidden="true"
-          loading={detail ? "eager" : "lazy"}
-        />
-      )}
       {image && !imageFailed && (
-        <img
-          className="scene-image scene-image-foreground"
-          src={image}
-          alt={`${event.title} 대표 이미지`}
+        <EventImageLayers
+          image={image}
+          title={event.title}
+          backdrop={detail || fit === "contain"}
           loading={detail ? "eager" : "lazy"}
-          onLoad={(event) =>
-            setFit(
-              cardImageFit(
-                event.currentTarget.naturalWidth,
-                event.currentTarget.naturalHeight,
-              ),
-            )
-          }
-          onError={() => setImageFailed(true)}
+          onImageLoad={(width, height) => setFit(cardImageFit(width, height))}
+          onImageError={() => setImageFailed(true)}
         />
       )}
       {(!image || imageFailed) && (

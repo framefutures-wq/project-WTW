@@ -656,6 +656,7 @@ h1 > span {
 .scene-contain .scene-image-foreground,
 .scene-detail .scene-image-foreground {
   object-fit: contain;
+  background: transparent;
 }
 .scene-detail {
   width: 100%;
