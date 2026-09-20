@@ -37,7 +37,7 @@ import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
-import { selectProgramOccurrence } from "../shared/program-occurrence-selection";
+import { selectProgramOccurrenceGroup } from "../shared/program-occurrence-selection";
 import {
   formatOperatingHours,
   selectOperatingHours,
@@ -118,18 +118,29 @@ const detailDateRange = (start: string, end: string) =>
     ? detailDate(start)
     : `${detailDate(start)} ~ ${detailDate(end)}`;
 const detailProgramSchedule = (program: EventDetailEnrichment["programs"][number]) => {
-  const occurrence = selectProgramOccurrence(program.occurrences, koreaDate());
-  if (occurrence) {
+  if (program.schedule_text) return program.schedule_text;
+  const occurrences = selectProgramOccurrenceGroup(program.occurrences, koreaDate());
+  if (occurrences.length) {
+    const occurrence = occurrences[0];
     const date = occurrence.start_date === occurrence.end_date ? `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일` : `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일 ~ ${Number(occurrence.end_date.slice(5, 7))}월 ${Number(occurrence.end_date.slice(8, 10))}일`;
     const hour = (time: string) => `${Number(time.slice(0, 2)) >= 12 ? "오후" : "오전"} ${Number(time.slice(0, 2)) % 12 || 12}:${time.slice(3)}`;
-    const time = occurrence.start_time ? occurrence.end_time ? `${hour(occurrence.start_time)} ~ ${hour(occurrence.end_time)}` : hour(occurrence.start_time) : occurrence.human_time_text;
-    return [date, time].filter(Boolean).join(" · ");
+    const sharedVenue = new Set(occurrences.map((item) => item.venue).filter(Boolean)).size === 1;
+    const times = occurrences.map((item) => {
+      const time = item.start_time ? item.end_time ? `${hour(item.start_time)} ~ ${hour(item.end_time)}` : hour(item.start_time) : item.human_time_text;
+      return !sharedVenue && item.venue ? [time, item.venue].filter(Boolean).join(" · ") : time;
+    });
+    return [date, times.filter(Boolean).join(" / ")].filter(Boolean).join(" · ");
   }
   const date = program.date ? `${Number(program.date.slice(5, 7))}월 ${Number(program.date.slice(8, 10))}일` : null;
   const time = program.start_time ? `오후 ${Number(program.start_time.slice(0, 2)) > 12 ? Number(program.start_time.slice(0, 2)) - 12 : Number(program.start_time.slice(0, 2))}:${program.start_time.slice(3)}` : null;
   return [date, time, program.schedule_text].filter(Boolean).join(" · ");
 };
-const detailProgramVenue = (program: EventDetailEnrichment["programs"][number]) => selectProgramOccurrence(program.occurrences, koreaDate())?.venue ?? program.venue;
+const detailProgramVenue = (program: EventDetailEnrichment["programs"][number]) => {
+  if (program.schedule_text) return program.venue;
+  const occurrences = selectProgramOccurrenceGroup(program.occurrences, koreaDate());
+  const venues = [...new Set(occurrences.map((item) => item.venue).filter(Boolean))];
+  return venues.length === 1 ? venues[0] : program.venue;
+};
 const displayDistance = (distance: number | null) => {
   if (distance === null) return "거리 미확인";
   if (distance < 1) return "1km 미만";
@@ -143,6 +154,12 @@ const safeUrl = (url: string | null | undefined) => {
     return undefined;
   }
 };
+const officialDetailSource = (detail: Detail) =>
+  detail.enrichment &&
+  ["organizer", "municipality"].includes(detail.enrichment.source_kind) &&
+  detail.enrichment.source_priority <= 2
+    ? safeUrl(detail.enrichment.source_url)
+    : undefined;
 function TrustInfo({
   event,
   card = false,
@@ -1649,22 +1666,17 @@ export default function App() {
                   </span>
                 ))}
               </div>
-              {hasOfficialSource(detail.event) &&
-                safeUrl(detail.event.trust_source_url) && (
+              {(officialDetailSource(detail) ??
+                (hasOfficialSource(detail.event) && safeUrl(detail.event.trust_source_url))) && (
                   <a
                     className="primary source-button detail-official-link"
-                    href={safeUrl(detail.event.trust_source_url)}
+                    href={officialDetailSource(detail) ?? safeUrl(detail.event.trust_source_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     공식 안내 보기 <ExternalLink size={16} />
                   </a>
                 )}
-              {detail.enrichment && safeUrl(detail.enrichment.source_url) && !hasOfficialSource(detail.event) && (
-                <a className="primary source-button detail-official-link" href={safeUrl(detail.enrichment.source_url)} target="_blank" rel="noopener noreferrer">
-                  공식 안내 보기 <ExternalLink size={16} />
-                </a>
-              )}
               <p className="detail-source">
                 출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
                 {formatTrustDate(detail.event.checked_at) && (

@@ -20,6 +20,8 @@ export function validOperatingTime(value: string | null): boolean {
 }
 
 function samePresentation(a: EventOperatingHours, b: EventOperatingHours) {
+  if (a.start_time && a.end_time && b.start_time && b.end_time)
+    return a.start_time === b.start_time && a.end_time === b.end_time;
   return (
     a.start_time === b.start_time &&
     a.end_time === b.end_time &&

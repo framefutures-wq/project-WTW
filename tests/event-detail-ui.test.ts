@@ -46,3 +46,10 @@ test("detail can be opened from a stable event query URL", () => {
   assert.match(app, /initialParams\.get\("event"\)/);
   assert.match(app, /detailUrl\.searchParams\.set\("event", selected\)/);
 });
+
+test("detail prefers a verified organizer or municipality enrichment page", () => {
+  assert.match(app, /officialDetailSource/);
+  assert.match(app, /detail\.enrichment\.source_kind/);
+  assert.match(app, /detail\.enrichment\.source_priority <= 2/);
+  assert.match(app, /officialDetailSource\(detail\) \?\?/);
+});

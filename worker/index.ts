@@ -499,8 +499,8 @@ export default {
           contactPhone = null;
         }
         const enrichment = await env.DB.prepare(
-          `SELECT en.summary,s.url AS source_url FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=?`,
-        ).bind(detail[1]).first<{ summary: string; source_url: string }>();
+          `SELECT en.summary,s.url AS source_url,s.kind AS source_kind,s.priority AS source_priority FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=?`,
+        ).bind(detail[1]).first<{ summary: string; source_url: string; source_kind: string; source_priority: number }>();
         const highlights = await env.DB.prepare(
           `SELECT label,tag,featured FROM event_highlights WHERE event_id=? ORDER BY featured DESC,sort_order`,
         ).bind(detail[1]).all<{ label: string; tag: string | null; featured: number }>();
@@ -522,7 +522,7 @@ export default {
           evidence: evidence.results,
           contact_phone: contactPhone,
           operating_hours: parseOperatingHours(row.operating_hours_json),
-          enrichment: enrichment ? { summary: enrichment.summary, source_url: enrichment.source_url, highlights: highlights.results.map((item) => ({ label: item.label, tag: item.tag, featured: Number(item.featured) === 1 })), programs: programRows } : null,
+          enrichment: enrichment ? { summary: enrichment.summary, source_url: enrichment.source_url, source_kind: enrichment.source_kind, source_priority: enrichment.source_priority, highlights: highlights.results.map((item) => ({ label: item.label, tag: item.tag, featured: Number(item.featured) === 1 })), programs: programRows } : null,
           mode: env.APP_MODE,
         });
       }

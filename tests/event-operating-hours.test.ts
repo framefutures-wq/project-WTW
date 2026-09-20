@@ -50,6 +50,17 @@ test("same hours may represent a selected multi-day range, differing hours stay 
   );
 });
 
+test("same clock hours remain visible when a date has an optional human label", () => {
+  const selected = selectOperatingHours(
+    [
+      { ...hours("2026-09-19", "2026-09-19", "18:00", "21:30"), human_time_text: null },
+      { ...hours("2026-09-20", "2026-09-20", "18:00", "21:30"), human_time_text: "일요일 야간개장" },
+    ],
+    { start: "2026-09-19", end: "2026-09-20" },
+  );
+  assert.equal(formatOperatingHours(selected), "18:00 ~ 21:30");
+});
+
 test("program-only rows do not create an operating-hour card value", () => {
   assert.equal(classifyOperatingHoursEvidence("메인 공연 19:30"), "PROGRAM_ONLY");
   assert.equal(selectOperatingHours([], { start: "2026-09-20", end: "2026-09-20" }), null);
