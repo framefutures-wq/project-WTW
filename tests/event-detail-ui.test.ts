@@ -18,3 +18,12 @@ test("unknown optional rows are hidden while visit-critical status remains visib
   assert.match(app, /개최 여부는 출발 전 공식 안내를 확인해 주세요/);
   assert.match(app, /전화하기/);
 });
+
+test("detail enrichment renders only populated summaries, highlights and programs", () => {
+  const app = readFileSync("src/App.tsx", "utf8");
+  assert.match(app, /detail\.enrichment\?\.summary/);
+  assert.match(app, />주요 볼거리</);
+  assert.match(app, />놓치지 마세요</);
+  assert.match(app, /detailProgramSchedule/);
+  assert.match(app, /detail\.enrichment\?\.programs\.some/);
+});

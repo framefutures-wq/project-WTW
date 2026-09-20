@@ -432,10 +432,24 @@ export default {
         } catch {
           contactPhone = null;
         }
+        const enrichment = await env.DB.prepare(
+          `SELECT en.summary,s.url AS source_url FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=?`,
+        ).bind(detail[1]).first<{ summary: string; source_url: string }>();
+        const highlights = await env.DB.prepare(
+          `SELECT label,tag,featured FROM event_highlights WHERE event_id=? ORDER BY featured DESC,sort_order`,
+        ).bind(detail[1]).all<{ label: string; tag: string | null; featured: number }>();
+        const programs = await env.DB.prepare(
+          `SELECT p.id,p.program_name,p.program_date,p.start_time,p.end_time,p.schedule_text,p.venue_name,p.description,p.featured,(SELECT json_group_array(tag) FROM event_program_tags WHERE program_id=p.id) AS tags FROM event_programs p WHERE p.event_id=? ORDER BY p.featured DESC,p.program_date,p.start_time,p.sort_order`,
+        ).bind(detail[1]).all<Record<string, unknown>>();
+        const programRows = programs.results.map((program) => ({
+          name: String(program.program_name), date: program.program_date as string | null, start_time: program.start_time as string | null, end_time: program.end_time as string | null, schedule_text: program.schedule_text as string | null, venue: program.venue_name as string | null, description: program.description as string | null, featured: Number(program.featured) === 1,
+          tags: typeof program.tags === "string" ? (JSON.parse(program.tags) as unknown[]).filter((tag): tag is string => typeof tag === "string") : [],
+        }));
         return json({
           event: serialize(row),
           evidence: evidence.results,
           contact_phone: contactPhone,
+          enrichment: enrichment ? { summary: enrichment.summary, source_url: enrichment.source_url, highlights: highlights.results.map((item) => ({ label: item.label, tag: item.tag, featured: Number(item.featured) === 1 })), programs: programRows } : null,
           mode: env.APP_MODE,
         });
       }

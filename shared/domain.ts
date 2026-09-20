@@ -79,6 +79,9 @@ export interface EventResponse {
   mode: string;
   nearby_candidate_limited?: boolean;
 }
+export type EventDetailHighlight = { label: string; tag: string | null; featured: boolean };
+export type EventDetailProgram = { name: string; date: string | null; start_time: string | null; end_time: string | null; schedule_text: string | null; venue: string | null; description: string | null; tags: string[]; featured: boolean };
+export type EventDetailEnrichment = { summary: string; source_url: string; highlights: EventDetailHighlight[]; programs: EventDetailProgram[] };
 export function validDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);

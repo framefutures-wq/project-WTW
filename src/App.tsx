@@ -28,6 +28,7 @@ import {
   type DateRange,
   type EventItem,
   type EventResponse,
+  type EventDetailEnrichment,
   type Tag,
   validDate,
 } from "../shared/domain";
@@ -63,6 +64,7 @@ type Detail = {
   event: EventItem;
   evidence: Evidence[];
   contact_phone: ContactPhone | null;
+  enrichment: EventDetailEnrichment | null;
 };
 type PageResponse = Omit<EventResponse, "total"> & { total?: number };
 type NearbyLocation = { lat: number; lng: number };
@@ -107,6 +109,11 @@ const detailDateRange = (start: string, end: string) =>
   start === end
     ? detailDate(start)
     : `${detailDate(start)} ~ ${detailDate(end)}`;
+const detailProgramSchedule = (program: EventDetailEnrichment["programs"][number]) => {
+  const date = program.date ? `${Number(program.date.slice(5, 7))}월 ${Number(program.date.slice(8, 10))}일` : null;
+  const time = program.start_time ? `오후 ${Number(program.start_time.slice(0, 2)) > 12 ? Number(program.start_time.slice(0, 2)) - 12 : Number(program.start_time.slice(0, 2))}:${program.start_time.slice(3)}` : null;
+  return [date, time, program.schedule_text].filter(Boolean).join(" · ");
+};
 const displayDistance = (distance: number | null) => {
   if (distance === null) return "거리 미확인";
   if (distance < 1) return "1km 미만";
@@ -1481,6 +1488,36 @@ export default function App() {
               )}
               <StatusNotice event={detail.event} />
               <TrustInfo event={detail.event} />
+              {detail.enrichment?.summary && (
+                <section className="detail-description detail-enrichment-summary">
+                  <h3>행사 소개</h3>
+                  <p>{detail.enrichment.summary}</p>
+                </section>
+              )}
+              {detail.enrichment?.highlights.length ? (
+                <section className="detail-enrichment">
+                  <h3>주요 볼거리</h3>
+                  <div className="detail-tags">
+                    {detail.enrichment.highlights.map((highlight) => (
+                      <span className="chip" key={highlight.label}>{highlight.label}</span>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+              {detail.enrichment?.programs.some((program) => program.featured) ? (
+                <section className="detail-enrichment">
+                  <h3>놓치지 마세요</h3>
+                  <div className="detail-programs">
+                    {detail.enrichment.programs.filter((program) => program.featured).map((program) => (
+                      <article className="detail-program" key={program.name}>
+                        <strong>{program.name}</strong>
+                        {detailProgramSchedule(program) && <span>{detailProgramSchedule(program)}</span>}
+                        {program.venue && <small>{program.venue}</small>}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
               {(() => {
                 const location = locationLines(detail.event);
                 const price = detail.event.price_text?.trim();
@@ -1543,6 +1580,21 @@ export default function App() {
                   <p>{usefulDescription(detail.event.description)}</p>
                 </section>
               )}
+              {detail.enrichment?.programs.some((program) => !program.featured) ? (
+                <section className="detail-enrichment">
+                  <h3>프로그램</h3>
+                  <div className="detail-programs">
+                    {detail.enrichment.programs.filter((program) => !program.featured).map((program) => (
+                      <article className="detail-program" key={program.name}>
+                        <strong>{program.name}</strong>
+                        {detailProgramSchedule(program) && <span>{detailProgramSchedule(program)}</span>}
+                        {program.venue && <small>{program.venue}</small>}
+                        {program.description && <p>{program.description}</p>}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
               <div className="detail-tags">
                 {detail.event.tags.map((t) => (
                   <span className="chip" key={t}>
@@ -1561,6 +1613,11 @@ export default function App() {
                     공식 안내 보기 <ExternalLink size={16} />
                   </a>
                 )}
+              {detail.enrichment && safeUrl(detail.enrichment.source_url) && !hasOfficialSource(detail.event) && (
+                <a className="primary source-button" href={safeUrl(detail.enrichment.source_url)} target="_blank" rel="noopener noreferrer">
+                  공식 안내 보기 <ExternalLink size={16} />
+                </a>
+              )}
               <p className="detail-source">
                 출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
                 {formatTrustDate(detail.event.checked_at) && (
