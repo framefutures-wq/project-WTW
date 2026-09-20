@@ -921,13 +921,14 @@ h1 > span {
   align-self: start;
 }
 .card-bottom {
-  margin-top: 13px;
-  border-top: 1px solid #eef0e8;
-  padding: 13px 0;
+  margin-top: 4px;
+  padding: 8px 0 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   color: #8d9786;
+}
+.card-bottom-status {
+  border-top: 1px solid #eef0e8;
 }
 .card-bottom > span {
   font-size: 9px;
@@ -936,6 +937,7 @@ h1 > span {
   gap: 5px;
 }
 .card-bottom > svg {
+  margin-left: auto;
   color: #7a9170;
 }
 .trust-card {
@@ -1746,15 +1748,15 @@ footer > small {
   }
   .card-tags {
     gap: 4px;
-    min-height: 38px;
+    min-height: 29px;
   }
   .card-tags span {
     font-size: 8px;
     padding: 2px 4px;
   }
   .card-bottom {
-    padding: 10px 0;
-    margin-top: 5px;
+    padding: 7px 0 8px;
+    margin-top: 2px;
   }
   .card-bottom > span {
     font-size: 8px;

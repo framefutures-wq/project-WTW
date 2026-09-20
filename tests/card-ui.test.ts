@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const source = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
-const cardFooterStart = source.indexOf('<div className="card-bottom">');
+const styles = readFileSync(
+  new URL("../src/styles.css", import.meta.url),
+  "utf8",
+);
+const cardFooterStart = source.indexOf("className={`card-bottom");
 const cardFooter = source.slice(
   cardFooterStart,
   source.indexOf("</div>", cardFooterStart) + 6,
@@ -18,4 +22,11 @@ test("event cards do not render unknown cost or last-checked noise", () => {
 test("event cards retain a dedicated path for confirmed status changes", () => {
   assert.match(source, /cardStatusLabel\(event\)/);
   assert.match(source, /<TrustInfo event=\{event\} card \/>/);
+});
+
+test("card footer is compact with conditional status separation and right arrow", () => {
+  assert.match(source, /card-bottom-status/);
+  assert.match(styles, /\.card-bottom-status\s*\{[^}]*border-top/);
+  assert.match(styles, /\.card-bottom > svg\s*\{[^}]*margin-left: auto/);
+  assert.match(styles, /\.card-tags\s*\{[^}]*min-height: 29px/);
 });

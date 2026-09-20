@@ -1301,7 +1301,11 @@ export default function App() {
                           <span key={t}>#{tagLabel(t)}</span>
                         ))}
                       </div>
-                      <div className="card-bottom">
+                      <div
+                        className={`card-bottom${
+                          cardStatusLabel(event) ? " card-bottom-status" : ""
+                        }`}
+                      >
                         {event.is_sample ? (
                           <span>
                             <Info size={13} />
