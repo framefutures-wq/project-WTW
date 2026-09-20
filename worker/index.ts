@@ -5,6 +5,7 @@ import {
   dateRange,
   koreaDate,
   distanceKm,
+  type DateRange,
   type EventItem,
 } from "../shared/domain";
 import type { Env } from "./env";
@@ -23,6 +24,11 @@ import {
 } from "../shared/companion-suitability";
 import { normalizeOfficialPhone } from "../shared/contact-phone";
 import { validProgramTime } from "../shared/event-program-time";
+import {
+  selectOperatingHours,
+  validOperatingTime,
+  type EventOperatingHours,
+} from "../shared/event-operating-hours";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -34,6 +40,8 @@ const SELECT = `SELECT ${EVENT_FIELDS}, s.url AS source_url, s.name AS source_na
   tsl.source_types AS trust_source_types,
   ei.image_url, ei.source_type AS image_source_type,
   ei.source_page_url AS image_source_page_url, ei.image_status,
+  (SELECT json_group_array(json_object('start_date',oh.start_date,'end_date',oh.end_date,'start_time',oh.start_time,'end_time',oh.end_time,'human_time_text',oh.human_time_text))
+   FROM event_operating_hours oh WHERE oh.event_id=e.id) AS operating_hours_json,
   (SELECT group_concat(tag) FROM event_tags WHERE event_id=e.id AND classifier_type='legacy') AS tag_list
   FROM events e
   LEFT JOIN sources s ON s.id=e.primary_source_id
@@ -91,6 +99,7 @@ function serialize(
   row: Record<string, unknown>,
   lat: number | null = null,
   lng: number | null = null,
+  selectedRange: DateRange | null = null,
 ): EventItem {
   const jsonArray = (value: unknown): string[] => {
     if (typeof value !== "string") return [];
@@ -103,6 +112,33 @@ function serialize(
       return [];
     }
   };
+  const operatingHours: EventOperatingHours[] =
+    typeof row.operating_hours_json === "string"
+      ? (() => {
+          try {
+            const parsed = JSON.parse(row.operating_hours_json) as unknown[];
+            return parsed
+              .filter(
+                (item): item is Record<string, unknown> =>
+                  Boolean(item && typeof item === "object"),
+              )
+              .map((item) => ({
+                start_date: String(item.start_date),
+                end_date: String(item.end_date),
+                start_time: item.start_time as string | null,
+                end_time: item.end_time as string | null,
+                human_time_text: item.human_time_text as string | null,
+              }))
+              .filter(
+                (item) =>
+                  validOperatingTime(item.start_time) &&
+                  validOperatingTime(item.end_time),
+              );
+          } catch {
+            return [];
+          }
+        })()
+      : [];
   return {
     id: String(row.id),
     title: String(row.title),
@@ -154,7 +190,36 @@ function serialize(
       lat !== null && lng !== null && row.lat !== null && row.lng !== null
         ? distanceKm(lat, lng, Number(row.lat), Number(row.lng))
         : null,
+    operating_hours: selectedRange
+      ? selectOperatingHours(operatingHours, selectedRange)
+      : null,
   };
+}
+
+function parseOperatingHours(value: unknown): EventOperatingHours[] {
+  if (typeof value !== "string") return [];
+  try {
+    const parsed = JSON.parse(value) as unknown[];
+    return parsed
+      .filter(
+        (item): item is Record<string, unknown> =>
+          Boolean(item && typeof item === "object"),
+      )
+      .map((item) => ({
+        start_date: String(item.start_date),
+        end_date: String(item.end_date),
+        start_time: item.start_time as string | null,
+        end_time: item.end_time as string | null,
+        human_time_text: item.human_time_text as string | null,
+      }))
+      .filter(
+        (item) =>
+          validOperatingTime(item.start_time) &&
+          validOperatingTime(item.end_time),
+      );
+  } catch {
+    return [];
+  }
 }
 function json(data: unknown, status = 200) {
   return Response.json(data, {
@@ -278,7 +343,7 @@ export default {
         const candidateLimited = results.length > CANDIDATE_LIMIT;
         const events = results
           .slice(0, CANDIDATE_LIMIT)
-          .map((row) => serialize(row, f.lat, f.lng))
+          .map((row) => serialize(row, f.lat, f.lng, range))
           .filter((event) => event.distance_km !== null && event.distance_km <= 200)
           .sort(
             (a, b) =>
@@ -360,7 +425,7 @@ export default {
           )
             .bind(...binds)
             .all();
-          const events = results.map((row) => serialize(row, f.lat, f.lng));
+          const events = results.map((row) => serialize(row, f.lat, f.lng, range));
           events.sort(
             (a, b) =>
               (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) ||
@@ -391,7 +456,7 @@ export default {
               .first<{ total: number }>()
           : null;
         return json({
-          events: page.results.map((row) => serialize(row, f.lat, f.lng)),
+          events: page.results.map((row) => serialize(row, f.lat, f.lng, range)),
           ...(includeTotal ? { total: Number(count?.total ?? 0) } : {}),
           page: f.page,
           limit: f.limit,
@@ -456,6 +521,7 @@ export default {
           event: serialize(row),
           evidence: evidence.results,
           contact_phone: contactPhone,
+          operating_hours: parseOperatingHours(row.operating_hours_json),
           enrichment: enrichment ? { summary: enrichment.summary, source_url: enrichment.source_url, highlights: highlights.results.map((item) => ({ label: item.label, tag: item.tag, featured: Number(item.featured) === 1 })), programs: programRows } : null,
           mode: env.APP_MODE,
         });

@@ -902,6 +902,16 @@ h1 > span {
   align-items: center;
   margin: 13px 0 12px;
 }
+.event-hours {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 5px 0 0;
+  color: #63745f;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.event-hours svg { flex: 0 0 auto; }
 .distance {
   margin-left: auto;
   color: var(--green);

@@ -32,6 +32,8 @@ export const THEMES = {
   performance: "공연",
 } as const;
 export type Period = "today" | "weekend" | "next-weekend" | "custom";
+import type { EventOperatingHours } from "./event-operating-hours";
+
 export type DateRange = { start: string; end: string };
 export type Tag = keyof typeof AUDIENCES | keyof typeof THEMES;
 export type TrustStatus = "confirmed" | "needs_review" | "changed";
@@ -67,6 +69,7 @@ export interface EventItem {
   image_status?: "ok" | "missing" | "blocked" | "invalid" | null;
   tags: Tag[];
   distance_km: number | null;
+  operating_hours?: EventOperatingHours | null;
 }
 export interface EventResponse {
   events: EventItem[];

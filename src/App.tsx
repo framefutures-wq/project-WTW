@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
+  Clock3,
   ChevronLeft,
   ChevronRight,
   Compass,
@@ -25,10 +26,10 @@ import {
   AUDIENCES,
   THEMES,
   type Period,
-  type DateRange,
   type EventItem,
   type EventResponse,
   type EventDetailEnrichment,
+  type DateRange,
   type Tag,
   validDate,
 } from "../shared/domain";
@@ -37,6 +38,11 @@ import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
 import { selectProgramOccurrence } from "../shared/program-occurrence-selection";
+import {
+  formatOperatingHours,
+  selectOperatingHours,
+  type EventOperatingHours,
+} from "../shared/event-operating-hours";
 import {
   MAX_VISIBLE_ITEMS,
   PAGE_SIZE,
@@ -65,6 +71,7 @@ type Detail = {
   event: EventItem;
   evidence: Evidence[];
   contact_phone: ContactPhone | null;
+  operating_hours: EventOperatingHours[];
   enrichment: EventDetailEnrichment | null;
 };
 type PageResponse = Omit<EventResponse, "total"> & { total?: number };
@@ -1312,6 +1319,12 @@ export default function App() {
                           </span>
                         )}
                       </p>
+                      {formatOperatingHours(event.operating_hours ?? null) && (
+                        <p className="event-hours">
+                          <Clock3 size={14} />
+                          {formatOperatingHours(event.operating_hours ?? null)}
+                        </p>
+                      )}
                       <div className="card-tags">
                         {event.tags.slice(0, 3).map((t) => (
                           <span key={t}>#{tagLabel(t)}</span>
@@ -1539,6 +1552,24 @@ export default function App() {
                         detail.event.end_date,
                       )}
                     </dd>
+                    {formatOperatingHours(
+                      selectOperatingHours(
+                        detail.operating_hours,
+                        eventDisplayRange,
+                      ),
+                    ) && (
+                      <>
+                        <dt>운영시간</dt>
+                        <dd>
+                          {formatOperatingHours(
+                            selectOperatingHours(
+                              detail.operating_hours,
+                              eventDisplayRange,
+                            ),
+                          )}
+                        </dd>
+                      </>
+                    )}
                     {location.primary && (
                       <>
                         <dt>장소</dt>
