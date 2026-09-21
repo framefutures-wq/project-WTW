@@ -30,6 +30,7 @@ import {
   validOperatingTime,
   type EventOperatingHours,
 } from "../shared/event-operating-hours";
+import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -55,7 +56,15 @@ const availableRangeCache = new WeakMap<
   { expiresAt: number; value: { start: string; end: string } | null }
 >();
 const AVAILABLE_RANGE_TTL_MS = 60_000;
-const LKG_PRIMARY_SOURCE = "(s.kind='municipality' OR (s.kind='organizer' AND s.id LIKE 'private-everland-source-%' AND s.url LIKE 'https://web.everland.com/%'))";
+const privateLkgClause = (alias: string) => {
+  const entries = trustedPrivateLkgSources();
+  if (!entries.length) return "0";
+  // The values are code-owned registry constants, never request input.
+  return entries.map((source) =>
+    `(${alias}.kind='organizer' AND ${alias}.id LIKE '${source.sourceIdPrefix}%' AND (${source.allowedHosts.map((host) => `${alias}.url LIKE 'https://${host}/%'`).join(" OR ")}))`,
+  ).join(" OR ");
+};
+const LKG_PRIMARY_SOURCE = `(s.kind='municipality' OR (${privateLkgClause("s")}))`;
 function visibility(env: Env) {
   // No sample records can escape to production, even if its DB was accidentally seeded.
   return env.APP_MODE === "sample"

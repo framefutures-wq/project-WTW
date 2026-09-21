@@ -57,7 +57,7 @@ try {
     .run();
   await db
     .prepare(
-      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('private-everland-source-test','organizer',1,'에버랜드 공식 출처','https://web.everland.com/pick/event',?)",
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('private-korean-folk-village-source-test','organizer',1,'한국민속촌 공식 출처','https://www.koreanfolk.co.kr/',?)",
     )
     .bind(now)
     .run();
@@ -195,12 +195,12 @@ try {
   await fixture("municipality-stale-hidden", { verification: "stale", checked: old, source: "municipality" });
   await evidence("municipality-stale-hidden", required, old, "municipality");
   // Trusted, explicitly-named private organizer sources retain last-known-good facts.
-  await fixture("private-lkg-visible", { checked: old, source: "private-everland-source-test" });
-  await evidence("private-lkg-visible", required, old, "private-everland-source-test");
-  await fixture("private-missing-evidence-hidden", { checked: old, source: "private-everland-source-test" });
-  await evidence("private-missing-evidence-hidden", ["schedule", "venue"], old, "private-everland-source-test");
-  await fixture("private-stale-hidden", { verification: "stale", checked: old, source: "private-everland-source-test" });
-  await evidence("private-stale-hidden", required, old, "private-everland-source-test");
+  await fixture("private-lkg-visible", { checked: old, source: "private-korean-folk-village-source-test" });
+  await evidence("private-lkg-visible", required, old, "private-korean-folk-village-source-test");
+  await fixture("private-missing-evidence-hidden", { checked: old, source: "private-korean-folk-village-source-test" });
+  await evidence("private-missing-evidence-hidden", ["schedule", "venue"], old, "private-korean-folk-village-source-test");
+  await fixture("private-stale-hidden", { verification: "stale", checked: old, source: "private-korean-folk-village-source-test" });
+  await evidence("private-stale-hidden", required, old, "private-korean-folk-village-source-test");
   await fixture("stale-evidence-hidden");
   await evidence("stale-evidence-hidden", required, old);
   await fixture("future-hidden", { checked: future });

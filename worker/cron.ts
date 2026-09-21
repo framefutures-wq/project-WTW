@@ -3,6 +3,15 @@ import { tourApiReadiness, syncTourApi } from "./sources/tourapi";
 import { runMunicipalAutonomous } from "./sources/municipal";
 import { runPrivateOfficialSources } from "./sources/private-official";
 import { processPushDeliveries } from "./push";
+import { trustedPrivateLkgSources } from "../shared/private-official-sources";
+const privateLkgClause = (alias: string) => {
+  const entries = trustedPrivateLkgSources();
+  if (!entries.length) return "0";
+  return entries.map((source) =>
+    `(${alias}.kind='organizer' AND ${alias}.id LIKE '${source.sourceIdPrefix}%' AND (${source.allowedHosts.map((host) => `${alias}.url LIKE 'https://${host}/%'`).join(" OR ")}))`,
+  ).join(" OR ");
+};
+const LKG_PRIMARY_SOURCE = `(ms.kind='municipality' OR (${privateLkgClause("ms")}))`;
 export async function runScheduled(env: Env) {
   let municipalAttempted = false;
   const id = crypto.randomUUID(),
@@ -29,10 +38,10 @@ export async function runScheduled(env: Env) {
       env.DB.prepare(
         `INSERT INTO event_changes(event_id,reason,before_json,after_json)
         SELECT id, '근거 확인 후 72시간 경과', '{"verification":"verified"}', '{"verification":"stale"}'
-        FROM events WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND (ms.kind='municipality' OR (ms.kind='organizer' AND ms.id LIKE 'private-everland-source-%' AND ms.url LIKE 'https://web.everland.com/%')))` ,
+        FROM events WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND ${LKG_PRIMARY_SOURCE})` ,
       ).bind(cutoff),
       env.DB.prepare(
-        "UPDATE events SET verification='stale',updated_at=? WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND (ms.kind='municipality' OR (ms.kind='organizer' AND ms.id LIKE 'private-everland-source-%' AND ms.url LIKE 'https://web.everland.com/%')))",
+        `UPDATE events SET verification='stale',updated_at=? WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND ${LKG_PRIMARY_SOURCE})`,
       ).bind(now, cutoff),
     ]);
     const imported = await syncTourApi(env, id);

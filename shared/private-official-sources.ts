@@ -20,11 +20,28 @@ export const PRIVATE_SOURCE_REGISTRY = {
     // durable program IDs, and do not provide publishable venue evidence.
     // Keep the adapter registry-ready but fail closed until that changes.
     enabled: false,
+    productionReady: false,
+    sourceIdPrefix: "private-everland-source-",
+    adapterVersion: PRIVATE_SOURCE_ADAPTER_VERSION,
+  },
+  korean_folk_village: {
+    sourceKey: "korean_folk_village",
+    sourceName: "한국민속촌",
+    sourceType: "organizer_official",
+    venueType: "experience_facility",
+    allowedHosts: ["www.koreanfolk.co.kr", "koreanfolk.co.kr"],
+    enabled: true,
+    productionReady: true,
+    sourceIdPrefix: "private-korean-folk-village-source-",
     adapterVersion: PRIVATE_SOURCE_ADAPTER_VERSION,
   },
 } as const;
 
 export type PrivateSourceKey = keyof typeof PRIVATE_SOURCE_REGISTRY;
+
+/** Only code-owned registry records may opt into the LKG freshness exemption. */
+export const trustedPrivateLkgSources = () => Object.values(PRIVATE_SOURCE_REGISTRY)
+  .filter((source) => source.enabled && source.productionReady);
 export type CandidateEligibility = "eligible" | "not_eligible" | "needs_review";
 export type DuplicateStatus =
   "new_candidate" | "probable_duplicate" | "ambiguous_duplicate";
