@@ -4,6 +4,7 @@ import App from "./App";
 import RegionQuickSwitch from "./RegionQuickSwitch";
 import "./styles.css";
 import "./redesign.css";
+import "./region-drawer.css";
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <RegionQuickSwitch />
