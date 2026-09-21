@@ -31,11 +31,13 @@ export function parseKoreanFolkDetail(html: string): KoreanFolkDetail {
   const title = html.match(/\\?"title\\?",\\?(?:\d+,)?\\?"([^"\\]+)\\?"/);
   const startsAt = html.match(/\\?"startsAt\\?",\\?"(\d{2}\.\d{2}\.\d{2})\\?"/);
   const endsAt = html.match(/\\?"endsAt\\?",\\?"(\d{2}\.\d{2}\.\d{2})\\?"/);
-  const description = html.match(/\\?"description\\?",\\?"([^"\\]{1,1000})\\?"/);
   const startDate = startsAt?.[1] && date(startsAt[1]);
   const endDate = endsAt?.[1] && date(endsAt[1]);
   if (!title?.[1] || !startDate || !endDate) throw new Error("detail_core_parse_failed");
-  return { title: decode(title[1]), startDate, endDate, description: description?.[1] ? decode(description[1]) : null };
+  // The official page's streamed record omits this optional value by placing
+  // the next field name after `description`; it is not safe to infer prose
+  // from that serialization. Keep it null until an explicit text field exists.
+  return { title: decode(title[1]), startDate, endDate, description: null };
 }
 
 export function koreanFolkSelection(title: string, description: string | null) {
