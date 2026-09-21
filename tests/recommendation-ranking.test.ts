@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   compareRecommended,
   recommendationBucket,
+  recommendationReasonLabel,
   recommendationReasonCodes,
 } from "../shared/recommendation-ranking";
 
@@ -50,4 +51,17 @@ test("images, source, and detail volume cannot affect recommended order", () => 
   const lowSignal = { ...event("high-temporal", "2026-10-03", "2026-10-03"), image_url: null, source_kind: "municipality", description: "" };
   const highSignal = { ...event("long-running", "2026-09-01", "2026-12-31"), image_url: "https://example.test/image.jpg", source_kind: "tourapi", description: "very detailed".repeat(100) };
   assert.equal(compareRecommended(lowSignal, highSignal, range) < 0, true);
+});
+
+test("reason labels explain each preset and custom temporal case", () => {
+  const weekend = { start: "2026-10-03", end: "2026-10-04" };
+  assert.equal(recommendationReasonLabel(event("today", "2026-10-03", "2026-10-03"), weekend, "today"), "오늘 하루");
+  assert.equal(recommendationReasonLabel(event("sat", "2026-10-03", "2026-10-03"), weekend, "weekend"), "토요일 하루");
+  assert.equal(recommendationReasonLabel(event("sun", "2026-10-04", "2026-10-04"), weekend, "weekend"), "일요일 하루");
+  assert.equal(recommendationReasonLabel(event("within", "2026-10-03", "2026-10-04"), weekend, "weekend"), "이번 주말에만");
+  assert.equal(recommendationReasonLabel(event("start", "2026-10-04", "2026-10-20"), weekend, "next-weekend"), "다음 주말 시작");
+  assert.equal(recommendationReasonLabel(event("end", "2026-09-01", "2026-10-04"), weekend, "weekend"), "일요일까지");
+  assert.equal(recommendationReasonLabel(event("custom", "2026-10-03", "2026-10-03"), { start: "2026-10-03", end: "2026-10-03" }, "custom"), "10.3 하루");
+  assert.equal(recommendationReasonLabel(event("ongoing", "2026-09-01", "2026-12-31"), weekend, "weekend"), null);
+  assert.equal(recommendationReasonLabel(event("bad", "not-a-date", "2026-10-03"), weekend, "weekend"), null);
 });

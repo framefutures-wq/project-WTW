@@ -24,6 +24,13 @@ test("event cards retain a dedicated path for confirmed status changes", () => {
   assert.match(source, /<TrustInfo event=\{event\} card \/>/);
 });
 
+test("recommendation reason is a small card-only contextual label", () => {
+  assert.match(source, /recommendationReasonLabel\(/);
+  assert.match(source, /sort === "recommended" && !location/);
+  assert.match(source, /className="recommendation-reason"/);
+  assert.match(styles, /\.recommendation-reason\s*\{[^}]*white-space: nowrap/);
+});
+
 test("card footer is compact with conditional status separation and right arrow", () => {
   assert.match(source, /card-bottom-status/);
   assert.match(styles, /\.card-bottom-status\s*\{[^}]*border-top/);

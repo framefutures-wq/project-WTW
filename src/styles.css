@@ -872,6 +872,20 @@ h1 > span {
   align-items: center;
   gap: 3px;
 }
+.recommendation-reason {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #f5f0e8;
+  color: #7d755f;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .price {
   padding: 3px 8px;
   background: #f5f0e8;

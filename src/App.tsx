@@ -34,6 +34,7 @@ import {
   validDate,
 } from "../shared/domain";
 import { USER_CONTENT_FILTERS } from "../shared/content-filters";
+import { recommendationReasonLabel } from "../shared/recommendation-ranking";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
@@ -1326,6 +1327,16 @@ export default function App() {
                           {event.region}
                         </span>
                       </div>
+                      {sort === "recommended" && !location && (
+                        (() => {
+                          const reason = recommendationReasonLabel(
+                            event,
+                            eventDisplayRange,
+                            customRange ? "custom" : period,
+                          );
+                          return reason ? <span className="recommendation-reason">{reason}</span> : null;
+                        })()
+                      )}
                       <h3>{event.title}</h3>
                       <p className="venue">{event.venue}</p>
                       <p className="event-date">
