@@ -24,7 +24,9 @@
     "WEB_PUSH_ENABLED": "true",
     "WEB_PUSH_VAPID_PUBLIC_KEY": "BNHKagyZenwP0ldvTxb-Uw0eTKqom0s6kzx0xEEjOFWMGWeSk2W0UVIhqD0qTQUR7U0JxmTAyL01Xe1ib3tphno",
     "WEB_PUSH_VAPID_SUBJECT": "https://galteum.com/",
-    "ANALYTICS_ENABLED": "false",
+    "ANALYTICS_ENABLED": "true",
+    "GA4_MEASUREMENT_ID": "G-54MW6BKLHY",
+    "CLOUDFLARE_WEB_ANALYTICS_TOKEN": "f7e9dd44e251461a8363d37185f90394",
   },
   "secrets": { "required": ["TOUR_API_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"] },
   "triggers": {

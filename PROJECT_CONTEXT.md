@@ -246,15 +246,15 @@ Audit:
 - 갈틈 리브랜딩
 - galteum.com 구매/Custom Domain 연결
 - 10시 base / 11시 detail 스케줄 분리
+- GA4 + Cloudflare Web Analytics production enabled
 
 현재 우선순위:
 
-1. GA4 + Cloudflare Web Analytics 실제 활성화
-2. Search Console
-3. SEO/Public Launch readiness
-4. 무료 공개 후 실제 traffic 관찰
-5. 행사/지역 coverage 확대
-6. 수익화는 traffic 확보 뒤 진행
+1. Search Console
+2. SEO/Public Launch readiness
+3. 무료 공개 후 실제 traffic 관찰
+4. 행사/지역 coverage 확대
+5. 수익화는 traffic 확보 뒤 진행
 
 수익화는 현재 보류한다.
 

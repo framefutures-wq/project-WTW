@@ -12,8 +12,8 @@ Cloudflare Web Analytics는 선택적으로 client-side에서 best-effort 초기
 `CLOUDFLARE_WEB_ANALYTICS_TOKEN=...`이다. production mode에서만 활성화되며,
 값이 없거나 형식이 유효하지 않으면 해당 provider만 disabled다.
 
-GA4 Measurement ID와 Cloudflare site token은 client에 공개되는 값이다. 현재
-repository와 production vars에는 실제 외부 ID/token이 없으므로 기본값은 disabled다.
+GA4 Measurement ID와 Cloudflare site token은 client에 공개되는 값이다. Production은
+실제 갈틈 provider 값과 함께 enabled 상태로 운영한다.
 TourAPI key와 VAPID private key는 이 endpoint나 client bundle에 절대 포함하지 않는다.
 
 설정할 때는 실제 값을 production vars에만 등록하고 `npm run check` 후
