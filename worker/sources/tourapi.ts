@@ -1,6 +1,7 @@
 import { koreaDate, type EventItem, REGIONS } from "../../shared/domain";
 import { assessCost } from "../../shared/cost-status";
 import type { Env } from "../env";
+import { alertDedupeKey, alertId, cancellationConfirmed, scheduleChanged, type AlertCore, type AlertType } from "../../shared/alert-engine";
 import {
   classifyFactTags,
   FACT_CLASSIFIER,
@@ -468,6 +469,20 @@ export async function saveFestivalSnapshot(
           e.status,
         ),
     );
+    const before: AlertCore | null = previous ? { start_date: previous.start_date as string | null, end_date: previous.end_date as string | null, status: previous.status as string | null } : null;
+    const after: AlertCore = { start_date: e.start_date, end_date: e.end_date, status: e.status };
+    const addAlert = (type: AlertType, oldValue: AlertCore | null, newValue: AlertCore) => {
+      const dedupe = alertDedupeKey(type, e.id, newValue);
+      statements.push(
+        db.prepare(
+          `INSERT OR IGNORE INTO alert_events(id,event_id,alert_type,dedupe_key,created_at,effective_at,before_json,after_json,source_id)
+           VALUES(?,?,?,?,?,?,?,?,?)`,
+        ).bind(
+          alertId(dedupe), e.id, type, dedupe, snapshot.checkedAt, snapshot.checkedAt,
+          oldValue ? JSON.stringify(oldValue) : null, JSON.stringify(newValue), source,
+        ),
+      );
+    };
     statements.push(
       db
         .prepare(
@@ -495,6 +510,9 @@ export async function saveFestivalSnapshot(
           source,
         ),
     );
+    if (!previous && sourceOwned) addAlert("NEW_EVENT", null, { start_date: e.start_date, end_date: e.end_date });
+    else if (sourceOwned && scheduleChanged(before, after)) addAlert("SCHEDULE_CHANGED", { start_date: before?.start_date ?? null, end_date: before?.end_date ?? null }, { start_date: e.start_date, end_date: e.end_date });
+    if (sourceOwned && cancellationConfirmed(before, after)) addAlert("CANCELLED_OR_POSTPONED", { status: before?.status ?? null }, { status: e.status });
     const evidence: Record<string, string> = {
       schedule: `eventstartdate=${text(raw.eventstartdate)}, eventenddate=${text(raw.eventenddate)}`,
       venue: `addr1=${text(raw.addr1)}, addr2=${text(raw.addr2)} (행사장 명칭은 미제공)`,

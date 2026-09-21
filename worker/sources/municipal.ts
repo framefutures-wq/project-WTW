@@ -2,6 +2,7 @@ import { createEnrichmentCandidate, hasMunicipalDetailCoreConflict, parseGoyangL
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
 import type { Env } from "../env";
+import { alertDedupeKey, alertId, scheduleChanged } from "../../shared/alert-engine";
 
 const SOURCES = [
   { key: "paju", url: "https://tour.paju.go.kr/user/link/cultural/BD_index.do", marker: "list-info", parse: parsePajuList },
@@ -39,12 +40,19 @@ async function saveState(env: Env, candidate: MunicipalCandidate, id: string, de
   return env.DB.prepare("INSERT INTO municipal_candidate_state(candidate_id,source_key,first_seen_at,last_seen_at,decision_state,decision_reason,retry_until,last_payload_hash,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(candidate_id) DO UPDATE SET last_seen_at=excluded.last_seen_at,decision_state=excluded.decision_state,decision_reason=excluded.decision_reason,retry_until=excluded.retry_until,last_payload_hash=excluded.last_payload_hash,source_candidate_id=excluded.source_candidate_id,title_snapshot=excluded.title_snapshot,start_date_snapshot=excluded.start_date_snapshot,end_date_snapshot=excluded.end_date_snapshot,venue_snapshot=excluded.venue_snapshot,locality_snapshot=excluded.locality_snapshot,official_url_snapshot=excluded.official_url_snapshot")
     .bind(id, candidate.source, now, now, decision.state, decision.reason, retry, payloadHash, candidate.source_candidate_id, candidate.title, candidate.start_date, candidate.end_date, candidate.venue, candidate.locality, candidate.official_url).run();
 }
-async function publish(env: Env, candidate: MunicipalCandidate, id: string, summaryText: string | null, now: string, existing: { id: string } | null) {
+async function publish(env: Env, candidate: MunicipalCandidate, id: string, summaryText: string | null, now: string, existing: { id: string; start_date?: string | null; end_date?: string | null; status?: string | null } | null) {
   const sid = sourceId(id), evidence = `${candidate.title} | ${candidate.start_date}~${candidate.end_date} | ${candidate.venue}`;
+  const after = { start_date: candidate.start_date, end_date: candidate.end_date };
+  const alertStatements = !existing
+    ? (() => { const dedupe = alertDedupeKey("NEW_EVENT", id, after); return [env.DB.prepare("INSERT OR IGNORE INTO alert_events(id,event_id,alert_type,dedupe_key,created_at,effective_at,before_json,after_json,source_id) VALUES(?,?,?,?,?,?,?,?,?)").bind(alertId(dedupe), id, "NEW_EVENT", dedupe, now, now, null, JSON.stringify(after), sid)]; })()
+    : scheduleChanged(existing, after)
+      ? (() => { const dedupe = alertDedupeKey("SCHEDULE_CHANGED", id, after); return [env.DB.prepare("INSERT OR IGNORE INTO alert_events(id,event_id,alert_type,dedupe_key,created_at,effective_at,before_json,after_json,source_id) VALUES(?,?,?,?,?,?,?,?,?)").bind(alertId(dedupe), id, "SCHEDULE_CHANGED", dedupe, now, now, JSON.stringify({ start_date: existing.start_date, end_date: existing.end_date }), JSON.stringify(after), sid)]; })()
+      : [];
   const statements = [
     env.DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,?,?,?,?,?,NULL) ON CONFLICT(id) DO UPDATE SET name=excluded.name,url=excluded.url,fetched_at=excluded.fetched_at").bind(sid, "municipality", 2, `${candidate.source} 공식 행사 안내`, candidate.official_url, now),
     env.DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES(?,?,?,?,?,?,?,?,NULL,NULL,'unknown',NULL,'unknown','scheduled','verified',0,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,status='scheduled',verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.updated_at")
       .bind(id, candidate.title, summaryText ?? "공식 지자체 행사 안내를 바탕으로 등록된 행사입니다.", candidate.region, candidate.venue, candidate.venue, candidate.start_date, candidate.end_date, sid, now, now),
+    ...alertStatements,
     ...["schedule", "venue", "status"].map((field) => env.DB.prepare("INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?,?,?) ON CONFLICT(event_id,source_id,field) DO UPDATE SET excerpt=excluded.excerpt,checked_at=excluded.checked_at").bind(id, sid, field, evidence, now)),
   ];
   const result = await env.DB.batch(statements);
@@ -72,7 +80,7 @@ export async function runMunicipalAutonomous(env: Env) {
           catch { detailError = true; }
         }
         const payloadHash = await hash({ title: candidate.title, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, official_url: candidate.official_url });
-        const existing = await env.DB.prepare("SELECT id,start_date,end_date,venue FROM events WHERE id=? LIMIT 1").bind(id).first<{ id: string; start_date: string; end_date: string; venue: string }>();
+        const existing = await env.DB.prepare("SELECT id,start_date,end_date,venue,status FROM events WHERE id=? LIMIT 1").bind(id).first<{ id: string; start_date: string; end_date: string; venue: string; status: string }>();
         const previous = await state(env, id);
         const changedExisting = Boolean(existing && (existing.start_date !== candidate.start_date || existing.end_date !== candidate.end_date || existing.venue !== candidate.venue));
         // A changed core payload needs two identical daily observations before it replaces last-known-good.
@@ -118,7 +126,7 @@ export async function runMunicipalAutonomous(env: Env) {
       const decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(candidate, koreaToday), trusted: true, coreValid: Boolean(candidate.title && candidate.start_date && candidate.end_date && candidate.venue && candidate.official_url), parserError: Boolean(candidate.parse_error), detailError: Boolean(enrichment.parse_error), coreConflict: candidate.official_url !== source.url && hasMunicipalDetailCoreConflict(candidate, detail) });
       summary[decision.state] += 1;
       const payloadHash = await hash({ title: candidate.title, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, official_url: candidate.official_url });
-      const existing = await env.DB.prepare("SELECT id FROM events WHERE id=? LIMIT 1").bind(row.candidate_id).first<{ id: string }>();
+      const existing = await env.DB.prepare("SELECT id,start_date,end_date,status FROM events WHERE id=? LIMIT 1").bind(row.candidate_id).first<{ id: string; start_date: string; end_date: string; status: string }>();
       if (decision.state === "AUTO_PUBLISH" && summary.inserted + summary.updated < MAX_PUBLISH) {
         const write = await publish(env, candidate, row.candidate_id, enrichment.summary, now, existing); summary.inserted += write.inserted; summary.updated += write.updated; summary.rows_written += write.rows;
       }

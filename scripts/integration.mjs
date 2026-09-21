@@ -406,6 +406,10 @@ try {
   };
   await adapter.saveFestivalSnapshot(db, snapshot);
   await adapter.saveFestivalSnapshot(db, snapshot);
+  assert.equal(
+    (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='NEW_EVENT'").first()).n,
+    1,
+  );
   const real = await get("/api/events/tourapi-101");
   assert.equal(real.event.is_sample, 0);
   assert.equal(real.event.status, "unknown");
@@ -439,16 +443,30 @@ try {
       (e) => e.id === "tourapi-101",
     ),
   );
+  const movedRaw = { ...raw, contentid: "104", eventstartdate: "20991010", eventenddate: "20991011" };
+  const movedChecked = new Date().toISOString();
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    checkedAt: movedChecked,
+    candidates: [{ raw: { ...movedRaw, eventstartdate: raw.eventstartdate, eventenddate: raw.eventenddate }, event: adapter.mapFestival({ ...movedRaw, eventstartdate: raw.eventstartdate, eventenddate: raw.eventenddate }, new Map([["11", "서울"]]), movedChecked) }],
+  });
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    checkedAt: movedChecked,
+    candidates: [{ raw: movedRaw, event: adapter.mapFestival(movedRaw, new Map([["11", "서울"]]), movedChecked) }],
+  });
+  assert.equal((await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-104' AND alert_type='SCHEDULE_CHANGED'").first()).n, 1);
   const cancelledRaw = { ...raw, progresstype: "취소" };
   await adapter.saveFestivalSnapshot(db, {
     ...snapshot,
+    checkedAt: movedChecked,
     candidates: [
       {
         raw: cancelledRaw,
         event: adapter.mapFestival(
           cancelledRaw,
           new Map([["11", "서울"]]),
-          now,
+          movedChecked,
         ),
       },
     ],
@@ -457,21 +475,16 @@ try {
     (await get("/api/events/tourapi-101")).event.status,
     "cancelled",
   );
+  assert.equal(
+    (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='CANCELLED_OR_POSTPONED'").first()).n,
+    1,
+  );
   assert(
     !(await get("/api/events?period=today")).events.some(
       (e) => e.id === "tourapi-101",
     ),
   );
-  assert.equal(
-    (
-      await db
-        .prepare(
-          "SELECT count(*) n FROM event_changes WHERE event_id='tourapi-101'",
-        )
-        .first()
-    ).n,
-    1,
-  );
+  assert.equal((await db.prepare("SELECT count(*) n FROM event_changes WHERE event_id='tourapi-101'").first()).n, 1);
   const nextRaw = { ...raw, contentid: "103" };
   const nextChecked = new Date().toISOString();
   await adapter.saveFestivalSnapshot(db, {
@@ -683,7 +696,7 @@ try {
     )
     .first();
   assert.equal(run.status, "skipped");
-  assert.equal(run.stale_count, 1);
+  assert.equal(run.stale_count, 2);
   console.log(
     "PASS: 실제 workerd/D1 운영 샘플 차단, 필수 근거·가격·태그·좌표·반려동물 검증, 오래된/미래 근거 제외, 취소·연기 제외, Cron 상태/감사 이력",
   );
