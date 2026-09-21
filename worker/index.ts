@@ -704,7 +704,7 @@ export default {
       );
     }
   },
-  async scheduled(_controller: ScheduledController, env: Env) {
-    await runScheduled(env);
+  async scheduled(controller: ScheduledController, env: Env) {
+    await runScheduled(env, controller.cron);
   },
 } satisfies ExportedHandler<Env>;

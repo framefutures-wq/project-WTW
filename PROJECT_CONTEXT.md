@@ -16,11 +16,13 @@
 ## 2. 공식 도메인과 내부 리소스
 
 ### 사용자 공개 주소
+
 - 메인: **https://galteum.com**
 - **www.galteum.com → galteum.com** 301 redirect를 Cloudflare Dashboard에서 설정했다.
 - galteum.com은 기존 Worker에 Custom Domain으로 연결되어 있다.
 
 ### 유지할 내부 리소스
+
 - GitHub: `framefutures-wq/project-WTW`
 - branch: `main`
 - Worker: `weekend-mwohae`
@@ -29,6 +31,7 @@
 - 내부 리소스 이름을 브랜드 변경 때문에 rename/recreate하지 않는다.
 
 ### 아직 남은 도메인 정리
+
 - legacy Worker URL `https://weekend-mwohae.framefutures.workers.dev`는 코드/문서 일부에 남아 있다.
 - 향후 host cutover 작업에서 legacy Worker host를 **galteum.com으로 301 redirect**하고 path/query를 보존한다.
 - `WEB_PUSH_VAPID_SUBJECT`, README, Analytics/Search Console 문서를 galteum.com 기준으로 정리해야 한다.
@@ -45,12 +48,15 @@
 - GitHub Codespaces + Codex CLI
 
 Production Cron:
-- 하루 1회, 매일 10:00 KST
-- cron expression: `0 1 * * *` UTC
+
+- 매일 10:00 KST base sync: `0 1 * * *` UTC
+- 매일 11:00 KST TourAPI detail enrichment: `0 2 * * *` UTC
+- 11시 detail run은 같은 KST 운영일의 10시 base run이 `success`로 끝난 것을 D1 `sync_runs`에서 자동 확인한 뒤에만 실행한다. 실패·running·누락이면 `tourapi-detail` run을 `skipped`로 기록하며, 일상적인 사람 승인은 필요 없는 Zero-Human 방식이다.
 
 ## 4. 데이터/정확성 원칙
 
 공식 근거 우선순위:
+
 1. 행사/주최기관 공식 홈페이지·공식 공지
 2. 지자체
 3. 한국관광공사 TourAPI
@@ -58,6 +64,7 @@ Production Cron:
 5. 기타 공식 공공 출처
 
 핵심 원칙:
+
 - 일정·장소·가격·취소 여부 등 행사 사실을 AI로 만들어내지 않는다.
 - 모르는 optional field는 `확인 필요` 행을 늘어놓지 말고 **UI에서 숨긴다**.
 - optional 정보가 없다는 이유만으로 행사 자체를 막지 않는다.
@@ -69,6 +76,7 @@ Production Cron:
 ## 5. Zero-Human 운영 정책
 
 Production decision states:
+
 - `AUTO_PUBLISH`
 - `AUTO_RETRY`
 - `AUTO_EXCLUDE`
@@ -76,6 +84,7 @@ Production decision states:
 - `EXPIRED`
 
 운영 철학:
+
 - 확실한 것은 자동 등록·자동 업데이트
 - 애매한 것은 사람에게 묻지 않고 자동 retry
 - 명확한 제외는 자동 제외
@@ -113,6 +122,7 @@ Production decision states:
 Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼져 있다.
 
 현재 정책:
+
 - 정확한 GPS 좌표 전송 금지
 - raw 검색어 전송 금지
 - push endpoint/auth/key 전송 금지
@@ -120,6 +130,7 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 - 광고/리마케팅 용도 아님
 
 향후 순서:
+
 1. domain cutover 완료
 2. GA4 property / Web stream을 **갈틈 / https://galteum.com** 기준으로 생성
 3. GA4 Measurement ID 설정
@@ -133,9 +144,11 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 일반 TourAPI 행사의 상세가 지나치게 빈약한 문제가 확인됐고, 현재 `main`에는 자동 상세 보강 코드가 추가되어 있다.
 
 관련 commit:
+
 - `2dcc976` — `feat: enrich TourAPI event details automatically`
 
 구현 내용:
+
 - TourAPI `detailCommon2`
 - TourAPI `detailIntro2`
 - TourAPI `detailInfo2`
@@ -149,6 +162,7 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 - TourAPI list sync가 detail에서 확인된 venue/price를 다음 base sync에서 되돌리지 않도록 보호
 
 현재 자동 보강 대상:
+
 - 행사 소개: `detailCommon2.overview`
 - 행사장: `detailIntro2.eventplace`
 - 행사별 비용: `detailIntro2.usetimefestival` 중 명확히 판정 가능한 값
@@ -157,6 +171,7 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 - 문의: detail common/intro의 공식 전화 필드를 detail API에서 우선 사용
 
 정확성 원칙:
+
 - generic/category prose를 프로그램으로 오인하지 않는다.
 - detailInfo2의 여러 설명 블록을 임의의 일정으로 만들지 않는다.
 - 전체 행사 운영시간과 개별 프로그램 시간을 섞지 않는다.
@@ -164,6 +179,7 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 - optional field가 비어도 행사 core publish를 막지 않는다.
 
 중요:
+
 - 이 기능은 코드가 `main`에 존재한다는 사실과 production에서 migration/deploy/first run이 모두 정상 완료됐다는 사실을 구분해야 한다.
 - **production 검증 완료 (2026-09-21):** migration `0020_tourapi_detail_state.sql` 적용, Worker deployment `30f67067-8a51-4927-bf6e-90a5d597199d`, 첫 bounded run 성공.
 - 첫 run 결과: candidates 25, requested 75, enriched 16, empty 0, failed 9. 실패 9건은 failure_count 1 및 2시간 bounded retry로 보존됐고 base TourAPI/municipal/private/push flow를 막지 않았다.
@@ -173,6 +189,7 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 ## 10. 상세 관련 현재 코드 포인트
 
 Frontend:
+
 - `src/App.tsx`
   - `detail.enrichment?.summary`
   - `detail.enrichment?.highlights`
@@ -181,39 +198,46 @@ Frontend:
   - `usefulDescription()`
 
 Detail API:
+
 - `worker/index.ts`
   - `GET /api/events/:id`
   - enrichment/highlights/programs/occurrences/operating_hours를 D1에서 조회
 
 TourAPI:
+
 - `worker/sources/tourapi.ts`
   - base list snapshot 기반 core event 저장
   - detail enrichment가 확인한 venue/price를 후속 base sync가 되돌리지 않도록 보호
 
 자동 detail enrichment:
+
 - `worker/sources/tourapi-detail.ts`
   - `detailCommon2`, `detailIntro2`, `detailInfo2`
   - bounded candidate selection / refresh TTL / retry / priority protection
 - `worker/cron.ts`
-  - base TourAPI sync 뒤 detail subsystem 실행
-  - subsystem failure isolation
+  - 10시 base TourAPI·stale maintenance·municipal·private·alert/push flow와 11시 detail-only flow를 분리
+  - detail은 당일 base 성공 확인 후에만 실행하며 각 결과를 `sync_runs.provider='tourapi-detail'`로 별도 기록
 
 Read-only provider audit:
+
 - `scripts/tourapi-detail-audit.mjs`
 - `scripts/official-source-details-worker.ts`
 
 기존 수동 enrichment:
+
 - `scripts/enrich-selected-events.mjs`
   - 대표 5개 이벤트 전용
   - 역사적/대표행사 보강용 폐쇄형 스크립트로 유지
 
 Audit:
+
 - `scripts/audit-event-detail-completeness.mjs`
 - `shared/event-detail-completeness-audit.ts`
 
 ## 11. 로드맵
 
 완료:
+
 - Phase 1~10: 기반/수집/Zero-Human
 - Phase 11: Recommendation
 - Phase 12: Alerts + Web Push
@@ -221,8 +245,10 @@ Audit:
 - Analytics foundation
 - 갈틈 리브랜딩
 - galteum.com 구매/Custom Domain 연결
+- 10시 base / 11시 detail 스케줄 분리
 
 현재 우선순위:
+
 1. GA4 + Cloudflare Web Analytics 실제 활성화
 2. Search Console
 3. SEO/Public Launch readiness
@@ -243,6 +269,7 @@ Audit:
 ## 13. 최근 기준점
 
 주요 최근 commit:
+
 - `2dcc976` — `feat: enrich TourAPI event details automatically`
 - `716f5f2` — `feat: rebrand public service as 갈틈`
 - `d3c4026` — `feat: add privacy-safe analytics foundation`
@@ -254,6 +281,7 @@ Audit:
 ## 14. 새 세션 시작 방법
 
 새 ChatGPT/Codex 세션에서는 먼저:
+
 1. `AGENTS.md` 확인
 2. **`PROJECT_CONTEXT.md` 확인**
 3. 최신 `origin/main` 확인

@@ -27,6 +27,8 @@
     "ANALYTICS_ENABLED": "false",
   },
   "secrets": { "required": ["TOUR_API_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"] },
-  "triggers": { "crons": ["0 1 * * *"] },
+  "triggers": {
+    "crons": ["0 1 * * *", "0 2 * * *"],
+  },
   "observability": { "enabled": true },
 }
