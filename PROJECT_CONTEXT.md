@@ -128,83 +128,44 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 6. Search Console 등록
 7. SEO 작업
 
-## 8. 현재 발견된 중요 문제 — 일반 행사 상세정보가 빈약함
+## 8. TourAPI Zero-Human Detail Enrichment
 
-### 증상
+일반 TourAPI 행사의 상세가 지나치게 빈약한 문제가 확인됐고, 현재 `main`에는 자동 상세 보강 코드가 추가되어 있다.
 
-일반 TourAPI 행사 상세를 열면 다음 정도만 보이는 경우가 많다:
-- 대표 이미지
-- 행사명
-- 일정
-- 장소
-- 문의
-- 공식 안내 링크
-- 출처
+관련 commit:
+- `2dcc976` — `feat: enrich TourAPI event details automatically`
 
-반면 아래는 대부분 보이지 않는다:
-- 행사 소개
-- 주요 볼거리
-- 프로그램
-- 상세 시간
-- 가격
-- 주차
-- 기타 유용한 방문 정보
+구현 내용:
+- TourAPI `detailCommon2`
+- TourAPI `detailIntro2`
+- TourAPI `detailInfo2`
+- 행사별 상세 상태 추적용 additive migration `tourapi_detail_state`
+- 1회 최대 25 events
+- 1회 최대 75 TourAPI detail requests
+- 성공 detail refresh TTL 7일
+- 실패 시 bounded exponential retry
+- detail subsystem 실패가 TourAPI base ingestion / municipal / private / push 전체를 막지 않도록 격리
+- 공식 organizer/municipal 등 더 높은 priority enrichment가 있으면 TourAPI detail이 덮어쓰지 않음
+- TourAPI list sync가 detail에서 확인된 venue/price를 다음 base sync에서 되돌리지 않도록 보호
 
-### 원인
+현재 자동 보강 대상:
+- 행사 소개: `detailCommon2.overview`
+- 행사장: `detailIntro2.eventplace`
+- 행사별 비용: `detailIntro2.usetimefestival` 중 명확히 판정 가능한 값
+- whole-event 운영시간: 단일 명확한 `HH:MM~HH:MM` 형태만
+- 프로그램: `detailInfo2` 중 stable serial + 명시적 프로그램 구조인 항목만
+- 문의: detail common/intro의 공식 전화 필드를 detail API에서 우선 사용
 
-이 현상은 도메인/리브랜딩 문제가 아니다.
+정확성 원칙:
+- generic/category prose를 프로그램으로 오인하지 않는다.
+- detailInfo2의 여러 설명 블록을 임의의 일정으로 만들지 않는다.
+- 전체 행사 운영시간과 개별 프로그램 시간을 섞지 않는다.
+- 불명확한 fee/time/program은 저장하지 않는다.
+- optional field가 비어도 행사 core publish를 막지 않는다.
 
-현재 UI는 정확성 정책에 따라 **공식적으로 확인되지 않은 optional 정보는 숨긴다**.
-
-상세 UI는 다음 테이블이 채워진 경우에만 풍부한 정보를 보여준다:
-- `event_enrichments`
-- `event_highlights`
-- `event_programs`
-- `event_program_occurrences`
-- `event_operating_hours`
-
-하지만 현재 `scripts/enrich-selected-events.mjs`는 대표 5개 행사만 수동으로 보강하는 **폐쇄형 스크립트**다. 코드 주석상 discovery/backfill 용도로 확장하지 않게 되어 있다.
-
-TourAPI 기본 `description`도 실제 소개문 대신 일반 안내문을 저장하고, UI의 `usefulDescription()`이 해당 일반 문구를 숨긴다.
-
-따라서 **일반 행사 전체에 대한 자동 detail enrichment pipeline이 아직 없다.**
-
-## 9. 다음 최우선 작업 — Zero-Human Detail Enrichment
-
-도메인/Analytics/SEO를 계속 진행하기 전에, 일반 행사 상세의 품질을 서비스 수준으로 올리는 작업이 우선이다.
-
-목표:
-- 현재/향후 공개 행사에 대해 자동 상세정보 보강
-- 사람이 특정 행사 5개씩 골라 넣는 구조 제거
-- 공식 데이터만 사용
-- optional 정보 누락은 publish blocker로 만들지 않음
-- source failure는 fail-closed
-- Cron으로 자동 갱신
-- D1 read/write bounded
-
-우선 활용할 수 있는 공식 데이터:
-- TourAPI 행사 목록
-- TourAPI 상세 계열 endpoint에서 제공 가능한 공통정보/소개정보/반복정보/이미지정보
-- 필요한 경우 기존 official organizer/municipal evidence
-
-상세 후보 필드:
-- 행사 소개
-- 운영시간
-- 주요 프로그램/행사 내용
-- 행사별 비용
-- 공식 문의
-- 공식 홈페이지
-- 주차
-- 공식 이미지
-- 기타 방문 판단에 실제로 유용한 필드
-
-절대 하지 말 것:
-- AI로 빈 필드 생성
-- 시설 입장료를 행사 참가비로 오인
-- 판매/예약기간을 행사기간으로 오인
-- 여러 날짜 구간을 임의로 하나로 합치기
-- 모든 행사에 가짜 summary를 채우기
-- 수동 review queue를 일상 운영에 넣기
+중요:
+- 이 기능은 코드가 `main`에 존재한다는 사실과 production에서 migration/deploy/first run이 모두 정상 완료됐다는 사실을 구분해야 한다.
+- 새 세션에서는 먼저 migration 적용 여부, 배포 Worker version, `tourapi_detail_state` 상태, 첫 bounded run 결과, 실제 상세 UI를 확인한 뒤 COMPLETE로 판단한다.
 
 ## 10. 상세 관련 현재 코드 포인트
 
@@ -223,14 +184,25 @@ Detail API:
 
 TourAPI:
 - `worker/sources/tourapi.ts`
-  - 현재 list snapshot 기반 core event 저장
-  - 기본 description은 일반 안내문
-  - raw payload에는 fact classification에 활용 가능한 필드들이 존재
+  - base list snapshot 기반 core event 저장
+  - detail enrichment가 확인한 venue/price를 후속 base sync가 되돌리지 않도록 보호
 
-현재 수동 enrichment:
+자동 detail enrichment:
+- `worker/sources/tourapi-detail.ts`
+  - `detailCommon2`, `detailIntro2`, `detailInfo2`
+  - bounded candidate selection / refresh TTL / retry / priority protection
+- `worker/cron.ts`
+  - base TourAPI sync 뒤 detail subsystem 실행
+  - subsystem failure isolation
+
+Read-only provider audit:
+- `scripts/tourapi-detail-audit.mjs`
+- `scripts/official-source-details-worker.ts`
+
+기존 수동 enrichment:
 - `scripts/enrich-selected-events.mjs`
   - 대표 5개 이벤트 전용
-  - 일반 자동 enrichment 해결책이 아님
+  - 역사적/대표행사 보강용 폐쇄형 스크립트로 유지
 
 Audit:
 - `scripts/audit-event-detail-completeness.mjs`
@@ -248,7 +220,11 @@ Audit:
 - galteum.com 구매/Custom Domain 연결
 
 현재 우선순위:
-1. **Zero-Human Detail Enrichment**
+1. **TourAPI Zero-Human Detail Enrichment production 검증**
+   - migration 적용 여부
+   - deploy 상태
+   - first bounded run
+   - 실제 상세 UI 품질
 2. galteum.com host cutover 마무리
 3. GA4 + Cloudflare Web Analytics 실제 활성화
 4. Search Console
@@ -270,6 +246,7 @@ Audit:
 ## 13. 최근 기준점
 
 주요 최근 commit:
+- `2dcc976` — `feat: enrich TourAPI event details automatically`
 - `716f5f2` — `feat: rebrand public service as 갈틈`
 - `d3c4026` — `feat: add privacy-safe analytics foundation`
 - `8bb3346` — private source description safety fix
