@@ -40,6 +40,7 @@ import {
 } from "../shared/event-operating-hours";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 import { analyticsRuntimeConfig } from "../shared/analytics-config";
+import { legacyHostRedirect } from "./host";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -256,6 +257,8 @@ function json(data: unknown, status = 200) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const legacyRedirect = legacyHostRedirect(url);
+    if (legacyRedirect) return legacyRedirect;
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     const isNearby = url.pathname === "/api/events/nearby";
     const isPushWrite =

@@ -60,7 +60,7 @@ npx wrangler secret put TOUR_API_KEY --config wrangler.production.jsonc
 3. 기존 로컬 개발 서버를 종료한 뒤 `npm run dev:real`: 같은 로컬 DB와 Static Assets를 production 조회 모드로 실행한다. 외부 수집은 비활성이며 키가 필요 없다.
 4. `npm run test:ui:real`: 실제 D1 스냅샷과 독립적으로 계산한 한국 날짜를 기준으로 데스크톱·모바일, 3개 기간, 전체 지역, 미확인 필터, 상세, 오류·레이아웃을 확인한다.
 5. `npm run deploy`: Secret과 최근 원격 실제 데이터가 없으면 중단한다. 검사를 통과한 코드를 기존 Worker/Assets에 배포한다. production 설정은 TourAPI Cron 수집을 활성화한다. Cron 시간·DB·URL은 유지한다.
-6. 빌드 후 자산 404가 발생하지 않도록 로컬 서버를 재시작한다. `TEST_BASE_URL=https://weekend-mwohae.framefutures.workers.dev TEST_OUTPUT_DIR=test-results/real-deployed npm run test:ui:real`로 공개 URL을 검사한다.
+6. 빌드 후 자산 404가 발생하지 않도록 로컬 서버를 재시작한다. `TEST_BASE_URL=https://galteum.com TEST_OUTPUT_DIR=test-results/real-deployed npm run test:ui:real`로 공개 URL을 검사한다.
 7. `npm run verify:real`: 로컬과 공개 API의 기간·지역·요금·동행·주제·거리·페이지·상세 결과를 비교한다. 로컬은 수집 비활성, 공개는 수집 활성인 health 차이는 의도된 설정이다.
 8. Cron 자연 실행 후 `sync_runs` 성공·실제 필드·갱신 시각을 확인한다. 이번 작업에서 공개 쓰기 API, AI 분류, 변경 감시, 알림, 새 카테고리는 추가하지 않는다.
 

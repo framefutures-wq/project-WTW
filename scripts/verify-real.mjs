@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 const remote =
-  process.argv[2] ?? "https://weekend-mwohae.framefutures.workers.dev";
+  process.argv[2] ?? "https://galteum.com";
 const local = process.env.LOCAL_BASE_URL ?? "http://127.0.0.1:8787";
 async function get(base, path) {
   const r = await fetch(base + path, { signal: AbortSignal.timeout(20_000) });

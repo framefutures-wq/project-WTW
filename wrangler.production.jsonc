@@ -23,7 +23,7 @@
     "TOUR_API_ENABLED": "true",
     "WEB_PUSH_ENABLED": "true",
     "WEB_PUSH_VAPID_PUBLIC_KEY": "BNHKagyZenwP0ldvTxb-Uw0eTKqom0s6kzx0xEEjOFWMGWeSk2W0UVIhqD0qTQUR7U0JxmTAyL01Xe1ib3tphno",
-    "WEB_PUSH_VAPID_SUBJECT": "https://weekend-mwohae.framefutures.workers.dev/",
+    "WEB_PUSH_VAPID_SUBJECT": "https://galteum.com/",
     "ANALYTICS_ENABLED": "false",
   },
   "secrets": { "required": ["TOUR_API_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"] },

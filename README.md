@@ -4,7 +4,7 @@
 
 스택: Cloudflare Workers, Static Assets, D1, Cron Triggers, Cloudflare Secrets, TypeScript, React. [구조 설계](docs/ARCHITECTURE.md).
 
-**공개 서비스:** [갈틈](https://weekend-mwohae.framefutures.workers.dev) · [실제 배포 및 검증 기록](docs/DEPLOYMENT.md). 공개 서비스는 `APP_MODE=production`, TourAPI Secret은 기존 Worker에 등록됐으며 로컬 파일에는 저장하지 않습니다.
+**공개 서비스:** [갈틈](https://galteum.com) · [실제 배포 및 검증 기록](docs/DEPLOYMENT.md). 공개 서비스는 `APP_MODE=production`, TourAPI Secret은 기존 Worker에 등록됐으며 로컬 파일에는 저장하지 않습니다.
 
 ## 로컬 실행
 

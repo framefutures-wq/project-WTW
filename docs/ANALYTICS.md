@@ -41,7 +41,7 @@ enabled일 때 공식 `https://static.cloudflareinsights.com/beacon.min.js` snip
 
 향후 URL-prefix property로 다음 주소를 등록한다.
 
-`https://weekend-mwohae.framefutures.workers.dev/`
+`https://galteum.com/`
 
 사용자 작업은 Search Console에서 property를 생성한 뒤, production GA4 tag가
 활성화되어 같은 Google 계정에 연결된 경우 Analytics verification을 선택하는
