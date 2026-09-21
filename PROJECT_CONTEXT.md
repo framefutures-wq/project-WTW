@@ -165,7 +165,10 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 
 중요:
 - 이 기능은 코드가 `main`에 존재한다는 사실과 production에서 migration/deploy/first run이 모두 정상 완료됐다는 사실을 구분해야 한다.
-- 새 세션에서는 먼저 migration 적용 여부, 배포 Worker version, `tourapi_detail_state` 상태, 첫 bounded run 결과, 실제 상세 UI를 확인한 뒤 COMPLETE로 판단한다.
+- **production 검증 완료 (2026-09-21):** migration `0020_tourapi_detail_state.sql` 적용, Worker deployment `30f67067-8a51-4927-bf6e-90a5d597199d`, 첫 bounded run 성공.
+- 첫 run 결과: candidates 25, requested 75, enriched 16, empty 0, failed 9. 실패 9건은 failure_count 1 및 2시간 bounded retry로 보존됐고 base TourAPI/municipal/private/push flow를 막지 않았다.
+- production D1에는 detail success 16건과 failed 9건이 기록됐다. detail source summary 12건, whole-event hours 5건이 저장됐고 detail source program row는 0건이다. 즉 `행사소개`/`행사내용` category prose를 program으로 오인하지 않았다.
+- `https://galteum.com`에서 5개 enriched detail을 desktop/mobile로 확인했으며, summary·hours·price 등 값이 있는 섹션만 표시되고 console error는 0이었다.
 
 ## 10. 상세 관련 현재 코드 포인트
 
