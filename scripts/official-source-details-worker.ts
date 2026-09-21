@@ -17,7 +17,7 @@ export default {
       .first();
     if (!event) return new Response("Not found", { status: 404 });
     const results = [];
-    for (const endpoint of ["detailCommon2", "detailIntro2"].filter(
+    for (const endpoint of ["detailCommon2", "detailIntro2", "detailInfo2"].filter(
       (e) =>
         !url.searchParams.has("endpoint") ||
         url.searchParams.get("endpoint") === e,
@@ -31,7 +31,9 @@ export default {
         contentId: id,
         numOfRows: "10",
         pageNo: "1",
-        ...(endpoint === "detailIntro2" ? { contentTypeId: "15" } : {}),
+        ...(endpoint === "detailIntro2" || endpoint === "detailInfo2"
+          ? { contentTypeId: "15" }
+          : {}),
       }).toString();
       const checkedAt = new Date().toISOString();
       let httpStatus: number | null = null;

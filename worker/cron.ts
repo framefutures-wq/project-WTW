@@ -1,5 +1,6 @@
 import type { Env } from "./env";
 import { tourApiReadiness, syncTourApi } from "./sources/tourapi";
+import { enrichTourApiDetails } from "./sources/tourapi-detail";
 import { runMunicipalAutonomous } from "./sources/municipal";
 import { runPrivateOfficialSources } from "./sources/private-official";
 import { processPushDeliveries } from "./push";
@@ -45,6 +46,12 @@ export async function runScheduled(env: Env) {
       ).bind(now, cutoff),
     ]);
     const imported = await syncTourApi(env, id);
+    let detail: unknown;
+    try { detail = await enrichTourApiDetails(env); }
+    catch (error) {
+      detail = { failed: "subsystem_error" };
+      console.error("tourapi_detail_subsystem_failed", { runId: id, error: error instanceof Error ? error.name : "unknown" });
+    }
     municipalAttempted = true;
     const municipal = await runMunicipalAutonomous(env);
     const privateOfficial = await runPrivateOfficialSources(env);
@@ -54,7 +61,7 @@ export async function runScheduled(env: Env) {
       .bind(
         imported ? "success" : "skipped",
         new Date().toISOString(),
-        JSON.stringify({ tourapi: imported ?? tourApiReadiness(env), municipal, private: privateOfficial }),
+        JSON.stringify({ tourapi: imported ?? tourApiReadiness(env), detail, municipal, private: privateOfficial }),
         results[1].meta.changes,
         id,
       )

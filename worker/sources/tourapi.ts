@@ -14,7 +14,8 @@ import {
 
 export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
-type Row = Record<string, unknown>;
+export type TourApiRow = Record<string, unknown>;
+type Row = TourApiRow;
 const FACT_FIELDS = ["title", "overview", "program", "subevent", "eventplace", "placeinfo", "playtime", "parking", "parkinginfo", "agelimit", "usetimefestival"];
 const COST_FIELDS = ["usetimefestival", "usefee", "usetime"];
 function costDetails(row: Row) {
@@ -77,7 +78,7 @@ export function parseTourResponse(value: unknown) {
     throw new Error("TourAPI unexpected empty page");
   return { items, total };
 }
-async function request(
+export async function tourApiRequest(
   key: string,
   endpoint: string,
   params: Record<string, string>,
@@ -135,7 +136,7 @@ async function pages(
   const rows: Row[] = [];
   let total: number | undefined;
   for (let page = 1; page <= 20; page++) {
-    const result = await request(key, endpoint, {
+    const result = await tourApiRequest(key, endpoint, {
       ...params,
       numOfRows: "1000",
       pageNo: String(page),
@@ -488,7 +489,7 @@ export async function saveFestivalSnapshot(
         .prepare(
           `INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at)
       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'unknown',?,'verified',0,?,?)
-      ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,lat=excluded.lat,lng=excluded.lng,cost=excluded.cost,price_text=excluded.price_text,pet_policy='unknown',status=excluded.status,verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.checked_at
+      ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='venue') THEN events.venue ELSE excluded.venue END,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,lat=excluded.lat,lng=excluded.lng,cost=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='price') THEN events.cost ELSE excluded.cost END,price_text=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='price') THEN events.price_text ELSE excluded.price_text END,pet_policy='unknown',status=excluded.status,verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.checked_at
       WHERE events.primary_source_id=?`,
         )
         .bind(

@@ -586,17 +586,14 @@ export default {
           .bind(detail[1])
           .all();
         const contactSource = await env.DB.prepare(
-          "SELECT raw_payload FROM sources WHERE id=? AND kind='tourapi'",
+          "SELECT raw_payload FROM sources WHERE id IN (?,?) AND kind='tourapi' ORDER BY CASE WHEN id=? THEN 0 ELSE 1 END LIMIT 1",
         )
-          .bind(row.primary_source_id)
+          .bind(`${row.id}-detail`, row.primary_source_id, `${row.id}-detail`)
           .first<{ raw_payload: string | null }>();
         let contactPhone = null;
         try {
-          contactPhone = normalizeOfficialPhone(
-            contactSource?.raw_payload
-              ? (JSON.parse(contactSource.raw_payload) as { tel?: unknown }).tel
-              : null,
-          );
+          const payload = contactSource?.raw_payload ? JSON.parse(contactSource.raw_payload) as { tel?: unknown; common?: { tel?: unknown }; intro?: { sponsor1tel?: unknown } } : null;
+          contactPhone = normalizeOfficialPhone(payload?.common?.tel ?? payload?.intro?.sponsor1tel ?? payload?.tel);
         } catch {
           contactPhone = null;
         }
