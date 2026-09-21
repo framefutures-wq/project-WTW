@@ -1,4 +1,4 @@
-# 주말뭐해? 구조 설계
+# 갈틈 구조 설계
 
 React + TypeScript → Cloudflare Static Assets → `/api/*` Worker → Cloudflare D1.
 동일 도메인 API로 운영하며 Vite는 React 정적 번들 생성에 사용한다. 로컬은 실제 workerd와 D1 SQLite를 실행하는 Wrangler를 사용한다.

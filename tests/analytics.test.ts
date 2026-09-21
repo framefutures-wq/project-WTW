@@ -18,7 +18,7 @@ test("SPA navigation and behavior events are sent once with sanitized payloads",
     dataLayer: [] as unknown[],
   };
   const fakeDocument = {
-    title: "주말뭐해?",
+    title: "갈틈",
     querySelectorAll: () => scripts,
     createElement: () => ({ dataset: {} as Record<string, string>, setAttribute(key: string, value: string) { this.dataset[key] = value; }, getAttribute(key: string) { return key === "data-wtw-analytics" ? this.dataset.wtwAnalytics : this.dataset[key]; } }),
     head: { appendChild(script: Record<string, string>) { scripts.push(script); } },

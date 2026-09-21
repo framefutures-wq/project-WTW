@@ -1,7 +1,7 @@
 self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = {}; }
-  const title = typeof data.title === "string" ? data.title : "주말뭐해?";
+  const title = typeof data.title === "string" ? data.title : "갈틈";
   const body = typeof data.body === "string" ? data.body : "새로운 행사 소식이 있어요.";
   const tag = typeof data.tag === "string" ? data.tag : "wtw:notice";
   const url = typeof data.url === "string" && data.url.startsWith("/?event=") ? data.url : "/";

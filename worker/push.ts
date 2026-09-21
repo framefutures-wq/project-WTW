@@ -93,7 +93,7 @@ export function notificationPayload(alert: { alert_type: string; dedupe_key: str
   let status = "";
   try { status = (JSON.parse(alert.after_json ?? "{}") as { status?: string }).status ?? ""; } catch { /* factual fallback below */ }
   const body = alert.alert_type === "NEW_EVENT" ? `${alert.title} 새로 등록됐어요` : alert.alert_type === "SCHEDULE_CHANGED" ? `${alert.title} 일정이 변경됐어요` : status === "postponed" ? `${alert.title} 연기 안내가 확인됐어요` : `${alert.title} 취소 안내가 확인됐어요`;
-  return { type: alert.alert_type, title: "주말뭐해?", body, event_id: alert.event_id, url: `/?event=${encodeURIComponent(alert.event_id)}`, tag: `wtw:${alert.dedupe_key}` };
+  return { type: alert.alert_type, title: "갈틈", body, event_id: alert.event_id, url: `/?event=${encodeURIComponent(alert.event_id)}`, tag: `wtw:${alert.dedupe_key}` };
 }
 function retryAt(attempts: number) { return new Date(Date.now() + Math.min(24, 2 ** attempts) * 3600_000).toISOString(); }
 async function refreshAlertState(env: Env, alertId: string) {

@@ -1,10 +1,10 @@
-# 주말뭐해?
+# 갈틈
 
-관리용 프로젝트명은 **project-WTW**, 서비스명은 **주말뭐해?**입니다. 한국관광공사 TourAPI의 실제 행사 데이터를 기존 D1에 저장하고 현재·향후 30일의 일정을 제공하도록 전환했습니다. [공식 명세·매핑·등록 및 검증 절차](docs/TOURAPI.md).
+관리용 프로젝트명은 **project-WTW**, 서비스 브랜드는 **갈틈**입니다. 한국관광공사 TourAPI의 실제 행사 데이터를 기존 D1에 저장하고 현재·향후 30일의 일정을 제공하도록 전환했습니다. [공식 명세·매핑·등록 및 검증 절차](docs/TOURAPI.md).
 
 스택: Cloudflare Workers, Static Assets, D1, Cron Triggers, Cloudflare Secrets, TypeScript, React. [구조 설계](docs/ARCHITECTURE.md).
 
-**공개 서비스:** [주말뭐해?](https://weekend-mwohae.framefutures.workers.dev) · [실제 배포 및 검증 기록](docs/DEPLOYMENT.md). 공개 서비스는 `APP_MODE=production`, TourAPI Secret은 기존 Worker에 등록됐으며 로컬 파일에는 저장하지 않습니다.
+**공개 서비스:** [갈틈](https://weekend-mwohae.framefutures.workers.dev) · [실제 배포 및 검증 기록](docs/DEPLOYMENT.md). 공개 서비스는 `APP_MODE=production`, TourAPI Secret은 기존 Worker에 등록됐으며 로컬 파일에는 저장하지 않습니다.
 
 ## 로컬 실행
 

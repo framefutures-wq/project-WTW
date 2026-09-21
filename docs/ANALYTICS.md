@@ -23,7 +23,7 @@ production mode가 아니므로 provider network 요청을 하지 않는다.
 
 ## GA4 Admin checklist
 
-1. Google Analytics에서 property와 Web data stream을 만든다.
+1. Google Analytics에서 property 이름을 `갈틈`으로 만들고 Web data stream을 만든다.
 2. Measurement ID(`G-...`)를 확인해 production 설정에 등록한다.
 3. 앱은 enabled일 때만 `gtag.js`를 동적으로 한 번 로드한다.
 4. `send_page_view: false`로 두고 SPA pageview를 앱에서 명시적으로 보낸다.

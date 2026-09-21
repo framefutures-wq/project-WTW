@@ -1,6 +1,6 @@
 # project-WTW TourAPI 실제 데이터 연동
 
-서비스명은 **주말뭐해?**. 기존 Worker `weekend-mwohae`, D1 `weekend-mwohae-production`, Cron `0 21 * * *`, 공개 URL은 유지한다. 새로운 Cloudflare 리소스나 D1 마이그레이션은 필요하지 않다.
+서비스명은 **갈틈**. 기존 Worker `weekend-mwohae`, D1 `weekend-mwohae-production`, Cron `0 21 * * *`, 공개 URL은 유지한다. 새로운 Cloudflare 리소스나 D1 마이그레이션은 필요하지 않다.
 
 ## 공식 계약 확인
 

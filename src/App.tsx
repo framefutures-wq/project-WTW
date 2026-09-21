@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Compass,
   ExternalLink,
-  Flower2,
   Info,
   MapPin,
   Navigation,
@@ -1088,14 +1087,11 @@ export default function App() {
     <>
       <header className="header">
         <div className="header-inner">
-          <a href="/" className="brand" aria-label="주말뭐해? 홈">
-            <span className="brand-icon">
-              <Flower2 size={24} />
-            </span>
-            주말뭐해<span className="brand-question">?</span>
+          <a href="/" className="brand" aria-label="갈틈 홈">
+            갈틈
           </a>
           <span className="header-tagline">
-            가까운 곳에서 발견하는 좋은 하루
+            오늘, 어디 가지?
           </span>
           <button className="trust-link" onClick={() => setAbout(true)}>
             <ShieldCheck size={17} />
@@ -1116,17 +1112,17 @@ export default function App() {
         <section className="hero">
           <div className="hero-copy">
             <span className="eyebrow">
-              <span /> 멀리 가지 않아도, 좋은 주말
+              <span /> 오늘은 어디 가볼까?
             </span>
             <h1>
-              이번 주말,
+              드디어,
               <br />
-              <span>뭐 하면 좋을까?</span>
+              <span>놀러 갈 틈이 생겼다.</span>
             </h1>
             <p>
-              함께하는 사람에 맞춰, 가까운 축제부터 작은 동네 행사까지.
+              함께하는 사람과 원하는 날짜에 맞춰, 가까운 축제부터 지역 행사·체험까지.
               <br className="desktop-break" />
-              마음에 드는 하루를 찾아보세요.
+              갈 만한 곳을 찾아보세요.
             </p>
             <div className="hero-note">
               <Compass size={17} />
@@ -1749,9 +1745,9 @@ export default function App() {
       </main>
       <footer>
         <a className="footer-brand" href="/">
-          주말뭐해?
+          갈틈
         </a>
-        <span>당신의 주말에, 작은 발견 하나.</span>
+        <span>오늘의 작은 발견 하나.</span>
         <small>
           운영 준비 중 ·{" "}
           {mode === "sample" ? "샘플 데이터 모드" : "공식 출처 기반"}

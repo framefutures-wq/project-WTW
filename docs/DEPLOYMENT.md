@@ -6,7 +6,7 @@
 
 **공개 URL:** https://weekend-mwohae.framefutures.workers.dev
 
-- 관리 이름: `project-WTW`, 서비스명: 주말뭐해?
+- 관리 이름: `project-WTW`, 서비스명: 갈틈
 - 기존 Worker `weekend-mwohae`, D1 `weekend-mwohae-production`, URL과 Cron `0 21 * * *` 유지.
 - 최종 배포 버전: `01eb8499-3097-4841-9f89-bcd03e11e961`.
 - 설정: `wrangler.production.jsonc`, `APP_MODE=production`, `TOUR_API_ENABLED=true`.

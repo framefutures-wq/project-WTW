@@ -76,23 +76,6 @@ svg {
   font-weight: 900;
   letter-spacing: -1.5px;
 }
-.brand-icon {
-  display: grid;
-  place-items: center;
-  width: 39px;
-  height: 39px;
-  color: #fff;
-  background: var(--green);
-  border-radius: 13px;
-  transform: rotate(-7deg);
-}
-.brand-icon svg {
-  transform: rotate(7deg);
-}
-.brand-question {
-  color: var(--green);
-  margin-left: -8px;
-}
 .header-tagline {
   font-size: 12px;
   color: #858d85;
@@ -1529,10 +1512,6 @@ footer > small {
   }
   .brand {
     font-size: 23px;
-  }
-  .brand-icon {
-    width: 34px;
-    height: 34px;
   }
   .trust-link {
     font-size: 11px;
