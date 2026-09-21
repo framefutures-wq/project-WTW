@@ -1,6 +1,7 @@
 import type { Env } from "./env";
 import { tourApiReadiness, syncTourApi } from "./sources/tourapi";
 import { runMunicipalAutonomous } from "./sources/municipal";
+import { processPushDeliveries } from "./push";
 export async function runScheduled(env: Env) {
   let municipalAttempted = false;
   const id = crypto.randomUUID(),
@@ -16,7 +17,11 @@ export async function runScheduled(env: Env) {
       new Date(Date.now() - 3600_000).toISOString(),
     )
     .run();
-  if (!started.meta.changes) return;
+  if (!started.meta.changes) {
+    try { await processPushDeliveries(env); }
+    catch (error) { console.error("push_delivery_failed", { runId: id, error: error instanceof Error ? error.name : "unknown" }); }
+    return;
+  }
   try {
     const cutoff = new Date(Date.now() - 72 * 3600_000).toISOString();
     const results = await env.DB.batch([
@@ -61,5 +66,9 @@ export async function runScheduled(env: Env) {
       .run();
     // An upstream error must not be rethrown with a potentially secret-bearing URL.
     throw new Error("Scheduled synchronization failed");
+  } finally {
+    // Notification transport must never decide whether official event ingestion succeeds.
+    try { await processPushDeliveries(env); }
+    catch (error) { console.error("push_delivery_failed", { runId: id, error: error instanceof Error ? error.name : "unknown" }); }
   }
 }

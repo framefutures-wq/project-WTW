@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownUp,
   ArrowRight,
+  Bell,
   CalendarDays,
   Check,
   Clock3,
@@ -78,6 +79,8 @@ type Detail = {
 };
 type PageResponse = Omit<EventResponse, "total"> & { total?: number };
 type NearbyLocation = { lat: number; lng: number };
+type PushConfig = { enabled: boolean; vapidPublicKey: string | null };
+type PushState = "loading" | "unsupported" | "ready" | "subscribed" | "denied" | "error";
 class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -100,6 +103,11 @@ async function readApi<T>(response: Response): Promise<T> {
   }
   return body as T;
 }
+const vapidBytes = (key: string) => {
+  const padded = key.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (key.length % 4)) % 4);
+  const raw = atob(padded);
+  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+};
 const PERIODS: { value: Period; label: string; small: string }[] = [
   { value: "today", label: "오늘", small: "지금 떠나볼까?" },
   { value: "weekend", label: "이번 주말", small: "기다려온 쉬는 날" },
@@ -430,6 +438,10 @@ export default function App() {
   const [detailRetry, setDetailRetry] = useState(0);
   const [mode, setMode] = useState(""),
     [about, setAbout] = useState(false);
+  const [pushConfig, setPushConfig] = useState<PushConfig | null>(null),
+    [pushState, setPushState] = useState<PushState>("loading"),
+    [pushError, setPushError] = useState(""),
+    [pushTypes, setPushTypes] = useState({ new_event: true, schedule_changed: true, cancelled_or_postponed: true });
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null),
     resultsRef = useRef<HTMLElement | null>(null),
@@ -445,6 +457,17 @@ export default function App() {
       .then(readApi<{ available_date_range: DateRange | null }>)
       .then((body) => setAvailableDateRange(body.available_date_range))
       .catch(() => setAvailableDateRange(null));
+  }, []);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window) || !window.isSecureContext) { setPushState("unsupported"); return; }
+    Promise.all([fetch("/api/push/config").then(readApi<PushConfig>), navigator.serviceWorker.register("/sw.js")])
+      .then(async ([config, registration]) => {
+        setPushConfig(config);
+        if (!config.enabled) { setPushState("unsupported"); return; }
+        if (Notification.permission === "denied") { setPushState("denied"); return; }
+        setPushState((await registration.pushManager.getSubscription()) ? "subscribed" : "ready");
+      })
+      .catch(() => setPushState("unsupported"));
   }, []);
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -861,6 +884,30 @@ export default function App() {
     else
       (element?.querySelector("button") as HTMLButtonElement | null)?.focus();
   }
+  const pushScope = [region ? regionLabel(region) : null, audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null, theme ? THEMES[theme as keyof typeof THEMES] : null].filter(Boolean) as string[];
+  async function subscribePush() {
+    if (!pushConfig?.enabled || pushState === "unsupported") return;
+    if (!pushScope.length) { setPushError(location ? "내 주변 위치는 저장하지 않아요. 지역·누구와·무엇을 중 하나를 선택해 주세요." : "지역·누구와·무엇을 중 하나를 선택해 주세요."); return; }
+    setPushError("");
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") { setPushState("denied"); return; }
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = (await registration.pushManager.getSubscription()) ?? await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidBytes(pushConfig.vapidPublicKey!) });
+      await readApi<{ ok: boolean }>(await fetch("/api/push/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: subscription.toJSON(), preferences: { region: region || null, audience: audience || null, theme: theme || null, ...pushTypes } }) }));
+      setPushState("subscribed");
+    } catch { setPushState("error"); setPushError("알림 설정을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."); }
+  }
+  async function unsubscribePush() {
+    try {
+      const registration = await navigator.serviceWorker.ready, subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await fetch("/api/push/unsubscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: subscription.endpoint }) });
+        await subscription.unsubscribe();
+      }
+      setPushState("ready");
+    } catch { setPushError("알림 해지를 완료하지 못했어요. 잠시 후 다시 시도해 주세요."); }
+  }
   const active = Boolean(
     customRange || region || audience || theme || query || location,
   );
@@ -1187,6 +1234,29 @@ export default function App() {
                   위치 사용 해제
                 </button>
               </p>
+            )}
+            {pushState !== "unsupported" && pushConfig?.enabled && (
+              <div className="push-control" aria-live="polite">
+                <div>
+                  <strong><Bell size={16} /> {pushState === "subscribed" ? "알림 받는 중" : "이 조건 알림받기"}</strong>
+                  <p>{pushState === "subscribed" ? `${pushScope.join(" · ")} 조건의 알림을 받고 있어요.` : "새 행사나 중요한 일정 변경이 확인되면 알려드려요."}</p>
+                </div>
+                {pushState === "subscribed" ? (
+                  <span className="push-actions"><button className="secondary" onClick={subscribePush}>조건 업데이트</button><button className="secondary" onClick={unsubscribePush}>알림 끄기</button></span>
+                ) : pushState === "denied" ? (
+                  <span className="push-note">브라우저 설정에서 알림 권한을 변경할 수 있어요.</span>
+                ) : (
+                  <button className="primary" onClick={subscribePush}>이 조건 알림받기</button>
+                )}
+                {pushState !== "subscribed" && pushState !== "denied" && (
+                  <div className="push-types" role="group" aria-label="받을 알림 종류">
+                    {([ ["new_event", "새 행사"], ["schedule_changed", "일정 변경"], ["cancelled_or_postponed", "취소·연기"] ] as const).map(([key, label]) => (
+                      <label key={key}><input type="checkbox" checked={pushTypes[key]} onChange={(event) => setPushTypes((current) => ({ ...current, [key]: event.target.checked }))} /> {label}</label>
+                    ))}
+                  </div>
+                )}
+                {pushError && <p className="inline-error" role="alert">{pushError}</p>}
+              </div>
             )}
             {activeFilterLabels.length > 0 && (
               <div className="active-filters" aria-label="현재 선택한 조건">

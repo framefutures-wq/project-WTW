@@ -40,10 +40,12 @@
     "municipal:discover": "node --import tsx scripts/municipal-discover-run.mjs --dry-run",
     "municipal:review": "node --import tsx scripts/municipal-review.mjs",
     "municipal:apply": "node --import tsx scripts/municipal-apply.mjs",
+    "push:vapid:production": "node scripts/setup-web-push-vapid.mjs --production",
     "test:ui:contract": "node scripts/contract-browser.mjs",
     "dev:sample": "npm run build && wrangler dev --local --var APP_MODE:sample --test-scheduled"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

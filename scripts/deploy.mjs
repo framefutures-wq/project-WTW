@@ -23,10 +23,13 @@ if (configPath === "wrangler.production.jsonc") {
   );
   if (secrets.status !== 0)
     throw new Error("Cloudflare Secret 조회 실패: 로그인을 확인하세요.");
-  if (!JSON.parse(secrets.stdout).some((s) => s.name === "TOUR_API_KEY"))
+  const secretNames = JSON.parse(secrets.stdout).map((s) => s.name);
+  if (!secretNames.includes("TOUR_API_KEY"))
     throw new Error(
       "배포 중단: TOUR_API_KEY를 먼저 Cloudflare Secret으로 등록하세요.",
     );
+  if (settings.vars.WEB_PUSH_ENABLED === "true" && (!settings.vars.WEB_PUSH_VAPID_PUBLIC_KEY || !settings.vars.WEB_PUSH_VAPID_SUBJECT || !secretNames.includes("WEB_PUSH_VAPID_PRIVATE_KEY")))
+    throw new Error("배포 중단: Web Push VAPID public/subject/private 설정을 먼저 완료하세요.");
   const cutoff = new Date(Date.now() - 72 * 3600_000).toISOString();
   const result = spawnSync(
     "npx",

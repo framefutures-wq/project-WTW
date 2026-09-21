@@ -11,6 +11,7 @@ import {
 import type { Env } from "./env";
 import { parseFilters, parseNearbyFilters, InputError } from "./filters";
 import { runScheduled } from "./cron";
+import { disableSubscription, isSameOrigin, parseSubscriptionRequest, pushStatus, readPushBody, upsertSubscription, validPushEndpoint } from "./push";
 import {
   classifyFactTags,
   FACT_CLASSIFIER,
@@ -237,7 +238,8 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     const isNearby = url.pathname === "/api/events/nearby";
-    if (request.method !== "GET" && !(isNearby && request.method === "POST"))
+    const isPushWrite = ["/api/push/subscribe", "/api/push/unsubscribe"].includes(url.pathname) && request.method === "POST";
+    if (request.method !== "GET" && !(isNearby && request.method === "POST") && !isPushWrite)
       return json({ error: "읽기 전용 API입니다." }, 405);
     try {
       if (url.pathname === "/api/health") {
@@ -253,7 +255,27 @@ export default {
                 ? "enabled"
                 : "secret_missing"
               : "disabled",
+          push: pushStatus(env),
         });
+      }
+      if (url.pathname === "/api/push/config") {
+        const status = pushStatus(env);
+        return json({ enabled: status === "enabled", vapidPublicKey: status === "enabled" ? env.WEB_PUSH_VAPID_PUBLIC_KEY : null });
+      }
+      if (url.pathname === "/api/push/subscribe") {
+        if (!isSameOrigin(request)) return json({ error: "허용되지 않은 요청입니다." }, 403);
+        const parsed = parseSubscriptionRequest(await readPushBody(request));
+        if (!parsed) return json({ error: "알림 조건 또는 구독 정보가 올바르지 않습니다." }, 400);
+        await upsertSubscription(env, parsed);
+        return json({ ok: true });
+      }
+      if (url.pathname === "/api/push/unsubscribe") {
+        if (!isSameOrigin(request)) return json({ error: "허용되지 않은 요청입니다." }, 403);
+        const body = await readPushBody(request);
+        const endpoint = body && typeof body === "object" ? (body as { endpoint?: unknown }).endpoint : null;
+        if (!validPushEndpoint(endpoint)) return json({ error: "구독 정보가 올바르지 않습니다." }, 400);
+        await disableSubscription(env, endpoint);
+        return json({ ok: true });
       }
       if (url.pathname === "/api/meta")
         return json({
