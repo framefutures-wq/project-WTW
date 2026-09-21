@@ -444,10 +444,21 @@ export default {
             mode: env.APP_MODE,
           });
         }
+        const recommendedOrder = `CASE
+          WHEN e.start_date>=? AND e.end_date<=? THEN 0
+          WHEN e.start_date>=? AND e.start_date<=? THEN 1
+          WHEN e.end_date>=? AND e.end_date<=? THEN 2
+          ELSE 3 END,
+          CASE WHEN e.start_date=e.end_date THEN 0 ELSE 1 END,
+          julianday(e.end_date)-julianday(e.start_date),e.start_date,e.end_date,e.id`;
+        const orderBy = f.sort === "recommended" ? recommendedOrder : "e.start_date,e.id";
+        const rankingBinds = f.sort === "recommended"
+          ? [range.start, range.end, range.start, range.end, range.start, range.end]
+          : [];
         const page = await env.DB.prepare(
-          `${SELECT} WHERE ${whereSql} ORDER BY e.start_date,e.id LIMIT ? OFFSET ?`,
+          `${SELECT} WHERE ${whereSql} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
         )
-          .bind(...binds, f.limit, (f.page - 1) * f.limit)
+          .bind(...binds, ...rankingBinds, f.limit, (f.page - 1) * f.limit)
           .all();
         const count = includeTotal
           ? await env.DB.prepare(
@@ -459,6 +470,7 @@ export default {
         return json({
           events: page.results.map((row) => serialize(row, f.lat, f.lng, range)),
           ...(includeTotal ? { total: Number(count?.total ?? 0) } : {}),
+          sort: f.sort,
           page: f.page,
           limit: f.limit,
           range,

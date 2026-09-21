@@ -406,7 +406,7 @@ export default function App() {
     [theme, setTheme] = useState(initialTheme);
   const [search, setSearch] = useState(initialParams.get("q") ?? ""),
     [query, setQuery] = useState(initialParams.get("q") ?? "");
-  const [sort, setSort] = useState("date"),
+  const [sort, setSort] = useState(initialParams.get("sort") === "date" ? "date" : "recommended"),
     [location, setLocation] = useState<NearbyLocation | null>(null);
   const [geoBusy, setGeoBusy] = useState(false),
     [geoError, setGeoError] = useState("");
@@ -484,7 +484,7 @@ export default function App() {
       q: query,
     }))
       if (value) params.set(key, value);
-    if (sort !== "date" && !location) params.set("sort", sort);
+    if (sort !== "recommended" && !location) params.set("sort", sort);
     const next = params.toString();
     window.history.replaceState(
       window.history.state,
@@ -1250,6 +1250,7 @@ export default function App() {
                     value={sort}
                     onChange={(e) => change(setSort, e.target.value)}
                   >
+                    <option value="recommended">추천순</option>
                     <option value="date">날짜순</option>
                   </select>
                 </label>

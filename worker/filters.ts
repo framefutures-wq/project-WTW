@@ -45,7 +45,7 @@ export function parseFilters(params: URLSearchParams) {
   const audience = one(params.get("audience"), Object.keys(AUDIENCES), "");
   const theme = one(params.get("theme"), Object.keys(THEMES), "");
   const cost = one(params.get("cost"), ["free", "paid", "unknown"], "");
-  const sort = one(params.get("sort"), ["date", "distance"], "date");
+  const sort = one(params.get("sort"), ["recommended", "date", "distance"], "recommended");
   const integer = (name: string, fallback: number, max: number) => {
     const raw = params.get(name);
     if (raw === null) return fallback;

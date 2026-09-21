@@ -57,6 +57,6 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await expect(page.getByLabel("정렬: 가까운순")).toBeVisible();
   await expect(page.locator(".event-card").first()).toContainText("1km 미만");
   await page.getByRole("button", { name: "내 주변 해제" }).click();
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("date");
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("recommended");
   await expect(page.locator(".distance")).toHaveCount(0);
 });

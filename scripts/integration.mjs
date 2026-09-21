@@ -73,6 +73,8 @@ try {
       lat = null,
       lng = null,
       source = "official",
+      start = today,
+      end = today,
     } = {},
   ) {
     await db
@@ -83,8 +85,8 @@ try {
       .bind(
         id,
         id,
-        today,
-        today,
+        start,
+        end,
         cost,
         pet,
         lat,
@@ -246,6 +248,27 @@ try {
   await fixture("nearby-second", { lat: 37.666, lng: 126.978 });
   await evidence("nearby-first", [...required, "coordinates"]);
   await evidence("nearby-second", [...required, "coordinates"]);
+  const addDays = (date, days) => {
+    const value = new Date(`${date}T00:00:00Z`);
+    value.setUTCDate(value.getUTCDate() + days);
+    return value.toISOString().slice(0, 10);
+  };
+  const rankingRange = { start: today, end: addDays(today, 1) };
+  for (const [id, start, end] of [
+    ["ranking-temporal-within-day", rankingRange.start, rankingRange.start],
+    ["ranking-temporal-within-range", rankingRange.start, rankingRange.end],
+    ["ranking-temporal-starts", rankingRange.start, addDays(today, 8)],
+    ["ranking-temporal-ends", addDays(today, -8), rankingRange.end],
+    ["ranking-temporal-ongoing", addDays(today, -8), addDays(today, 8)],
+  ]) {
+    await fixture(id, { start, end });
+    await evidence(id, required);
+  }
+  for (let index = 0; index < 25; index += 1) {
+    const id = `ranking-page-${String(index).padStart(2, "0")}`;
+    await fixture(id, { start: rankingRange.start, end: rankingRange.start });
+    await evidence(id, required);
+  }
   async function get(path, status = 200) {
     const r = await mf.dispatchFetch("http://localhost" + path);
     assert.equal(r.status, status, path);
@@ -260,8 +283,8 @@ try {
     assert.equal(r.status, status, path);
     return r.json();
   }
-  const data = await get("/api/events?period=today");
-  assert.deepEqual(data.events.map((e) => e.id).sort(), [
+  const data = await get("/api/events?period=today&limit=50");
+  assert.deepEqual(data.events.map((e) => e.id).filter((id) => !id.startsWith("ranking-")).sort(), [
     "free-verified",
     "municipality-lkg-visible",
     "municipality-한글-id",
@@ -319,6 +342,28 @@ try {
   assert.equal(
     (await get(`/api/events/${encodeURIComponent("municipality-한글-id")}`)).event.id,
     "municipality-한글-id",
+  );
+  const rankingParams = new URLSearchParams({ period: "custom", startDate: rankingRange.start, endDate: rankingRange.end, q: "ranking-temporal", sort: "recommended", limit: "10" });
+  assert.deepEqual(
+    (await get(`/api/events?${rankingParams}`)).events.map((row) => row.id),
+    ["ranking-temporal-within-day", "ranking-temporal-within-range", "ranking-temporal-starts", "ranking-temporal-ends", "ranking-temporal-ongoing"],
+  );
+  rankingParams.set("sort", "date");
+  assert.deepEqual(
+    (await get(`/api/events?${rankingParams}`)).events.map((row) => row.id),
+    ["ranking-temporal-ends", "ranking-temporal-ongoing", "ranking-temporal-starts", "ranking-temporal-within-day", "ranking-temporal-within-range"],
+  );
+  const pageParams = new URLSearchParams({ period: "custom", date: rankingRange.start, q: "ranking-page", sort: "recommended", limit: "12" });
+  const rankedPages = [];
+  for (const page of [1, 2, 3]) {
+    pageParams.set("page", String(page));
+    rankedPages.push(...(await get(`/api/events?${pageParams}`)).events.map((row) => row.id));
+  }
+  assert.deepEqual(rankedPages, Array.from({ length: 25 }, (_, index) => `ranking-page-${String(index).padStart(2, "0")}`));
+  pageParams.set("page", "1");
+  assert.deepEqual(
+    (await get(`/api/events?${pageParams}`)).events.map((row) => row.id),
+    rankedPages.slice(0, 12),
   );
   assert.equal(
     (await get("/api/events/cancelled-hidden")).event.status,
@@ -380,7 +425,7 @@ try {
     1,
   );
   assert(
-    (await get("/api/events?period=today&region=서울")).events.some(
+    (await get("/api/events?period=today&region=서울&limit=50")).events.some(
       (e) => e.id === "tourapi-101",
     ),
   );

@@ -80,6 +80,7 @@ export interface EventResponse {
   available_date_range: DateRange | null;
   range_outside_available: boolean;
   mode: string;
+  sort?: "recommended" | "date" | "distance";
   nearby_candidate_limited?: boolean;
 }
 export type EventDetailHighlight = { label: string; tag: string | null; featured: boolean };

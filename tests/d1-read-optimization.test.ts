@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-test("목록 API는 날짜순 page를 DB LIMIT/OFFSET으로 제한한다", () => {
+test("목록 API는 recommended/date page를 DB LIMIT/OFFSET으로 제한한다", () => {
   const source = readFileSync("worker/index.ts", "utf8");
-  assert.match(source, /ORDER BY e\.start_date,e\.id LIMIT \? OFFSET \?/);
+  assert.match(source, /const recommendedOrder = `CASE/);
+  assert.match(source, /ORDER BY \$\{orderBy\} LIMIT \? OFFSET \?/);
+  assert.match(source, /rankingBinds/);
   assert.match(source, /includeTotal.*!== "0"/s);
   assert.match(source, /e\.id IN \(SELECT t\.event_id FROM event_tags/);
   assert.match(source, /FACT_CLASSIFIER/);
