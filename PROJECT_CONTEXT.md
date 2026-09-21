@@ -35,7 +35,8 @@
 - legacy Worker URL `https://weekend-mwohae.framefutures.workers.dev`는 코드/문서 일부에 남아 있다.
 - 향후 host cutover 작업에서 legacy Worker host를 **galteum.com으로 301 redirect**하고 path/query를 보존한다.
 - `WEB_PUSH_VAPID_SUBJECT`, README, Analytics/Search Console 문서를 galteum.com 기준으로 정리해야 한다.
-- SEO canonical/sitemap/robots/structured data는 별도 SEO Phase에서 처리한다.
+- SEO foundation(행사 canonical URL, sitemap, robots, Event JSON-LD)은 production에 배포되며,
+  Search Console sitemap 제출을 기다린다.
 
 ## 3. 운영 아키텍처
 
@@ -113,13 +114,14 @@ Production decision states:
 - Analytics foundation
   - privacy-safe client tracking module
   - `/api/analytics/config`
-  - 현재 실제 GA4/Cloudflare external ID가 없어 **production disabled**
+  - GA4 + Cloudflare Web Analytics production enabled
 - 공개 브랜드 리브랜딩: 주말뭐해? → 갈틈
 - Custom Domain `galteum.com` 연결
 
 ## 7. Analytics 현재 상태
 
-Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼져 있다.
+GA4와 Cloudflare Web Analytics는 production에서 활성화되어 있다. 기존 client-side
+loader는 best-effort이며, 분석 장애가 앱/API/ingestion을 막지 않는다.
 
 현재 정책:
 
@@ -129,15 +131,8 @@ Analytics 코드는 production에 배포되어 있으나 실제 provider는 꺼�
 - User-ID 사용 금지
 - 광고/리마케팅 용도 아님
 
-향후 순서:
-
-1. domain cutover 완료
-2. GA4 property / Web stream을 **갈틈 / https://galteum.com** 기준으로 생성
-3. GA4 Measurement ID 설정
-4. Cloudflare Web Analytics token 설정
-5. production enable
-6. Search Console 등록
-7. SEO 작업
+Search Console domain property `galteum.com`은 DNS ownership verification까지 완료됐다.
+SEO sitemap 배포 뒤 사용자가 Search Console에 `sitemap.xml`을 제출한다.
 
 ## 8. TourAPI Zero-Human Detail Enrichment
 
@@ -247,14 +242,14 @@ Audit:
 - galteum.com 구매/Custom Domain 연결
 - 10시 base / 11시 detail 스케줄 분리
 - GA4 + Cloudflare Web Analytics production enabled
+- Search-ready event pages, canonical metadata, sitemap, robots, Event JSON-LD
 
 현재 우선순위:
 
-1. Search Console
-2. SEO/Public Launch readiness
-3. 무료 공개 후 실제 traffic 관찰
-4. 행사/지역 coverage 확대
-5. 수익화는 traffic 확보 뒤 진행
+1. Search Console에 `sitemap.xml` 제출
+2. 무료 공개 후 실제 traffic 관찰
+3. 행사/지역 coverage 확대
+4. 수익화는 traffic 확보 뒤 진행
 
 수익화는 현재 보류한다.
 

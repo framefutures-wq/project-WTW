@@ -42,9 +42,10 @@ test("detail content follows the user-first hierarchy", () => {
   assert.doesNotMatch(app, /놓치지 마세요/);
 });
 
-test("detail can be opened from a stable event query URL", () => {
-  assert.match(app, /initialParams\.get\("event"\)/);
-  assert.match(app, /detailUrl\.searchParams\.set\("event", selected\)/);
+test("detail uses a stable canonical path while accepting legacy query URLs", () => {
+  assert.match(app, /eventIdFromPath/);
+  assert.match(app, /\/events\/\$\{encodeURIComponent\(selected\)\}/);
+  assert.match(app, /detailUrl\.searchParams\.get\("event"\) === selected/);
 });
 
 test("detail prefers a verified organizer or municipality enrichment page", () => {

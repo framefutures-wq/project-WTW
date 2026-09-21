@@ -395,6 +395,16 @@ function Scene({
     );
   return <div className={className}>{content}</div>;
 }
+function eventIdFromPath(pathname: string) {
+  const match = /^\/events\/([^/]{1,240})$/.exec(pathname);
+  if (!match) return null;
+  try {
+    const id = decodeURIComponent(match[1]);
+    return /^[a-zA-Z0-9_-]{1,80}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
 export default function App() {
   const initialParams = useRef(
     typeof window === "undefined"
@@ -431,11 +441,15 @@ export default function App() {
   )
     ? initialParams.get("theme")!
     : "";
-  const initialEvent = /^[a-zA-Z0-9_-]{1,80}$/.test(
+  const initialPathEvent = useRef(
+    typeof window === "undefined" ? null : eventIdFromPath(window.location.pathname),
+  ).current;
+  const initialQueryEvent = /^[a-zA-Z0-9_-]{1,80}$/.test(
     initialParams.get("event") ?? "",
   )
     ? initialParams.get("event")!
     : null;
+  const initialEvent = initialPathEvent ?? initialQueryEvent;
   const [period, setPeriod] = useState<Period>(
     initialPeriod === "today" ||
       initialPeriod === "next-weekend" ||
@@ -556,9 +570,8 @@ export default function App() {
   }, [search]);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const currentEvent = new URLSearchParams(window.location.search).get("event");
+    if (selected) return;
     const params = new URLSearchParams();
-    if (selected && currentEvent === selected) params.set("event", selected);
     params.set("period", customRange ? "custom" : period);
     if (customRange) {
       if (customRange.start === customRange.end)
@@ -579,7 +592,7 @@ export default function App() {
     window.history.replaceState(
       window.history.state,
       "",
-      next ? `${window.location.pathname}?${next}` : window.location.pathname,
+      next ? `/?${next}` : "/",
     );
   }, [period, customRange, region, audience, theme, query, sort, selected]);
   const requestParams = (requestedPage: number, includeTotal = true) => {
@@ -703,15 +716,30 @@ export default function App() {
   useEffect(() => {
     if (!selected || detailHistory.current) return;
     const detailUrl = new URL(window.location.href);
-    if (detailUrl.searchParams.get("event") === selected) {
+    const canonicalPath = `/events/${encodeURIComponent(selected)}`;
+    if (detailUrl.pathname === canonicalPath) {
       detailHistory.current = false;
       return;
     }
-    detailUrl.searchParams.set("event", selected);
+    // Shared legacy query URLs remain usable, but are normalized without adding
+    // a history entry so the canonical page has a single public address.
+    if (detailUrl.pathname === "/" && detailUrl.searchParams.get("event") === selected) {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), eventDetail: selected },
+        "",
+        canonicalPath,
+      );
+      detailHistory.current = false;
+      return;
+    }
     window.history.pushState(
-      { ...(window.history.state ?? {}), eventDetail: selected },
+      {
+        ...(window.history.state ?? {}),
+        eventDetail: selected,
+        listUrl: detailUrl.pathname + detailUrl.search,
+      },
       "",
-      detailUrl.pathname + detailUrl.search,
+      canonicalPath,
     );
     detailHistory.current = true;
     const onPopState = () => {

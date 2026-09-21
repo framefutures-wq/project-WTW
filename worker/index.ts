@@ -41,6 +41,13 @@ import {
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 import { analyticsRuntimeConfig } from "../shared/analytics-config";
 import { legacyHostRedirect } from "./host";
+import {
+  decodeSeoEventId,
+  renderSeoHtml,
+  robotsTxt,
+  sitemapXml,
+  type SeoEvent,
+} from "./seo";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -254,12 +261,96 @@ function json(data: unknown, status = 200) {
     },
   });
 }
+
+async function seoEvent(env: Env, eventId: string): Promise<SeoEvent | null> {
+  const row = await env.DB.prepare(
+    `SELECT e.id,e.title,e.venue,e.address,e.start_date,e.end_date,e.status,e.cost,
+      e.updated_at,e.checked_at,ei.image_url,ei.image_status
+     FROM events e
+     LEFT JOIN sources s ON s.id=e.primary_source_id
+     LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
+     WHERE e.id=? AND ${visibility(env)}`,
+  )
+    .bind(eventId, ...visibilityBindings(env))
+    .first<SeoEvent>();
+  return row ?? null;
+}
+
+async function seoHtml(request: Request, env: Env, event: SeoEvent | null) {
+  const asset = await env.ASSETS.fetch(request);
+  const contentType = asset.headers.get("Content-Type") ?? "";
+  if (!contentType.includes("text/html")) return asset;
+  const headers = new Headers(asset.headers);
+  headers.set("Content-Type", "text/html; charset=UTF-8");
+  headers.set("Cache-Control", "public, max-age=300");
+  headers.delete("Content-Length");
+  headers.delete("Content-Encoding");
+  headers.delete("ETag");
+  return new Response(renderSeoHtml(await asset.text(), event), {
+    status: asset.status,
+    statusText: asset.statusText,
+    headers,
+  });
+}
+
+function textResponse(body: string, contentType: string, cacheControl: string) {
+  return new Response(body, {
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": cacheControl,
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
+
+async function publicSitemap(env: Env) {
+  // The public discoverability contract is exactly the same as the UI visibility query.
+  // Ended events are intentionally omitted from this current/future discovery sitemap.
+  const today = koreaDate();
+  const rows = await env.DB.prepare(
+    `SELECT e.id,e.title,e.venue,e.address,e.start_date,e.end_date,e.status,e.cost,
+      e.updated_at,e.checked_at,NULL AS image_url,NULL AS image_status
+     FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id
+     WHERE ${visibility(env)} AND e.end_date>=?
+     ORDER BY e.start_date,e.id LIMIT 50000`,
+  )
+    .bind(...visibilityBindings(env), today)
+    .all<SeoEvent>();
+  return sitemapXml(rows.results);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const legacyRedirect = legacyHostRedirect(url);
     if (legacyRedirect) return legacyRedirect;
-    if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+    if (url.pathname === "/robots.txt")
+      return textResponse(robotsTxt, "text/plain; charset=UTF-8", "public, max-age=86400");
+    if (url.pathname === "/sitemap.xml")
+      return textResponse(await publicSitemap(env), "application/xml; charset=UTF-8", "public, max-age=3600");
+    const eventPage = /^\/events\/([^/]{1,240})$/.exec(url.pathname);
+    if (eventPage) {
+      const eventId = decodeSeoEventId(eventPage[1]);
+      if (!eventId)
+        return new Response("행사를 찾을 수 없습니다.", {
+          status: 404,
+          headers: { "Content-Type": "text/plain; charset=UTF-8", "Cache-Control": "no-store" },
+        });
+      const event = await seoEvent(env, eventId);
+      if (!event)
+        return new Response("행사를 찾을 수 없습니다.", {
+          status: 404,
+          headers: { "Content-Type": "text/plain; charset=UTF-8", "Cache-Control": "no-store" },
+        });
+      return seoHtml(request, env, event);
+    }
+    if (url.pathname.startsWith("/events/"))
+      return new Response("행사를 찾을 수 없습니다.", {
+        status: 404,
+        headers: { "Content-Type": "text/plain; charset=UTF-8", "Cache-Control": "no-store" },
+      });
+    if (!url.pathname.startsWith("/api/"))
+      return url.pathname === "/" ? seoHtml(request, env, null) : env.ASSETS.fetch(request);
     const isNearby = url.pathname === "/api/events/nearby";
     const isPushWrite =
       ["/api/push/subscribe", "/api/push/unsubscribe"].includes(url.pathname) &&

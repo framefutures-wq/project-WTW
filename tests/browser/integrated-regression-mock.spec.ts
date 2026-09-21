@@ -51,6 +51,45 @@ function response(page: number, limit: number, total: number) {
   };
 }
 
+function detailResponse() {
+  return {
+    event: event(1),
+    evidence: [],
+    enrichment: null,
+    operating_hours: [],
+    contact_phone: null,
+  };
+}
+
+async function mockDetailRoutes(page: import("@playwright/test").Page) {
+  await page.route("**/api/meta", (route) =>
+    route.fulfill({ json: { available_date_range: null } }),
+  );
+  await page.route("**/api/events/*", (route) =>
+    route.fulfill({ json: detailResponse() }),
+  );
+  await page.route("**/api/events?*", (route) =>
+    route.fulfill({
+      json: response(1, 9, 1),
+    }),
+  );
+}
+
+test("canonical and legacy detail URLs open safely and return to the list", async ({
+  page,
+}) => {
+  await mockDetailRoutes(page);
+  await page.goto("/events/mock-1");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page).toHaveURL(/\/events\/mock-1$/);
+  await page.getByRole("button", { name: "닫기" }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page).toHaveURL(/\/\?period=weekend$/);
+  await page.goto("/?event=mock-1&period=weekend");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page).toHaveURL(/\/events\/mock-1$/);
+});
+
 test("필터·더보기·다음 묶음·상세 왕복을 한 흐름으로 복원한다", async ({
   page,
 }) => {
@@ -68,7 +107,7 @@ test("필터·더보기·다음 묶음·상세 왕복을 한 흐름으로 복원
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ event: event(1), evidence: [] }),
+      body: JSON.stringify(detailResponse()),
     }),
   );
   await page.route("**/api/events?*", (route) => {
@@ -107,9 +146,11 @@ test("필터·더보기·다음 묶음·상세 왕복을 한 흐름으로 복원
   await expect(page.locator(".event-card").first()).toContainText("행사 37");
   await page.getByRole("button", { name: /통합 QA 행사 37 상세 보기/ }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page).toHaveURL(/\/events\/mock-37$/);
   const beforeBack = calls.length;
   await page.goBack();
   await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page).not.toHaveURL(/\/events\//);
   await expect(page.locator(".event-card").first()).toContainText("행사 37");
   expect(calls.length).toBe(beforeBack);
 });
@@ -127,7 +168,7 @@ test("추가 페이지 실패는 기존 카드와 retry를 보존한다", async 
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ event: event(1), evidence: [] }),
+      body: JSON.stringify(detailResponse()),
     }),
   );
   await page.route("**/api/events?*", (route) => {
