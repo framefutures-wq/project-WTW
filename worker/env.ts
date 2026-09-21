@@ -10,4 +10,7 @@ export interface Env {
   /** Cloudflare Secret 전용. 절대 응답하거나 로그에 남기지 않는다. */
   WEB_PUSH_VAPID_PRIVATE_KEY?: string;
   WEB_PUSH_VAPID_SUBJECT?: string;
+  ANALYTICS_ENABLED?: string;
+  GA4_MEASUREMENT_ID?: string;
+  CLOUDFLARE_WEB_ANALYTICS_TOKEN?: string;
 }

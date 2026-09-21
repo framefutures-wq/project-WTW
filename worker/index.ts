@@ -11,7 +11,15 @@ import {
 import type { Env } from "./env";
 import { parseFilters, parseNearbyFilters, InputError } from "./filters";
 import { runScheduled } from "./cron";
-import { disableSubscription, isSameOrigin, parseSubscriptionRequest, pushStatus, readPushBody, upsertSubscription, validPushEndpoint } from "./push";
+import {
+  disableSubscription,
+  isSameOrigin,
+  parseSubscriptionRequest,
+  pushStatus,
+  readPushBody,
+  upsertSubscription,
+  validPushEndpoint,
+} from "./push";
 import {
   classifyFactTags,
   FACT_CLASSIFIER,
@@ -31,6 +39,7 @@ import {
   type EventOperatingHours,
 } from "../shared/event-operating-hours";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
+import { analyticsRuntimeConfig } from "../shared/analytics-config";
 
 const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
@@ -60,9 +69,12 @@ const privateLkgClause = (alias: string) => {
   const entries = trustedPrivateLkgSources();
   if (!entries.length) return "0";
   // The values are code-owned registry constants, never request input.
-  return entries.map((source) =>
-    `(${alias}.kind='organizer' AND ${alias}.id LIKE '${source.sourceIdPrefix}%' AND (${source.allowedHosts.map((host) => `${alias}.url LIKE 'https://${host}/%'`).join(" OR ")}))`,
-  ).join(" OR ");
+  return entries
+    .map(
+      (source) =>
+        `(${alias}.kind='organizer' AND ${alias}.id LIKE '${source.sourceIdPrefix}%' AND (${source.allowedHosts.map((host) => `${alias}.url LIKE 'https://${host}/%'`).join(" OR ")}))`,
+    )
+    .join(" OR ");
 };
 const LKG_PRIMARY_SOURCE = `(s.kind='municipality' OR (${privateLkgClause("s")}))`;
 function visibility(env: Env) {
@@ -130,9 +142,8 @@ function serialize(
           try {
             const parsed = JSON.parse(row.operating_hours_json) as unknown[];
             return parsed
-              .filter(
-                (item): item is Record<string, unknown> =>
-                  Boolean(item && typeof item === "object"),
+              .filter((item): item is Record<string, unknown> =>
+                Boolean(item && typeof item === "object"),
               )
               .map((item) => ({
                 start_date: String(item.start_date),
@@ -213,9 +224,8 @@ function parseOperatingHours(value: unknown): EventOperatingHours[] {
   try {
     const parsed = JSON.parse(value) as unknown[];
     return parsed
-      .filter(
-        (item): item is Record<string, unknown> =>
-          Boolean(item && typeof item === "object"),
+      .filter((item): item is Record<string, unknown> =>
+        Boolean(item && typeof item === "object"),
       )
       .map((item) => ({
         start_date: String(item.start_date),
@@ -248,8 +258,14 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     const isNearby = url.pathname === "/api/events/nearby";
-    const isPushWrite = ["/api/push/subscribe", "/api/push/unsubscribe"].includes(url.pathname) && request.method === "POST";
-    if (request.method !== "GET" && !(isNearby && request.method === "POST") && !isPushWrite)
+    const isPushWrite =
+      ["/api/push/subscribe", "/api/push/unsubscribe"].includes(url.pathname) &&
+      request.method === "POST";
+    if (
+      request.method !== "GET" &&
+      !(isNearby && request.method === "POST") &&
+      !isPushWrite
+    )
       return json({ error: "읽기 전용 API입니다." }, 405);
     try {
       if (url.pathname === "/api/health") {
@@ -270,20 +286,38 @@ export default {
       }
       if (url.pathname === "/api/push/config") {
         const status = pushStatus(env);
-        return json({ enabled: status === "enabled", vapidPublicKey: status === "enabled" ? env.WEB_PUSH_VAPID_PUBLIC_KEY : null });
+        return json({
+          enabled: status === "enabled",
+          vapidPublicKey:
+            status === "enabled" ? env.WEB_PUSH_VAPID_PUBLIC_KEY : null,
+        });
+      }
+      if (url.pathname === "/api/analytics/config") {
+        const analytics = analyticsRuntimeConfig(env);
+        return json(analytics);
       }
       if (url.pathname === "/api/push/subscribe") {
-        if (!isSameOrigin(request)) return json({ error: "허용되지 않은 요청입니다." }, 403);
+        if (!isSameOrigin(request))
+          return json({ error: "허용되지 않은 요청입니다." }, 403);
         const parsed = parseSubscriptionRequest(await readPushBody(request));
-        if (!parsed) return json({ error: "알림 조건 또는 구독 정보가 올바르지 않습니다." }, 400);
+        if (!parsed)
+          return json(
+            { error: "알림 조건 또는 구독 정보가 올바르지 않습니다." },
+            400,
+          );
         await upsertSubscription(env, parsed);
         return json({ ok: true });
       }
       if (url.pathname === "/api/push/unsubscribe") {
-        if (!isSameOrigin(request)) return json({ error: "허용되지 않은 요청입니다." }, 403);
+        if (!isSameOrigin(request))
+          return json({ error: "허용되지 않은 요청입니다." }, 403);
         const body = await readPushBody(request);
-        const endpoint = body && typeof body === "object" ? (body as { endpoint?: unknown }).endpoint : null;
-        if (!validPushEndpoint(endpoint)) return json({ error: "구독 정보가 올바르지 않습니다." }, 400);
+        const endpoint =
+          body && typeof body === "object"
+            ? (body as { endpoint?: unknown }).endpoint
+            : null;
+        if (!validPushEndpoint(endpoint))
+          return json({ error: "구독 정보가 올바르지 않습니다." }, 400);
         await disableSubscription(env, endpoint);
         return json({ ok: true });
       }
@@ -310,8 +344,9 @@ export default {
         const availableRange = await availableDateRange(env);
         const rangeOutsideAvailable = Boolean(
           f.customRange &&
-            availableRange &&
-            (range.end < availableRange.start || range.start > availableRange.end),
+          availableRange &&
+          (range.end < availableRange.start ||
+            range.start > availableRange.end),
         );
         const where = [
           visibility(env),
@@ -377,7 +412,9 @@ export default {
         const events = results
           .slice(0, CANDIDATE_LIMIT)
           .map((row) => serialize(row, f.lat, f.lng, range))
-          .filter((event) => event.distance_km !== null && event.distance_km <= 200)
+          .filter(
+            (event) => event.distance_km !== null && event.distance_km <= 200,
+          )
           .sort(
             (a, b) =>
               (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) ||
@@ -458,7 +495,9 @@ export default {
           )
             .bind(...binds)
             .all();
-          const events = results.map((row) => serialize(row, f.lat, f.lng, range));
+          const events = results.map((row) =>
+            serialize(row, f.lat, f.lng, range),
+          );
           events.sort(
             (a, b) =>
               (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) ||
@@ -483,10 +522,19 @@ export default {
           ELSE 3 END,
           CASE WHEN e.start_date=e.end_date THEN 0 ELSE 1 END,
           julianday(e.end_date)-julianday(e.start_date),e.start_date,e.end_date,e.id`;
-        const orderBy = f.sort === "recommended" ? recommendedOrder : "e.start_date,e.id";
-        const rankingBinds = f.sort === "recommended"
-          ? [range.start, range.end, range.start, range.end, range.start, range.end]
-          : [];
+        const orderBy =
+          f.sort === "recommended" ? recommendedOrder : "e.start_date,e.id";
+        const rankingBinds =
+          f.sort === "recommended"
+            ? [
+                range.start,
+                range.end,
+                range.start,
+                range.end,
+                range.start,
+                range.end,
+              ]
+            : [];
         const page = await env.DB.prepare(
           `${SELECT} WHERE ${whereSql} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
         )
@@ -500,7 +548,9 @@ export default {
               .first<{ total: number }>()
           : null;
         return json({
-          events: page.results.map((row) => serialize(row, f.lat, f.lng, range)),
+          events: page.results.map((row) =>
+            serialize(row, f.lat, f.lng, range),
+          ),
           ...(includeTotal ? { total: Number(count?.total ?? 0) } : {}),
           sort: f.sort,
           page: f.page,
@@ -549,29 +599,89 @@ export default {
         }
         const enrichment = await env.DB.prepare(
           `SELECT en.summary,s.url AS source_url,s.kind AS source_kind,s.priority AS source_priority FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=?`,
-        ).bind(detail[1]).first<{ summary: string; source_url: string; source_kind: string; source_priority: number }>();
+        )
+          .bind(detail[1])
+          .first<{
+            summary: string;
+            source_url: string;
+            source_kind: string;
+            source_priority: number;
+          }>();
         const highlights = await env.DB.prepare(
           `SELECT label,tag,featured FROM event_highlights WHERE event_id=? ORDER BY featured DESC,sort_order`,
-        ).bind(detail[1]).all<{ label: string; tag: string | null; featured: number }>();
+        )
+          .bind(detail[1])
+          .all<{ label: string; tag: string | null; featured: number }>();
         const programs = await env.DB.prepare(
           `SELECT p.id,p.program_name,p.program_date,p.start_time,p.end_time,p.schedule_text,p.venue_name,p.description,p.featured,(SELECT json_group_array(tag) FROM event_program_tags WHERE program_id=p.id) AS tags FROM event_programs p WHERE p.event_id=? ORDER BY p.featured DESC,p.program_date,p.start_time,p.sort_order`,
-        ).bind(detail[1]).all<Record<string, unknown>>();
+        )
+          .bind(detail[1])
+          .all<Record<string, unknown>>();
         const occurrenceRows = await env.DB.prepare(
           `SELECT o.program_id,o.start_date,o.end_date,o.start_time,o.end_time,o.human_time_text,o.venue_name FROM event_program_occurrences o JOIN event_programs p ON p.id=o.program_id WHERE p.event_id=? ORDER BY o.start_date,o.start_time,o.sort_order`,
-        ).bind(detail[1]).all<Record<string, unknown>>();
+        )
+          .bind(detail[1])
+          .all<Record<string, unknown>>();
         const occurrencesByProgram = new Map<string, unknown[]>();
-        for (const occurrence of occurrenceRows.results) occurrencesByProgram.set(String(occurrence.program_id), [...(occurrencesByProgram.get(String(occurrence.program_id)) ?? []), occurrence]);
+        for (const occurrence of occurrenceRows.results)
+          occurrencesByProgram.set(String(occurrence.program_id), [
+            ...(occurrencesByProgram.get(String(occurrence.program_id)) ?? []),
+            occurrence,
+          ]);
         const programRows = programs.results.map((program) => ({
-          name: String(program.program_name), date: program.program_date as string | null, start_time: program.start_time as string | null, end_time: program.end_time as string | null, schedule_text: program.schedule_text as string | null, venue: program.venue_name as string | null, description: program.description as string | null, featured: Number(program.featured) === 1,
-          tags: typeof program.tags === "string" ? (JSON.parse(program.tags) as unknown[]).filter((tag): tag is string => typeof tag === "string") : [],
-          occurrences: (occurrencesByProgram.get(String(program.id)) ?? []).filter((occurrence) => { const row = occurrence as Record<string, unknown>; return validProgramTime(row.start_time as string | null) && validProgramTime(row.end_time as string | null); }).map((occurrence) => { const row = occurrence as Record<string, unknown>; return { start_date: String(row.start_date), end_date: String(row.end_date), start_time: row.start_time as string | null, end_time: row.end_time as string | null, human_time_text: row.human_time_text as string | null, venue: row.venue_name as string | null }; }),
+          name: String(program.program_name),
+          date: program.program_date as string | null,
+          start_time: program.start_time as string | null,
+          end_time: program.end_time as string | null,
+          schedule_text: program.schedule_text as string | null,
+          venue: program.venue_name as string | null,
+          description: program.description as string | null,
+          featured: Number(program.featured) === 1,
+          tags:
+            typeof program.tags === "string"
+              ? (JSON.parse(program.tags) as unknown[]).filter(
+                  (tag): tag is string => typeof tag === "string",
+                )
+              : [],
+          occurrences: (occurrencesByProgram.get(String(program.id)) ?? [])
+            .filter((occurrence) => {
+              const row = occurrence as Record<string, unknown>;
+              return (
+                validProgramTime(row.start_time as string | null) &&
+                validProgramTime(row.end_time as string | null)
+              );
+            })
+            .map((occurrence) => {
+              const row = occurrence as Record<string, unknown>;
+              return {
+                start_date: String(row.start_date),
+                end_date: String(row.end_date),
+                start_time: row.start_time as string | null,
+                end_time: row.end_time as string | null,
+                human_time_text: row.human_time_text as string | null,
+                venue: row.venue_name as string | null,
+              };
+            }),
         }));
         return json({
           event: serialize(row),
           evidence: evidence.results,
           contact_phone: contactPhone,
           operating_hours: parseOperatingHours(row.operating_hours_json),
-          enrichment: enrichment ? { summary: enrichment.summary, source_url: enrichment.source_url, source_kind: enrichment.source_kind, source_priority: enrichment.source_priority, highlights: highlights.results.map((item) => ({ label: item.label, tag: item.tag, featured: Number(item.featured) === 1 })), programs: programRows } : null,
+          enrichment: enrichment
+            ? {
+                summary: enrichment.summary,
+                source_url: enrichment.source_url,
+                source_kind: enrichment.source_kind,
+                source_priority: enrichment.source_priority,
+                highlights: highlights.results.map((item) => ({
+                  label: item.label,
+                  tag: item.tag,
+                  featured: Number(item.featured) === 1,
+                })),
+                programs: programRows,
+              }
+            : null,
           mode: env.APP_MODE,
         });
       }

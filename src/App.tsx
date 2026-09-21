@@ -60,6 +60,19 @@ import {
   hasOfficialSource,
   trustChangeLabel,
 } from "./trust";
+import {
+  initAnalytics,
+  trackEventDetailView,
+  trackFilterApply,
+  trackLoadMore,
+  trackNearbyUse,
+  trackOfficialLinkClick,
+  trackPageView,
+  trackPushSubscribe,
+  trackPushUnsubscribe,
+  trackSearchSubmit,
+} from "./analytics";
+import type { AnalyticsRuntimeConfig } from "../shared/analytics-config";
 
 type Evidence = {
   field: string;
@@ -80,7 +93,8 @@ type Detail = {
 type PageResponse = Omit<EventResponse, "total"> & { total?: number };
 type NearbyLocation = { lat: number; lng: number };
 type PushConfig = { enabled: boolean; vapidPublicKey: string | null };
-type PushState = "loading" | "unsupported" | "ready" | "subscribed" | "denied" | "error";
+type PushState =
+  "loading" | "unsupported" | "ready" | "subscribed" | "denied" | "error";
 class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -104,7 +118,9 @@ async function readApi<T>(response: Response): Promise<T> {
   return body as T;
 }
 const vapidBytes = (key: string) => {
-  const padded = key.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (key.length % 4)) % 4);
+  const padded =
+    key.replace(/-/g, "+").replace(/_/g, "/") +
+    "=".repeat((4 - (key.length % 4)) % 4);
   const raw = atob(padded);
   return Uint8Array.from(raw, (char) => char.charCodeAt(0));
 };
@@ -127,27 +143,55 @@ const detailDateRange = (start: string, end: string) =>
   start === end
     ? detailDate(start)
     : `${detailDate(start)} ~ ${detailDate(end)}`;
-const detailProgramSchedule = (program: EventDetailEnrichment["programs"][number]) => {
+const detailProgramSchedule = (
+  program: EventDetailEnrichment["programs"][number],
+) => {
   if (program.schedule_text) return program.schedule_text;
-  const occurrences = selectProgramOccurrenceGroup(program.occurrences, koreaDate());
+  const occurrences = selectProgramOccurrenceGroup(
+    program.occurrences,
+    koreaDate(),
+  );
   if (occurrences.length) {
     const occurrence = occurrences[0];
-    const date = occurrence.start_date === occurrence.end_date ? `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일` : `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일 ~ ${Number(occurrence.end_date.slice(5, 7))}월 ${Number(occurrence.end_date.slice(8, 10))}일`;
-    const sharedVenue = new Set(occurrences.map((item) => item.venue).filter(Boolean)).size === 1;
+    const date =
+      occurrence.start_date === occurrence.end_date
+        ? `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일`
+        : `${Number(occurrence.start_date.slice(5, 7))}월 ${Number(occurrence.start_date.slice(8, 10))}일 ~ ${Number(occurrence.end_date.slice(5, 7))}월 ${Number(occurrence.end_date.slice(8, 10))}일`;
+    const sharedVenue =
+      new Set(occurrences.map((item) => item.venue).filter(Boolean)).size === 1;
     const times = occurrences.map((item) => {
-      const time = item.start_time ? item.end_time ? `${formatProgramTime(item.start_time)} ~ ${formatProgramTime(item.end_time)}` : formatProgramTime(item.start_time) : item.human_time_text;
-      return !sharedVenue && item.venue ? [time, item.venue].filter(Boolean).join(" · ") : time;
+      const time = item.start_time
+        ? item.end_time
+          ? `${formatProgramTime(item.start_time)} ~ ${formatProgramTime(item.end_time)}`
+          : formatProgramTime(item.start_time)
+        : item.human_time_text;
+      return !sharedVenue && item.venue
+        ? [time, item.venue].filter(Boolean).join(" · ")
+        : time;
     });
-    return [date, times.filter(Boolean).join(" / ")].filter(Boolean).join(" · ");
+    return [date, times.filter(Boolean).join(" / ")]
+      .filter(Boolean)
+      .join(" · ");
   }
-  const date = program.date ? `${Number(program.date.slice(5, 7))}월 ${Number(program.date.slice(8, 10))}일` : null;
-  const time = program.start_time ? formatProgramTime(program.start_time) : null;
+  const date = program.date
+    ? `${Number(program.date.slice(5, 7))}월 ${Number(program.date.slice(8, 10))}일`
+    : null;
+  const time = program.start_time
+    ? formatProgramTime(program.start_time)
+    : null;
   return [date, time, program.schedule_text].filter(Boolean).join(" · ");
 };
-const detailProgramVenue = (program: EventDetailEnrichment["programs"][number]) => {
+const detailProgramVenue = (
+  program: EventDetailEnrichment["programs"][number],
+) => {
   if (program.schedule_text) return program.venue;
-  const occurrences = selectProgramOccurrenceGroup(program.occurrences, koreaDate());
-  const venues = [...new Set(occurrences.map((item) => item.venue).filter(Boolean))];
+  const occurrences = selectProgramOccurrenceGroup(
+    program.occurrences,
+    koreaDate(),
+  );
+  const venues = [
+    ...new Set(occurrences.map((item) => item.venue).filter(Boolean)),
+  ];
   return venues.length === 1 ? venues[0] : program.venue;
 };
 const displayDistance = (distance: number | null) => {
@@ -415,7 +459,9 @@ export default function App() {
     [theme, setTheme] = useState(initialTheme);
   const [search, setSearch] = useState(initialParams.get("q") ?? ""),
     [query, setQuery] = useState(initialParams.get("q") ?? "");
-  const [sort, setSort] = useState(initialParams.get("sort") === "date" ? "date" : "recommended"),
+  const [sort, setSort] = useState(
+      initialParams.get("sort") === "date" ? "date" : "recommended",
+    ),
     [location, setLocation] = useState<NearbyLocation | null>(null);
   const [geoBusy, setGeoBusy] = useState(false),
     [geoError, setGeoError] = useState("");
@@ -438,10 +484,16 @@ export default function App() {
   const [detailRetry, setDetailRetry] = useState(0);
   const [mode, setMode] = useState(""),
     [about, setAbout] = useState(false);
+  const [analyticsConfig, setAnalyticsConfig] =
+    useState<AnalyticsRuntimeConfig | null>(null);
   const [pushConfig, setPushConfig] = useState<PushConfig | null>(null),
     [pushState, setPushState] = useState<PushState>("loading"),
     [pushError, setPushError] = useState(""),
-    [pushTypes, setPushTypes] = useState({ new_event: true, schedule_changed: true, cancelled_or_postponed: true });
+    [pushTypes, setPushTypes] = useState({
+      new_event: true,
+      schedule_changed: true,
+      cancelled_or_postponed: true,
+    });
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null),
     resultsRef = useRef<HTMLElement | null>(null),
@@ -450,8 +502,15 @@ export default function App() {
     batchProgress = useRef(
       new Map<number, { loadedPages: number; scrollY: number }>(),
     ),
+    lastTrackedSearch = useRef(initialParams.get("q") ?? ""),
     detailHistory = useRef(false),
     lightboxClose = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    initAnalytics().then((next) => {
+      setAnalyticsConfig(next);
+      trackPageView("initial");
+    });
+  }, []);
   useEffect(() => {
     fetch("/api/meta")
       .then(readApi<{ available_date_range: DateRange | null }>)
@@ -459,13 +518,34 @@ export default function App() {
       .catch(() => setAvailableDateRange(null));
   }, []);
   useEffect(() => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window) || !window.isSecureContext) { setPushState("unsupported"); return; }
-    Promise.all([fetch("/api/push/config").then(readApi<PushConfig>), navigator.serviceWorker.register("/sw.js")])
+    if (
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window) ||
+      !("Notification" in window) ||
+      !window.isSecureContext
+    ) {
+      setPushState("unsupported");
+      return;
+    }
+    Promise.all([
+      fetch("/api/push/config").then(readApi<PushConfig>),
+      navigator.serviceWorker.register("/sw.js"),
+    ])
       .then(async ([config, registration]) => {
         setPushConfig(config);
-        if (!config.enabled) { setPushState("unsupported"); return; }
-        if (Notification.permission === "denied") { setPushState("denied"); return; }
-        setPushState((await registration.pushManager.getSubscription()) ? "subscribed" : "ready");
+        if (!config.enabled) {
+          setPushState("unsupported");
+          return;
+        }
+        if (Notification.permission === "denied") {
+          setPushState("denied");
+          return;
+        }
+        setPushState(
+          (await registration.pushManager.getSubscription())
+            ? "subscribed"
+            : "ready",
+        );
       })
       .catch(() => setPushState("unsupported"));
   }, []);
@@ -477,21 +557,9 @@ export default function App() {
   }, [search]);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    for (const key of [
-      "period",
-      "date",
-      "startDate",
-      "endDate",
-      "region",
-      "audience",
-      "theme",
-      "q",
-      "sort",
-      "page",
-      "limit",
-    ])
-      params.delete(key);
+    const currentEvent = new URLSearchParams(window.location.search).get("event");
+    const params = new URLSearchParams();
+    if (selected && currentEvent === selected) params.set("event", selected);
     params.set("period", customRange ? "custom" : period);
     if (customRange) {
       if (customRange.start === customRange.end)
@@ -505,7 +573,6 @@ export default function App() {
       region,
       audience,
       theme,
-      q: query,
     }))
       if (value) params.set(key, value);
     if (sort !== "recommended" && !location) params.set("sort", sort);
@@ -515,7 +582,7 @@ export default function App() {
       "",
       next ? `${window.location.pathname}?${next}` : window.location.pathname,
     );
-  }, [period, customRange, region, audience, theme, query, sort]);
+  }, [period, customRange, region, audience, theme, query, sort, selected]);
   const requestParams = (requestedPage: number, includeTotal = true) => {
     const params = new URLSearchParams({
       period: customRange ? "custom" : period,
@@ -579,6 +646,10 @@ export default function App() {
         setData(body as EventResponse);
         setEvents(uniqueEvents(body.events));
         setMode(body.mode);
+        if (query && lastTrackedSearch.current !== query) {
+          lastTrackedSearch.current = query;
+          trackSearchSubmit(query, body.total ?? 0);
+        }
       })
       .catch((e) => {
         if (e.name !== "AbortError")
@@ -610,7 +681,15 @@ export default function App() {
     setDetailError("");
     fetch("/api/events/" + selected, { signal: controller.signal })
       .then(readApi<Detail>)
-      .then(setDetail)
+      .then((body) => {
+        setDetail(body);
+        trackEventDetailView(
+          body.event.id,
+          body.event.region,
+          body.event.source_kind,
+          customRange ? "custom" : period,
+        );
+      })
       .catch((e) => {
         if (e.name !== "AbortError") {
           setDetailError(
@@ -621,10 +700,14 @@ export default function App() {
         }
       });
     return () => controller.abort();
-  }, [selected, detailRetry]);
+  }, [selected, detailRetry, customRange, period]);
   useEffect(() => {
     if (!selected || detailHistory.current) return;
     const detailUrl = new URL(window.location.href);
+    if (detailUrl.searchParams.get("event") === selected) {
+      detailHistory.current = false;
+      return;
+    }
     detailUrl.searchParams.set("event", selected);
     window.history.pushState(
       { ...(window.history.state ?? {}), eventDetail: selected },
@@ -636,6 +719,7 @@ export default function App() {
       if (detailHistory.current) {
         detailHistory.current = false;
         setSelected(null);
+        trackPageView("list");
       }
     };
     window.addEventListener("popstate", onPopState);
@@ -707,6 +791,7 @@ export default function App() {
     }
     setCustomRange({ start, end });
     setPeriod("custom");
+    trackFilterApply("period", "custom");
     setPickerOpen(false);
   }
   function choosePreset(value: Period) {
@@ -714,6 +799,7 @@ export default function App() {
     setPickerOpen(false);
     setPickerError("");
     setPeriod(value);
+    trackFilterApply("period", value);
   }
   function locate() {
     setGeoError("");
@@ -730,9 +816,13 @@ export default function App() {
         });
         setRegion("");
         setSort("distance");
+        trackNearbyUse("granted");
         setGeoBusy(false);
       },
       (error) => {
+        trackNearbyUse(
+          error.code === error.PERMISSION_DENIED ? "denied" : "error",
+        );
         setGeoError(
           error.code === error.PERMISSION_DENIED
             ? "위치 권한이 꺼져 있어요. 지역을 선택해서 찾아볼 수 있어요."
@@ -745,8 +835,13 @@ export default function App() {
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
   }
-  const change = (fn: (v: string) => void, value: string) => {
+  const change = (
+    fn: (v: string) => void,
+    value: string,
+    filterType?: "region" | "audience" | "theme" | "sort",
+  ) => {
     fn(value);
+    if (filterType) trackFilterApply(filterType, value || "all");
   };
   const rememberBatch = () => {
     batchProgress.current.set(batchStart, {
@@ -776,6 +871,7 @@ export default function App() {
       );
       setEvents((current) => mergeEvents(current, body.events));
       setLoadedPages((current) => current + 1);
+      trackLoadMore(requestedPage);
     } catch {
       setFailedPage(requestedPage);
       setExtraError("추가 행사를 불러오지 못했어요.");
@@ -798,6 +894,7 @@ export default function App() {
       setEvents(uniqueEvents(body.events));
       setBatchStart(nextStart);
       setLoadedPages(1);
+      trackLoadMore(nextStart);
       requestAnimationFrame(() =>
         resultsRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -884,29 +981,82 @@ export default function App() {
     else
       (element?.querySelector("button") as HTMLButtonElement | null)?.focus();
   }
-  const pushScope = [region ? regionLabel(region) : null, audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null, theme ? THEMES[theme as keyof typeof THEMES] : null].filter(Boolean) as string[];
+  const pushScope = [
+    region ? regionLabel(region) : null,
+    audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null,
+    theme ? THEMES[theme as keyof typeof THEMES] : null,
+  ].filter(Boolean) as string[];
   async function subscribePush() {
     if (!pushConfig?.enabled || pushState === "unsupported") return;
-    if (!pushScope.length) { setPushError(location ? "내 주변 위치는 저장하지 않아요. 지역·누구와·무엇을 중 하나를 선택해 주세요." : "지역·누구와·무엇을 중 하나를 선택해 주세요."); return; }
+    if (!pushScope.length) {
+      setPushError(
+        location
+          ? "내 주변 위치는 저장하지 않아요. 지역·누구와·무엇을 중 하나를 선택해 주세요."
+          : "지역·누구와·무엇을 중 하나를 선택해 주세요.",
+      );
+      return;
+    }
     setPushError("");
     try {
       const permission = await Notification.requestPermission();
-      if (permission !== "granted") { setPushState("denied"); return; }
+      if (permission !== "granted") {
+        setPushState("denied");
+        return;
+      }
       const registration = await navigator.serviceWorker.ready;
-      const subscription = (await registration.pushManager.getSubscription()) ?? await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidBytes(pushConfig.vapidPublicKey!) });
-      await readApi<{ ok: boolean }>(await fetch("/api/push/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: subscription.toJSON(), preferences: { region: region || null, audience: audience || null, theme: theme || null, ...pushTypes } }) }));
+      const subscription =
+        (await registration.pushManager.getSubscription()) ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidBytes(pushConfig.vapidPublicKey!),
+        }));
+      await readApi<{ ok: boolean }>(
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subscription: subscription.toJSON(),
+            preferences: {
+              region: region || null,
+              audience: audience || null,
+              theme: theme || null,
+              ...pushTypes,
+            },
+          }),
+        }),
+      );
       setPushState("subscribed");
-    } catch { setPushState("error"); setPushError("알림 설정을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."); }
+      trackPushSubscribe({
+        region: Boolean(region),
+        audience: Boolean(audience),
+        theme: Boolean(theme),
+      });
+    } catch {
+      setPushState("error");
+      setPushError(
+        "알림 설정을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
+    }
   }
   async function unsubscribePush() {
     try {
-      const registration = await navigator.serviceWorker.ready, subscription = await registration.pushManager.getSubscription();
+      const registration = await navigator.serviceWorker.ready,
+        subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        await fetch("/api/push/unsubscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: subscription.endpoint }) });
+        await fetch("/api/push/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
         await subscription.unsubscribe();
       }
       setPushState("ready");
-    } catch { setPushError("알림 해지를 완료하지 못했어요. 잠시 후 다시 시도해 주세요."); }
+      trackPushUnsubscribe();
+    } catch {
+      setPushError(
+        "알림 해지를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
+    }
   }
   const active = Boolean(
     customRange || region || audience || theme || query || location,
@@ -932,6 +1082,7 @@ export default function App() {
     }
     setSelected(null);
     setAbout(false);
+    if (selected) trackPageView("list");
   };
   return (
     <>
@@ -1122,7 +1273,7 @@ export default function App() {
                       setLocation(null);
                       setSort("date");
                     }
-                    change(setRegion, e.target.value);
+                    change(setRegion, e.target.value, "region");
                   }}
                 >
                   <option value="">전국 어디든</option>
@@ -1177,7 +1328,7 @@ export default function App() {
               <div className="chips">
                 <button
                   className={!audience ? "chip chosen" : "chip"}
-                  onClick={() => change(setAudience, "")}
+                  onClick={() => change(setAudience, "", "audience")}
                   aria-pressed={!audience}
                 >
                   누구든
@@ -1186,7 +1337,9 @@ export default function App() {
                   <button
                     key={v}
                     className={audience === v ? "chip chosen" : "chip"}
-                    onClick={() => change(setAudience, audience === v ? "" : v)}
+                    onClick={() =>
+                      change(setAudience, audience === v ? "" : v, "audience")
+                    }
                     aria-pressed={audience === v}
                   >
                     {label}
@@ -1199,7 +1352,7 @@ export default function App() {
               <div className="chips" ref={contentFilterRef} tabIndex={-1}>
                 <button
                   className={!theme ? "chip chosen" : "chip"}
-                  onClick={() => change(setTheme, "")}
+                  onClick={() => change(setTheme, "", "theme")}
                   aria-pressed={!theme}
                 >
                   모두
@@ -1208,7 +1361,9 @@ export default function App() {
                   <button
                     key={v}
                     className={theme === v ? "chip chosen" : "chip"}
-                    onClick={() => change(setTheme, theme === v ? "" : v)}
+                    onClick={() =>
+                      change(setTheme, theme === v ? "" : v, "theme")
+                    }
                     aria-pressed={theme === v}
                   >
                     {label}
@@ -1238,24 +1393,70 @@ export default function App() {
             {pushState !== "unsupported" && pushConfig?.enabled && (
               <div className="push-control" aria-live="polite">
                 <div>
-                  <strong><Bell size={16} /> {pushState === "subscribed" ? "알림 받는 중" : "이 조건 알림받기"}</strong>
-                  <p>{pushState === "subscribed" ? `${pushScope.join(" · ")} 조건의 알림을 받고 있어요.` : "새 행사나 중요한 일정 변경이 확인되면 알려드려요."}</p>
+                  <strong>
+                    <Bell size={16} />{" "}
+                    {pushState === "subscribed"
+                      ? "알림 받는 중"
+                      : "이 조건 알림받기"}
+                  </strong>
+                  <p>
+                    {pushState === "subscribed"
+                      ? `${pushScope.join(" · ")} 조건의 알림을 받고 있어요.`
+                      : "새 행사나 중요한 일정 변경이 확인되면 알려드려요."}
+                  </p>
                 </div>
                 {pushState === "subscribed" ? (
-                  <span className="push-actions"><button className="secondary" onClick={subscribePush}>조건 업데이트</button><button className="secondary" onClick={unsubscribePush}>알림 끄기</button></span>
+                  <span className="push-actions">
+                    <button className="secondary" onClick={subscribePush}>
+                      조건 업데이트
+                    </button>
+                    <button className="secondary" onClick={unsubscribePush}>
+                      알림 끄기
+                    </button>
+                  </span>
                 ) : pushState === "denied" ? (
-                  <span className="push-note">브라우저 설정에서 알림 권한을 변경할 수 있어요.</span>
+                  <span className="push-note">
+                    브라우저 설정에서 알림 권한을 변경할 수 있어요.
+                  </span>
                 ) : (
-                  <button className="primary" onClick={subscribePush}>이 조건 알림받기</button>
+                  <button className="primary" onClick={subscribePush}>
+                    이 조건 알림받기
+                  </button>
                 )}
                 {pushState !== "subscribed" && pushState !== "denied" && (
-                  <div className="push-types" role="group" aria-label="받을 알림 종류">
-                    {([ ["new_event", "새 행사"], ["schedule_changed", "일정 변경"], ["cancelled_or_postponed", "취소·연기"] ] as const).map(([key, label]) => (
-                      <label key={key}><input type="checkbox" checked={pushTypes[key]} onChange={(event) => setPushTypes((current) => ({ ...current, [key]: event.target.checked }))} /> {label}</label>
+                  <div
+                    className="push-types"
+                    role="group"
+                    aria-label="받을 알림 종류"
+                  >
+                    {(
+                      [
+                        ["new_event", "새 행사"],
+                        ["schedule_changed", "일정 변경"],
+                        ["cancelled_or_postponed", "취소·연기"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <label key={key}>
+                        <input
+                          type="checkbox"
+                          checked={pushTypes[key]}
+                          onChange={(event) =>
+                            setPushTypes((current) => ({
+                              ...current,
+                              [key]: event.target.checked,
+                            }))
+                          }
+                        />{" "}
+                        {label}
+                      </label>
                     ))}
                   </div>
                 )}
-                {pushError && <p className="inline-error" role="alert">{pushError}</p>}
+                {pushError && (
+                  <p className="inline-error" role="alert">
+                    {pushError}
+                  </p>
+                )}
               </div>
             )}
             {activeFilterLabels.length > 0 && (
@@ -1319,7 +1520,7 @@ export default function App() {
                   <select
                     aria-label="정렬"
                     value={sort}
-                    onChange={(e) => change(setSort, e.target.value)}
+                    onChange={(e) => change(setSort, e.target.value, "sort")}
                   >
                     <option value="recommended">추천순</option>
                     <option value="date">날짜순</option>
@@ -1397,16 +1598,19 @@ export default function App() {
                           {event.region}
                         </span>
                       </div>
-                      {sort === "recommended" && !location && (
+                      {sort === "recommended" && !location &&
                         (() => {
                           const reason = recommendationReasonLabel(
                             event,
                             eventDisplayRange,
                             customRange ? "custom" : period,
                           );
-                          return reason ? <span className="recommendation-reason">{reason}</span> : null;
-                        })()
-                      )}
+                          return reason ? (
+                            <span className="recommendation-reason">
+                              {reason}
+                            </span>
+                          ) : null;
+                        })()}
                       <h3>{event.title}</h3>
                       <p className="venue">{event.venue}</p>
                       <p className="event-date">
@@ -1586,6 +1790,16 @@ export default function App() {
               반려동물 가능 여부나 비용을 확인하지 못하면 미확인으로 표시합니다.
               무료는 입장 기준이며 체험·먹거리 비용은 별도일 수 있어요.
             </p>
+            <section className="analytics-notice" aria-label="분석 도구 안내">
+              <h3>분석 도구 안내</h3>
+              <p>
+                {analyticsConfig?.enabled
+                  ? `서비스 개선을 위해 ${[analyticsConfig.ga4.enabled ? "Google Analytics" : null, analyticsConfig.cloudflare.enabled ? "Cloudflare Web Analytics" : null].filter(Boolean).join("와 ")}를 사용합니다. `
+                  : "서비스 개선을 위한 분석 도구는 현재 활성화되어 있지 않습니다."}
+                정확한 GPS 좌표, 검색어 원문, 알림 구독 endpoint는 분석 도구로
+                보내지 않습니다.
+              </p>
+            </section>
             {mode === "sample" && (
               <div className="detail-warning">
                 지금 보이는 모든 행사는 UI 검증용 가상 샘플입니다. 실제 행사
@@ -1627,22 +1841,32 @@ export default function App() {
                   <h3>주요 볼거리</h3>
                   <div className="detail-tags">
                     {detail.enrichment.highlights.map((highlight) => (
-                      <span className="chip" key={highlight.label}>{highlight.label}</span>
+                      <span className="chip" key={highlight.label}>
+                        {highlight.label}
+                      </span>
                     ))}
                   </div>
                 </section>
               ) : null}
-              {detail.enrichment?.programs.some((program) => program.featured) ? (
+              {detail.enrichment?.programs.some(
+                (program) => program.featured,
+              ) ? (
                 <section className="detail-enrichment detail-featured">
                   <h3>주요 일정</h3>
                   <div className="detail-programs">
-                    {detail.enrichment.programs.filter((program) => program.featured).map((program) => (
-                      <article className="detail-program" key={program.name}>
-                        <strong>{program.name}</strong>
-                        {detailProgramSchedule(program) && <span>{detailProgramSchedule(program)}</span>}
-                        {detailProgramVenue(program) && <small>{detailProgramVenue(program)}</small>}
-                      </article>
-                    ))}
+                    {detail.enrichment.programs
+                      .filter((program) => program.featured)
+                      .map((program) => (
+                        <article className="detail-program" key={program.name}>
+                          <strong>{program.name}</strong>
+                          {detailProgramSchedule(program) && (
+                            <span>{detailProgramSchedule(program)}</span>
+                          )}
+                          {detailProgramVenue(program) && (
+                            <small>{detailProgramVenue(program)}</small>
+                          )}
+                        </article>
+                      ))}
                   </div>
                 </section>
               ) : null}
@@ -1720,24 +1944,33 @@ export default function App() {
                   </dl>
                 );
               })()}
-              {!detail.enrichment?.summary && usefulDescription(detail.event.description) && (
-                <section className="detail-description">
-                  <h3>행사 소개</h3>
-                  <p>{usefulDescription(detail.event.description)}</p>
-                </section>
-              )}
-              {detail.enrichment?.programs.some((program) => !program.featured) ? (
+              {!detail.enrichment?.summary &&
+                usefulDescription(detail.event.description) && (
+                  <section className="detail-description">
+                    <h3>행사 소개</h3>
+                    <p>{usefulDescription(detail.event.description)}</p>
+                  </section>
+                )}
+              {detail.enrichment?.programs.some(
+                (program) => !program.featured,
+              ) ? (
                 <section className="detail-enrichment detail-program-list">
                   <h3>프로그램</h3>
                   <div className="detail-programs">
-                    {detail.enrichment.programs.filter((program) => !program.featured).map((program) => (
-                      <article className="detail-program" key={program.name}>
-                        <strong>{program.name}</strong>
-                        {detailProgramSchedule(program) && <span>{detailProgramSchedule(program)}</span>}
-                        {detailProgramVenue(program) && <small>{detailProgramVenue(program)}</small>}
-                        {program.description && <p>{program.description}</p>}
-                      </article>
-                    ))}
+                    {detail.enrichment.programs
+                      .filter((program) => !program.featured)
+                      .map((program) => (
+                        <article className="detail-program" key={program.name}>
+                          <strong>{program.name}</strong>
+                          {detailProgramSchedule(program) && (
+                            <span>{detailProgramSchedule(program)}</span>
+                          )}
+                          {detailProgramVenue(program) && (
+                            <small>{detailProgramVenue(program)}</small>
+                          )}
+                          {program.description && <p>{program.description}</p>}
+                        </article>
+                      ))}
                   </div>
                 </section>
               ) : null}
@@ -1749,16 +1982,26 @@ export default function App() {
                 ))}
               </div>
               {(officialDetailSource(detail) ??
-                (hasOfficialSource(detail.event) && safeUrl(detail.event.trust_source_url))) && (
-                  <a
-                    className="primary source-button detail-official-link"
-                    href={officialDetailSource(detail) ?? safeUrl(detail.event.trust_source_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    공식 안내 보기 <ExternalLink size={16} />
-                  </a>
-                )}
+                (hasOfficialSource(detail.event) &&
+                  safeUrl(detail.event.trust_source_url))) && (
+                <a
+                  className="primary source-button detail-official-link"
+                  href={
+                    officialDetailSource(detail) ??
+                    safeUrl(detail.event.trust_source_url)
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    trackOfficialLinkClick(
+                      detail.event.id,
+                      detail.event.source_kind,
+                    )
+                  }
+                >
+                  공식 안내 보기 <ExternalLink size={16} />
+                </a>
+              )}
               <p className="detail-source">
                 출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
                 {formatTrustDate(detail.event.checked_at) && (
