@@ -45,6 +45,18 @@ try {
     .run();
   await db
     .prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('tourapi','tourapi',3,'TourAPI 테스트 출처','https://api.visitkorea.or.kr',?)",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('municipality','municipality',2,'지자체 테스트 출처','https://city.example.go.kr/event',?)",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
       "INSERT INTO sources(id,kind,priority,name,fetched_at) VALUES('sample','sample',5,'가상 출처',?)",
     )
     .bind(now)
@@ -60,6 +72,7 @@ try {
       pet = "unknown",
       lat = null,
       lng = null,
+      source = "official",
     } = {},
   ) {
     await db
@@ -79,7 +92,7 @@ try {
         status,
         sample ? "sample" : verification,
         sample ? 1 : 0,
-        sample ? "sample" : "official",
+        sample ? "sample" : source,
         checked,
       )
       .run();
@@ -161,6 +174,16 @@ try {
   await fixture("no-evidence-hidden");
   await fixture("stale-hidden", { checked: old });
   await evidence("stale-hidden", required, old);
+  // Municipality retains verified last-known-good facts across a transient fetch outage.
+  await fixture("municipality-lkg-visible", { checked: old, source: "municipality" });
+  await evidence("municipality-lkg-visible", required, old, "municipality");
+  // Freshness remains mandatory for TourAPI and missing/stale municipal facts never escape.
+  await fixture("tourapi-stale-hidden", { checked: old, source: "tourapi" });
+  await evidence("tourapi-stale-hidden", required, old, "tourapi");
+  await fixture("municipality-missing-evidence-hidden", { checked: old, source: "municipality" });
+  await evidence("municipality-missing-evidence-hidden", ["schedule", "venue"], old, "municipality");
+  await fixture("municipality-stale-hidden", { verification: "stale", checked: old, source: "municipality" });
+  await evidence("municipality-stale-hidden", required, old, "municipality");
   await fixture("stale-evidence-hidden");
   await evidence("stale-evidence-hidden", required, old);
   await fixture("future-hidden", { checked: future });
@@ -238,6 +261,7 @@ try {
   const data = await get("/api/events?period=today");
   assert.deepEqual(data.events.map((e) => e.id).sort(), [
     "free-verified",
+    "municipality-lkg-visible",
     "nearby-first",
     "nearby-second",
     "pet-verified",
@@ -285,6 +309,10 @@ try {
   );
   await get("/api/events/sample-hidden", 404);
   await get("/api/events/no-evidence-hidden", 404);
+  await get("/api/events/tourapi-stale-hidden", 404);
+  await get("/api/events/municipality-missing-evidence-hidden", 404);
+  await get("/api/events/municipality-stale-hidden", 404);
+  assert.equal((await get("/api/events/municipality-lkg-visible")).event.id, "municipality-lkg-visible");
   assert.equal(
     (await get("/api/events/cancelled-hidden")).event.status,
     "cancelled",

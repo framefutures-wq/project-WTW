@@ -59,15 +59,16 @@ function visibility(env: Env) {
   return env.APP_MODE === "sample"
     ? "e.is_sample=1 AND e.verification='sample'"
     : `e.is_sample=0 AND e.verification='verified' AND s.kind!='sample' AND s.url LIKE 'https://%'
-      AND e.checked_at >= ? AND e.checked_at <= ?
+      AND (s.kind='municipality' OR (e.checked_at >= ? AND e.checked_at <= ?))
       AND NOT EXISTS (SELECT 1 FROM (SELECT 'schedule' AS field UNION ALL SELECT 'venue' UNION ALL SELECT 'status') required
         WHERE NOT EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id
-          WHERE ev.event_id=e.id AND ev.field=required.field AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
-      AND (e.cost='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='price' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
+          WHERE ev.event_id=e.id AND ev.field=required.field AND es.kind!='sample' AND es.url LIKE 'https://%'
+            AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
+      AND (e.cost='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='price' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
       AND NOT EXISTS (SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND t.classifier_type='legacy' AND NOT EXISTS
-        (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field=t.tag AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
-      AND (e.pet_policy='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='pet_policy' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))
-      AND (e.lat IS NULL OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='coordinates' AND es.kind!='sample' AND ev.checked_at >= ? AND ev.checked_at <= ?))`;
+        (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field=t.tag AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
+      AND (e.pet_policy='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='pet_policy' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
+      AND (e.lat IS NULL OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='coordinates' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))`;
 }
 function visibilityBindings(env: Env) {
   if (env.APP_MODE === "sample") return [];
