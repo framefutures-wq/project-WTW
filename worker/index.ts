@@ -467,14 +467,18 @@ export default {
           mode: env.APP_MODE,
         });
       }
-      const detail = /^\/api\/events\/([a-zA-Z0-9_-]{1,80})$/.exec(
-        url.pathname,
-      );
+      const detail = /^\/api\/events\/([^/]{1,240})$/.exec(url.pathname);
       if (detail) {
+        let eventId: string;
+        try {
+          eventId = decodeURIComponent(detail[1]);
+        } catch {
+          return json({ error: "확인된 행사 정보를 찾을 수 없습니다." }, 404);
+        }
         const row = await env.DB.prepare(
           `${SELECT} WHERE e.id=? AND ${visibility(env)}`,
         )
-          .bind(detail[1], ...visibilityBindings(env))
+          .bind(eventId, ...visibilityBindings(env))
           .first<Record<string, unknown>>();
         if (!row)
           return json({ error: "확인된 행사 정보를 찾을 수 없습니다." }, 404);

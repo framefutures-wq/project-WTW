@@ -177,6 +177,8 @@ try {
   // Municipality retains verified last-known-good facts across a transient fetch outage.
   await fixture("municipality-lkg-visible", { checked: old, source: "municipality" });
   await evidence("municipality-lkg-visible", required, old, "municipality");
+  await fixture("municipality-한글-id", { source: "municipality" });
+  await evidence("municipality-한글-id", required, now, "municipality");
   // Freshness remains mandatory for TourAPI and missing/stale municipal facts never escape.
   await fixture("tourapi-stale-hidden", { checked: old, source: "tourapi" });
   await evidence("tourapi-stale-hidden", required, old, "tourapi");
@@ -262,6 +264,7 @@ try {
   assert.deepEqual(data.events.map((e) => e.id).sort(), [
     "free-verified",
     "municipality-lkg-visible",
+    "municipality-한글-id",
     "nearby-first",
     "nearby-second",
     "pet-verified",
@@ -313,6 +316,10 @@ try {
   await get("/api/events/municipality-missing-evidence-hidden", 404);
   await get("/api/events/municipality-stale-hidden", 404);
   assert.equal((await get("/api/events/municipality-lkg-visible")).event.id, "municipality-lkg-visible");
+  assert.equal(
+    (await get(`/api/events/${encodeURIComponent("municipality-한글-id")}`)).event.id,
+    "municipality-한글-id",
+  );
   assert.equal(
     (await get("/api/events/cancelled-hidden")).event.status,
     "cancelled",
