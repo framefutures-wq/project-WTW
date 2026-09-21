@@ -16,7 +16,10 @@ export const PRIVATE_SOURCE_REGISTRY = {
       "www.everland.com",
       "reservation.everland.com",
     ],
-    enabled: true,
+    // The current official discovery pages expose mutable headings rather than
+    // durable program IDs, and do not provide publishable venue evidence.
+    // Keep the adapter registry-ready but fail closed until that changes.
+    enabled: false,
     adapterVersion: PRIVATE_SOURCE_ADAPTER_VERSION,
   },
 } as const;

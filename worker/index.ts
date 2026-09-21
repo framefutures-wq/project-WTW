@@ -55,21 +55,22 @@ const availableRangeCache = new WeakMap<
   { expiresAt: number; value: { start: string; end: string } | null }
 >();
 const AVAILABLE_RANGE_TTL_MS = 60_000;
+const LKG_PRIMARY_SOURCE = "(s.kind='municipality' OR (s.kind='organizer' AND s.id LIKE 'private-everland-source-%' AND s.url LIKE 'https://web.everland.com/%'))";
 function visibility(env: Env) {
   // No sample records can escape to production, even if its DB was accidentally seeded.
   return env.APP_MODE === "sample"
     ? "e.is_sample=1 AND e.verification='sample'"
     : `e.is_sample=0 AND e.verification='verified' AND s.kind!='sample' AND s.url LIKE 'https://%'
-      AND (s.kind='municipality' OR (e.checked_at >= ? AND e.checked_at <= ?))
+      AND (${LKG_PRIMARY_SOURCE} OR (e.checked_at >= ? AND e.checked_at <= ?))
       AND NOT EXISTS (SELECT 1 FROM (SELECT 'schedule' AS field UNION ALL SELECT 'venue' UNION ALL SELECT 'status') required
         WHERE NOT EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id
           WHERE ev.event_id=e.id AND ev.field=required.field AND es.kind!='sample' AND es.url LIKE 'https://%'
-            AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
-      AND (e.cost='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='price' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
+            AND (${LKG_PRIMARY_SOURCE} OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
+      AND (e.cost='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='price' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (${LKG_PRIMARY_SOURCE} OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
       AND NOT EXISTS (SELECT 1 FROM event_tags t WHERE t.event_id=e.id AND t.classifier_type='legacy' AND NOT EXISTS
-        (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field=t.tag AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
-      AND (e.pet_policy='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='pet_policy' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
-      AND (e.lat IS NULL OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='coordinates' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (s.kind='municipality' OR (ev.checked_at >= ? AND ev.checked_at <= ?))))`;
+        (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field=t.tag AND es.kind!='sample' AND es.url LIKE 'https://%' AND (${LKG_PRIMARY_SOURCE} OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
+      AND (e.pet_policy='unknown' OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='pet_policy' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (${LKG_PRIMARY_SOURCE} OR (ev.checked_at >= ? AND ev.checked_at <= ?))))
+      AND (e.lat IS NULL OR EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='coordinates' AND es.kind!='sample' AND es.url LIKE 'https://%' AND (${LKG_PRIMARY_SOURCE} OR (ev.checked_at >= ? AND ev.checked_at <= ?))))`;
 }
 function visibilityBindings(env: Env) {
   if (env.APP_MODE === "sample") return [];

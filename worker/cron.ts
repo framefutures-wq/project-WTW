@@ -1,6 +1,7 @@
 import type { Env } from "./env";
 import { tourApiReadiness, syncTourApi } from "./sources/tourapi";
 import { runMunicipalAutonomous } from "./sources/municipal";
+import { runPrivateOfficialSources } from "./sources/private-official";
 import { processPushDeliveries } from "./push";
 export async function runScheduled(env: Env) {
   let municipalAttempted = false;
@@ -28,22 +29,23 @@ export async function runScheduled(env: Env) {
       env.DB.prepare(
         `INSERT INTO event_changes(event_id,reason,before_json,after_json)
         SELECT id, '근거 확인 후 72시간 경과', '{"verification":"verified"}', '{"verification":"stale"}'
-        FROM events WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND ms.kind='municipality')`,
+        FROM events WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND (ms.kind='municipality' OR (ms.kind='organizer' AND ms.id LIKE 'private-everland-source-%' AND ms.url LIKE 'https://web.everland.com/%')))` ,
       ).bind(cutoff),
       env.DB.prepare(
-        "UPDATE events SET verification='stale',updated_at=? WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND ms.kind='municipality')",
+        "UPDATE events SET verification='stale',updated_at=? WHERE is_sample=0 AND verification='verified' AND checked_at < ? AND NOT EXISTS (SELECT 1 FROM sources ms WHERE ms.id=events.primary_source_id AND (ms.kind='municipality' OR (ms.kind='organizer' AND ms.id LIKE 'private-everland-source-%' AND ms.url LIKE 'https://web.everland.com/%')))",
       ).bind(now, cutoff),
     ]);
     const imported = await syncTourApi(env, id);
     municipalAttempted = true;
     const municipal = await runMunicipalAutonomous(env);
+    const privateOfficial = await runPrivateOfficialSources(env);
     await env.DB.prepare(
       "UPDATE sync_runs SET status=?, finished_at=?,message=?,stale_count=? WHERE id=?",
     )
       .bind(
         imported ? "success" : "skipped",
         new Date().toISOString(),
-        JSON.stringify({ tourapi: imported ?? tourApiReadiness(env), municipal }),
+        JSON.stringify({ tourapi: imported ?? tourApiReadiness(env), municipal, private: privateOfficial }),
         results[1].meta.changes,
         id,
       )
@@ -51,6 +53,7 @@ export async function runScheduled(env: Env) {
   } catch (error) {
     // Municipal sources are independently bounded; a TourAPI outage must not stop their daily retry/publish cycle.
     const municipal = municipalAttempted ? { skipped: "already_attempted" } : (municipalAttempted = true, await runMunicipalAutonomous(env));
+    const privateOfficial = await runPrivateOfficialSources(env);
     const message =
       error instanceof Error && error.message.startsWith("TourAPI ")
         ? error.message
@@ -62,7 +65,7 @@ export async function runScheduled(env: Env) {
     await env.DB.prepare(
       "UPDATE sync_runs SET status='failed',finished_at=?,message=? WHERE id=?",
     )
-      .bind(new Date().toISOString(), JSON.stringify({ tourapi: message, municipal }), id)
+      .bind(new Date().toISOString(), JSON.stringify({ tourapi: message, municipal, private: privateOfficial }), id)
       .run();
     // An upstream error must not be rethrown with a potentially secret-bearing URL.
     throw new Error("Scheduled synchronization failed");

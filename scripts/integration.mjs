@@ -57,6 +57,12 @@ try {
     .run();
   await db
     .prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('private-everland-source-test','organizer',1,'에버랜드 공식 출처','https://web.everland.com/pick/event',?)",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
       "INSERT INTO sources(id,kind,priority,name,fetched_at) VALUES('sample','sample',5,'가상 출처',?)",
     )
     .bind(now)
@@ -188,6 +194,13 @@ try {
   await evidence("municipality-missing-evidence-hidden", ["schedule", "venue"], old, "municipality");
   await fixture("municipality-stale-hidden", { verification: "stale", checked: old, source: "municipality" });
   await evidence("municipality-stale-hidden", required, old, "municipality");
+  // Trusted, explicitly-named private organizer sources retain last-known-good facts.
+  await fixture("private-lkg-visible", { checked: old, source: "private-everland-source-test" });
+  await evidence("private-lkg-visible", required, old, "private-everland-source-test");
+  await fixture("private-missing-evidence-hidden", { checked: old, source: "private-everland-source-test" });
+  await evidence("private-missing-evidence-hidden", ["schedule", "venue"], old, "private-everland-source-test");
+  await fixture("private-stale-hidden", { verification: "stale", checked: old, source: "private-everland-source-test" });
+  await evidence("private-stale-hidden", required, old, "private-everland-source-test");
   await fixture("stale-evidence-hidden");
   await evidence("stale-evidence-hidden", required, old);
   await fixture("future-hidden", { checked: future });
@@ -291,6 +304,7 @@ try {
     "nearby-first",
     "nearby-second",
     "pet-verified",
+    "private-lkg-visible",
     "verified",
   ]);
   assert.equal((await get("/api/events?period=today&cost=free")).total, 1);
@@ -338,7 +352,10 @@ try {
   await get("/api/events/tourapi-stale-hidden", 404);
   await get("/api/events/municipality-missing-evidence-hidden", 404);
   await get("/api/events/municipality-stale-hidden", 404);
+  await get("/api/events/private-missing-evidence-hidden", 404);
+  await get("/api/events/private-stale-hidden", 404);
   assert.equal((await get("/api/events/municipality-lkg-visible")).event.id, "municipality-lkg-visible");
+  assert.equal((await get("/api/events/private-lkg-visible")).event.id, "private-lkg-visible");
   assert.equal(
     (await get(`/api/events/${encodeURIComponent("municipality-한글-id")}`)).event.id,
     "municipality-한글-id",
