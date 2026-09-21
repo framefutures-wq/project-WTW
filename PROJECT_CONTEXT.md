@@ -45,8 +45,8 @@
 - GitHub Codespaces + Codex CLI
 
 Production Cron:
-- 매일 06:00 KST
-- 기존 cron expression: `0 21 * * *` UTC
+- 하루 1회, 매일 10:00 KST
+- cron expression: `0 1 * * *` UTC
 
 ## 4. 데이터/정확성 원칙
 
@@ -223,18 +223,12 @@ Audit:
 - galteum.com 구매/Custom Domain 연결
 
 현재 우선순위:
-1. **TourAPI Zero-Human Detail Enrichment production 검증**
-   - migration 적용 여부
-   - deploy 상태
-   - first bounded run
-   - 실제 상세 UI 품질
-2. galteum.com host cutover 마무리
-3. GA4 + Cloudflare Web Analytics 실제 활성화
-4. Search Console
-5. SEO/Public Launch readiness
-6. 무료 공개 후 실제 traffic 관찰
-7. 행사/지역 coverage 확대
-8. 수익화는 traffic 확보 뒤 진행
+1. GA4 + Cloudflare Web Analytics 실제 활성화
+2. Search Console
+3. SEO/Public Launch readiness
+4. 무료 공개 후 실제 traffic 관찰
+5. 행사/지역 coverage 확대
+6. 수익화는 traffic 확보 뒤 진행
 
 수익화는 현재 보류한다.
 

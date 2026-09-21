@@ -27,7 +27,7 @@ React + TypeScript → Cloudflare Static Assets → `/api/*` Worker → Cloudfla
 
 ## 수집과 운영 경계
 
-매일 06:00 KST(21:00 UTC) Cron: 오래된 근거를 stale로 전환하고 실행 이력을 남긴다. TourAPI 최소 어댑터는 행사 목록·법정동 지역코드를 수집하고 현재~향후 30일과 겹치는 행사를 기존 D1에 원문·필드 근거와 함께 저장한다. Secret과 명시적인 활성화가 모두 필요하다. [공식 계약·매핑·검증 상태](TOURAPI.md)를 참고한다.
+매일 10:00 KST(01:00 UTC), 하루 한 번 실행하는 Cron: 오래된 근거를 stale로 전환하고 실행 이력을 남긴다. TourAPI 최소 어댑터는 행사 목록·법정동 지역코드를 수집하고 현재~향후 30일과 겹치는 행사를 기존 D1에 원문·필드 근거와 함께 저장한다. Secret과 명시적인 활성화가 모두 필요하다. [공식 계약·매핑·검증 상태](TOURAPI.md)를 참고한다.
 
 샘플은 명백한 가상 행사이며 seed는 로컬 DB에만 적용한다. 현재 기본 로컬 모드는 production 조회, 외부 수집은 비활성이며 샘플 회귀는 dev:sample로 분리한다. 실행 시점 기준 오늘/이번/다음 주말 샘플 날짜를 생성한다. 공개 샘플 검증을 위해서는 별도 `wrangler.sample.jsonc`의 `APP_MODE=sample`로 실제 원격 D1에 로컬 샘플 스냅샷을 복제해 배포한다. 실제 행사 운영 설정은 `APP_MODE=production`으로 샘플을 조회하지 않는다. 배포 스크립트는 실제 D1 ID 입력을 요구한다. TourAPI 키는 Worker Secret으로만 보관하고 프론트엔드 환경 변수에 넣지 않는다. 운영 데이터 입력용 공개 쓰기 API는 제공하지 않는다.
 
