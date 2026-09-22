@@ -1,5 +1,5 @@
 import { createEnrichmentCandidate, hasMunicipalDetailCoreConflict, MUNICIPAL_PARSERS, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
-import { assessMunicipalSourceDocument, MUNICIPAL_SOURCE_REGISTRY } from "../../shared/municipal-source-registry";
+import { assessMunicipalSourceDocument, municipalSourceAllowsUrl, MUNICIPAL_SOURCE_REGISTRY } from "../../shared/municipal-source-registry";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
 import type { Env } from "../env";
@@ -77,8 +77,21 @@ export async function runMunicipalAutonomous(env: Env) {
         summary.rows_read += duplicateResult.rows;
         let detailError = false, detailCoreConflict = false, enrichment: ReturnType<typeof createEnrichmentCandidate> | null = null;
         if (gate.gate === "MAIN" && duplicateResult.decision === "NEW" && !candidate.parse_error) {
-          try { const detail = candidate.official_url === source.url ? list : await official(candidate.official_url); enrichment = createEnrichmentCandidate(candidate, detail); detailError = Boolean(enrichment.parse_error); detailCoreConflict = candidate.official_url !== source.url && hasMunicipalDetailCoreConflict(candidate, detail); }
-          catch { detailError = true; }
+          try {
+            if (!municipalSourceAllowsUrl(source, candidate.official_url))
+              throw new Error("detail_host_not_allowed");
+            const detail =
+              candidate.official_url === source.url
+                ? list
+                : await official(candidate.official_url);
+            enrichment = createEnrichmentCandidate(candidate, detail);
+            detailError = Boolean(enrichment.parse_error);
+            detailCoreConflict =
+              candidate.official_url !== source.url &&
+              hasMunicipalDetailCoreConflict(candidate, detail);
+          } catch {
+            detailError = true;
+          }
         }
         const payloadHash = await hash({ title: candidate.title, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, official_url: candidate.official_url });
         const existing = await env.DB.prepare("SELECT id,start_date,end_date,venue,status FROM events WHERE id=? LIMIT 1").bind(id).first<{ id: string; start_date: string; end_date: string; venue: string; status: string }>();
@@ -114,7 +127,7 @@ export async function runMunicipalAutonomous(env: Env) {
     try {
       const source = SOURCES.find((item) => item.key === row.source_key);
       if (!source || !row.title_snapshot || !row.venue_snapshot || !row.official_url_snapshot) continue;
-      let candidate: MunicipalCandidate = { source: row.source_key, source_candidate_id: row.source_candidate_id, title: row.title_snapshot, start_date: row.start_date_snapshot, end_date: row.end_date_snapshot, venue: row.venue_snapshot, locality: row.locality_snapshot, region: "경기", official_url: row.official_url_snapshot, category: null, snippet: null, image_candidate: null };
+      let candidate: MunicipalCandidate = { source: row.source_key, source_candidate_id: row.source_candidate_id, title: row.title_snapshot, start_date: row.start_date_snapshot, end_date: row.end_date_snapshot, venue: row.venue_snapshot, locality: row.locality_snapshot || source.locality, region: source.region, official_url: row.official_url_snapshot, category: null, snippet: null, image_candidate: null };
       let detail: string;
       if (candidate.official_url === source.url) {
         detail = await official(source.url);
@@ -125,7 +138,11 @@ export async function runMunicipalAutonomous(env: Env) {
         // Canonical lists are current authority: an absent identity may never publish from an old snapshot.
         if (!refreshed) { summary.AUTO_RETRY += 1; continue; }
         candidate = refreshed;
-      } else detail = await official(candidate.official_url);
+      } else {
+        if (!municipalSourceAllowsUrl(source, candidate.official_url))
+          throw new Error("detail_host_not_allowed");
+        detail = await official(candidate.official_url);
+      }
       const gate = selectMunicipalGate(candidate), duplicateResult = await duplicate(env, candidate, row.candidate_id);
       summary.rows_read += duplicateResult.rows;
       const enrichment = createEnrichmentCandidate(candidate, detail);
