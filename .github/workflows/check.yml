@@ -13,3 +13,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ui:ci
+      - run: npm run test:ui:prod
+        env:
+          TEST_BASE_URL: https://galteum.com
+          TEST_OUTPUT_DIR: test-results/production-audit
