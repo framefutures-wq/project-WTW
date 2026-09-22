@@ -28,9 +28,13 @@
 - production: `https://galteum.com`
 - Worker: `weekend-mwohae`
 - D1: `weekend-mwohae-production`
-- Cron:
+- 현재 Production Cron:
   - 10:00 KST base sync
   - 11:00 KST TourAPI detail enrichment
+- 새 운영 결정(아직 미구현):
+  - 10:00 base가 끝날 때까지 11시를 기다리지 않는다.
+  - base 수집에서 새 행사/변경 행사가 확인되는 즉시 상세보강 단계로 자동 handoff한다.
+  - 11:00 Cron은 주 작업이 아니라 watchdog/recovery 역할로 남겨 미완료·실패·재시도 대상만 처리한다.
 - 공식 사실 우선순위:
   organizer official → municipality → TourAPI → public data → other official
 - optional 정보가 없으면 추측하지 말고 UI에서 숨긴다.
@@ -132,3 +136,32 @@
 순서로 짧게 보고한다.
 
 사용자가 이미 지적한 문제를 다시 사용자에게 확인시키지 않는다.
+
+
+## 2026-09-22 새 운영 결정: Municipal Zero-Human v2
+
+- 목표는 특정 5개 지자체를 손으로 관리하는 것이 아니라 전국 지자체를 사람이 매일 보지 않아도 자동 수집·검증·보강·재시도하는 구조다.
+- 현재처럼 지자체마다 HTML 한 종류에만 맞춘 parser를 계속 늘리는 방식은 전국 확장에 부적합하다. 동일 지자체도 HTML → table → PDF → 이미지 포스터처럼 공지 형식이 바뀔 수 있기 때문이다.
+- source별 공식 URL/정책은 Registry로 관리한다.
+- 문서 형식 변화를 감지하고 HTML / table / 구조화 데이터 / PDF / image 등 여러 extractor를 공통 Event Candidate 형태로 수렴시킨다.
+- extractor 실패나 형식 변경을 '행사 없음'으로 해석하지 않는다.
+- 확실한 candidate만 AUTO_PUBLISH, 애매하면 사람 검수로 보내지 않고 AUTO_RETRY한다.
+- 기존 게시 데이터는 last-known-good를 유지하고 source 하나가 깨져도 다른 지역/수집/알림을 막지 않는다.
+- 이미지/PDF fallback에서도 core 일정·장소를 불확실하게 추측해 저장하지 않는다.
+
+### 스케줄 운영 결정
+
+- 10:00 base 시작.
+- source/candidate 단위 처리가 끝나고 상세보강 대상이 생기면 즉시 detail 작업으로 handoff한다.
+- 전체 base가 10:05에 끝났다면 detail도 10:05부터 진행한다.
+- 11:00 Cron은 미완료/실패/재시도 대상만 보충하는 watchdog/recovery 역할로 남긴다.
+- 이미 완료한 detail을 11시에 중복 처리하지 않도록 상태 기반 idempotency를 유지한다.
+
+### 다음 실무 작업
+
+1. Municipal Zero-Human v2 설계 및 안전검증.
+2. base 완료 즉시 detail handoff + 11시 watchdog/recovery 구조 구현.
+3. source registry + multi-format extractor + format-change 감지 구조 설계.
+4. 전국 확장을 위한 bounded queue/worker 방식 검토.
+5. 새 Cloudflare Queue 등 신규 production resource가 필요하면 현재 설정·비용·마이그레이션 영향을 먼저 검증하고 사용자 승인 후 생성한다.
+6. 부천은 이 공통 구조의 첫 검증 source로 사용하고, 개별 맞춤 코드를 무한히 늘리지 않는다.
