@@ -686,7 +686,7 @@ try {
     "PASS: TourAPI 거절 원문·사유·시각·sync_run 연결, 전체 거절·중복 실패 기록, 행사 롤백 후 거절 기록 보존, 외래키 검증",
   );
   const cron = await mf.dispatchFetch(
-    "http://localhost/cdn-cgi/local/scheduled?cron=0+21+*+*+*",
+    "http://localhost/cdn-cgi/local/scheduled?cron=0+1+*+*+*",
   );
   assert.equal(cron.status, 200);
   assert.equal(
@@ -709,7 +709,7 @@ try {
   );
   const run = await db
     .prepare(
-      "SELECT status,stale_count FROM sync_runs WHERE provider='maintenance'",
+      "SELECT status,stale_count FROM sync_runs WHERE provider='tourapi' AND id!='reject-test' ORDER BY started_at DESC LIMIT 1",
     )
     .first();
   assert.equal(run.status, "skipped");
