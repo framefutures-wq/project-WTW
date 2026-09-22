@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { MAX_VISIBLE_ITEMS, PAGE_SIZE, PAGES_PER_BATCH } from "../../shared/list-exploration";
 
 test.use({ baseURL: "http://127.0.0.1:4174" });
 
@@ -70,7 +71,7 @@ async function mockDetailRoutes(page: import("@playwright/test").Page) {
   );
   await page.route("**/api/events?*", (route) =>
     route.fulfill({
-      json: response(1, 9, 1),
+      json: response(1, PAGE_SIZE, 1),
     }),
   );
 }
@@ -118,15 +119,15 @@ test("필터·더보기·다음 묶음·상세 왕복을 한 흐름으로 복원
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(response(pageNumber, 9, total)),
+      body: JSON.stringify(response(pageNumber, PAGE_SIZE, total)),
     });
   });
 
   await page.goto("/");
-  await expect(page.locator(".event-card")).toHaveCount(9);
-  for (let i = 0; i < 3; i++)
-    await page.getByRole("button", { name: "9개 더 보기" }).click();
-  await expect(page.locator(".event-card")).toHaveCount(36);
+  await expect(page.locator(".event-card")).toHaveCount(PAGE_SIZE);
+  for (let i = 1; i < PAGES_PER_BATCH; i++)
+    await page.getByRole("button", { name: `${PAGE_SIZE}개 더 보기` }).click();
+  await expect(page.locator(".event-card")).toHaveCount(MAX_VISIBLE_ITEMS);
   await expect(page.getByRole("region", { name: "탐색 전환" })).toBeVisible();
 
   await page.getByRole("button", { name: "다른 카테고리를 볼까요?" }).click();
@@ -138,11 +139,11 @@ test("필터·더보기·다음 묶음·상세 왕복을 한 흐름으로 복원
   expect(calls.at(-1)).toBe("experience:1");
 
   await page.getByRole("button", { name: "모두", exact: true }).click();
-  await expect(page.locator(".event-card")).toHaveCount(9);
-  for (let i = 0; i < 3; i++)
-    await page.getByRole("button", { name: "9개 더 보기" }).click();
+  await expect(page.locator(".event-card")).toHaveCount(PAGE_SIZE);
+  for (let i = 1; i < PAGES_PER_BATCH; i++)
+    await page.getByRole("button", { name: `${PAGE_SIZE}개 더 보기` }).click();
   await page.getByRole("button", { name: "다음 행사 보기" }).click();
-  await expect(page.locator(".event-card")).toHaveCount(9);
+  await expect(page.locator(".event-card")).toHaveCount(PAGE_SIZE);
   await expect(page.locator(".event-card").first()).toContainText("행사 37");
   await page.getByRole("button", { name: /통합 QA 행사 37 상세 보기/ }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -183,17 +184,17 @@ test("추가 페이지 실패는 기존 카드와 retry를 보존한다", async 
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(response(pageNumber, 9, 36)),
+      body: JSON.stringify(response(pageNumber, PAGE_SIZE, MAX_VISIBLE_ITEMS)),
     });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "9개 더 보기" }).click();
-  await page.getByRole("button", { name: "9개 더 보기" }).click();
-  await expect(page.locator(".event-card")).toHaveCount(18);
+  await page.getByRole("button", { name: `${PAGE_SIZE}개 더 보기` }).click();
+  await page.getByRole("button", { name: `${PAGE_SIZE}개 더 보기` }).click();
+  await expect(page.locator(".event-card")).toHaveCount(PAGE_SIZE * 2);
   await expect(page.getByRole("alert")).toContainText(
     "추가 행사를 불러오지 못했어요",
   );
   await page.getByRole("button", { name: "다시 시도" }).click();
-  await expect(page.locator(".event-card")).toHaveCount(27);
+  await expect(page.locator(".event-card")).toHaveCount(PAGE_SIZE * 3);
   expect(pageThreeAttempts).toBe(2);
 });
