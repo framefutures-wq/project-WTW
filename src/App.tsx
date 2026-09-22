@@ -1099,7 +1099,10 @@ export default function App() {
       : `${dateLabel(customRange.start)} ~ ${dateLabel(customRange.end)}에 열리는 행사`
     : `${PERIODS.find((p) => p.value === period)?.label}에 열리는 행사`;
   const eventDisplayRange = data?.range ?? customRange ?? dateRange(period);
-  const heroEvent = events.find((event) => safeUrl(event.image_url)) ?? null;
+  const heroEvent =
+    events.slice(4).find((event) => safeUrl(event.image_url)) ??
+    events.find((event) => safeUrl(event.image_url)) ??
+    null;
   const heroImage = heroEvent ? safeUrl(heroEvent.image_url) : undefined;
   const discoveryMode = !active && sort === "recommended" && !location;
   const featuredEvents = discoveryMode ? events.slice(0, 4) : [];
@@ -1626,7 +1629,7 @@ export default function App() {
               </span>
               <h2>
                 {discoveryMode ? "이번 주말, 여기 어때요?" : selectedRangeLabel}{" "}
-                {data && <span>{data.total}</span>}
+                {data && <span className="result-count">{data.total}곳</span>}
               </h2>
               {data && (
                 <p>
@@ -1722,11 +1725,8 @@ export default function App() {
           ) : discoveryMode && events.length > 4 ? (
             <div className="discovery-results">
               <section className="featured-events" aria-label="먼저 둘러볼 행사">
-                <div className="subsection-heading">
-                  <div>
-                    <span>먼저 보기</span>
-                    <h3>먼저 둘러볼 행사</h3>
-                  </div>
+                <div className="featured-intro">
+                  <span>갈틈 픽</span>
                   <p>사진부터 가볍게 둘러보세요.</p>
                 </div>
                 <div className="event-grid featured-grid">
