@@ -148,17 +148,50 @@ export function extractMunicipalDocumentAttachments(
 }
 
 const parseDateRange = (text: string) => {
-  const pattern =
-    /(?:행사\s*기간|축제\s*기간|기\s*간|행사\s*일시|일\s*시)\s*[:：]?\s*(20\d{2})\s*(?:[.\/-]|년)\s*(\d{1,2})\s*(?:[.\/-]|월)\s*(\d{1,2})\s*(?:일)?(?:\s*[~∼-]\s*(?:(20\d{2})\s*(?:[.\/-]|년)\s*)?(?:(\d{1,2})\s*(?:[.\/-]|월)\s*)?(\d{1,2})\s*(?:일)?)?/;
-  const match = pattern.exec(text);
-  if (!match) return null;
+  const labeled = /(?:행사\s*기간|축제\s*기간|기\s*간|행사\s*일시|일\s*시)\s*[:：]?\s*([^\n\r]{4,120})/i.exec(text)?.[1];
+  if (!labeled) return null;
+
   const toDate = (year: string, month: string, day: string) =>
     `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-  const start = toDate(match[1], match[2], match[3]);
-  const end = match[6]
-    ? toDate(match[4] ?? match[1], match[5] ?? match[2], match[6])
-    : start;
-  return { start, end };
+  const fullDate = (value: string) => {
+    const match =
+      /(20\d{2})\s*(?:[.\/-]\s*|년\s*)(\d{1,2})\s*(?:[.\/-]\s*|월\s*)(\d{1,2})/.exec(
+        value,
+      );
+    return match
+      ? { year: match[1], month: match[2], day: match[3] }
+      : null;
+  };
+
+  const [startText, endText] = labeled.split(/[~∼]/, 2);
+  const startParts = fullDate(startText);
+  if (!startParts) return null;
+  const start = toDate(startParts.year, startParts.month, startParts.day);
+  if (!endText) return { start, end: start };
+
+  const endFull = fullDate(endText);
+  if (endFull)
+    return {
+      start,
+      end: toDate(endFull.year, endFull.month, endFull.day),
+    };
+
+  const monthDay =
+    /(\d{1,2})\s*(?:[.\/-]\s*|월\s*)(\d{1,2})/.exec(endText);
+  if (monthDay)
+    return {
+      start,
+      end: toDate(startParts.year, monthDay[1], monthDay[2]),
+    };
+
+  const dayOnly = /^\s*(\d{1,2})\s*(?:[.]|일)?\s*$/.exec(endText);
+  if (dayOnly)
+    return {
+      start,
+      end: toDate(startParts.year, startParts.month, dayOnly[1]),
+    };
+
+  return { start, end: start };
 };
 
 const labeledValue = (text: string, labels: string[]) => {
