@@ -5,6 +5,7 @@ import {
   assessMunicipalSourceDocument,
   detectMunicipalDocumentSignals,
   MUNICIPAL_SOURCE_REGISTRY,
+  municipalSourceAllowsUrl,
   municipalSourceByKey,
 } from "../shared/municipal-source-registry";
 import { MUNICIPAL_PARSERS } from "../shared/municipal-discovery";
@@ -58,4 +59,25 @@ test("document signal detection recognizes structured event data without treatin
     '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Event","name":"행사"}</script>',
   );
   assert(signals.includes("structured_event"));
+});
+
+
+test("registered detail URLs are restricted to explicit official hosts", () => {
+  const paju = municipalSourceByKey("paju");
+  assert(paju);
+  assert.equal(
+    municipalSourceAllowsUrl(
+      paju,
+      "https://tour.paju.go.kr/user/link/cultural/detail.do?id=1",
+    ),
+    true,
+  );
+  assert.equal(
+    municipalSourceAllowsUrl(paju, "https://example.com/festival"),
+    false,
+  );
+  assert.equal(
+    municipalSourceAllowsUrl(paju, "http://tour.paju.go.kr/insecure"),
+    false,
+  );
 });
