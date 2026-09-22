@@ -78,8 +78,13 @@
   - portrait poster blur 완화
   - 이미지 프레임 회귀테스트 추가
 
-**중요:** 현재 대화에서는 이 `367dedd6` 버전의 production deploy 완료 로그를 아직 확인하지 못했다.
-따라서 새 채팅에서 완료됐다고 단정하지 말고 최신 main/배포 상태부터 확인한다.
+**production 반영 완료:** 2026-09-22에 상세 이미지 수정이 실제 `galteum.com`에 배포됐다.
+- 배포 기준 HEAD: `4b8bc6631ff99243407ef67eed6632567b80303d`
+- Cloudflare Version ID: `5e2d5068-a88d-49f0-b059-3a89ef3f880c`
+- production smoke 통과
+- production UI desktop/mobile 2/2 통과
+- 실제 도메인 상세 대표이미지 조건 desktop 높이 ≤360px·비율 1.15~1.5, mobile 높이 ≤300px·비율 >1.15 통과
+- 배포 후 working tree clean
 
 ## 데이터 coverage
 
@@ -96,9 +101,14 @@
 - 행사명 / 날짜 / 장소 / 주요내용을 보수적으로 파싱
 - 기존 Zero-Human gate / duplicate / retry / last-known-good 유지
 
-부천은 공식 보도자료/상세 페이지에 이미지·운영시간·소개·문의 등이 더 있을 가능성이 높다.
+부천 상세보강 사전조사를 시작했다.
+- 부천 관광의 시민어울림한마당 전용 페이지는 2026-10-09, 문의 032-625-3113 등 기본현황을 제공하며 canonical list와 일정이 일치한다.
+- 복사골청소년예술제는 canonical 가을 목록/최근 안전관리 보도자료가 2026-10-10을 가리키지만 별도 관광 페이지는 2026-10-11로 표기되어 공식 소스 간 충돌이 있다. 날짜를 임의 덮어쓰지 않는다.
+- 생생부천의 2026 부천페스타 가을 안내에는 제13회 부천시민 자전거대축제 2026-10-24 13:00~16:00이 명시되어 있다.
+- dev dry-run `scripts/municipal-discover.mjs`에도 Bucheon source를 포함하도록 보완했다. commit `e740bf0f`, Project checks success.
+
 다음 데이터 작업 방향:
-**부천 기본수집 → 공식 상세자료 매칭 → 대표이미지/운영시간/상세소개/문의 보강**
+**부천 core canonical 유지 → 충돌 없는 공식 상세자료만 non-core enrichment에 연결 → 운영시간/상세소개/문의/이미지 후보를 보강 → 충돌 이벤트는 last-known-good/재시도 유지**
 그 다음 공식 지역 source 1개씩 확대.
 
 ## 새 채팅 첫 순서
@@ -108,8 +118,8 @@
 3. 이 파일 읽기
 4. 최신 `origin/main` 확인
 5. GitHub Actions 확인
-6. 직전 상세 이미지 수정의 production 반영 여부 확인
-7. 상세 UI 안정화가 끝났다면 지자체 상세보강으로 넘어가기
+6. 상세 이미지 production 검증 완료 상태 확인
+7. 부천 지자체 상세보강을 이어간다. 공식 core 충돌은 덮어쓰지 않는다.
 
 ## 대화 톤
 
