@@ -29,6 +29,64 @@ test("document attachment discovery keeps only supported official-host files and
   );
 });
 
+test("extensionless municipal download endpoints inherit safe file types from official filenames", () => {
+  const source = municipalSourceByKey("goyang");
+  assert(source);
+  const html = [
+    '<a href="/component/file/ND_fileDownload.do?q_fileId=76076187-3657-41b6-bda9-eb88e769045c&q_fileSn=206047">고양시 중장년일자리박람회.jpg(65 KB)</a>',
+    '<a href="/component/file/ND_fileDownload.do?q_fileId=4d5b433f-bdab-46df-880a-449e481ede23&q_fileSn=206047">2026년 고양시 중장년 일자리박람회_행사개요 및 구인신청서.pdf(223 KB)</a>',
+    '<a href="https://example.com/component/file?id=evil">evil.pdf</a>',
+  ].join("");
+  const attachments = extractMunicipalDocumentAttachments(source, html);
+  assert.deepEqual(
+    attachments.map((item) => [item.kind, item.name, new URL(item.url).hostname]),
+    [
+      [
+        "pdf",
+        "2026년 고양시 중장년 일자리박람회_행사개요 및 구인신청서.pdf",
+        "goyang.go.kr",
+      ],
+      ["image", "고양시 중장년일자리박람회.jpg", "goyang.go.kr"],
+    ],
+  );
+});
+
+test("image conversion requests Korean descriptions for poster extraction", async () => {
+  const source = municipalSourceByKey("bucheon");
+  assert(source);
+  let descriptionLanguage: string | undefined;
+  const ai: MunicipalMarkdownAI = {
+    async toMarkdown(_files, options) {
+      descriptionLanguage =
+        options?.conversionOptions?.image?.descriptionLanguage;
+      return {
+        format: "text",
+        data: [
+          "행사명: 부천 시민축제",
+          "일시: 2026-10-24",
+          "장소: 중앙공원",
+        ].join("\n"),
+      };
+    },
+  };
+  const result = await extractMunicipalDocumentCandidates({
+    ai,
+    source,
+    html: '<img src="/files/poster.png">',
+    fetcher: async () =>
+      new Response(new Uint8Array([137, 80, 78, 71]), {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      }),
+  });
+  assert.equal(result.status, "ok");
+  assert.equal(descriptionLanguage, "ko");
+  assert.equal(
+    result.candidates[0].candidate.parse_error,
+    "image_vision_requires_confirmation",
+  );
+});
+
 test("explicit labeled PDF text can become a normal municipal candidate without guessing", () => {
   const source = municipalSourceByKey("bucheon");
   assert(source);
