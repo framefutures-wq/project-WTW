@@ -81,9 +81,11 @@ export async function runMunicipalAutonomous(env: Env) {
           mode: item.mode,
         }));
       } else {
+        const extractionMode: "registered" | "structured_event" =
+          extraction.mode;
         sourceCandidates = extraction.candidates.map((candidate) => ({
           candidate,
-          mode: extraction.mode,
+          mode: extractionMode,
         }));
       }
       const candidates = sourceCandidates.slice(0, MAX_PER_SOURCE);
@@ -183,9 +185,11 @@ export async function runMunicipalAutonomous(env: Env) {
             mode: item.mode,
           }));
         } else {
+          const extractionMode: "registered" | "structured_event" =
+            extraction.mode;
           refreshedCandidates = extraction.candidates.map((item) => ({
             candidate: item,
-            mode: extraction.mode,
+            mode: extractionMode,
           }));
         }
         const refreshed = refreshedCandidates.find(
