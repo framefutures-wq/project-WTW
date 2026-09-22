@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { createEnrichmentCandidate, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate } from "../shared/municipal-discovery";
+import { createEnrichmentCandidate, parseBucheonAutumnList, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate } from "../shared/municipal-discovery";
 
 const paju = parsePajuList(readFileSync("fixtures/municipal-discovery-paju.html", "utf8"));
 const suwon = parseSuwonList(readFileSync("fixtures/municipal-discovery-suwon.html", "utf8"));
 const goyang = parseGoyangList(readFileSync("fixtures/municipal-discovery-goyang.html", "utf8"));
 const hwaseong = parseHwaseongList(readFileSync("fixtures/municipal-discovery-hwaseong.html", "utf8"));
+const bucheon = parseBucheonAutumnList(readFileSync("fixtures/municipal-discovery-bucheon.html", "utf8"));
 
 test("municipal adapters extract official list candidates and preserve optional images", () => {
   assert.equal(paju.length, 3);
@@ -50,4 +51,16 @@ test("only event-wide labels create operating-hour candidates, not program times
   const eventHours = createEnrichmentCandidate(paju[0], "2026년 제18회 문산거리축제 운영시간 12:00~21:00");
   assert.deepEqual(eventHours.operating_hours, { start_time: "12:00", end_time: "21:00" });
   assert.equal(createEnrichmentCandidate(paju[0], "다른 2026 행사").parse_error, "detail_title_mismatch");
+});
+
+test("Bucheon autumn official schedule parses explicit 2026 city events and keeps canonical source identity", () => {
+  assert.equal(bucheon.length, 4);
+  assert.equal(bucheon[0].title, "제53회 부천시민의 날 기념식&기념콘서트");
+  assert.deepEqual([bucheon[0].start_date, bucheon[0].end_date], ["2026-10-01", "2026-10-01"]);
+  assert.equal(bucheon[1].title, "2026년 부천 웰니스 페어");
+  assert.deepEqual([bucheon[1].start_date, bucheon[1].end_date], ["2026-10-01", "2026-10-03"]);
+  assert.equal(bucheon[2].venue, "중앙공원");
+  assert.equal(selectMunicipalGate(bucheon[2]).gate, "MAIN");
+  assert.equal(bucheon[3].official_url, "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003");
+  assert.equal(selectMunicipalGate(bucheon[3]).gate, "MAIN");
 });
