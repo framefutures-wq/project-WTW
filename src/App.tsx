@@ -334,7 +334,7 @@ export function EventImageLayers({
     </>
   );
 }
-function Scene({
+export function Scene({
   event,
   detail = false,
   onExpand,
@@ -354,6 +354,10 @@ function Scene({
     performance: "♫",
   };
   const image = safeUrl(event.image_url);
+  const detailDate =
+    event.start_date === event.end_date
+      ? dateLabel(event.start_date)
+      : `${dateLabel(event.start_date)} ~ ${dateLabel(event.end_date)}`;
   const className = `scene scene-${theme}${detail ? " scene-detail" : ""}${image && !imageFailed ? " scene-with-image" : ""}${fit === "contain" && !detail ? " scene-contain" : ""}`;
   const content = (
     <>
@@ -368,23 +372,38 @@ function Scene({
         />
       )}
       {(!image || imageFailed) && (
-        <div className="scene-fallback" aria-hidden="true">
-          <div className="scene-sun" />
-          <div className="hill hill-one" />
-          <div className="hill hill-two" />
-          <span className="scene-symbol">
-            {icons[theme as keyof typeof icons]}
-          </span>
-          <span className="scene-stem" />
-          <span className="scene-dot dot-one" />
-          <span className="scene-dot dot-two" />
-          <span className="scene-caption">
-            {THEMES[theme as keyof typeof THEMES]}를 만나는 하루
-          </span>
-          <span className="sample-stamp">
-            {event.is_sample ? "가상 행사" : "주제 일러스트"}
-          </span>
-        </div>
+        detail ? (
+          <div className="detail-info-graphic" aria-label="행사 정보 그래픽">
+            <span className="detail-info-graphic-orbit" aria-hidden="true" />
+            <span className="detail-info-graphic-square" aria-hidden="true" />
+            <span className="detail-info-graphic-symbol" aria-hidden="true">
+              {icons[theme as keyof typeof icons]}
+            </span>
+            <div className="detail-info-graphic-copy">
+              <span>{event.region}</span>
+              <strong>{THEMES[theme as keyof typeof THEMES]}</strong>
+              <small>{detailDate}</small>
+            </div>
+          </div>
+        ) : (
+          <div className="scene-fallback" aria-hidden="true">
+            <div className="scene-sun" />
+            <div className="hill hill-one" />
+            <div className="hill hill-two" />
+            <span className="scene-symbol">
+              {icons[theme as keyof typeof icons]}
+            </span>
+            <span className="scene-stem" />
+            <span className="scene-dot dot-one" />
+            <span className="scene-dot dot-two" />
+            <span className="scene-caption">
+              {THEMES[theme as keyof typeof THEMES]}를 만나는 하루
+            </span>
+            <span className="sample-stamp">
+              {event.is_sample ? "가상 행사" : "주제 일러스트"}
+            </span>
+          </div>
+        )
       )}
     </>
   );

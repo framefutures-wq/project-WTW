@@ -3,10 +3,43 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { EventImageLayers } from "../src/App";
+import { EventImageLayers, Scene } from "../src/App";
+import type { EventItem } from "../shared/domain";
 
 const app = readFileSync("src/App.tsx", "utf8");
 const css = readFileSync("src/styles.css", "utf8");
+const redesign = readFileSync("src/redesign.css", "utf8");
+
+const fallbackEvent = {
+  id: "fallback",
+  title: "이미지 없는 행사",
+  description: "",
+  region: "서울",
+  venue: "광장",
+  address: "서울 광장",
+  start_date: "2026-09-26",
+  end_date: "2026-09-28",
+  lat: null,
+  lng: null,
+  cost: "unknown",
+  price_text: null,
+  pet_policy: "unknown",
+  status: "scheduled",
+  verification: "verified",
+  is_sample: 0,
+  checked_at: null,
+  source_url: null,
+  source_name: null,
+  source_kind: null,
+  trust_status: null,
+  trust_checked_at: null,
+  trust_source_url: null,
+  trust_source_types: [],
+  trust_changed_fields: [],
+  image_url: null,
+  tags: ["performance"],
+  distance_km: null,
+} satisfies EventItem;
 
 test("detail images use contain and expose an accessible lightbox", () => {
   assert.match(app, /detail\s*\n\s*onExpand/);
@@ -64,4 +97,41 @@ test("rendered contain/detail layers use the same source and cover cards omit th
   );
   assert.equal((cover.match(/<img/g) ?? []).length, 1);
   assert.doesNotMatch(cover, /scene-image-backdrop/);
+});
+
+test("detail without an image uses an event-data graphic while cards retain their fallback", () => {
+  const detail = renderToStaticMarkup(
+    createElement(Scene, { event: fallbackEvent, detail: true }),
+  );
+  const card = renderToStaticMarkup(
+    createElement(Scene, { event: fallbackEvent }),
+  );
+  assert.match(detail, /detail-info-graphic/);
+  assert.match(detail, />서울</);
+  assert.match(detail, />공연</);
+  assert.match(detail, /9\.26 ~ 9\.28/);
+  assert.doesNotMatch(detail, /scene-fallback/);
+  assert.match(card, /scene-fallback/);
+  assert.match(app, /imageFailed\) && \(/);
+  assert.match(redesign, /\.detail-info-graphic\s*\{[\s\S]*background: #f7f4ee/);
+  assert.match(redesign, /\.detail-info-graphic-orbit[\s\S]*#f26b38/);
+  const graphicStyles = redesign.slice(
+    redesign.indexOf(".detail-dialog .scene-detail .detail-info-graphic"),
+    redesign.indexOf(".detail-summary-panel"),
+  );
+  assert.doesNotMatch(graphicStyles, /#155d4b/);
+});
+
+test("detail with an official image remains expandable", () => {
+  const detail = renderToStaticMarkup(
+    createElement(Scene, {
+      event: { ...fallbackEvent, image_url: "https://example.org/poster.jpg" },
+      detail: true,
+      onExpand: () => undefined,
+    }),
+  );
+  assert.match(detail, /<button/);
+  assert.match(detail, /scene-image-foreground/);
+  assert.match(detail, /대표 이미지 크게 보기/);
+  assert.doesNotMatch(detail, /detail-info-graphic/);
 });
