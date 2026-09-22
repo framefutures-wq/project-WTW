@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  confirmRepeatedImageVisionCandidate,
   extractMunicipalDocumentAttachments,
   extractMunicipalDocumentCandidates,
   parseConvertedMunicipalDocument,
@@ -121,4 +122,57 @@ test("AI document conversion is optional and PDF extraction is bounded to explic
   assert.equal(result.candidates.length, 1);
   assert.equal(result.candidates[0].mode, "pdf_text");
   assert.equal(result.candidates[0].candidate.start_date, "2026-10-24");
+});
+
+
+test("image vision requires an identical observation on a later Korea day", () => {
+  const source = municipalSourceByKey("bucheon");
+  assert(source);
+  const attachment = extractMunicipalDocumentAttachments(
+    source,
+    '<img src="/files/poster.png">',
+  )[0];
+  const parsed = parseConvertedMunicipalDocument(
+    source,
+    attachment,
+    [
+      "행사명: 부천 시민축제",
+      "일시: 2026-10-24",
+      "장소: 중앙공원",
+    ].join("\n"),
+  );
+  assert(parsed);
+
+  const first = confirmRepeatedImageVisionCandidate(parsed.candidate, {
+    previousPayloadHash: null,
+    currentPayloadHash: "same",
+    previousSeenAt: null,
+    currentSeenAt: "2026-09-22T01:05:00.000Z",
+  });
+  assert.equal(first.parse_error, "image_vision_requires_confirmation");
+
+  const sameDay = confirmRepeatedImageVisionCandidate(parsed.candidate, {
+    previousPayloadHash: "same",
+    currentPayloadHash: "same",
+    previousSeenAt: "2026-09-22T01:05:00.000Z",
+    currentSeenAt: "2026-09-22T03:00:00.000Z",
+  });
+  assert.equal(sameDay.parse_error, "image_vision_requires_confirmation");
+
+  const changed = confirmRepeatedImageVisionCandidate(parsed.candidate, {
+    previousPayloadHash: "old",
+    currentPayloadHash: "new",
+    previousSeenAt: "2026-09-22T01:05:00.000Z",
+    currentSeenAt: "2026-09-23T01:05:00.000Z",
+  });
+  assert.equal(changed.parse_error, "image_vision_requires_confirmation");
+
+  const confirmed = confirmRepeatedImageVisionCandidate(parsed.candidate, {
+    previousPayloadHash: "same",
+    currentPayloadHash: "same",
+    previousSeenAt: "2026-09-22T01:05:00.000Z",
+    currentSeenAt: "2026-09-23T01:05:00.000Z",
+  });
+  assert.equal(confirmed.parse_error, undefined);
+  assert.equal(selectMunicipalGate(confirmed).gate, "MAIN");
 });
