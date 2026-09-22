@@ -6,7 +6,7 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   await expect(page.getByText("샘플 미리보기", { exact: true })).toBeVisible();
   await expect(page.locator(".event-card").first()).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "이번 주말의 발견" }),
+    page.getByRole("heading", { name: "이번 주말, 여기 어때요?" }),
   ).toBeVisible();
   await page.getByLabel("지역", { exact: true }).selectOption("서울");
   await page.locator(".advanced-filters > summary").click();
@@ -58,7 +58,7 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await expect(page.getByLabel("정렬: 가까운순")).toBeVisible();
   await expect(page.locator(".event-card").first()).toContainText("1km 미만");
   await page.getByRole("button", { name: "내 주변 해제" }).click();
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("recommended");
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("date");
   await expect(page.locator(".distance")).toHaveCount(0);
 });
 
@@ -96,11 +96,18 @@ test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({
   await page.locator(".results").scrollIntoViewIfNeeded();
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toBeVisible();
-  await expect(page.locator(".region-quick-trigger")).toBeVisible();
-  await expect(page.locator(".category-quick-trigger")).toBeVisible();
+  const mobile = (page.viewportSize()?.width ?? 0) <= 760;
+  if (mobile) {
+    await expect(page.locator(".region-quick-trigger")).not.toBeVisible();
+    await expect(page.locator(".category-quick-trigger")).not.toBeVisible();
+  } else {
+    await expect(page.locator(".region-quick-trigger")).toBeVisible();
+    await expect(page.locator(".category-quick-trigger")).toBeVisible();
+  }
 });
 
-test("스크롤 상단 탐색은 검색과 지역·카테고리가 겹치지 않는다", async ({ page }) => {
+test("데스크톱 스크롤 상단 탐색은 검색과 지역·카테고리가 겹치지 않는다", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) <= 760, "모바일은 지역·카테고리 퀵 스위치를 숨깁니다.");
   await page.goto("/");
   await page.locator(".results").scrollIntoViewIfNeeded();
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
