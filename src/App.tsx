@@ -1244,7 +1244,6 @@ export default function App() {
                   });
                 }}
               >
-                <Search size={17} />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
