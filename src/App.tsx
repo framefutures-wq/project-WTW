@@ -1224,11 +1224,6 @@ export default function App() {
           <a href="/" className="brand" aria-label="갈틈 홈">
             갈틈
           </a>
-          {!compactHeader && (
-            <span className="header-tagline">
-              오늘, 어디 가지?
-            </span>
-          )}
           {compactHeader && (
             <>
               <form
@@ -1307,14 +1302,10 @@ export default function App() {
               <span /> 오늘은 어디 가볼까?
             </span>
             <h1>
-              드디어,
-              <br />
-              <span>놀러 갈 틈이 생겼다.</span>
+              드디어, <span>놀러 갈 틈이 생겼다.</span>
             </h1>
             <p>
-              함께하는 사람과 원하는 날짜에 맞춰, 가까운 축제부터 지역 행사·체험까지.
-              <br className="desktop-break" />
-              갈 만한 곳을 찾아보세요.
+              함께하는 사람과 원하는 날짜에 맞춰, 가까운 축제부터 지역 행사·체험까지 찾아보세요.
             </p>
             <div className="hero-note">
               <Compass size={17} />
