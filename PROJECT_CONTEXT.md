@@ -314,7 +314,31 @@ Audit:
   - main commit: `87cc6419`
 - 다음 coverage 작업은 **다음 공식 소스 1개를 조사·추가**하는 것이다.
 
-## 15. 새 세션 시작 방법
+## 15. 현재 즉시 이어갈 상태 (2026-09-22)
+
+- 최신 기능/UI 코드 기준 commit: `367dedd6` — `UI: stabilize detail image frame`
+- GitHub Actions run `35704201196`: **success**
+- 이 수정은 상세페이지 이미지가 좁고 세로로 길게 눌려 보이던 문제를 겨냥했다.
+  - legacy `styles.css`의 600px detail dialog 제한을 최신 `redesign.css`에서 확실히 override
+  - 상세 이미지 프레임을 bounded 4:3 중심으로 안정화
+  - 세로 포스터 이미지의 과도한 blurred side fill을 완화
+  - 상세 이미지 프레임 회귀테스트 추가
+- 사용자에게서 확인된 직전 문제:
+  - 상세페이지 자체 정보 구조보다 **대표 이미지 표현이 부자연스러운 것이 가장 큰 문제**였다.
+  - 스크롤 후 홈 sticky UI는 현재 정상으로 평가됐다.
+  - 홈 첫 화면도 큰 포스터형에서 낮은 검색 배너형으로 정리되어 해결된 상태다.
+- 이 대화에서는 `367dedd6`의 **production deploy 완료 로그를 아직 확인하지 못했다.**
+- 새 세션의 첫 실무 순서:
+  1. 최신 `origin/main`과 Actions success 재확인
+  2. `367dedd6` 이후 추가 commit이 없다면 production 배포 필요 여부 확인
+  3. 배포 후 상세 이미지 프레임을 코드/production smoke 기준으로 확인
+  4. 상세 UI가 안정되면 **지자체 상세보강(부천부터) → 다음 공식 지역 coverage** 순서로 진행
+- 부천 municipal source는 main에 들어가 있다.
+  - source key: `bucheon`
+  - 기본 수집은 행사명/날짜/장소/주요내용 중심
+  - 다음 데이터 작업은 부천 공식 보도자료/행사별 페이지를 안전하게 연결해 대표이미지/운영시간/상세소개/문의 등을 보강하는 방식이 유력하다.
+
+## 16. 새 세션 시작 방법
 
 새 ChatGPT/Codex 세션에서는 먼저:
 
