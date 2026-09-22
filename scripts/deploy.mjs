@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { parse } from "jsonc-parser";
-const configPath =
-  process.argv[2] === "--sample"
-    ? "wrangler.sample.jsonc"
-    : "wrangler.production.jsonc";
+const cliArgs = new Set(process.argv.slice(2));
+const configPath = cliArgs.has("--sample")
+  ? "wrangler.sample.jsonc"
+  : "wrangler.production.jsonc";
+const verifiedDeploy = cliArgs.has("--verified");
 const config = readFileSync(configPath, "utf8");
 if (config.includes("REPLACE_WITH_PRODUCTION_D1_ID")) {
   console.error(
@@ -52,10 +53,22 @@ if (configPath === "wrangler.production.jsonc") {
       "배포 중단: 원격 D1에 최근 실제 TourAPI 데이터가 없습니다. tourapi:sync를 먼저 실행하세요.",
     );
 }
-for (const [command, args] of [
-  ["npm", ["run", "check"]],
-  ["npx", ["wrangler", "deploy", "--config", configPath]],
-]) {
+const commands = verifiedDeploy
+  ? [
+      ["npm", ["run", "build"]],
+      ["npx", ["wrangler", "deploy", "--config", configPath]],
+    ]
+  : [
+      ["npm", ["run", "check"]],
+      ["npx", ["wrangler", "deploy", "--config", configPath]],
+    ];
+
+if (verifiedDeploy)
+  console.log(
+    "검증 완료 배포: 전체 check는 생략하고 production build 후 배포합니다.",
+  );
+
+for (const [command, args] of commands) {
   const result = spawnSync(command, args, { stdio: "inherit" });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
