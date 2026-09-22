@@ -112,3 +112,20 @@ test("스크롤 상단 탐색은 검색과 지역·카테고리가 겹치지 않
   expect(region).not.toBeNull();
   expect(search!.x + search!.width + 12).toBeLessThanOrEqual(region!.x);
 });
+
+test("상세는 핵심 일정·장소를 소개보다 먼저 보여준다", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".event-card").first().getByRole("button").click();
+  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
+  await expect(dialog.locator(".detail-key-facts")).toBeVisible();
+  await expect(dialog.locator(".detail-fact").first()).toContainText("일정");
+  const facts = await dialog.locator(".detail-key-facts").boundingBox();
+  const description = await dialog.locator(".detail-description").first().boundingBox();
+  if (description) {
+    expect(facts).not.toBeNull();
+    expect(facts!.y).toBeLessThan(description.y);
+  }
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
