@@ -126,7 +126,7 @@
 6. 최신 `origin/main` 확인
 7. GitHub Actions 확인
 8. 현재 working tree와 중단 지점 확인
-9. 끊긴 municipal onboarding을 마무리한 뒤 UI/상세 v2로 전환한다. 공식 core 충돌은 덮어쓰지 않는다.
+9. 태백시 / 서울 한강 municipal onboarding은 완료됐다. **현재는 UI / 브랜드 시스템 v2부터 이어간다.** 전국 coverage 확대는 UI/상세 v2가 안정될 때까지 잠시 멈춘다.
 
 ## 대화 톤
 
@@ -210,8 +210,8 @@
 ## 2026-09-23 확정: 다음 작업 순서와 UI/상세 v2
 
 작업 순서:
-1. usage limit으로 끊긴 태백시 / 서울 한강 municipal onboarding 작업을 현재 working tree에서 이어서 마무리한다.
-2. 그 뒤 전국 coverage 확대를 잠시 멈추고 **UI / 브랜드 시스템 v2**를 먼저 완성한다.
+1. ✅ 태백시 / 서울 한강 municipal generic onboarding 완료 — commit `8af623e`, Registry 7개 source, 관련 테스트/typecheck/build 통과, production deploy는 하지 않음.
+2. **현재: 전국 coverage 확대를 잠시 멈추고 UI / 브랜드 시스템 v2를 먼저 완성한다.**
 3. UI 작업에는 **상세 정보구조 v2 + 갈틈 파생정보 레이어 + adaptive media fallback**을 포함한다.
 4. UI/상세 v2가 안정되면 공식 상세 enrichment 품질을 확대하고, 이후 전국 municipal coverage를 재개한다.
 
