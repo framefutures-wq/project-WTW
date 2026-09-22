@@ -1,0 +1,20 @@
+name: Deploy UI redesign production
+on:
+  push:
+    paths: [.github/workflows/deploy-ui-production.yml]
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Deploy existing production Worker
+        run: npm run deploy
