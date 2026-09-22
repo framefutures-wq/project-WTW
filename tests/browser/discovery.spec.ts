@@ -129,3 +129,48 @@ test("상세는 핵심 일정·장소를 소개보다 먼저 보여준다", asyn
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
 });
+
+test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+
+  await page.locator(".results").scrollIntoViewIfNeeded();
+  await expect(page.locator(".header")).toHaveClass(/header-compact/);
+  await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toBeVisible();
+  await expect(page.locator(".region-quick-trigger")).not.toBeVisible();
+  await expect(page.locator(".category-quick-trigger")).not.toBeVisible();
+
+  const firstCardButton = page.locator(".event-card").first().getByRole("button");
+  await firstCardButton.click();
+
+  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".detail-key-facts")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "닫기", exact: true })).toBeVisible();
+
+  const box = await dialog.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.width).toBeLessThanOrEqual(390);
+
+  expect(
+    await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth),
+  ).toBe(true);
+
+  const facts = await dialog.locator(".detail-key-facts").boundingBox();
+  const description = await dialog.locator(".detail-description").first().boundingBox();
+  if (description) {
+    expect(facts).not.toBeNull();
+    expect(facts!.y).toBeLessThan(description.y);
+  }
+
+  await dialog.locator(".detail-source-row").scrollIntoViewIfNeeded();
+  await expect(dialog.locator(".detail-source-row")).toBeVisible();
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(firstCardButton).toBeFocused();
+});
