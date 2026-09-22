@@ -1,14 +1,15 @@
 import { normalizeMunicipalTitle } from "./municipal-duplicate";
+import type { MunicipalSourceKey } from "./municipal-source-registry";
 
 export type SelectionGate = "MAIN" | "NEARBY_ONLY" | "EXCLUDE" | "REVIEW";
 export type MunicipalCandidate = {
-  source: "paju" | "suwon" | "goyang" | "hwaseong" | "bucheon";
+  source: MunicipalSourceKey;
   source_candidate_id: string;
   title: string;
   start_date: string | null;
   end_date: string | null;
-  region: "경기";
-  locality: "파주" | "수원" | "고양" | "화성" | "부천";
+  region: string;
+  locality: string;
   venue: string | null;
   official_url: string;
   category: string | null;
@@ -210,3 +211,15 @@ export function createEnrichmentCandidate(candidate: MunicipalCandidate, detailH
     programs: [],
   };
 }
+
+
+export const MUNICIPAL_PARSERS = {
+  paju: parsePajuList,
+  suwon: parseSuwonList,
+  goyang: parseGoyangList,
+  hwaseong: parseHwaseongList,
+  bucheon: parseBucheonAutumnList,
+} satisfies Record<
+  MunicipalSourceKey,
+  (html: string) => MunicipalCandidate[]
+>;
