@@ -43,6 +43,50 @@ export type MunicipalDocumentCandidate = {
   attachment: MunicipalDocumentAttachment;
 };
 
+const seoulDate = (value: string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+
+export function confirmRepeatedImageVisionCandidate(
+  candidate: MunicipalCandidate,
+  {
+    previousPayloadHash,
+    currentPayloadHash,
+    previousSeenAt,
+    currentSeenAt,
+  }: {
+    previousPayloadHash?: string | null;
+    currentPayloadHash: string;
+    previousSeenAt?: string | null;
+    currentSeenAt: string;
+  },
+): MunicipalCandidate {
+  if (candidate.parse_error !== "image_vision_requires_confirmation")
+    return candidate;
+  if (
+    !candidate.title ||
+    !candidate.start_date ||
+    !candidate.end_date ||
+    !candidate.venue ||
+    !previousPayloadHash ||
+    previousPayloadHash !== currentPayloadHash ||
+    !previousSeenAt
+  )
+    return candidate;
+
+  const previousDay = seoulDate(previousSeenAt);
+  const currentDay = seoulDate(currentSeenAt);
+  if (!previousDay || !currentDay || previousDay >= currentDay)
+    return candidate;
+
+  const { parse_error: _confirmed, ...confirmed } = candidate;
+  return confirmed;
+}
+
 const MIME_BY_EXTENSION: Record<string, { kind: MunicipalDocumentKind; mimeType: string }> = {
   pdf: { kind: "pdf", mimeType: "application/pdf" },
   jpg: { kind: "image", mimeType: "image/jpeg" },
@@ -249,8 +293,5 @@ export async function extractMunicipalDocumentCandidates({
     }
   }
   if (candidates.length) return { status: "ok", candidates };
-  return {
-    status: successfulConversions ? "conversion_failed" : "conversion_failed",
-    candidates: [],
-  };
+  return { status: "conversion_failed", candidates: [] };
 }
