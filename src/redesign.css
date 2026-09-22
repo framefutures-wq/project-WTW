@@ -917,6 +917,46 @@ footer small {
   object-position: center;
 }
 
+.detail-media {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 360px;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.detail-media-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, .85fr);
+  gap: 8px;
+  background: #171a1d;
+}
+
+.detail-media-pair button,
+.detail-media-single {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: #171a1d;
+  cursor: zoom-in;
+}
+
+.detail-media-pair .scene-image,
+.detail-media-single .scene-image {
+  object-fit: cover;
+}
+
+.detail-media-pair .scene-image-foreground,
+.detail-media-single .scene-image-foreground {
+  object-fit: contain;
+}
+
+.detail-media-secondary .scene-image-foreground {
+  object-fit: cover;
+}
+
 .detail-dialog .scene-detail .detail-info-graphic {
   position: absolute;
   inset: 0;
@@ -1254,6 +1294,22 @@ footer small {
   .detail-hero-grid {
     display: block;
     padding: 0;
+  }
+
+  .detail-media {
+    max-height: 300px;
+    border-radius: 0;
+  }
+
+  .detail-media-pair {
+    grid-template-columns: 1fr;
+    aspect-ratio: auto;
+    max-height: none;
+  }
+
+  .detail-media-pair button {
+    aspect-ratio: 4 / 3;
+    max-height: 260px;
   }
 
   .detail-dialog .scene-detail {

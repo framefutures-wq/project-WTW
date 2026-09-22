@@ -426,6 +426,44 @@ export function Scene({
     );
   return <div className={className}>{content}</div>;
 }
+export function DetailMedia({
+  event,
+  images,
+  onExpand,
+}: {
+  event: EventItem;
+  images?: EventDetailImage[];
+  onExpand: (image: string, title: string) => void;
+}) {
+  const galleryImages = (images ?? [])
+    .map((image) => safeUrl(image.image_url))
+    .filter((image): image is string => Boolean(image));
+  const urls = galleryImages.length ? galleryImages : (safeUrl(event.image_url) ? [safeUrl(event.image_url)!] : []);
+  const signature = `${event.id}:${urls.join("|")}`;
+  const [failed, setFailed] = useState<string[]>([]);
+  useEffect(() => setFailed([]), [signature]);
+  const active = urls.filter((image) => !failed.includes(image));
+  const fail = (image: string) => setFailed((current) => [...new Set([...current, image])]);
+  if (active.length === 0)
+    return <Scene event={{ ...event, image_url: null }} detail />;
+  if (active.length === 1 && urls.length === 1)
+    return <Scene event={{ ...event, image_url: active[0] }} detail onExpand={onExpand} />;
+  if (active.length === 1)
+    return (
+      <button type="button" className="detail-media detail-media-single" onClick={() => onExpand(active[0], event.title)} aria-label={`${event.title} 대표 이미지 크게 보기`}>
+        <EventImageLayers image={active[0]} title={event.title} backdrop loading="eager" onImageError={() => fail(active[0])} />
+      </button>
+    );
+  return (
+    <div className="detail-media detail-media-pair">
+      {active.slice(0, 2).map((image, index) => (
+        <button key={image} type="button" className={index === 0 ? "detail-media-main" : "detail-media-secondary"} onClick={() => onExpand(image, event.title)} aria-label={`${event.title} ${index === 0 ? "대표" : "추가"} 이미지 크게 보기`}>
+          <EventImageLayers image={image} title={event.title} backdrop={index === 0} loading="eager" onImageError={() => fail(image)} />
+        </button>
+      ))}
+    </div>
+  );
+}
 function DetailExploreCard({ event, nearby = false }: { event: EventItem; nearby?: boolean }) {
   const image = safeUrl(event.image_url);
   return (
@@ -2110,9 +2148,9 @@ export default function App() {
             return (
               <div className="detail-shell">
                 <div className="detail-hero-grid">
-                  <Scene
+                  <DetailMedia
                     event={detail.event}
-                    detail
+                    images={detail.images}
                     onExpand={(image, title) => setLightbox({ image, title })}
                   />
                   <div className="detail-summary-panel">

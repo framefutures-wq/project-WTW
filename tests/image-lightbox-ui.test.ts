@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { EventImageLayers, Scene } from "../src/App";
+import { DetailMedia, EventImageLayers, Scene } from "../src/App";
 import type { EventItem } from "../shared/domain";
 
 const app = readFileSync("src/App.tsx", "utf8");
@@ -42,7 +42,7 @@ const fallbackEvent = {
 } satisfies EventItem;
 
 test("detail images use contain and expose an accessible lightbox", () => {
-  assert.match(app, /detail\s*\n\s*onExpand/);
+  assert.match(app, /<DetailMedia/);
   assert.match(app, /role="dialog"/);
   assert.match(app, /aria-modal="true"/);
   assert.match(app, /event\.key === "Escape"/);
@@ -134,4 +134,32 @@ test("detail with an official image remains expandable", () => {
   assert.match(detail, /scene-image-foreground/);
   assert.match(detail, /대표 이미지 크게 보기/);
   assert.doesNotMatch(detail, /detail-info-graphic/);
+});
+
+test("two detail images render a main and secondary image with independent controls", () => {
+  const detail = renderToStaticMarkup(
+    createElement(DetailMedia, {
+      event: fallbackEvent,
+      images: [
+        { image_url: "https://example.org/main.jpg", source_type: "tourapi", source_page_url: null, is_primary: true, sort_order: 1 },
+        { image_url: "https://example.org/secondary.jpg", source_type: "tourapi", source_page_url: null, is_primary: false, sort_order: 2 },
+      ],
+      onExpand: () => undefined,
+    }),
+  );
+  assert.match(detail, /detail-media-pair/);
+  assert.match(detail, /detail-media-main/);
+  assert.match(detail, /detail-media-secondary/);
+  assert.equal((detail.match(/<button/g) ?? []).length, 2);
+  assert.match(redesign, /\.detail-media-pair\s*\{[\s\S]*grid-template-columns/);
+});
+
+test("empty detail image contract retains the existing information graphic fallback", () => {
+  const detail = renderToStaticMarkup(
+    createElement(DetailMedia, { event: fallbackEvent, images: [], onExpand: () => undefined }),
+  );
+  assert.match(detail, /detail-info-graphic/);
+  assert.doesNotMatch(detail, /detail-media-pair/);
+  assert.match(app, /onImageError=\{\(\) => fail\(image\)\}/);
+  assert.match(app, /if \(active\.length === 0\)/);
 });
