@@ -120,11 +120,12 @@
 1. `AGENTS.md` 읽기
 2. `PROJECT_CONTEXT.md` 읽기
 3. 이 파일 읽기
-4. **`docs/UI_V2_DIRECTION.md` 읽기 — UI/상세 작업에서는 이 문서를 고정 설계 계약으로 사용**
-5. 최신 `origin/main` 확인
-6. GitHub Actions 확인
-7. 현재 working tree와 중단 지점 확인
-8. 끊긴 municipal onboarding을 마무리한 뒤 UI/상세 v2로 전환한다. 공식 core 충돌은 덮어쓰지 않는다.
+4. **`docs/WORKING_RULES.md` 읽기 — 모델 선택, 프롬프트 길이, bounded task, 검증·배포 규칙을 고정 운영 계약으로 사용**
+5. **`docs/UI_V2_DIRECTION.md` 읽기 — UI/상세 작업에서는 이 문서를 고정 설계 계약으로 사용**
+6. 최신 `origin/main` 확인
+7. GitHub Actions 확인
+8. 현재 working tree와 중단 지점 확인
+9. 끊긴 municipal onboarding을 마무리한 뒤 UI/상세 v2로 전환한다. 공식 core 충돌은 덮어쓰지 않는다.
 
 ## 대화 톤
 
