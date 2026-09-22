@@ -10,6 +10,7 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/*"],
   },
+  "ai": { "binding": "AI" },
   "d1_databases": [
     {
       "binding": "DB",
@@ -21,7 +22,7 @@
   "vars": {
     "APP_MODE": "production",
     "TOUR_API_ENABLED": "true",
-    "MUNICIPAL_DOCUMENT_AI_ENABLED": "false",
+    "MUNICIPAL_DOCUMENT_AI_ENABLED": "true",
     "WEB_PUSH_ENABLED": "true",
     "WEB_PUSH_VAPID_PUBLIC_KEY": "BNHKagyZenwP0ldvTxb-Uw0eTKqom0s6kzx0xEEjOFWMGWeSk2W0UVIhqD0qTQUR7U0JxmTAyL01Xe1ib3tphno",
     "WEB_PUSH_VAPID_SUBJECT": "https://galteum.com/",
