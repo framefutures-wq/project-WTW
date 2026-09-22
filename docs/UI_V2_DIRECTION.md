@@ -148,6 +148,17 @@ Adaptive media:
 - 1장: 한 장을 크게 사용하는 완성형 layout
 - 0장: 날짜/지역/카테고리/공식정보 중심 브랜드 graphic + 정보 중심 상세
 
+구현 순서(2026-09-23 고정):
+1. ✅ 1장/0장 상세 fallback 완료 — commit `f5dd796`.
+   - 1장: 기존 bounded frame/contain/확대 유지.
+   - 0장·로드 실패: 지역·테마·기간을 활용한 CSS 정보형 갈틈 브랜드 그래픽.
+2. 다음: 주변 행사 / 비슷한 행사 등 상세 탐색 보강.
+3. 그 다음: 공식 추가 이미지 데이터 구조/API/enrichment를 최소 범위로 확장.
+4. 공식 추가 이미지가 실제로 확보되는 범위에 맞춰 2장 / 4~5장 adaptive gallery UI 구현.
+5. UI v2 큰 파트 마지막에 desktop/mobile 통합 회귀 → build → deploy → production public verify를 1회 수행.
+
+현재 EventItem/detail은 대표 이미지 `image_url` 1장 구조이므로, gallery를 위해 UI 단계에서 API/D1을 선행 확장하지 않는다.
+
 빈 썸네일 슬롯을 만들지 않는다.
 
 이미지가 부족하면:
