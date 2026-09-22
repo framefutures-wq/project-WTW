@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { setDefaultResultOrder } from "node:dns";
-import { createEnrichmentCandidate, MUNICIPAL_PARSERS, selectMunicipalGate } from "../shared/municipal-discovery.ts";
-import { assessMunicipalSourceDocument, MUNICIPAL_SOURCE_REGISTRY } from "../shared/municipal-source-registry.ts";
+import { createEnrichmentCandidate, extractMunicipalCandidates, selectMunicipalGate } from "../shared/municipal-discovery.ts";
+import { MUNICIPAL_SOURCE_REGISTRY } from "../shared/municipal-source-registry.ts";
 import { lookupMunicipalDuplicate } from "./municipal-duplicate-lookup.mjs";
 import { manifestFingerprint, stableMunicipalCandidateId, temporalStatus, seoulToday } from "../shared/municipal-approval.ts";
 
@@ -40,22 +40,20 @@ export async function runMunicipalDiscovery({ fetchOfficialPage = fetchOfficial,
     MUNICIPAL_SOURCE_REGISTRY.map(async (source) => {
       try {
         const html = await fetchOfficialPage(source.url, cache, metrics);
-        const health = assessMunicipalSourceDocument(source, html);
-        if (health.status !== "healthy") {
+        const extraction = extractMunicipalCandidates(source, html);
+        if (extraction.mode === "retry") {
           metrics.parser_errors += 1;
-          return { source, html: null };
+          return { source, candidates: [] };
         }
-        return { source, html };
+        return { source, candidates: extraction.candidates };
       } catch {
         metrics.parser_errors += 1;
-        return { source, html: null };
+        return { source, candidates: [] };
       }
     }),
   );
-  const discovered = pages.flatMap(({ source, html }) =>
-    html
-      ? sourceUnique(MUNICIPAL_PARSERS[source.key](html)).slice(0, 10)
-      : [],
+  const discovered = pages.flatMap(({ candidates }) =>
+    sourceUnique(candidates).slice(0, 10),
   );
   const results = [];
   for (const candidate of discovered) {

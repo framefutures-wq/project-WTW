@@ -1,14 +1,11 @@
-import { createEnrichmentCandidate, hasMunicipalDetailCoreConflict, MUNICIPAL_PARSERS, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
-import { assessMunicipalSourceDocument, municipalSourceAllowsUrl, MUNICIPAL_SOURCE_REGISTRY } from "../../shared/municipal-source-registry";
+import { createEnrichmentCandidate, extractMunicipalCandidates, hasMunicipalDetailCoreConflict, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
+import { municipalSourceAllowsUrl, MUNICIPAL_SOURCE_REGISTRY } from "../../shared/municipal-source-registry";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
 import type { Env } from "../env";
 import { alertDedupeKey, alertId, scheduleChanged } from "../../shared/alert-engine";
 
-const SOURCES = MUNICIPAL_SOURCE_REGISTRY.map((source) => ({
-  ...source,
-  parse: MUNICIPAL_PARSERS[source.key],
-}));
+const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25, MAX_PUBLISH = 10, MAX_RETRY_PER_RUN = 25, RETRY_DAYS = 30;
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const hash = async (value: unknown) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value))))).map((n) => n.toString(16).padStart(2, "0")).join("");
@@ -63,10 +60,12 @@ export async function runMunicipalAutonomous(env: Env) {
   for (const source of SOURCES) {
     try {
       const list = await official(source.url);
-      const health = assessMunicipalSourceDocument(source, list);
-      if (health.status !== "healthy")
-        throw new Error(`source_${health.status}:${health.reason}`);
-      const candidates = source.parse(list).slice(0, MAX_PER_SOURCE);
+      const extraction = extractMunicipalCandidates(source, list);
+      if (extraction.mode === "retry")
+        throw new Error(
+          `source_${extraction.assessment.status}:${extraction.assessment.reason}`,
+        );
+      const candidates = extraction.candidates.slice(0, MAX_PER_SOURCE);
       if (!candidates.length) throw new Error("source_parse_zero_candidates");
       if (candidates.length >= MAX_PER_SOURCE) throw new Error("source_candidate_circuit_breaker");
       for (const candidate of candidates) {
@@ -131,10 +130,14 @@ export async function runMunicipalAutonomous(env: Env) {
       let detail: string;
       if (candidate.official_url === source.url) {
         detail = await official(source.url);
-        const health = assessMunicipalSourceDocument(source, detail);
-        if (health.status !== "healthy")
-          throw new Error(`source_${health.status}:${health.reason}`);
-        const refreshed = source.parse(detail).find((item) => item.source_candidate_id === candidate.source_candidate_id);
+        const extraction = extractMunicipalCandidates(source, detail);
+        if (extraction.mode === "retry")
+          throw new Error(
+            `source_${extraction.assessment.status}:${extraction.assessment.reason}`,
+          );
+        const refreshed = extraction.candidates.find(
+          (item) => item.source_candidate_id === candidate.source_candidate_id,
+        );
         // Canonical lists are current authority: an absent identity may never publish from an old snapshot.
         if (!refreshed) { summary.AUTO_RETRY += 1; continue; }
         candidate = refreshed;
