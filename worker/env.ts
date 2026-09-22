@@ -5,6 +5,8 @@ export interface Env {
   ASSETS: Fetcher;
   /** Optional until the production Workers AI binding is explicitly enabled. */
   AI?: MunicipalMarkdownAI;
+  /** Cost guard. AI document conversion stays off unless this is exactly "true". */
+  MUNICIPAL_DOCUMENT_AI_ENABLED?: string;
   APP_MODE: "sample" | "production";
   TOUR_API_ENABLED: string;
   /** Cloudflare Secret 전용. 현재 값 없음. */
@@ -17,4 +19,9 @@ export interface Env {
   ANALYTICS_ENABLED?: string;
   GA4_MEASUREMENT_ID?: string;
   CLOUDFLARE_WEB_ANALYTICS_TOKEN?: string;
+}
+
+
+export function municipalDocumentAI(env: Env) {
+  return env.MUNICIPAL_DOCUMENT_AI_ENABLED === "true" ? env.AI : undefined;
 }
