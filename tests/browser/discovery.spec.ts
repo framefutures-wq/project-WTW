@@ -39,7 +39,9 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   ).toBeVisible();
   await page.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await page.getByLabel("행사 이름 또는 장소 검색").fill("없는 행사 이름");
+  await page
+    .getByLabel("상단 행사 이름 또는 장소 검색")
+    .fill("없는 행사 이름");
   await expect(
     page.getByRole("heading", { name: "조건에 맞는 행사가 아직 없어요" }),
   ).toBeVisible();
@@ -49,12 +51,12 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
     .click();
   await page.getByRole("button", { name: "다음 주말", exact: false }).click();
   await expect(
-    page.getByRole("heading", { name: "다음 주말의 발견" }),
+    page.getByRole("heading", { name: "다음 주말에 열리는 행사" }),
   ).toBeVisible();
   await expect(page.locator(".event-card")).toHaveCount(3);
   await page.getByRole("button", { name: "오늘 지금 떠나볼까?" }).click();
   await expect(
-    page.getByRole("heading", { name: "오늘의 발견" }),
+    page.getByRole("heading", { name: "오늘 열리는 행사" }),
   ).toBeVisible();
   await expect(page.locator(".event-card").first()).toBeVisible();
   expect(
