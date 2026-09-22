@@ -71,3 +71,11 @@ test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({
   await expect(page.getByLabel("상단 지역")).toBeVisible();
   await expect(page.getByRole("button", { name: "카테고리", exact: true })).toBeVisible();
 });
+
+test("스크롤 상단 탐색은 지역·카테고리를 한 세트만 보여준다", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".results").scrollIntoViewIfNeeded();
+  await expect(page.locator(".header")).toHaveClass(/header-compact/);
+  await expect(page.getByLabel("상단 지역")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "카테고리", exact: true })).toHaveCount(1);
+});
