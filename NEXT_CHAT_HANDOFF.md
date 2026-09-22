@@ -192,3 +192,13 @@
 3. 승인 시 공식 PDF 1건 + 포스터 1건으로 production bounded 검증.
 4. 그 뒤 Registry 기반 전국 지자체 coverage 확대.
 5. Queue는 실제 실행시간/규모 한계 근거가 생길 때만 검토하고 생성 전 사용자 승인.
+
+
+## 2026-09-22 Workers AI 비용 가드
+
+- PR #24 merge: bbd6167c4aa58a7daf165c02e930d957251f6f28
+- production config에 `MUNICIPAL_DOCUMENT_AI_ENABLED=false`를 추가했다.
+- AI binding이 나중에 존재하더라도 이 값이 정확히 `true`가 아니면 municipal PDF/포스터 파이프라인은 env.AI를 전달받지 못한다.
+- 따라서 binding 생성/배포와 실제 AI 사용 활성화를 분리했다.
+- 현재 production에는 AI binding을 추가하지 않았고 AI 사용도 활성화하지 않았다.
+- 다음 production AI 단계는 사용자 승인 후 `ai.binding=AI` 추가 + flag true 전환 + bounded 실검증이다.
