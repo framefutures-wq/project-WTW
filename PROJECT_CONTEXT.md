@@ -444,8 +444,9 @@ main 구현 완료:
 - PR #23 최종 Project checks / UI browser smoke success 후 merge.
 
 Production 주의:
-- 현재 production Worker는 위 최신 main 이전 버전이다.
-- 다음 파트는 최신 main을 기존 Worker에 배포하고 smoke/cron contract를 검증하는 것이다.
+- 2026-09-22 `dd9b0f9` 기준 최신 main을 기존 Worker에 배포했다. Cloudflare version ID: `97a35df2-86d7-41b7-837d-7e522f7d0b1e`.
+- 전체 check(단위 테스트 174개, 통합 검사, build), `https://galteum.com` production smoke, desktop/mobile production UI가 통과했다.
+- 기존 D1 binding과 10시/11시 Cron은 유지됐다. 실제 다음 scheduled run의 운영 결과는 별도 관찰 대상이다.
 - env.AI binding은 production에 아직 없다.
 - Workers AI 사용량이 발생할 수 있으므로 AI binding은 사용자 승인 전 추가하지 않는다.
 - binding이 없으면 PDF/image fallback은 fail-closed하고 기존 last-known-good를 유지한다.
