@@ -1269,34 +1269,36 @@ export default function App() {
                   <Search size={16} />
                 </button>
               </form>
-              <label className="compact-region">
-                <MapPin size={15} />
-                <select
-                  aria-label="상단 지역"
-                  value={region}
-                  onChange={(event) => {
-                    if (location) {
-                      setLocation(null);
-                      setSort("date");
-                    }
-                    change(setRegion, event.target.value, "region");
-                  }}
+              <div className="compact-controls">
+                <label className="compact-region">
+                  <MapPin size={15} />
+                  <select
+                    aria-label="상단 지역"
+                    value={region}
+                    onChange={(event) => {
+                      if (location) {
+                        setLocation(null);
+                        setSort("date");
+                      }
+                      change(setRegion, event.target.value, "region");
+                    }}
+                  >
+                    <option value="">전국</option>
+                    {REGION_OPTIONS.map(({ queryValue, label }) => (
+                      <option key={queryValue} value={queryValue}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  className="compact-category"
+                  onClick={() => focusFilter("theme")}
                 >
-                  <option value="">전국</option>
-                  {REGION_OPTIONS.map(({ queryValue, label }) => (
-                    <option key={queryValue} value={queryValue}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                className="compact-category"
-                onClick={() => focusFilter("theme")}
-              >
-                <SlidersHorizontal size={15} />
-                카테고리
-              </button>
+                  <SlidersHorizontal size={15} />
+                  카테고리
+                </button>
+              </div>
             </>
           )}
           <button className="trust-link" onClick={() => setAbout(true)}>
