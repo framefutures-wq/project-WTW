@@ -40,6 +40,7 @@ import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
 import { selectProgramOccurrenceGroup } from "../shared/program-occurrence-selection";
 import { deriveEventDetailInfo } from "../shared/event-derived-info";
+import { nearbyDetailEvents, similarDetailEvents } from "../shared/detail-exploration";
 import { formatProgramTime } from "../shared/event-program-time";
 import {
   formatOperatingHours,
@@ -423,6 +424,20 @@ export function Scene({
     );
   return <div className={className}>{content}</div>;
 }
+function DetailExploreCard({ event, nearby = false }: { event: EventItem; nearby?: boolean }) {
+  const image = safeUrl(event.image_url);
+  return (
+    <a className="detail-explore-card" href={`/events/${encodeURIComponent(event.id)}`}>
+      {image ? <img src={image} alt="" /> : <span className="detail-explore-placeholder" aria-hidden="true" />}
+      <span>
+        <strong>{event.title}</strong>
+        <small>{detailDateRange(event.start_date, event.end_date)}</small>
+        <small>{event.venue || event.address}</small>
+        {nearby && event.distance_km !== null && <em>{displayDistance(event.distance_km)}</em>}
+      </span>
+    </a>
+  );
+}
 function eventIdFromPath(pathname: string) {
   const match = /^\/events\/([^/]{1,240})$/.exec(pathname);
   if (!match) return null;
@@ -523,6 +538,8 @@ export default function App() {
       null,
     );
   const [detailRetry, setDetailRetry] = useState(0);
+  const [detailNearby, setDetailNearby] = useState<EventItem[]>([]),
+    [detailSimilar, setDetailSimilar] = useState<EventItem[]>([]);
   const [mode, setMode] = useState(""),
     [about, setAbout] = useState(false),
     [compactHeader, setCompactHeader] = useState(false);
@@ -754,6 +771,29 @@ export default function App() {
       });
     return () => controller.abort();
   }, [selected, detailRetry, customRange, period]);
+  useEffect(() => {
+    setDetailNearby([]);
+    setDetailSimilar([]);
+    if (!detail) return;
+    const controller = new AbortController();
+    const event = detail.event;
+    const params = new URLSearchParams({ period: "custom", startDate: event.start_date, endDate: event.end_date, limit: "10", sort: "date" });
+    if (event.lat !== null && event.lng !== null) {
+      fetch("/api/events/nearby", { method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...Object.fromEntries(params), lat: event.lat, lng: event.lng }) })
+        .then(readApi<EventResponse>)
+        .then((body) => setDetailNearby(nearbyDetailEvents(body.events, event.id)))
+        .catch(() => {});
+    }
+    const eventTheme = event.tags.find((tag) => tag in THEMES);
+    if (eventTheme) {
+      params.set("theme", eventTheme);
+      fetch("/api/events?" + params, { signal: controller.signal })
+        .then(readApi<EventResponse>)
+        .then((body) => setDetailSimilar(similarDetailEvents(body.events, event.id, eventTheme)))
+        .catch(() => {});
+    }
+    return () => controller.abort();
+  }, [detail]);
   useEffect(() => {
     if (!selected || detailHistory.current) return;
     const detailUrl = new URL(window.location.href);
@@ -2281,6 +2321,26 @@ export default function App() {
                       </span>
                     ))}
                   </div>
+                  {detailNearby.length > 0 && (
+                    <section className="detail-exploration" aria-label="이 근처 다른 행사">
+                      <h3>이 근처 다른 행사</h3>
+                      <div className="detail-explore-list">
+                        {detailNearby.map((event) => (
+                          <DetailExploreCard event={event} nearby key={event.id} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  {detailSimilar.length > 0 && (
+                    <section className="detail-exploration" aria-label="비슷한 행사">
+                      <h3>비슷한 행사</h3>
+                      <div className="detail-explore-list">
+                        {detailSimilar.map((event) => (
+                          <DetailExploreCard event={event} key={event.id} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
                   <div className="detail-source-row">
                     <p className="detail-source">
                       출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}

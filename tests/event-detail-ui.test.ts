@@ -47,7 +47,7 @@ test("detail v2 prioritizes date and venue, then CTA and populated content", () 
   assert.match(redesign, /\.detail-timeline-item::before/);
   assert.match(redesign, /\.detail-program-card\s*\{/);
   assert.match(redesign, /\.detail-body > \.detail-enrichment-summary\s*\{\s*order: 7/);
-  assert.match(redesign, /\.detail-body > \.detail-source-row\s*\{\s*order: 9/);
+  assert.match(redesign, /\.detail-body > \.detail-source-row\s*\{\s*order: 10/);
 });
 
 test("detail renders derived event status without replacing official status notices", () => {
@@ -57,6 +57,18 @@ test("detail renders derived event status without replacing official status noti
   assert.match(app, /detail\.event\.status !== "postponed"/);
   assert.match(app, /오늘 프로그램/);
   assert.match(redesign, /\.detail-glance-status\s*\{[^}]*color: #c34f24/);
+});
+
+test("detail exploration reuses scoped API queries and canonical links", () => {
+  assert.match(app, /fetch\("\/api\/events\/nearby"/);
+  assert.match(app, /event\.lat !== null && event\.lng !== null/);
+  assert.match(app, /event\.tags\.find\(\(tag\) => tag in THEMES\)/);
+  assert.match(app, /nearbyDetailEvents\(body\.events, event\.id\)/);
+  assert.match(app, /similarDetailEvents\(body\.events, event\.id, eventTheme\)/);
+  assert.match(app, /controller\.abort\(\)/);
+  assert.match(app, /href=\{`\/events\/\$\{encodeURIComponent\(event\.id\)\}`\}/);
+  assert.match(app, /detail-exploration/);
+  assert.match(redesign, /\.detail-body > \.detail-exploration\s*\{\s*order: 9/);
 });
 
 test("detail content follows the user-first hierarchy", () => {
