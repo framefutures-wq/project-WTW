@@ -201,3 +201,55 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   await expect(dialog).not.toBeVisible();
   await expect(firstCardButton).toBeFocused();
 });
+
+test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 눌리지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 800 });
+  await page.goto("/");
+  await page.locator(".event-card").first().getByRole("button").click();
+  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
+  await expect(dialog).toBeVisible();
+
+  const hero = await dialog.locator(".detail-hero-grid").evaluate((el) =>
+    getComputedStyle(el).display,
+  );
+  expect(hero).toBe("block");
+
+  const sourceRow = dialog.locator(".detail-source-row");
+  await sourceRow.scrollIntoViewIfNeeded();
+  const direction = await sourceRow.evaluate((el) =>
+    getComputedStyle(el).flexDirection,
+  );
+  expect(direction).toBe("column");
+
+  const source = await sourceRow.locator(".detail-source").boundingBox();
+  const back = await sourceRow.getByRole("button", { name: "목록으로 돌아가기" }).boundingBox();
+  expect(source).not.toBeNull();
+  expect(back).not.toBeNull();
+  expect(source!.width).toBeGreaterThan(240);
+  expect(back!.width).toBeGreaterThan(240);
+});
+
+test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된다", async ({ page }) => {
+  await page.setViewportSize({ width: 470, height: 760 });
+  await page.goto("/");
+  await page.locator(".event-card").first().getByRole("button").click();
+  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
+  await expect(dialog).toBeVisible();
+
+  expect(
+    await dialog.locator(".detail-hero-grid").evaluate((el) =>
+      getComputedStyle(el).display,
+    ),
+  ).toBe("block");
+
+  expect(
+    await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBe(true);
+
+  await dialog.locator(".detail-source-row").scrollIntoViewIfNeeded();
+  const back = await dialog.getByRole("button", { name: "목록으로 돌아가기" }).boundingBox();
+  const dialogBox = await dialog.boundingBox();
+  expect(back).not.toBeNull();
+  expect(dialogBox).not.toBeNull();
+  expect(back!.width).toBeGreaterThan(dialogBox!.width * 0.75);
+});
