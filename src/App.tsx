@@ -512,6 +512,7 @@ export default function App() {
     resultsRef = useRef<HTMLElement | null>(null),
     regionFilterRef = useRef<HTMLSelectElement | null>(null),
     contentFilterRef = useRef<HTMLDivElement | null>(null),
+    advancedFiltersRef = useRef<HTMLDetailsElement | null>(null),
     batchProgress = useRef(
       new Map<number, { loadedPages: number; scrollY: number }>(),
     ),
@@ -1001,12 +1002,16 @@ export default function App() {
     }
   }
   function focusFilter(target: "region" | "theme") {
+    if (target === "theme" && advancedFiltersRef.current)
+      advancedFiltersRef.current.open = true;
     const element =
       target === "region" ? regionFilterRef.current : contentFilterRef.current;
     element?.scrollIntoView({ behavior: "smooth", block: "center" });
     if (target === "region") element?.focus();
     else
-      (element?.querySelector("button") as HTMLButtonElement | null)?.focus();
+      requestAnimationFrame(() =>
+        (element?.querySelector("button") as HTMLButtonElement | null)?.focus(),
+      );
   }
   const pushScope = [
     region ? regionLabel(region) : null,
@@ -1094,6 +1099,11 @@ export default function App() {
       : `${dateLabel(customRange.start)} ~ ${dateLabel(customRange.end)}에 열리는 행사`
     : `${PERIODS.find((p) => p.value === period)?.label}에 열리는 행사`;
   const eventDisplayRange = data?.range ?? customRange ?? dateRange(period);
+  const heroEvent = events.find((event) => safeUrl(event.image_url)) ?? null;
+  const heroImage = heroEvent ? safeUrl(heroEvent.image_url) : undefined;
+  const discoveryMode = !active && sort === "recommended" && !location;
+  const featuredEvents = discoveryMode ? events.slice(0, 4) : [];
+  const listEvents = discoveryMode ? events.slice(4) : events;
   const activeFilterLabels = [
     customRange ? selectedRangeLabel : null,
     region ? regionLabel(region) : null,
@@ -1102,6 +1112,79 @@ export default function App() {
     query ? `검색: ${query}` : null,
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
+  const renderEventCard = (event: EventItem) => (
+    <article className="event-card" key={event.id}>
+      <button
+        className="card-button"
+        onClick={() => setSelected(event.id)}
+        aria-label={`${event.title} 상세 보기`}
+      >
+        <Scene event={event} />
+        <div className="card-content">
+          <div className="card-meta">
+            <span>
+              <MapPin size={13} />
+              {event.region}
+            </span>
+          </div>
+          {sort === "recommended" &&
+            !location &&
+            (() => {
+              const reason = recommendationReasonLabel(
+                event,
+                eventDisplayRange,
+                customRange ? "custom" : period,
+              );
+              return reason ? (
+                <span className="recommendation-reason">{reason}</span>
+              ) : null;
+            })()}
+          <h3>{event.title}</h3>
+          <p className="venue">{event.venue}</p>
+          <p className="event-date">
+            <CalendarDays size={14} />
+            {formatEventDateLabel({
+              eventStart: event.start_date,
+              eventEnd: event.end_date,
+              selectedRange: eventDisplayRange,
+              selectionMode: customRange ? "custom" : period,
+            })}
+            {location && (
+              <span className="distance">
+                {event.distance_km === null
+                  ? "거리 미확인"
+                  : displayDistance(event.distance_km)}
+              </span>
+            )}
+          </p>
+          {formatOperatingHours(event.operating_hours ?? null) && (
+            <p className="event-hours">
+              <Clock3 size={14} />
+              {formatOperatingHours(event.operating_hours ?? null)}
+            </p>
+          )}
+          <div className="card-tags">
+            {event.tags.slice(0, 3).map((t) => (
+              <span key={t}>#{tagLabel(t)}</span>
+            ))}
+          </div>
+          <div
+            className={`card-bottom${cardStatusLabel(event) ? " card-bottom-status" : ""}`}
+          >
+            {event.is_sample ? (
+              <span>
+                <Info size={13} />
+                실제 행사가 아닌 샘플
+              </span>
+            ) : (
+              <TrustInfo event={event} card />
+            )}
+            <ArrowRight size={17} />
+          </div>
+        </div>
+      </button>
+    </article>
+  );
   const close = () => {
     if (selected && detailHistory.current) {
       window.history.back();
@@ -1137,7 +1220,17 @@ export default function App() {
         </div>
       )}
       <main>
-        <section className="hero">
+        <section className={heroImage ? "hero hero-with-image" : "hero"}>
+          {heroImage && (
+            <img
+              className="hero-media"
+              src={heroImage}
+              alt=""
+              aria-hidden="true"
+              loading="eager"
+            />
+          )}
+          <div className="hero-shade" aria-hidden="true" />
           <div className="hero-copy">
             <span className="eyebrow">
               <span /> 오늘은 어디 가볼까?
@@ -1156,19 +1249,18 @@ export default function App() {
               <Compass size={17} />
               계획은 가볍게, 하루는 특별하게
             </div>
-          </div>
-          <div className="hero-art" aria-hidden="true">
-            <div className="art-orbit" />
-            <div className="art-sun" />
-            <div className="art-mountain back" />
-            <div className="art-mountain front" />
-            <div className="art-road" />
-            <div className="art-flower flower-left">✿</div>
-            <div className="art-flower flower-right">✿</div>
-            <div className="art-label">
-              <MapPin size={17} /> 우리 동네의 새로운 발견
-            </div>
-            <span className="art-spark">✧</span>
+            {heroEvent && (
+              <button
+                className="hero-feature"
+                onClick={() => setSelected(heroEvent.id)}
+              >
+                <span>
+                  <small>이번 주말 먼저 보기</small>
+                  <strong>{heroEvent.title}</strong>
+                </span>
+                <ArrowRight size={18} />
+              </button>
+            )}
           </div>
         </section>
         <section className="discovery" aria-label="행사 검색 및 필터">
@@ -1347,142 +1439,163 @@ export default function App() {
                     : "내 주변 찾기"}
               </button>
             </div>
-            <div className="filter-row">
-              <span className="filter-label">누구와</span>
-              <div className="chips">
-                <button
-                  className={!audience ? "chip chosen" : "chip"}
-                  onClick={() => change(setAudience, "", "audience")}
-                  aria-pressed={!audience}
-                >
-                  누구든
-                </button>
-                {Object.entries(AUDIENCES).map(([v, label]) => (
-                  <button
-                    key={v}
-                    className={audience === v ? "chip chosen" : "chip"}
-                    onClick={() =>
-                      change(setAudience, audience === v ? "" : v, "audience")
-                    }
-                    aria-pressed={audience === v}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="filter-row">
-              <span className="filter-label">무엇을</span>
-              <div className="chips" ref={contentFilterRef} tabIndex={-1}>
-                <button
-                  className={!theme ? "chip chosen" : "chip"}
-                  onClick={() => change(setTheme, "", "theme")}
-                  aria-pressed={!theme}
-                >
-                  모두
-                </button>
-                {USER_CONTENT_FILTERS.map(({ queryValue: v, label }) => (
-                  <button
-                    key={v}
-                    className={theme === v ? "chip chosen" : "chip"}
-                    onClick={() =>
-                      change(setTheme, theme === v ? "" : v, "theme")
-                    }
-                    aria-pressed={theme === v}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {geoError && (
-              <p className="inline-error" role="alert">
-                {geoError}
-              </p>
-            )}
-            {location && (
-              <p className="distance-note">
-                위치는 이 탭의 메모리에만 두며, 거리 계산에는 반올림한 좌표만
-                사용합니다. 거리는 직선거리입니다.{" "}
-                <button
-                  onClick={() => {
-                    setLocation(null);
-                    setSort("date");
-                  }}
-                >
-                  위치 사용 해제
-                </button>
-              </p>
-            )}
-            {pushState !== "unsupported" && pushConfig?.enabled && (
-              <div className="push-control" aria-live="polite">
-                <div>
-                  <strong>
-                    <Bell size={16} />{" "}
-                    {pushState === "subscribed"
-                      ? "알림 받는 중"
-                      : "이 조건 알림받기"}
-                  </strong>
-                  <p>
-                    {pushState === "subscribed"
-                      ? `${pushScope.join(" · ")} 조건의 알림을 받고 있어요.`
-                      : "새 행사나 중요한 일정 변경이 확인되면 알려드려요."}
-                  </p>
-                </div>
-                {pushState === "subscribed" ? (
-                  <span className="push-actions">
-                    <button className="secondary" onClick={subscribePush}>
-                      조건 업데이트
+            <details
+              ref={advancedFiltersRef}
+              className="advanced-filters"
+              open={Boolean(
+                audience ||
+                  theme ||
+                  geoError ||
+                  location ||
+                  pushState === "subscribed",
+              )}
+            >
+              <summary>
+                <span>
+                  <SlidersHorizontal size={16} />
+                  세부 필터
+                </span>
+                <small>누구와 · 주제 · 알림</small>
+              </summary>
+              <div className="advanced-filter-body">
+                <div className="filter-row">
+                  <span className="filter-label">누구와</span>
+                  <div className="chips">
+                    <button
+                      className={!audience ? "chip chosen" : "chip"}
+                      onClick={() => change(setAudience, "", "audience")}
+                      aria-pressed={!audience}
+                    >
+                      누구든
                     </button>
-                    <button className="secondary" onClick={unsubscribePush}>
-                      알림 끄기
-                    </button>
-                  </span>
-                ) : pushState === "denied" ? (
-                  <span className="push-note">
-                    브라우저 설정에서 알림 권한을 변경할 수 있어요.
-                  </span>
-                ) : (
-                  <button className="primary" onClick={subscribePush}>
-                    이 조건 알림받기
-                  </button>
-                )}
-                {pushState !== "subscribed" && pushState !== "denied" && (
-                  <div
-                    className="push-types"
-                    role="group"
-                    aria-label="받을 알림 종류"
-                  >
-                    {(
-                      [
-                        ["new_event", "새 행사"],
-                        ["schedule_changed", "일정 변경"],
-                        ["cancelled_or_postponed", "취소·연기"],
-                      ] as const
-                    ).map(([key, label]) => (
-                      <label key={key}>
-                        <input
-                          type="checkbox"
-                          checked={pushTypes[key]}
-                          onChange={(event) =>
-                            setPushTypes((current) => ({
-                              ...current,
-                              [key]: event.target.checked,
-                            }))
-                          }
-                        />{" "}
+                    {Object.entries(AUDIENCES).map(([v, label]) => (
+                      <button
+                        key={v}
+                        className={audience === v ? "chip chosen" : "chip"}
+                        onClick={() =>
+                          change(setAudience, audience === v ? "" : v, "audience")
+                        }
+                        aria-pressed={audience === v}
+                      >
                         {label}
-                      </label>
+                      </button>
                     ))}
                   </div>
-                )}
-                {pushError && (
+                </div>
+                <div className="filter-row">
+                  <span className="filter-label">무엇을</span>
+                  <div className="chips" ref={contentFilterRef} tabIndex={-1}>
+                    <button
+                      className={!theme ? "chip chosen" : "chip"}
+                      onClick={() => change(setTheme, "", "theme")}
+                      aria-pressed={!theme}
+                    >
+                      모두
+                    </button>
+                    {USER_CONTENT_FILTERS.map(({ queryValue: v, label }) => (
+                      <button
+                        key={v}
+                        className={theme === v ? "chip chosen" : "chip"}
+                        onClick={() =>
+                          change(setTheme, theme === v ? "" : v, "theme")
+                        }
+                        aria-pressed={theme === v}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {geoError && (
                   <p className="inline-error" role="alert">
-                    {pushError}
+                    {geoError}
                   </p>
                 )}
+                {location && (
+                  <p className="distance-note">
+                    위치는 이 탭의 메모리에만 두며, 거리 계산에는 반올림한 좌표만
+                    사용합니다. 거리는 직선거리입니다.{" "}
+                    <button
+                      onClick={() => {
+                        setLocation(null);
+                        setSort("date");
+                      }}
+                    >
+                      위치 사용 해제
+                    </button>
+                  </p>
+                )}
+                {pushState !== "unsupported" && pushConfig?.enabled && (
+                  <div className="push-control" aria-live="polite">
+                    <div>
+                      <strong>
+                        <Bell size={16} />{" "}
+                        {pushState === "subscribed"
+                          ? "알림 받는 중"
+                          : "이 조건 알림받기"}
+                      </strong>
+                      <p>
+                        {pushState === "subscribed"
+                          ? `${pushScope.join(" · ")} 조건의 알림을 받고 있어요.`
+                          : "새 행사나 중요한 일정 변경이 확인되면 알려드려요."}
+                      </p>
+                    </div>
+                    {pushState === "subscribed" ? (
+                      <span className="push-actions">
+                        <button className="secondary" onClick={subscribePush}>
+                          조건 업데이트
+                        </button>
+                        <button className="secondary" onClick={unsubscribePush}>
+                          알림 끄기
+                        </button>
+                      </span>
+                    ) : pushState === "denied" ? (
+                      <span className="push-note">
+                        브라우저 설정에서 알림 권한을 변경할 수 있어요.
+                      </span>
+                    ) : (
+                      <button className="primary" onClick={subscribePush}>
+                        이 조건 알림받기
+                      </button>
+                    )}
+                    {pushState !== "subscribed" && pushState !== "denied" && (
+                      <div
+                        className="push-types"
+                        role="group"
+                        aria-label="받을 알림 종류"
+                      >
+                        {(
+                          [
+                            ["new_event", "새 행사"],
+                            ["schedule_changed", "일정 변경"],
+                            ["cancelled_or_postponed", "취소·연기"],
+                          ] as const
+                        ).map(([key, label]) => (
+                          <label key={key}>
+                            <input
+                              type="checkbox"
+                              checked={pushTypes[key]}
+                              onChange={(event) =>
+                                setPushTypes((current) => ({
+                                  ...current,
+                                  [key]: event.target.checked,
+                                }))
+                              }
+                            />{" "}
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    {pushError && (
+                      <p className="inline-error" role="alert">
+                        {pushError}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+            </details>
             {activeFilterLabels.length > 0 && (
               <div className="active-filters" aria-label="현재 선택한 조건">
                 <span className="active-filters-label">현재 조건</span>
@@ -1510,7 +1623,8 @@ export default function App() {
             <div>
               <span className="section-kicker">YOUR NEXT LITTLE ADVENTURE</span>
               <h2>
-                {selectedRangeLabel} {data && <span>{data.total}</span>}
+                {discoveryMode ? "이번 주말 먼저 볼 곳" : selectedRangeLabel}{" "}
+                {data && <span>{data.total}</span>}
               </h2>
               {data && (
                 <p>
@@ -1569,7 +1683,7 @@ export default function App() {
             </div>
           ) : busy ? (
             <div className="event-grid">
-              {[1, 2, 3].map((n) => (
+              {[1, 2, 3, 4].map((n) => (
                 <div key={n} className="skeleton">
                   <div />
                   <span />
@@ -1605,83 +1719,41 @@ export default function App() {
                 </button>
               </div>
             </div>
+          ) : discoveryMode && events.length > 4 ? (
+            <div className="discovery-results">
+              <section className="featured-events" aria-label="먼저 둘러볼 행사">
+                <div className="subsection-heading">
+                  <div>
+                    <span>FIRST LOOK</span>
+                    <h3>먼저 둘러볼 행사</h3>
+                  </div>
+                  <p>추천순에서 먼저 눈여겨볼 네 곳이에요.</p>
+                </div>
+                <div className="event-grid featured-grid">
+              {featuredEvents.map((event) => (
+                renderEventCard(event)
+              ))}
+                </div>
+              </section>
+              <section className="all-events-section" aria-label="더 둘러볼 행사">
+                <div className="subsection-heading">
+                  <div>
+                    <span>EXPLORE MORE</span>
+                    <h3>더 둘러보기</h3>
+                  </div>
+                  <p>{selectedRangeLabel}</p>
+                </div>
+                <div className="event-grid">
+              {listEvents.map((event) => (
+                renderEventCard(event)
+              ))}
+                </div>
+              </section>
+            </div>
           ) : (
             <div className="event-grid">
               {events.map((event) => (
-                <article className="event-card" key={event.id}>
-                  <button
-                    className="card-button"
-                    onClick={() => setSelected(event.id)}
-                    aria-label={`${event.title} 상세 보기`}
-                  >
-                    <Scene event={event} />
-                    <div className="card-content">
-                      <div className="card-meta">
-                        <span>
-                          <MapPin size={13} />
-                          {event.region}
-                        </span>
-                      </div>
-                      {sort === "recommended" && !location &&
-                        (() => {
-                          const reason = recommendationReasonLabel(
-                            event,
-                            eventDisplayRange,
-                            customRange ? "custom" : period,
-                          );
-                          return reason ? (
-                            <span className="recommendation-reason">
-                              {reason}
-                            </span>
-                          ) : null;
-                        })()}
-                      <h3>{event.title}</h3>
-                      <p className="venue">{event.venue}</p>
-                      <p className="event-date">
-                        <CalendarDays size={14} />
-                        {formatEventDateLabel({
-                          eventStart: event.start_date,
-                          eventEnd: event.end_date,
-                          selectedRange: eventDisplayRange,
-                          selectionMode: customRange ? "custom" : period,
-                        })}
-                        {location && (
-                          <span className="distance">
-                            {event.distance_km === null
-                              ? "거리 미확인"
-                              : displayDistance(event.distance_km)}
-                          </span>
-                        )}
-                      </p>
-                      {formatOperatingHours(event.operating_hours ?? null) && (
-                        <p className="event-hours">
-                          <Clock3 size={14} />
-                          {formatOperatingHours(event.operating_hours ?? null)}
-                        </p>
-                      )}
-                      <div className="card-tags">
-                        {event.tags.slice(0, 3).map((t) => (
-                          <span key={t}>#{tagLabel(t)}</span>
-                        ))}
-                      </div>
-                      <div
-                        className={`card-bottom${
-                          cardStatusLabel(event) ? " card-bottom-status" : ""
-                        }`}
-                      >
-                        {event.is_sample ? (
-                          <span>
-                            <Info size={13} />
-                            실제 행사가 아닌 샘플
-                          </span>
-                        ) : (
-                          <TrustInfo event={event} card />
-                        )}
-                        <ArrowRight size={17} />
-                      </div>
-                    </div>
-                  </button>
-                </article>
+                renderEventCard(event)
               ))}
             </div>
           )}

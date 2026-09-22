@@ -194,6 +194,9 @@ async function change(
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".event-card").first()).toBeVisible();
+  const advanced = page.locator(".advanced-filters");
+  if (!(await advanced.evaluate((element) => (element as HTMLDetailsElement).open)))
+    await page.locator(".advanced-filters > summary").click();
 });
 test("데스크톱·모바일 화면, 모든 카드 상세, 오류와 레이아웃", async ({
   page,
