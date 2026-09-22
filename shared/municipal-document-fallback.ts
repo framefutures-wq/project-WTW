@@ -32,6 +32,7 @@ export interface MunicipalMarkdownAI {
       conversionOptions?: {
         output?: { format?: "markdown" | "text" };
         pdf?: { metadata?: boolean };
+        image?: { descriptionLanguage?: string };
       };
     },
   ): Promise<MunicipalMarkdownResult | MunicipalMarkdownResult[]>;
@@ -113,33 +114,87 @@ const attachmentName = (url: string, fallback: string) => {
   }
 };
 
+const htmlText = (value: string) =>
+  value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#40;/gi, "(")
+    .replace(/&#41;/gi, ")")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const supportedExtension = (value: string) => {
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    // Keep the original value when a municipal URL contains malformed escapes.
+  }
+  const match = /\.([a-z0-9]+)(?=$|[?#\s"'()<>])/i.exec(decoded);
+  const extension = match?.[1]?.toLowerCase() ?? "";
+  return MIME_BY_EXTENSION[extension] ? extension : "";
+};
+
+const filenameFromContext = (value: string) => {
+  const text = htmlText(value);
+  const match =
+    /([^<>/\\|]+?\.(?:pdf|jpe?g|png|webp|svg|gif|bmp))(?=$|[\s"'()])/i.exec(
+      text,
+    );
+  return match?.[1]?.trim() ?? null;
+};
+
 export function extractMunicipalDocumentAttachments(
   source: MunicipalSourceDefinition,
   html: string,
 ): MunicipalDocumentAttachment[] {
   const found: MunicipalDocumentAttachment[] = [];
   const seen = new Set<string>();
-  for (const match of html.matchAll(/(?:href|src)=["']([^"']+)["']/gi)) {
-    const raw = match[1].replace(/&amp;/gi, "&").trim();
+
+  const consider = (rawValue: string, context = "") => {
+    const raw = rawValue.replace(/&amp;/gi, "&").trim();
     let url: string;
     try {
       url = new URL(raw, source.url).toString();
     } catch {
-      continue;
+      return;
     }
-    if (!municipalSourceAllowsUrl(source, url) || seen.has(url)) continue;
+    if (!municipalSourceAllowsUrl(source, url) || seen.has(url)) return;
+
+    const contextualName = filenameFromContext(context);
     const extension =
-      /\.([a-z0-9]+)(?:$|[?#])/i.exec(url)?.[1]?.toLowerCase() ?? "";
+      supportedExtension(url) || supportedExtension(contextualName ?? "");
     const supported = MIME_BY_EXTENSION[extension];
-    if (!supported) continue;
+    if (!supported) return;
+
     seen.add(url);
     found.push({
       url,
-      name: attachmentName(url, `municipal-${source.key}.${extension}`),
+      name:
+        contextualName ??
+        attachmentName(url, `municipal-${source.key}.${extension}`),
       kind: supported.kind,
       mimeType: supported.mimeType,
     });
-  }
+  };
+
+  // Korean municipal sites frequently serve files through extensionless
+  // download endpoints and expose the real filename only in link context.
+  for (const match of html.matchAll(
+    /<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi,
+  ))
+    consider(match[2], `${match[1]} ${match[3]} ${match[4]}`);
+
+  for (const match of html.matchAll(
+    /<img\b([^>]*?)src=["']([^"']+)["']([^>]*)>/gi,
+  ))
+    consider(match[2], `${match[1]} ${match[3]}`);
+
+  // Preserve support for simple markup and direct file URLs.
+  for (const match of html.matchAll(/(?:href|src)=["']([^"']+)["']/gi))
+    consider(match[1]);
+
   return found
     .sort((left, right) =>
       left.kind === right.kind ? 0 : left.kind === "pdf" ? -1 : 1,
@@ -308,7 +363,7 @@ export async function extractMunicipalDocumentCandidates({
             output: { format: "text" },
             ...(attachment.kind === "pdf"
               ? { pdf: { metadata: false } }
-              : {}),
+              : { image: { descriptionLanguage: "ko" } }),
           },
         },
       );
