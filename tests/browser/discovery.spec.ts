@@ -1,4 +1,11 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+async function scrollToLoadedResults(page: Page) {
+  await expect(page.locator(".event-card").first()).toBeVisible();
+  await page.locator(".results").evaluate((element) =>
+    element.scrollIntoView({ block: "start", behavior: "instant" }),
+  );
+}
 test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -113,7 +120,7 @@ test("초기 화면은 1365x768과 1920x900에서 행사까지 바로 이어진�
 test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toHaveCount(0);
-  await page.locator(".results").scrollIntoViewIfNeeded();
+  await scrollToLoadedResults(page);
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toBeVisible();
   const mobile = (page.viewportSize()?.width ?? 0) <= 760;
@@ -129,7 +136,7 @@ test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({
 test("데스크톱 스크롤 상단 탐색은 검색과 지역·카테고리가 겹치지 않는다", async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 0) <= 760, "모바일은 지역·카테고리 퀵 스위치를 숨깁니다.");
   await page.goto("/");
-  await page.locator(".results").scrollIntoViewIfNeeded();
+  await scrollToLoadedResults(page);
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
   await expect(page.locator(".region-quick-trigger")).toHaveCount(1);
   await expect(page.locator(".category-quick-trigger")).toHaveCount(1);
@@ -165,7 +172,7 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
 
-  await page.locator(".results").scrollIntoViewIfNeeded();
+  await scrollToLoadedResults(page);
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toBeVisible();
   await expect(page.locator(".region-quick-trigger")).not.toBeVisible();
