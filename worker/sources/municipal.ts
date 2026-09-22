@@ -64,7 +64,7 @@ export async function runMunicipalAutonomous(env: Env) {
       const extraction = extractMunicipalCandidates(source, list);
       let sourceCandidates: Array<{
         candidate: MunicipalCandidate;
-        mode: "registered" | "structured_event" | MunicipalDocumentMode;
+        mode: "registered" | "structured_event" | "generic_html" | MunicipalDocumentMode;
       }>;
       if (extraction.mode === "retry") {
         const documentFallback = await extractMunicipalDocumentCandidates({
@@ -81,7 +81,7 @@ export async function runMunicipalAutonomous(env: Env) {
           mode: item.mode,
         }));
       } else {
-        const extractionMode: "registered" | "structured_event" =
+        const extractionMode: "registered" | "structured_event" | "generic_html" =
           extraction.mode;
         sourceCandidates = extraction.candidates.map((candidate) => ({
           candidate,
@@ -175,6 +175,7 @@ export async function runMunicipalAutonomous(env: Env) {
       let retryExtractionMode:
         | "registered"
         | "structured_event"
+        | "generic_html"
         | MunicipalDocumentMode = "registered";
       const documentSnapshot = row.source_candidate_id.startsWith("doc-");
       if (candidate.official_url === source.url || documentSnapshot) {
@@ -182,7 +183,7 @@ export async function runMunicipalAutonomous(env: Env) {
         const extraction = extractMunicipalCandidates(source, detail);
         let refreshedCandidates: Array<{
           candidate: MunicipalCandidate;
-          mode: "registered" | "structured_event" | MunicipalDocumentMode;
+          mode: "registered" | "structured_event" | "generic_html" | MunicipalDocumentMode;
         }>;
         if (extraction.mode === "retry") {
           const documentFallback = await extractMunicipalDocumentCandidates({
@@ -195,7 +196,7 @@ export async function runMunicipalAutonomous(env: Env) {
             mode: item.mode,
           }));
         } else {
-          const extractionMode: "registered" | "structured_event" =
+          const extractionMode: "registered" | "structured_event" | "generic_html" =
             extraction.mode;
           refreshedCandidates = extraction.candidates.map((item) => ({
             candidate: item,

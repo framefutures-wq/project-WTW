@@ -34,6 +34,160 @@ const clean = (value: string) => value
 const absolute = (base: string, value: string | undefined) => value ? new URL(value, base).toString() : null;
 const validRange = (start: string, end: string) => /^20\d{2}-\d{2}-\d{2}$/.test(start) && /^20\d{2}-\d{2}-\d{2}$/.test(end) && start <= end;
 
+const blockText = (value: string) =>
+  clean(
+    value
+      .replace(/<br\s*\/?>/gi, " | ")
+      .replace(/<\/(?:td|th|li|p|div|article|section|h[1-6])\s*>/gi, " | "),
+  );
+
+const htmlAttribute = (html: string, attribute: string) =>
+  new RegExp(`${attribute}=["']([^"']+)["']`, "i").exec(html)?.[1] ?? null;
+
+const classValue = (html: string, classPattern: string) => {
+  const element = new RegExp(
+    `<([a-z0-9]+)[^>]*class=["'][^"']*${classPattern}[^"']*["'][^>]*>([\\s\\S]*?)<\\/\\1>`,
+    "i",
+  ).exec(html);
+  return element ? clean(element[2]) || null : null;
+};
+
+const labeledValue = (text: string, labels: string[]) => {
+  const match = new RegExp(
+    `(?:${labels.join("|")})\\s*[:：]\\s*([^\\n|｜]+)`,
+    "i",
+  ).exec(text);
+  return match ? match[1].trim() || null : null;
+};
+
+const toExplicitDate = (year: string, month: string, day: string) =>
+  `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+
+/** Accepts only dates that print their calendar year; generic extraction never fills one in. */
+const explicitDateRange = (value: string) => {
+  const text = value.replace(/\s+/g, " ");
+  const date = "(20\\d{2})\\s*(?:년|[.\\-/])\\s*(\\d{1,2})\\s*(?:월|[.\\-/])\\s*(\\d{1,2})\\s*(?:일|\\.)?";
+  const range = new RegExp(`${date}\\s*(?:[~∼]|부터|[-–])\\s*${date}`);
+  const matchedRange = range.exec(text);
+  if (matchedRange) {
+    const start_date = toExplicitDate(matchedRange[1], matchedRange[2], matchedRange[3]);
+    const end_date = toExplicitDate(matchedRange[4], matchedRange[5], matchedRange[6]);
+    return validRange(start_date, end_date) ? { start_date, end_date } : null;
+  }
+  const dates = [...text.matchAll(new RegExp(date, "g"))];
+  if (dates.length !== 1) return null;
+  const start_date = toExplicitDate(dates[0][1], dates[0][2], dates[0][3]);
+  return validRange(start_date, start_date)
+    ? { start_date, end_date: start_date }
+    : null;
+};
+
+const titleFromBlock = (html: string, text: string) =>
+  htmlAttribute(html, "data-title") ??
+  classValue(html, "(?:title|subject|name)") ??
+  labeledValue(text, ["행사명", "축제명", "공연명", "제목"]);
+
+const venueFromBlock = (html: string, text: string) =>
+  htmlAttribute(html, "data-venue") ??
+  classValue(html, "(?:venue|location|place)") ??
+  labeledValue(text, ["행사장", "장소", "위치", "venue", "location"]);
+
+const dateFromBlock = (html: string, text: string) => {
+  const explicit =
+    htmlAttribute(html, "data-date") ??
+    classValue(html, "(?:date|period|schedule)") ??
+    labeledValue(text, ["행사기간", "기간", "일시", "행사일", "날짜", "date"]);
+  return explicit ? explicitDateRange(explicit) : null;
+};
+
+const officialUrlFromBlock = (source: MunicipalSourceDefinition, html: string) => {
+  const href = /<a\b[^>]*href=["']([^"']+)["']/i.exec(html)?.[1];
+  if (!href) return source.url;
+  const resolved = absolute(source.url, href);
+  return resolved && municipalSourceAllowsUrl(source, resolved) ? resolved : null;
+};
+
+const genericCandidateFromBlock = (
+  source: MunicipalSourceDefinition,
+  html: string,
+): MunicipalCandidate | null => {
+  const text = blockText(html);
+  const title = titleFromBlock(html, text);
+  const dates = dateFromBlock(html, text);
+  const venue = venueFromBlock(html, text);
+  const official_url = officialUrlFromBlock(source, html);
+  if (!title || !dates || !venue || !official_url) return null;
+  const rawIdentity = `${official_url}|${title}|${dates.start_date}|${dates.end_date}|${venue}`;
+  return {
+    source: source.key,
+    source_candidate_id: normalizeMunicipalTitle(rawIdentity).slice(0, 120),
+    title,
+    ...dates,
+    region: source.region,
+    locality: source.locality,
+    venue,
+    official_url,
+    category: "공식 HTML 행사",
+    snippet: null,
+    image_candidate: null,
+  };
+};
+
+const tableRows = (source: MunicipalSourceDefinition, html: string) => {
+  const tables = html.match(/<table\b[\s\S]*?<\/table>/gi) ?? [];
+  return tables.flatMap((table) => {
+    const rows = table.match(/<tr\b[\s\S]*?<\/tr>/gi) ?? [];
+    const header = rows.find((row) => /<th\b/i.test(row));
+    if (!header) return [];
+    const labels = [...header.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map((cell) => clean(cell[1]));
+    const indexFor = (pattern: RegExp) => labels.findIndex((label) => pattern.test(label));
+    const titleIndex = indexFor(/행사명|축제명|공연명|제목/);
+    const dateIndex = indexFor(/행사기간|기간|일시|행사일|날짜/);
+    const venueIndex = indexFor(/행사장|장소|위치/);
+    if (titleIndex < 0 || dateIndex < 0 || venueIndex < 0) return [];
+    return rows.flatMap<MunicipalCandidate>((row) => {
+      if (!/<td\b/i.test(row)) return [];
+      const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map((cell) => cell[1]);
+      if (!cells[titleIndex] || !cells[dateIndex] || !cells[venueIndex]) return [];
+      const title = clean(cells[titleIndex]);
+      const dates = explicitDateRange(blockText(cells[dateIndex]));
+      const venue = clean(cells[venueIndex]) || null;
+      const official_url = officialUrlFromBlock(source, cells[titleIndex]);
+      if (!title || !dates || !venue || !official_url) return [];
+      const rawIdentity = `${official_url}|${title}|${dates.start_date}|${dates.end_date}|${venue}`;
+      return [{
+        source: source.key,
+        source_candidate_id: normalizeMunicipalTitle(rawIdentity).slice(0, 120),
+        title,
+        ...dates,
+        region: source.region,
+        locality: source.locality,
+        venue,
+        official_url,
+        category: "공식 HTML 행사",
+        snippet: null,
+        image_candidate: null,
+      }];
+    });
+  });
+};
+
+/** Reads only repeated, self-contained blocks. It intentionally never joins fields across blocks. */
+export function parseGenericMunicipalHtml(
+  source: MunicipalSourceDefinition,
+  html: string,
+): MunicipalCandidate[] {
+  const tableCandidates = tableRows(source, html);
+  const listBlocks = html.match(/<li\b[\s\S]*?<\/li>/gi) ?? [];
+  const cardBlocks = html.match(
+    /<(?:article|div|section)\b[^>]*class=["'][^"']*(?:card|item|event)[^"']*["'][^>]*>[\s\S]*?<\/(?:article|div|section)>/gi,
+  ) ?? [];
+  const blockCandidates = [...listBlocks, ...cardBlocks]
+    .map((block) => genericCandidateFromBlock(source, block))
+    .filter((candidate): candidate is MunicipalCandidate => candidate !== null);
+  return [...new Map([...tableCandidates, ...blockCandidates].map((candidate) => [candidate.source_candidate_id, candidate])).values()];
+}
+
 export function parsePajuList(html: string): MunicipalCandidate[] {
   const rows = html.match(/<li>[\s\S]*?<\/li>/gi) ?? [];
   return rows.flatMap<MunicipalCandidate>((row) => {
@@ -348,7 +502,7 @@ export function extractMunicipalCandidates(
   source: MunicipalSourceDefinition,
   html: string,
 ): {
-  mode: "registered" | "structured_event" | "retry";
+  mode: "registered" | "structured_event" | "generic_html" | "retry";
   candidates: MunicipalCandidate[];
   assessment: ReturnType<typeof assessMunicipalSourceDocument>;
 } {
@@ -367,7 +521,18 @@ export function extractMunicipalCandidates(
       return { mode: "structured_event", candidates, assessment };
   }
 
-  // PDF/image signals are intentionally detected but not guessed from.
-  // Until their extractor is explicitly verified, keep last-known-good and retry.
+  if (
+    source.ingestion === "generic_fallback" &&
+    assessment.observedSignals.some((signal) =>
+      signal === "html_table" || signal === "html_list" || signal === "html_cards",
+    )
+  ) {
+    const candidates = parseGenericMunicipalHtml(source, html);
+    if (candidates.length)
+      return { mode: "generic_html", candidates, assessment };
+  }
+
+  // PDF/image signals are intentionally detected but not guessed from here.
+  // The municipal worker may pass them to its existing verified document fallback.
   return { mode: "retry", candidates: [], assessment };
 }
