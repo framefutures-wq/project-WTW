@@ -463,6 +463,8 @@ Production 주의:
 
 ## 20. UI / 상세 v2 제품 결정 (2026-09-23)
 
+> 세부 고정 설계 계약: `docs/UI_V2_DIRECTION.md` — UI 작업 전 반드시 읽고, 새 세션에서도 대화 기억보다 이 문서를 우선한다.
+
 ### 작업 순서
 
 - 현재 usage limit으로 끊긴 municipal onboarding 작업을 먼저 마무리한다.
