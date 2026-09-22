@@ -39,6 +39,7 @@ import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
 import { selectProgramOccurrenceGroup } from "../shared/program-occurrence-selection";
+import { deriveEventDetailInfo } from "../shared/event-derived-info";
 import { formatProgramTime } from "../shared/event-program-time";
 import {
   formatOperatingHours,
@@ -2035,6 +2036,16 @@ export default function App() {
             const description =
               detail.enrichment?.summary ??
               usefulDescription(detail.event.description);
+            const derivedInfo = deriveEventDetailInfo({
+              startDate: detail.event.start_date,
+              endDate: detail.event.end_date,
+              programs: detail.enrichment?.programs,
+              today: koreaDate(),
+            });
+            const showDerivedInfo =
+              detail.event.status !== "cancelled" &&
+              detail.event.status !== "postponed" &&
+              derivedInfo.state !== null;
             return (
               <div className="detail-shell">
                 <div className="detail-hero-grid">
@@ -2085,6 +2096,27 @@ export default function App() {
                         </article>
                       )}
                     </div>
+                    {showDerivedInfo && (
+                      <div className="detail-glance" aria-label="갈틈 한눈에 보기">
+                        <span className="detail-glance-heading">갈틈 한눈에 보기</span>
+                        <span className="detail-glance-status">
+                          {derivedInfo.state === "ongoing" ? "진행중" : "예정"}
+                          {derivedInfo.dDay && ` · ${derivedInfo.dDay}`}
+                        </span>
+                        {derivedInfo.duration && (
+                          <span>
+                            {derivedInfo.duration}
+                            {derivedInfo.weekday &&
+                              ` · ${derivedInfo.weekday} 시작`}
+                          </span>
+                        )}
+                        {derivedInfo.todayPrograms.length > 0 && (
+                          <span className="detail-glance-programs">
+                            오늘 프로그램 · {derivedInfo.todayPrograms.join(", ")}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {officialUrl && (
                       <a
                         className="primary source-button detail-official-link detail-official-link-top"

@@ -50,6 +50,15 @@ test("detail v2 prioritizes date and venue, then CTA and populated content", () 
   assert.match(redesign, /\.detail-body > \.detail-source-row\s*\{\s*order: 9/);
 });
 
+test("detail renders derived event status without replacing official status notices", () => {
+  assert.match(app, /deriveEventDetailInfo/);
+  assert.match(app, /detail-glance/);
+  assert.match(app, /detail\.event\.status !== "cancelled"/);
+  assert.match(app, /detail\.event\.status !== "postponed"/);
+  assert.match(app, /오늘 프로그램/);
+  assert.match(redesign, /\.detail-glance-status\s*\{[^}]*color: #c34f24/);
+});
+
 test("detail content follows the user-first hierarchy", () => {
   assert.match(app, /detail-official-link/);
   assert.match(app, /detail-event-tags/);
