@@ -5,8 +5,8 @@
 
 ## 1. 작업 순서
 
-1. usage limit으로 끊긴 태백시 / 서울 한강 municipal onboarding 작업을 현재 working tree에서 이어서 마무리한다.
-2. 그 다음 전국 coverage 확대를 잠시 멈추고 UI / 브랜드 시스템 v2를 먼저 완성한다.
+1. ✅ 태백시 / 서울 한강 municipal generic onboarding 완료 (`8af623e`).
+2. **현재 단계: 전국 coverage 확대를 잠시 멈추고 UI / 브랜드 시스템 v2를 완성한다.**
 3. UI 작업에는 상세 정보구조 v2 + 갈틈 파생정보 레이어 + adaptive media fallback을 포함한다.
 4. UI/상세 v2가 안정되면 공식 상세 enrichment 품질을 확대한다.
 5. 이후 전국 municipal coverage 확장을 재개한다.
