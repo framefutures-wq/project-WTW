@@ -1,6 +1,10 @@
+import type { MunicipalMarkdownAI } from "../shared/municipal-document-fallback";
+
 export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
+  /** Optional until the production Workers AI binding is explicitly enabled. */
+  AI?: MunicipalMarkdownAI;
   APP_MODE: "sample" | "production";
   TOUR_API_ENABLED: string;
   /** Cloudflare Secret 전용. 현재 값 없음. */

@@ -1,5 +1,6 @@
 import { createEnrichmentCandidate, extractMunicipalCandidates, hasMunicipalDetailCoreConflict, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
 import { municipalSourceAllowsUrl, MUNICIPAL_SOURCE_REGISTRY } from "../../shared/municipal-source-registry";
+import { extractMunicipalDocumentCandidates, type MunicipalDocumentMode } from "../../shared/municipal-document-fallback";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
 import type { Env } from "../env";
@@ -61,14 +62,35 @@ export async function runMunicipalAutonomous(env: Env) {
     try {
       const list = await official(source.url);
       const extraction = extractMunicipalCandidates(source, list);
-      if (extraction.mode === "retry")
-        throw new Error(
-          `source_${extraction.assessment.status}:${extraction.assessment.reason}`,
-        );
-      const candidates = extraction.candidates.slice(0, MAX_PER_SOURCE);
+      let sourceCandidates: Array<{
+        candidate: MunicipalCandidate;
+        mode: "registered" | "structured_event" | MunicipalDocumentMode;
+      }>;
+      if (extraction.mode === "retry") {
+        const documentFallback = await extractMunicipalDocumentCandidates({
+          ai: env.AI,
+          source,
+          html: list,
+        });
+        if (!documentFallback.candidates.length)
+          throw new Error(
+            `source_${extraction.assessment.status}:${extraction.assessment.reason}:${documentFallback.status}`,
+          );
+        sourceCandidates = documentFallback.candidates.map((item) => ({
+          candidate: item.candidate,
+          mode: item.mode,
+        }));
+      } else {
+        sourceCandidates = extraction.candidates.map((candidate) => ({
+          candidate,
+          mode: extraction.mode,
+        }));
+      }
+      const candidates = sourceCandidates.slice(0, MAX_PER_SOURCE);
       if (!candidates.length) throw new Error("source_parse_zero_candidates");
       if (candidates.length >= MAX_PER_SOURCE) throw new Error("source_candidate_circuit_breaker");
-      for (const candidate of candidates) {
+      for (const sourceCandidate of candidates) {
+        const { candidate, mode: candidateMode } = sourceCandidate;
         summary.discovered += 1;
         const id = candidateId(candidate.source, candidate.source_candidate_id, candidate.start_date);
         processed.add(id);
@@ -76,7 +98,7 @@ export async function runMunicipalAutonomous(env: Env) {
         summary.rows_read += duplicateResult.rows;
         let detailError = false, detailCoreConflict = false, enrichment: ReturnType<typeof createEnrichmentCandidate> | null = null;
         if (gate.gate === "MAIN" && duplicateResult.decision === "NEW" && !candidate.parse_error) {
-          if (extraction.mode === "structured_event") {
+          if (candidateMode === "structured_event" || candidateMode === "pdf_text") {
             // The official source page already supplied explicit machine-readable
             // core facts. Do not require a second HTML page or infer extra facts.
             enrichment = {
@@ -138,21 +160,42 @@ export async function runMunicipalAutonomous(env: Env) {
       if (!source || !row.title_snapshot || !row.venue_snapshot || !row.official_url_snapshot) continue;
       let candidate: MunicipalCandidate = { source: row.source_key, source_candidate_id: row.source_candidate_id, title: row.title_snapshot, start_date: row.start_date_snapshot, end_date: row.end_date_snapshot, venue: row.venue_snapshot, locality: row.locality_snapshot || source.locality, region: source.region, official_url: row.official_url_snapshot, category: null, snippet: null, image_candidate: null };
       let detail: string;
-      let retryExtractionMode: "registered" | "structured_event" = "registered";
-      if (candidate.official_url === source.url) {
+      let retryExtractionMode:
+        | "registered"
+        | "structured_event"
+        | MunicipalDocumentMode = "registered";
+      const documentSnapshot = row.source_candidate_id.startsWith("doc-");
+      if (candidate.official_url === source.url || documentSnapshot) {
         detail = await official(source.url);
         const extraction = extractMunicipalCandidates(source, detail);
-        if (extraction.mode === "retry")
-          throw new Error(
-            `source_${extraction.assessment.status}:${extraction.assessment.reason}`,
-          );
-        retryExtractionMode = extraction.mode;
-        const refreshed = extraction.candidates.find(
-          (item) => item.source_candidate_id === candidate.source_candidate_id,
+        let refreshedCandidates: Array<{
+          candidate: MunicipalCandidate;
+          mode: "registered" | "structured_event" | MunicipalDocumentMode;
+        }>;
+        if (extraction.mode === "retry") {
+          const documentFallback = await extractMunicipalDocumentCandidates({
+            ai: env.AI,
+            source,
+            html: detail,
+          });
+          refreshedCandidates = documentFallback.candidates.map((item) => ({
+            candidate: item.candidate,
+            mode: item.mode,
+          }));
+        } else {
+          refreshedCandidates = extraction.candidates.map((item) => ({
+            candidate: item,
+            mode: extraction.mode,
+          }));
+        }
+        const refreshed = refreshedCandidates.find(
+          (item) =>
+            item.candidate.source_candidate_id === candidate.source_candidate_id,
         );
+        if (refreshed) retryExtractionMode = refreshed.mode;
         // Canonical lists are current authority: an absent identity may never publish from an old snapshot.
         if (!refreshed) { summary.AUTO_RETRY += 1; continue; }
-        candidate = refreshed;
+        candidate = refreshed.candidate;
       } else {
         if (!municipalSourceAllowsUrl(source, candidate.official_url))
           throw new Error("detail_host_not_allowed");
@@ -161,10 +204,11 @@ export async function runMunicipalAutonomous(env: Env) {
       const gate = selectMunicipalGate(candidate), duplicateResult = await duplicate(env, candidate, row.candidate_id);
       summary.rows_read += duplicateResult.rows;
       const enrichment =
-        retryExtractionMode === "structured_event"
+        retryExtractionMode === "structured_event" ||
+        retryExtractionMode === "pdf_text"
           ? { summary: candidate.snippet, operating_hours: null, programs: [] }
           : createEnrichmentCandidate(candidate, detail);
-      const decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(candidate, koreaToday), trusted: true, coreValid: Boolean(candidate.title && candidate.start_date && candidate.end_date && candidate.venue && candidate.official_url), parserError: Boolean(candidate.parse_error), detailError: Boolean(enrichment.parse_error), coreConflict: candidate.official_url !== source.url && retryExtractionMode !== "structured_event" && hasMunicipalDetailCoreConflict(candidate, detail) });
+      const decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(candidate, koreaToday), trusted: true, coreValid: Boolean(candidate.title && candidate.start_date && candidate.end_date && candidate.venue && candidate.official_url), parserError: Boolean(candidate.parse_error), detailError: Boolean(enrichment.parse_error), coreConflict: candidate.official_url !== source.url && retryExtractionMode !== "structured_event" && retryExtractionMode !== "pdf_text" && hasMunicipalDetailCoreConflict(candidate, detail) });
       summary[decision.state] += 1;
       const payloadHash = await hash({ title: candidate.title, start_date: candidate.start_date, end_date: candidate.end_date, venue: candidate.venue, official_url: candidate.official_url });
       const existing = await env.DB.prepare("SELECT id,start_date,end_date,status FROM events WHERE id=? LIMIT 1").bind(row.candidate_id).first<{ id: string; start_date: string; end_date: string; status: string }>();
