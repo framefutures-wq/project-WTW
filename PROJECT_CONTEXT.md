@@ -1,6 +1,6 @@
 # 갈틈 프로젝트 컨텍스트
 
-> 마지막 갱신: 2026-09-22
+> 마지막 갱신: 2026-09-23
 >
 > 이 문서는 대화 전체를 그대로 저장하는 로그가 아니라, 새 ChatGPT/Codex 세션에서도 작업을 바로 이어갈 수 있도록 **현재 상태·결정사항·운영 원칙·다음 작업**만 압축해 보존하는 handoff 문서다.
 
@@ -254,12 +254,12 @@ Audit:
 
 현재 우선순위:
 
-1. **Municipal Zero-Human v2** 설계·구현
-2. 전국 지자체 coverage 확장: `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입한다. HTML core는 같은 block의 명시적 title·full-year date·venue만 허용하며, 불명확하면 기존 retry·confirmation 정책을 유지한다. 2026-09-22 서초구·청주시 재검증도 Registry 추가 조건을 충족하지 못했다. 상세 사유: `docs/municipal-source-survey-2026-09-22.md`.
-3. 10시 base 완료 즉시 detail handoff + 11시 watchdog/recovery 구현
-4. Search Console `sitemap.xml` 제출 상태 확인
-5. 무료 공개 후 실제 traffic 관찰
-6. 수익화는 traffic 확보 뒤 진행
+1. **중단된 municipal onboarding 작업만 먼저 마무리**한다. usage limit으로 끊긴 태백시 / 서울 한강 후보 작업은 현재 working tree를 보존해 이어서 완료하고 relevant tests → commit/push → clean까지 닫는다.
+2. **갈틈 UI / 브랜드 시스템 v2를 다음 최우선 작업으로 진행**한다. 전국 coverage 확대는 이 UI 경계가 끝날 때까지 잠시 멈춘다.
+3. **상세페이지 정보구조 v2 + 갈틈 파생정보 레이어 + adaptive media fallback**을 UI 개편에 포함한다. 기준 샘플은 `서울 왕궁수문장 교대의식`이다.
+4. UI/상세 v2가 안정되면 **공식 상세정보 자동 보강 품질**을 확대한다. organizer/municipality/TourAPI 등 공식 근거가 있는 소개·운영시간·프로그램·문의·요금·이미지만 사용한다.
+5. 그 다음 **전국 지자체 coverage 확대**를 재개한다. `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입하며, 불명확한 core는 기존 retry·confirmation/last-known-good 정책을 유지한다.
+6. Search Console `sitemap.xml` 제출 상태 확인 → 무료 공개 traffic 관찰 → traffic 확보 뒤 수익화 순서로 진행한다.
 
 수익화는 현재 보류한다.
 
@@ -459,3 +459,89 @@ Production 주의:
 - AI binding이 존재하더라도 flag=false면 PDF/image fallback은 AI 호출을 하지 않는다.
 - 2026-09-22 사용자 요청으로 기존 `weekend-mwohae` Worker에 AI binding과 flag=true를 배포했다. 코드 commit `ef7f76c11c9657088c481627ea18f376d0fbfe5b`, Cloudflare Version ID `2df9c820-c6a8-492f-bb4f-401fe8960611`.
 - 배포 로그에서 `env.AI`와 `MUNICIPAL_DOCUMENT_AI_ENABLED ("true")`를 확인했다. production smoke와 desktop/mobile UI 2/2가 통과했다. D1 데이터 삽입이나 Cron 강제 실행은 하지 않았다.
+
+
+## 20. UI / 상세 v2 제품 결정 (2026-09-23)
+
+### 작업 순서
+
+- 현재 usage limit으로 끊긴 municipal onboarding 작업을 먼저 마무리한다.
+- 그 다음 데이터 coverage 확대를 잠시 멈추고 **홈 / 카드 / 상세 / 모바일 UI를 한 디자인 시스템으로 정리**한다.
+- UI/상세 v2가 안정된 뒤 상세 enrichment 품질 확대와 전국 coverage 확장을 재개한다.
+
+### 톤앤매너 / 컬러 시스템
+
+갈틈의 목표 인상은 **따뜻한 여행 감성 + 선명한 결정감 + 공식정보 신뢰**다.
+
+- background / canvas: 웜 아이보리 `#F7F4EE`
+- primary ink / structure: 차콜 `#171A1D`
+- secondary ink: `#343A40`
+- brand accent / discovery / primary action: 따뜻한 오렌지 `#F26B38` 계열
+- official / verified trust state: 절제된 딥그린
+- card surface: 흰색 또는 사진 중심
+- 회색 텍스트는 현재보다 명도를 낮춰 가독성을 높인다.
+- 감각적 비율은 neutral 70 / photo+charcoal 20 / orange accent 10 정도를 기준으로 한다.
+- 아이보리는 브랜드 포인트가 아니라 **배경 canvas** 역할이다.
+- 초록은 브랜드 전반에 흩뿌리지 않고 **공식 확인·신뢰 상태에만 제한**한다.
+- 현재처럼 초록/보라/베이지/검정이 혼재해 브랜드 색이 불명확한 상태를 정리한다.
+
+UI benchmark:
+- **Klook**: 탐색 효율 / 검색·필터 / 카드 밀도
+- **Fever**: 이미지 존재감 / 감성적 비주얼 톤
+- **GetYourGuide**: 상세 정보 위계 / 핵심 CTA 구조
+- 갈틈 고유 강점: **공식정보 신뢰성과 변경 추적**
+
+### UI 구조 원칙
+
+- 홈은 검색과 행사 이미지가 주인공이다.
+- 버튼·테두리·칩을 줄여 관리화면 같은 인상을 제거한다.
+- 행사 카드 기본 위계는 **이미지 → 추천 이유 → 행사명 → 날짜 → 장소**다.
+- 추천 영역은 일반 목록과 시각적으로 구분한다.
+- 모바일은 PC 축소판이 아니라 별도 정보 밀도와 가독성으로 조정한다.
+- 박스 수를 늘리는 대신 이미지, 타이포, 명도 대비, 여백으로 위계를 만든다.
+- 현재의 “맹하고 평평한 느낌”을 없애는 것을 UI v2의 명시적 품질 목표로 둔다.
+
+### 상세페이지 정보구조 v2
+
+상세 기본 순서:
+**대표사진 → 제목 → 언제/어디서 → 공식 안내 CTA → 볼거리 → 시간표 → 프로그램 → 소개 → 지도/주변행사 → 출처**
+
+- 날짜·장소·문의 등을 동일한 회색 박스로 나열하지 않는다.
+- 사용자가 가장 먼저 판단하는 **언제 / 어디서**를 더 강하게 노출한다.
+- 주요 일정은 문장 나열 대신 **timeline**으로 표현한다.
+- 프로그램은 개별 **card**로 구성해 실제 콘텐츠 양이 보이도록 한다.
+- 공식 출처 / 마지막 확인 정보는 본문 하단으로 내린다.
+- optional 정보가 없으면 `미확인` 박스를 만들지 않고 **섹션 자체를 숨긴다**.
+- 정보량에 따라 상세 레이아웃이 자연스럽게 압축/확장되는 adaptive 구조로 만든다.
+
+### 상세 데이터 3층 구조
+
+상세 페이지를 풍성하게 만들되 사실을 창작하지 않는다.
+
+1. **공식 사실**
+   - 행사명, 날짜, 시간, 장소, 프로그램, 요금, 주차, 문의 등 공식 근거가 있는 정보.
+2. **갈틈이 안전하게 계산·재구성한 정보**
+   - 요일, 행사 기간, D-day, 진행중/예정, 오늘 볼 수 있는 프로그램, 날짜별 일정 재구성, 위치 기반 거리 등.
+3. **갈틈이 연결한 탐색 정보**
+   - 같은 날짜/지역 행사, 같은 장소의 다른 행사, 비슷한 테마 행사, 주변 행사 등.
+
+주차 가능 여부, 반려동물 가능, 입장료, 프로그램 내용처럼 새로운 사실은 공식 근거가 없으면 생성하지 않는다.
+
+### 상세 미디어 fallback 정책
+
+갈틈은 갤러리 칸을 채우기 위해 **AI로 실제 행사 현장·장소·프로그램 모습을 상상 생성하지 않는다.**
+
+미디어 우선순위:
+1. 행사/주최기관의 공식 대표 이미지.
+2. 사용 권한과 공식 출처를 확인할 수 있는 공식 추가 이미지.
+3. 이미지가 적으면 갤러리 수를 줄이고 **레이아웃 자체를 이미지 수에 맞게 변경**한다.
+4. 공식 이미지가 0장이면 갈틈의 타이포·도형·카테고리 아이콘으로 만든 **명백한 정보형 브랜드 그래픽**을 사용할 수 있다.
+5. 실제 행사 사진으로 오인될 수 있는 AI 생성 현장 이미지, 임의 장소 이미지, 출처/권리 불명 이미지는 fallback으로 사용하지 않는다.
+
+예:
+- 4~5장: 풍성한 gallery
+- 2장: main 1 + secondary 1
+- 1장: 한 장을 크게 사용하는 완성형 layout
+- 0장: 날짜/지역/카테고리/공식정보 중심의 갈틈 브랜드 graphic + 정보 중심 상세
+
+이미지가 부족한 경우 빈 썸네일 슬롯을 만들지 않는다. 사진 대신 timeline, 지도, 공식 fact, 프로그램 카드, 주변행사 등 **검증된 정보의 시각화**로 밀도를 만든다.
