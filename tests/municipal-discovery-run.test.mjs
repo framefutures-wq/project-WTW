@@ -12,6 +12,7 @@ test("dry-run marks existing municipal events duplicate, skips EXCLUDE detail, a
       if (url === "https://www.swcf.or.kr/?p=29") return readFileSync("fixtures/municipal-discovery-suwon.html", "utf8");
       if (url.includes("goyang.go.kr/visitgoyang/www/contents.do?key=595")) return readFileSync("fixtures/municipal-discovery-goyang.html", "utf8");
       if (url.includes("tour.hscity.go.kr/NEW/6festival/festival5.jsp")) return readFileSync("fixtures/municipal-discovery-hwaseong.html", "utf8");
+      if (url.includes("bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003")) return readFileSync("fixtures/municipal-discovery-bucheon.html", "utf8");
       if (url.includes("cultMstSn=940")) return "2026년 제18회 문산거리축제 운영시간 12:00~21:00";
       if (url.includes("cultMstSn=941")) return "2026년 제11회 심학산 둘레길 축제 공식 상세";
       return "공식 상세";
@@ -25,5 +26,6 @@ test("dry-run marks existing municipal events duplicate, skips EXCLUDE detail, a
   assert.equal(excluded?.selection_gate, "EXCLUDE");
   assert.equal(calls.includes(excluded.official_url), false);
   assert.equal(simhaksan?.ready_for_review, true);
+  assert.equal(report.summary.by_source.bucheon, 4);
   assert.equal(report.summary.d1_rows_written, 0);
 });
