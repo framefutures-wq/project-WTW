@@ -897,10 +897,23 @@ footer small {
 }
 
 .detail-dialog .scene-detail {
-  min-height: 410px;
-  height: 100%;
-  max-height: none;
+  min-height: 0;
+  height: auto;
+  max-height: 360px;
+  aspect-ratio: 4 / 3;
+  align-self: start;
+  overflow: hidden;
   border-radius: 18px;
+  background: #151a1f;
+}
+
+.detail-dialog .scene-detail .scene-image-backdrop {
+  opacity: .34;
+  filter: blur(22px) brightness(.72);
+}
+
+.detail-dialog .scene-detail .scene-image-foreground {
+  object-position: center;
 }
 
 .detail-summary-panel {
@@ -1159,8 +1172,9 @@ footer small {
 
   .detail-dialog .scene-detail {
     min-height: 0;
-    height: 300px;
-    max-height: 300px;
+    height: auto;
+    max-height: 320px;
+    aspect-ratio: 4 / 3;
     border-radius: 20px 20px 0 0;
   }
 
@@ -1488,8 +1502,9 @@ footer small {
 
   .detail-dialog .scene-detail {
     min-height: 0;
-    height: 260px;
-    max-height: 260px;
+    height: auto;
+    max-height: 300px;
+    aspect-ratio: 4 / 3;
     border-radius: 0;
   }
 
