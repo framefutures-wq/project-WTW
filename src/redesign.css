@@ -133,10 +133,10 @@ main {
 
 /* Hero: use a real verified event image when one exists. */
 .hero {
-  min-height: 218px;
-  margin: 12px 0 0;
-  padding: 20px 32px;
-  border-radius: 22px;
+  min-height: 188px;
+  margin: 10px 0 0;
+  padding: 18px 28px;
+  border-radius: 18px;
   color: #fff;
   background: linear-gradient(120deg, #161d24 0%, #27333a 46%, #6f5b45 100%);
   overflow: hidden;
@@ -177,14 +177,14 @@ main {
 }
 
 .hero-copy {
-  max-width: 790px;
+  max-width: 920px;
   position: relative;
   z-index: 1;
 }
 
 .hero .eyebrow {
   color: #f6d995;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .hero .eyebrow > span {
@@ -192,10 +192,11 @@ main {
 }
 
 h1 {
-  font-size: clamp(34px, 2.8vw, 46px);
-  line-height: 1.01;
-  letter-spacing: -2.5px;
-  margin: 6px 0 8px;
+  font-size: clamp(30px, 2.25vw, 38px);
+  line-height: 1.06;
+  letter-spacing: -2px;
+  margin: 4px 0 6px;
+  white-space: nowrap;
 }
 
 h1 > span {
@@ -204,8 +205,8 @@ h1 > span {
 
 .hero-copy > p {
   color: rgba(255, 255, 255, .84);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .hero-note {
@@ -213,10 +214,10 @@ h1 > span {
 }
 
 .hero-search {
-  width: min(620px, 100%);
-  margin-top: 12px;
-  padding: 4px;
-  border-radius: 12px;
+  width: min(560px, 100%);
+  margin-top: 10px;
+  padding: 3px;
+  border-radius: 11px;
   background: #fff;
   display: flex;
   align-items: center;
@@ -226,7 +227,7 @@ h1 > span {
 
 .hero-search-field {
   min-width: 0;
-  height: 40px;
+  height: 36px;
   padding: 0 9px 0 12px;
   display: flex;
   align-items: center;
@@ -262,8 +263,8 @@ h1 > span {
 }
 
 .hero-search-submit {
-  height: 40px;
-  padding: 0 18px;
+  height: 36px;
+  padding: 0 16px;
   border-radius: 9px;
   background: #111820;
   color: #fff;
@@ -283,14 +284,15 @@ h1 > span {
 /* Search is primary; categories and filters stay close to the content. */
 .quick-discovery {
   margin-top: 12px;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: end;
+  gap: 14px;
 }
 
 .quick-discovery-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 6px;
+  display: block;
+  margin: 0;
 }
 
 .quick-discovery-heading span {
@@ -298,9 +300,9 @@ h1 > span {
 }
 
 .quick-discovery-heading h2 {
-  margin: 0;
-  font-size: 20px;
-  letter-spacing: -.9px;
+  margin: 0 0 10px;
+  font-size: 18px;
+  letter-spacing: -.8px;
 }
 
 .quick-discovery-heading p {
@@ -310,12 +312,12 @@ h1 > span {
 .quick-category-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 9px;
+  gap: 8px;
 }
 
 .quick-category {
-  min-height: 50px;
-  padding: 7px 10px;
+  min-height: 44px;
+  padding: 6px 9px;
   border: 1px solid #e1e4e7;
   border-radius: 16px;
   background: #fff;
@@ -339,9 +341,9 @@ h1 > span {
 }
 
 .quick-category-symbol {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
   border-radius: 10px;
   background: #f3f4f5;
   display: grid;
@@ -361,7 +363,7 @@ h1 > span {
 }
 
 .quick-category strong {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .quick-category small {
@@ -369,8 +371,8 @@ h1 > span {
 }
 
 .discovery {
-  margin-top: 10px;
-  padding: 8px 0 8px;
+  margin-top: 8px;
+  padding: 7px 0 7px;
   border-top: 1px solid #eceef0;
   border-bottom: 1px solid #eceef0;
   background: #fff;
@@ -573,7 +575,7 @@ h1 > span {
 
 /* Results: editorial hierarchy first, database metadata second. */
 .results {
-  margin-top: 20px;
+  margin-top: 16px;
   scroll-margin-top: 76px;
 }
 
@@ -936,6 +938,15 @@ footer small {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .quick-discovery {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .quick-discovery-heading h2 {
+    margin-bottom: 0;
+  }
+
   .quick-category-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -949,7 +960,11 @@ footer small {
   }
 
   .hero {
-    padding: 28px 34px;
+    padding: 18px 24px;
+  }
+
+  h1 {
+    white-space: normal;
   }
 }
 
@@ -998,6 +1013,7 @@ footer small {
 
   .quick-discovery {
     margin-top: 16px;
+    display: block;
   }
 
   .quick-discovery-heading {
@@ -1006,6 +1022,7 @@ footer small {
   }
 
   .quick-discovery-heading h2 {
+    margin-bottom: 12px;
     font-size: 22px;
   }
 
@@ -1048,7 +1065,7 @@ footer small {
 
   .hero {
     margin: 8px -16px 0;
-    min-height: 286px;
+    min-height: 270px;
     padding: 24px 20px 20px;
     border-radius: 0;
     align-items: flex-end;
