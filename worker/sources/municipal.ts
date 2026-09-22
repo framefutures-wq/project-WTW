@@ -1,4 +1,4 @@
-import { createEnrichmentCandidate, hasMunicipalDetailCoreConflict, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
+import { createEnrichmentCandidate, hasMunicipalDetailCoreConflict, parseBucheonAutumnList, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
 import type { Env } from "../env";
@@ -9,6 +9,7 @@ const SOURCES = [
   { key: "suwon", url: "https://www.swcf.or.kr/?p=29", marker: "<table", parse: parseSuwonList },
   { key: "goyang", url: "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303", marker: "con_item", parse: parseGoyangList },
   { key: "hwaseong", url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", marker: "listBoard", parse: parseHwaseongList },
+  { key: "bucheon", url: "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003", marker: "9월~10월 기타 축제 및 행사", parse: parseBucheonAutumnList },
 ] as const;
 const MAX_PER_SOURCE = 25, MAX_PUBLISH = 10, MAX_RETRY_PER_RUN = 25, RETRY_DAYS = 30;
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
