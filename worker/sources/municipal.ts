@@ -3,7 +3,7 @@ import { municipalSourceAllowsUrl, MUNICIPAL_SOURCE_REGISTRY } from "../../share
 import { confirmRepeatedImageVisionCandidate, extractMunicipalDocumentCandidates, type MunicipalDocumentMode } from "../../shared/municipal-document-fallback";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
-import type { Env } from "../env";
+import { municipalDocumentAI, type Env } from "../env";
 import { alertDedupeKey, alertId, scheduleChanged } from "../../shared/alert-engine";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
@@ -68,7 +68,7 @@ export async function runMunicipalAutonomous(env: Env) {
       }>;
       if (extraction.mode === "retry") {
         const documentFallback = await extractMunicipalDocumentCandidates({
-          ai: env.AI,
+          ai: municipalDocumentAI(env),
           source,
           html: list,
         });
@@ -186,7 +186,7 @@ export async function runMunicipalAutonomous(env: Env) {
         }>;
         if (extraction.mode === "retry") {
           const documentFallback = await extractMunicipalDocumentCandidates({
-            ai: env.AI,
+            ai: municipalDocumentAI(env),
             source,
             html: detail,
           });
