@@ -8,6 +8,7 @@ import {
   type EventResponse,
   type Period,
 } from "../../shared/domain";
+import { PAGE_SIZE } from "../../shared/list-exploration";
 const snapshotFile =
   process.env.TEST_REAL_SNAPSHOT ?? ".wrangler/deployment/tourapi-real.json";
 function rows(): EventItem[] {
@@ -99,12 +100,12 @@ test("오늘·이번 주말·다음 주말 화면 필터", async ({ page }) => {
     await page.getByRole("button", { name: label, exact: true }).click();
     await response;
     await expect(page.locator(".event-card")).toHaveCount(
-      Math.min(9, expected(period).length),
+      Math.min(PAGE_SIZE, expected(period).length),
     );
     const titles = await page.locator(".event-card h3").allTextContents();
     expect(titles).toEqual(
       expected(period)
-        .slice(0, 9)
+        .slice(0, PAGE_SIZE)
         .map((e) => e.title),
     );
   }
@@ -160,11 +161,11 @@ test("전체 지역 화면 필터와 빈 결과", async ({ page }) => {
     await page.getByLabel("지역", { exact: true }).selectOption(region);
     await response;
     await expect(page.locator(".event-card")).toHaveCount(
-      Math.min(9, expected("weekend", region).length),
+      Math.min(PAGE_SIZE, expected("weekend", region).length),
     );
     expect(await page.locator(".event-card h3").allTextContents()).toEqual(
       expected("weekend", region)
-        .slice(0, 9)
+        .slice(0, PAGE_SIZE)
         .map((e) => e.title),
     );
   }
