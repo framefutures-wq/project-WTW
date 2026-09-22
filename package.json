@@ -43,7 +43,8 @@
     "push:vapid:production": "node scripts/setup-web-push-vapid.mjs --production",
     "test:ui:contract": "node scripts/contract-browser.mjs",
     "dev:sample": "npm run build && wrangler dev --local --var APP_MODE:sample --test-scheduled",
-    "test:ui:prod": "playwright test --config playwright.production.config.ts"
+    "test:ui:prod": "playwright test --config playwright.production.config.ts",
+    "deploy:verified": "node scripts/deploy.mjs --verified"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
