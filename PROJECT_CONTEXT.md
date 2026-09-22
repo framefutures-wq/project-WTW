@@ -450,3 +450,13 @@ Production 주의:
 - env.AI binding은 production에 아직 없다.
 - Workers AI 사용량이 발생할 수 있으므로 AI binding은 사용자 승인 전 추가하지 않는다.
 - binding이 없으면 PDF/image fallback은 fail-closed하고 기존 last-known-good를 유지한다.
+
+
+## 19. Workers AI 비용 가드 (2026-09-22)
+
+- main commit: bbd6167c4aa58a7daf165c02e930d957251f6f28
+- `MUNICIPAL_DOCUMENT_AI_ENABLED` 런타임 kill switch 추가.
+- `wrangler.production.jsonc` 기본값은 `false`.
+- `worker/sources/municipal.ts`는 이 플래그가 정확히 `true`일 때만 AI binding을 문서 변환기로 전달한다.
+- AI binding이 존재하더라도 flag=false면 PDF/image fallback은 AI 호출을 하지 않는다.
+- production AI binding은 아직 없음. 신규 resource/사용량 활성화는 사용자 승인 전 금지.
