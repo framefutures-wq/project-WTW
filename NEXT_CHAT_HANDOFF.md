@@ -31,7 +31,7 @@
 - 현재 Production Cron:
   - 10:00 KST base sync
   - 11:00 KST TourAPI detail enrichment
-- 새 운영 결정(아직 미구현):
+- Zero-Human v2 결정(코드 구현 완료·production 배포 대기):
   - 10:00 base가 끝날 때까지 11시를 기다리지 않는다.
   - base 수집에서 새 행사/변경 행사가 확인되는 즉시 상세보강 단계로 자동 handoff한다.
   - 11:00 Cron은 주 작업이 아니라 watchdog/recovery 역할로 남겨 미완료·실패·재시도 대상만 처리한다.
@@ -165,3 +165,30 @@
 4. 전국 확장을 위한 bounded queue/worker 방식 검토.
 5. 새 Cloudflare Queue 등 신규 production resource가 필요하면 현재 설정·비용·마이그레이션 영향을 먼저 검증하고 사용자 승인 후 생성한다.
 6. 부천은 이 공통 구조의 첫 검증 source로 사용하고, 개별 맞춤 코드를 무한히 늘리지 않는다.
+
+
+## 2026-09-22 최신 구현 상태 — Zero-Human v2
+
+- main 코드에서 10시 base 성공 직후 bounded detail을 즉시 handoff한다.
+- 11시 Cron은 watchdog/recovery로 남기고, detail 실패는 성공한 base run을 실패로 되돌리지 않는다.
+- municipal Source Registry를 단일화했고 parser contract / format-change 감지 / 공식 host allowlist를 적용했다.
+- 기존 HTML 구조가 바뀌어도 공식 JSON-LD Event가 있으면 명시된 title/date/location/url만 structured fallback으로 사용한다.
+- 공식 PDF/이미지 첨부 fallback 기반을 구현했다.
+  - source당 최대 3개 첨부, 파일당 최대 5 MiB.
+  - PDF는 명시적 행사명/기간/장소가 모두 있을 때만 publish 후보가 될 수 있다.
+  - 이미지 포스터는 첫 판독으로 publish하지 않는다.
+  - 한국 날짜 기준 다른 날에 동일 core payload hash가 다시 관측될 때만 image confirmation을 통과할 수 있다.
+  - 같은 날 반복 실행이나 내용 변경은 confirmation으로 인정하지 않고 AUTO_RETRY 유지.
+  - AI binding이 없으면 PDF/image fallback은 fail-closed하며 last-known-good를 유지한다.
+- PR #23은 Project checks와 UI browser smoke가 모두 success인 상태에서 main에 merge됐다.
+- 최신 기능 merge commit: bd16a75d76a64f6e39af817e98ada228d6c024fa
+- 아직 production Worker에는 이 최신 main을 재배포하지 않았다.
+- env.AI binding은 optional 코드만 있고 production에는 아직 추가하지 않았다. 사용자 승인 전 활성화 금지.
+
+### 다음 작업
+
+1. 최신 main을 기존 Worker에 배포하고 production smoke + cron/orchestration 회귀검증.
+2. Workers AI AI binding 활성화 여부를 사용자에게 비용/무료한도와 함께 승인받는다.
+3. 승인 시 공식 PDF 1건 + 포스터 1건으로 production bounded 검증.
+4. 그 뒤 Registry 기반 전국 지자체 coverage 확대.
+5. Queue는 실제 실행시간/규모 한계 근거가 생길 때만 검토하고 생성 전 사용자 승인.
