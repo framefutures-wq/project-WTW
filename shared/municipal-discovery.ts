@@ -2,13 +2,13 @@ import { normalizeMunicipalTitle } from "./municipal-duplicate";
 
 export type SelectionGate = "MAIN" | "NEARBY_ONLY" | "EXCLUDE" | "REVIEW";
 export type MunicipalCandidate = {
-  source: "paju" | "suwon" | "goyang" | "hwaseong";
+  source: "paju" | "suwon" | "goyang" | "hwaseong" | "bucheon";
   source_candidate_id: string;
   title: string;
   start_date: string | null;
   end_date: string | null;
   region: "경기";
-  locality: "파주" | "수원" | "고양" | "화성";
+  locality: "파주" | "수원" | "고양" | "화성" | "부천";
   venue: string | null;
   official_url: string;
   category: string | null;
@@ -121,6 +121,47 @@ export function parseHwaseongList(html: string): MunicipalCandidate[] {
     return [{ source: "hwaseong", source_candidate_id: durableId, title, start_date, end_date, venue, locality: "화성", region: "경기",
       official_url: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", category: department || null,
       snippet: host ? `주최/주관: ${host}` : null, image_candidate: null,
+      ...(!validRange(start_date, end_date) ? { parse_error: "invalid_date_range" } : {}),
+    }];
+  });
+}
+
+
+/** Parses Bucheon Festa's official autumn event page. The page is a canonical city-maintained schedule without per-event detail URLs. */
+export function parseBucheonAutumnList(html: string): MunicipalCandidate[] {
+  const sourceUrl = "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003";
+  const year =
+    /\b(20\d{2})\s*(?:년|\.)?\s*부천/i.exec(clean(html))?.[1] ??
+    /\b(20\d{2})\b/.exec(clean(html))?.[1];
+  if (!year) return [];
+  const headings = [...html.matchAll(/<h5[^>]*>([\s\S]*?)<\/h5>/gi)];
+  return headings.flatMap<MunicipalCandidate>((heading, index) => {
+    const title = clean(heading[1] ?? "");
+    if (!title) return [];
+    const start = (heading.index ?? 0) + heading[0].length;
+    const end = index + 1 < headings.length ? (headings[index + 1].index ?? html.length) : html.length;
+    const block = clean(html.slice(start, end));
+    const period = /기\s*간\s*[:：]\s*(\d{1,2})\.\s*(\d{1,2})\.(?:\([^)]*\))?(?:\s*[~∼-]\s*(?:(\d{1,2})\.\s*)?(\d{1,2})\.(?:\([^)]*\))?)?/.exec(block);
+    const venue = /장\s*소\s*[:：]\s*(.+?)(?=\s+(?:주요\s*내용|주요내용)\s*[:：]|$)/.exec(block)?.[1]?.trim() ?? null;
+    if (!period || !venue) return [];
+    const toDate = (month: string, day: string) => `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    const start_date = toDate(period[1], period[2]);
+    const end_date = period[4] ? toDate(period[3] ?? period[1], period[4]) : start_date;
+    const source_candidate_id = `${year}-${normalizeMunicipalTitle(title).slice(0, 60)}`;
+    const snippet = /(?:주요\s*내용|주요내용)\s*[:：]\s*(.+)$/.exec(block)?.[1]?.trim() ?? null;
+    return [{
+      source: "bucheon",
+      source_candidate_id,
+      title,
+      start_date,
+      end_date,
+      venue,
+      region: "경기",
+      locality: "부천",
+      official_url: sourceUrl,
+      category: "부천페스타·가을",
+      snippet,
+      image_candidate: null,
       ...(!validRange(start_date, end_date) ? { parse_error: "invalid_date_range" } : {}),
     }];
   });
