@@ -6,13 +6,24 @@ existing JSON-LD, PDF, image, and generic HTML fallback path. Generic HTML reads
 only self-contained table rows, list items, or card blocks with explicit title,
 full-year date, and venue fields.
 
+## Added
+
+| Municipality  | Official source checked                                               | Generic contract                                       | Safety policy                                                                                                                                                          |
+| ------------- | --------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Taebaek       | `https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502` | self-contained vertical HTML tables under `#scheduler` | Full-year title/date/venue core only; administrative schedules, meetings, and education are retained as candidates solely to pass through the existing `EXCLUDE` gate. |
+| Seoul Hangang | `https://hangang.seoul.go.kr/www/eventMng/list.do?mid=538`            | self-contained `li.list-item` event cards              | Full-year title/date/venue and an explicit first-party `축제`, `문화예술`, or `공연` category are required. Other categories fail closed.                              |
+
+Neither source receives a dedicated parser. Detail links expressed as JavaScript
+are retained as the canonical official listing URL; external, malformed, or
+otherwise non-allowlisted URLs are rejected by the common fallback.
+
 ## Not added
 
-| Municipality | Official source checked | Result | Reason |
-| --- | --- | --- | --- |
-| Seocho-gu | `https://www.seocho.go.kr/site/seocho/ex/bbs/List.do?cbIdx=59` | Excluded after generic HTML recheck | The canonical table has title and publication-date columns, but no event period or venue columns. Generic extraction returned zero candidates rather than joining facts from detail posts. |
-| Cheongju | `https://schedule.cheongju.go.kr/xwcms/userScheduleCalendar.do?yyyymm=202609` | Excluded after generic HTML recheck | The official schedule is a potential table source, but the canonical endpoint did not complete within the bounded official fetch window during recheck. It is not registered until its runtime availability and durable current-calendar URL are verified. |
-| Gangneung | `https://www.gangneung.go.kr/tour/prog/festival/sub01_01_01/list.do` | Excluded | The listed HTTPS hostname did not present a certificate valid for `www.gangneung.go.kr` during the check. It cannot be placed on an HTTPS allowlist until the official endpoint is verified. |
+| Municipality | Official source checked                                                       | Result                              | Reason                                                                                                                                                                                                                                                     |
+| ------------ | ----------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Seocho-gu    | `https://www.seocho.go.kr/site/seocho/ex/bbs/List.do?cbIdx=59`                | Excluded after generic HTML recheck | The canonical table has title and publication-date columns, but no event period or venue columns. Generic extraction returned zero candidates rather than joining facts from detail posts.                                                                 |
+| Cheongju     | `https://schedule.cheongju.go.kr/xwcms/userScheduleCalendar.do?yyyymm=202609` | Excluded after generic HTML recheck | The official schedule is a potential table source, but the canonical endpoint did not complete within the bounded official fetch window during recheck. It is not registered until its runtime availability and durable current-calendar URL are verified. |
+| Gangneung    | `https://www.gangneung.go.kr/tour/prog/festival/sub01_01_01/list.do`          | Excluded                            | The listed HTTPS hostname did not present a certificate valid for `www.gangneung.go.kr` during the check. It cannot be placed on an HTTPS allowlist until the official endpoint is verified.                                                               |
 
 No new source was registered from this survey. This preserves the rule that a
 generic source must have a durable canonical list with a verified generic signal;

@@ -259,11 +259,11 @@ Audit:
 
 현재 우선순위:
 
-1. **중단된 municipal onboarding 작업만 먼저 마무리**한다. usage limit으로 끊긴 태백시 / 서울 한강 후보 작업은 현재 working tree를 보존해 이어서 완료하고 relevant tests → commit/push → clean까지 닫는다.
+1. 태백시 전체일정캘린더와 서울 한강 행사·공연 정보의 `generic_fallback` onboarding을 완료했다. 태백시의 행정·회의·교육 등 비행사 일정은 exclusion gate로 차단하고, 서울 한강은 source card의 명시적 축제·문화예술·공연 category만 후보로 허용한다.
 2. **갈틈 UI / 브랜드 시스템 v2를 다음 최우선 작업으로 진행**한다. 전국 coverage 확대는 이 UI 경계가 끝날 때까지 잠시 멈춘다.
 3. **상세페이지 정보구조 v2 + 갈틈 파생정보 레이어 + adaptive media fallback**을 UI 개편에 포함한다. 기준 샘플은 `서울 왕궁수문장 교대의식`이다.
 4. UI/상세 v2가 안정되면 **공식 상세정보 자동 보강 품질**을 확대한다. organizer/municipality/TourAPI 등 공식 근거가 있는 소개·운영시간·프로그램·문의·요금·이미지만 사용한다.
-5. 그 다음 **전국 지자체 coverage 확대**를 재개한다. `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입하며, 불명확한 core는 기존 retry·confirmation/last-known-good 정책을 유지한다.
+5. 그 다음 **전국 지자체 coverage 확대**를 재개한다. `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입하며, 불명확한 core는 기존 retry·confirmation/last-known-good 정책을 유지한다. 상세 survey: `docs/municipal-source-survey-2026-09-22.md`.
 6. Search Console `sitemap.xml` 제출 상태 확인 → 무료 공개 traffic 관찰 → traffic 확보 뒤 수익화 순서로 진행한다.
 
 수익화는 현재 보류한다.
@@ -379,7 +379,6 @@ Audit:
 
 이 문서는 중요한 제품 결정이나 운영 상태가 바뀔 때 갱신한다.
 
-
 ## 17. Municipal Zero-Human v2 결정 (2026-09-22)
 
 ### 목표
@@ -422,10 +421,10 @@ Audit:
 6. 부천을 첫 v2 검증 source로 사용하되 부천 전용 예외 코드를 계속 쌓지 않는다.
 7. 테스트 → Actions → 기존 Worker 배포 → production smoke/detail 검증 순서로 완료한다.
 
-
 ## 18. Municipal Zero-Human v2 구현 상태 (2026-09-22 최신)
 
 main 구현 완료:
+
 - 10시 base 성공 직후 detail 즉시 handoff + 11시 watchdog/recovery.
 - municipal Source Registry 단일화.
 - parser contract / format-change 감지 / 공식 host allowlist.
@@ -442,6 +441,7 @@ main 구현 완료:
 - 신규 Cloudflare resource 없음.
 
 주요 merge 기준:
+
 - immediate detail handoff 계열: 6f41ee49
 - source registry: 13088dfb
 - structured fallback: 8e4f0dbd
@@ -449,11 +449,11 @@ main 구현 완료:
 - PR #23 최종 Project checks / UI browser smoke success 후 merge.
 
 Production 주의:
+
 - 2026-09-22 `dd9b0f9` 기준 최신 main을 기존 Worker에 배포했다. Cloudflare version ID: `97a35df2-86d7-41b7-837d-7e522f7d0b1e`.
 - 전체 check(단위 테스트 174개, 통합 검사, build), `https://galteum.com` production smoke, desktop/mobile production UI가 통과했다.
 - 기존 D1 binding과 10시/11시 Cron은 유지됐다. 실제 다음 scheduled run의 운영 결과는 별도 관찰 대상이다.
 - Workers AI binding의 현재 production 상태는 아래 §19를 따른다.
-
 
 ## 19. Workers AI 비용 가드 (2026-09-22)
 

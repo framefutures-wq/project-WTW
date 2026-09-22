@@ -26,9 +26,19 @@ const fixtureByKey: Record<string, string> = {
 test("registry keeps existing parser-backed sources explicit", () => {
   assert.deepEqual(
     MUNICIPAL_SOURCE_REGISTRY.map((source) => source.key),
-    ["paju", "suwon", "goyang", "hwaseong", "bucheon"],
+    [
+      "paju",
+      "suwon",
+      "goyang",
+      "hwaseong",
+      "bucheon",
+      "taebaek",
+      "seoul-hangang",
+    ],
   );
-  for (const source of MUNICIPAL_SOURCE_REGISTRY) {
+  for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
+    (source) => source.ingestion === "registered_parser",
+  )) {
     assert.equal(source.ingestion, "registered_parser");
     assert.equal(typeof MUNICIPAL_PARSERS[source.key], "function");
     assert.equal(new URL(source.url).protocol, "https:");
@@ -72,7 +82,9 @@ test("generic registry sources enter JSON-LD fallback without a dedicated parser
 });
 
 test("current municipal fixtures satisfy their registered parser contracts", () => {
-  for (const source of MUNICIPAL_SOURCE_REGISTRY) {
+  for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
+    (source) => source.ingestion === "registered_parser",
+  )) {
     const html = readFileSync(fixtureByKey[source.key], "utf8");
     const assessment = assessMunicipalSourceDocument(source, html);
     assert.equal(
@@ -104,7 +116,6 @@ test("document signal detection recognizes structured event data without treatin
   assert(signals.includes("structured_event"));
 });
 
-
 test("registered detail URLs are restricted to explicit official hosts", () => {
   const paju = municipalSourceByKey("paju");
   assert(paju);
@@ -124,7 +135,6 @@ test("registered detail URLs are restricted to explicit official hosts", () => {
     false,
   );
 });
-
 
 test("format-changed source can fall back to explicit official JSON-LD Event core", () => {
   const source = municipalSourceByKey("bucheon");
