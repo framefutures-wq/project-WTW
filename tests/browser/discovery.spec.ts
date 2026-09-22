@@ -8,12 +8,27 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   await expect(
     page.getByRole("heading", { name: "이번 주말, 여기 어때요?" }),
   ).toBeVisible();
+  const regionResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/events" && url.searchParams.get("region") === "서울";
+  });
   await page.getByLabel("지역", { exact: true }).selectOption("서울");
+  await regionResponse;
   await page.locator(".advanced-filters > summary").click();
+  const flowerResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("region") === "서울" &&
+      url.searchParams.get("theme") === "flowers"
+    );
+  });
   await page
     .locator(".advanced-filters")
     .getByRole("button", { name: "꽃", exact: true })
     .click();
+  const flowerData = await (await flowerResponse).json();
+  expect(flowerData.total).toBe(1);
   await expect(page.locator(".event-card")).toHaveCount(1);
   await page.getByRole("button", { name: "가을빛 꽃 산책 상세 보기" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
