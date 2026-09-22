@@ -69,7 +69,7 @@ function dependencies(
 const baseTime = new Date("2026-09-21T01:00:00.000Z");
 const detailTime = new Date("2026-09-21T02:00:00.000Z");
 
-test("10:00 KST runs base ingestion, official sources, and push without detail", async () => {
+test("10:00 KST hands off to bounded detail immediately after base succeeds", async () => {
   const { mf, DB, env } = await setup();
   const calls: string[] = [];
   try {
@@ -79,11 +79,28 @@ test("10:00 KST runs base ingestion, official sources, and push without detail",
       baseTime,
       dependencies(calls),
     );
-    assert.deepEqual(calls, ["tourapi", "municipal", "private", "push"]);
+    assert.deepEqual(calls, [
+      "tourapi",
+      "municipal",
+      "private",
+      "detail",
+      "push",
+    ]);
+    const runs = await DB.prepare(
+      "SELECT provider,status,message FROM sync_runs ORDER BY started_at,provider",
+    ).all<{ provider: string; status: string; message: string | null }>();
+    assert.equal(runs.results.length, 2);
     assert.deepEqual(
-      await DB.prepare("SELECT provider,status FROM sync_runs").first(),
-      { provider: "tourapi", status: "success" },
+      runs.results.map(({ provider, status }) => ({ provider, status })),
+      [
+        { provider: "tourapi", status: "success" },
+        { provider: "tourapi-detail", status: "success" },
+      ],
     );
+    const detailRun = runs.results.find(
+      (row) => row.provider === "tourapi-detail",
+    );
+    assert.equal(JSON.parse(detailRun!.message!).trigger, "base_handoff");
   } finally {
     await mf.dispose();
   }
@@ -109,7 +126,9 @@ test("11:00 KST runs detail only after the same KST date base succeeds", async (
       "SELECT provider,status,message FROM sync_runs WHERE provider='tourapi-detail'",
     ).first<{ provider: string; status: string; message: string }>();
     assert.equal(row?.status, "success");
-    assert.equal(JSON.parse(row!.message).requested, 3);
+    const message = JSON.parse(row!.message);
+    assert.equal(message.trigger, "watchdog");
+    assert.equal(message.requested, 3);
   } finally {
     await mf.dispose();
   }
@@ -147,6 +166,53 @@ for (const [name, status] of [
     }
   });
 }
+
+test("immediate detail failure stays isolated and the 11:00 watchdog can retry", async () => {
+  const { mf, DB, env } = await setup();
+  const calls: string[] = [];
+  try {
+    const failing = dependencies(calls);
+    failing.enrichTourApiDetails = async () => {
+      calls.push("detail-failed");
+      throw new Error("detail down");
+    };
+    const baseResult = await runScheduled(
+      env as never,
+      BASE_SYNC_CRON,
+      baseTime,
+      failing,
+    );
+    assert.equal((baseResult as { status?: string }).status, "success");
+    assert.deepEqual(
+      await DB.prepare(
+        "SELECT status FROM sync_runs WHERE provider='tourapi' ORDER BY started_at DESC LIMIT 1",
+      ).first(),
+      { status: "success" },
+    );
+    assert.deepEqual(
+      await DB.prepare(
+        "SELECT status FROM sync_runs WHERE provider='tourapi-detail' ORDER BY started_at DESC LIMIT 1",
+      ).first(),
+      { status: "failed" },
+    );
+
+    const watchdogCalls: string[] = [];
+    await runScheduled(
+      env as never,
+      DETAIL_SYNC_CRON,
+      detailTime,
+      dependencies(watchdogCalls),
+    );
+    assert.deepEqual(watchdogCalls, ["detail"]);
+    const latest = await DB.prepare(
+      "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid DESC LIMIT 1",
+    ).first<{ status: string; message: string }>();
+    assert.equal(latest?.status, "success");
+    assert.equal(JSON.parse(latest!.message).trigger, "watchdog");
+  } finally {
+    await mf.dispose();
+  }
+});
 
 test("unknown cron is fail-closed and detail failure does not block the next base run", async () => {
   const { mf, DB, env } = await setup();

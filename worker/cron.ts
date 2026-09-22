@@ -98,11 +98,12 @@ export async function runBaseScheduled(
     municipalAttempted = true;
     const municipal = await dependencies.runMunicipalAutonomous(env);
     const privateOfficial = await dependencies.runPrivateOfficialSources(env);
+    const baseStatus = imported ? "success" : "skipped";
     await env.DB.prepare(
       "UPDATE sync_runs SET status=?, finished_at=?,message=?,stale_count=? WHERE id=?",
     )
       .bind(
-        imported ? "success" : "skipped",
+        baseStatus,
         new Date().toISOString(),
         JSON.stringify({
           tourapi: imported ?? tourApiReadiness(env),
@@ -113,7 +114,34 @@ export async function runBaseScheduled(
         id,
       )
       .run();
-    return { id, status: imported ? "success" : "skipped" };
+
+    let detailHandoff:
+      | Awaited<ReturnType<typeof runDetailScheduled>>
+      | { status: "failed"; reason: "subsystem_error" }
+      | { skipped: "base_not_successful" } = {
+      skipped: "base_not_successful",
+    };
+    if (baseStatus === "success") {
+      try {
+        // Do not wait for the 11:00 watchdog. Start the bounded detail pass as soon
+        // as the 10:00 base run has committed its success marker.
+        detailHandoff = await runDetailScheduled(
+          env,
+          now,
+          dependencies,
+          "base_handoff",
+        );
+      } catch (error) {
+        // Detail is an isolated subsystem: its failure must never turn a
+        // successfully completed base ingestion into a failed base run.
+        console.error("tourapi_detail_handoff_failed", {
+          baseRunId: id,
+          error: error instanceof Error ? error.name : "unknown",
+        });
+        detailHandoff = { status: "failed", reason: "subsystem_error" };
+      }
+    }
+    return { id, status: baseStatus, detail_handoff: detailHandoff };
   } catch (error) {
     // Municipal sources are independently bounded; a TourAPI outage must not stop their daily retry/publish cycle.
     const municipal = municipalAttempted
@@ -161,6 +189,7 @@ export async function runDetailScheduled(
   env: Env,
   now = new Date(),
   dependencies = productionDependencies,
+  trigger: "base_handoff" | "watchdog" = "watchdog",
 ) {
   const window = baseWindow(now);
   const base = await env.DB.prepare(
@@ -185,6 +214,7 @@ export async function runDetailScheduled(
         "skipped",
         "tourapi-detail",
         JSON.stringify({
+          trigger,
           reason,
           base_run: base ?? null,
           candidates: 0,
@@ -210,7 +240,7 @@ export async function runDetailScheduled(
     )
       .bind(
         new Date().toISOString(),
-        JSON.stringify({ base_run: base.id, ...detail }),
+        JSON.stringify({ trigger, base_run: base.id, ...detail }),
         started,
       )
       .run();
@@ -226,6 +256,7 @@ export async function runDetailScheduled(
       .bind(
         new Date().toISOString(),
         JSON.stringify({
+          trigger,
           base_run: base.id,
           candidates: 0,
           requested: 0,
@@ -249,7 +280,7 @@ export async function runScheduled(
 ) {
   if (cron === BASE_SYNC_CRON) return runBaseScheduled(env, now, dependencies);
   if (cron === DETAIL_SYNC_CRON)
-    return runDetailScheduled(env, now, dependencies);
+    return runDetailScheduled(env, now, dependencies, "watchdog");
   console.warn("unknown_scheduled_cron", { cron });
   return { skipped: "unknown_cron" };
 }
