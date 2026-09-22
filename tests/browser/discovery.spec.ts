@@ -10,7 +10,10 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   ).toBeVisible();
   await page.getByLabel("지역", { exact: true }).selectOption("서울");
   await page.locator(".advanced-filters > summary").click();
-  await page.getByRole("button", { name: "꽃", exact: true }).click();
+  await page
+    .locator(".advanced-filters")
+    .getByRole("button", { name: "꽃", exact: true })
+    .click();
   await expect(page.locator(".event-card")).toHaveCount(1);
   await page.getByRole("button", { name: "가을빛 꽃 산책 상세 보기" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
