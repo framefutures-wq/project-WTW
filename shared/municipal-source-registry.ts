@@ -78,6 +78,23 @@ export function municipalSourceByKey(key: MunicipalSourceKey) {
   return MUNICIPAL_SOURCE_REGISTRY.find((source) => source.key === key) ?? null;
 }
 
+export function municipalSourceAllowsUrl(
+  source: MunicipalSourceDefinition,
+  value: string,
+) {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      source.allowedHosts.some(
+        (host) => url.hostname === host || url.hostname.endsWith(`.${host}`),
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function detectMunicipalDocumentSignals(html: string): MunicipalDocumentSignal[] {
   const signals = new Set<MunicipalDocumentSignal>();
   if (/<table\b[\s\S]*?<tr\b/i.test(html)) signals.add("html_table");
