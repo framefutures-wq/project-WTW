@@ -447,16 +447,15 @@ Production 주의:
 - 2026-09-22 `dd9b0f9` 기준 최신 main을 기존 Worker에 배포했다. Cloudflare version ID: `97a35df2-86d7-41b7-837d-7e522f7d0b1e`.
 - 전체 check(단위 테스트 174개, 통합 검사, build), `https://galteum.com` production smoke, desktop/mobile production UI가 통과했다.
 - 기존 D1 binding과 10시/11시 Cron은 유지됐다. 실제 다음 scheduled run의 운영 결과는 별도 관찰 대상이다.
-- env.AI binding은 production에 아직 없다.
-- Workers AI 사용량이 발생할 수 있으므로 AI binding은 사용자 승인 전 추가하지 않는다.
-- binding이 없으면 PDF/image fallback은 fail-closed하고 기존 last-known-good를 유지한다.
+- Workers AI binding의 현재 production 상태는 아래 §19를 따른다.
 
 
 ## 19. Workers AI 비용 가드 (2026-09-22)
 
 - main commit: bbd6167c4aa58a7daf165c02e930d957251f6f28
 - `MUNICIPAL_DOCUMENT_AI_ENABLED` 런타임 kill switch 추가.
-- `wrangler.production.jsonc` 기본값은 `false`.
+- `wrangler.production.jsonc`의 production 값은 `true`.
 - `worker/sources/municipal.ts`는 이 플래그가 정확히 `true`일 때만 AI binding을 문서 변환기로 전달한다.
 - AI binding이 존재하더라도 flag=false면 PDF/image fallback은 AI 호출을 하지 않는다.
-- production AI binding은 아직 없음. 신규 resource/사용량 활성화는 사용자 승인 전 금지.
+- 2026-09-22 사용자 요청으로 기존 `weekend-mwohae` Worker에 AI binding과 flag=true를 배포했다. 코드 commit `ef7f76c11c9657088c481627ea18f376d0fbfe5b`, Cloudflare Version ID `2df9c820-c6a8-492f-bb4f-401fe8960611`.
+- 배포 로그에서 `env.AI`와 `MUNICIPAL_DOCUMENT_AI_ENABLED ("true")`를 확인했다. production smoke와 desktop/mobile UI 2/2가 통과했다. D1 데이터 삽입이나 Cron 강제 실행은 하지 않았다.
