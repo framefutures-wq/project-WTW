@@ -136,6 +136,19 @@ Codex/작업 프롬프트에는 가능하면 맨 위에 권장 모델을 명시�
 
 ## 8. 비용 / 사용량 절약 규칙
 
+### 프롬프트 전 사용량 감사
+
+프롬프트를 사용자에게 주기 전에 안전성뿐 아니라 **예상 사용량과 반복 비용**도 반드시 검토한다.
+
+- 같은 Codespace/같은 연속 작업 세션에서 이미 읽은 장문 프로젝트 문서를 매 bounded task마다 다시 전부 읽게 하지 않는다. 새 세션이거나 상태가 바뀐 문서만 다시 확인한다.
+- 같은 큰 UI 파트 안의 소작업마다 typecheck + build + browser regression + deploy + production smoke/public visual verify를 전부 반복하지 않는다.
+- 소작업은 변경 영역에 필요한 최소 로컬 검증 + commit/push로 닫고, **production deploy/public verify는 큰 파트 완료 시 1회**로 묶는 것을 기본으로 한다. 단, 운영 동작 자체를 바꾸거나 즉시 production 검증이 필요한 고위험 변경은 예외다.
+- 프롬프트에 포함된 각 명령/검증/배포가 이번 bounded task 결과를 바꾸는지 확인하고, 아니면 제거한다.
+- 모델은 CSS 중심 단일 UI 수정·문서/상태 확인은 Luna 가능 여부를 먼저 본다. JSX 구조 변경이나 의미 있는 UI 덩어리는 Terra/Medium을 사용한다.
+- 사용량을 많이 쓰는 browser screenshot/visual QA, deploy, production smoke는 한 작업에서 중복 수행하지 않는다.
+- 작업 시작 전에 “이 작업을 로컬에서 끝내도 되는가 / 지금 deploy가 꼭 필요한가 / 같은 검증을 이미 직전 작업에서 했는가”를 명시적으로 판단한다.
+
+
 - 상태 확인과 조사에 고급 모델을 쓰지 않는다.
 - 같은 사실을 여러 번 검증하지 않는다.
 - 불필요한 전체 테스트, 전체 repo 탐색, 반복 CI polling을 피한다.
