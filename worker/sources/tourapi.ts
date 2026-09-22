@@ -48,6 +48,22 @@ export function text(value: unknown): string {
       ? String(value)
       : "";
 }
+function validImageUrl(value: unknown) {
+  const url = text(value);
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && !/\b(?:logo|favicon|sprite|icon)\b/.test(parsed.pathname.toLowerCase())
+      ? parsed.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+function tourApiSecondaryImage(raw: Row) {
+  const primary = validImageUrl(raw.firstimage) || validImageUrl(raw.firstimage2);
+  const secondary = validImageUrl(raw.firstimage2);
+  return primary && secondary && primary !== secondary ? secondary : null;
+}
 export function tourApiReadiness(env: Env) {
   if (env.TOUR_API_ENABLED !== "true") return "TourAPI 수집 비활성";
   if (!env.TOUR_API_KEY) return "TourAPI Secret 미설정: 수집하지 않았습니다.";
@@ -450,6 +466,22 @@ export async function saveFestivalSnapshot(
         )
         .bind(source, TOUR_API_DOC, snapshot.checkedAt, JSON.stringify(raw)),
     );
+    // TourAPI owns only its secondary slot. A later sync removes stale TourAPI
+    // URLs but never overwrites or deletes an additional image from another source.
+    statements.push(
+      db.prepare("DELETE FROM event_additional_images WHERE event_id=? AND source_type='tourapi' AND sort_order>=2").bind(e.id),
+    );
+    const secondaryImage = tourApiSecondaryImage(raw);
+    if (secondaryImage)
+      statements.push(
+        db.prepare(
+          `INSERT INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,width,height,mime_type,last_checked_at,evidence_note)
+           SELECT ?,?,'tourapi',?,2,'ok',NULL,NULL,NULL,?,?
+           WHERE NOT EXISTS (SELECT 1 FROM event_additional_images WHERE event_id=? AND sort_order=2 AND source_type!='tourapi')
+           ON CONFLICT(event_id,image_url) DO UPDATE SET source_page_url=excluded.source_page_url,image_status=excluded.image_status,last_checked_at=excluded.last_checked_at,evidence_note=excluded.evidence_note
+           WHERE event_additional_images.source_type='tourapi'`,
+        ).bind(e.id, secondaryImage, TOUR_API_DOC, snapshot.checkedAt, "sources.raw_payload.firstimage2", e.id),
+      );
     statements.push(
       db
         .prepare(

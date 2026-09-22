@@ -87,6 +87,7 @@ export type EventDetailHighlight = { label: string; tag: string | null; featured
 export type EventProgramOccurrence = { start_date: string; end_date: string; start_time: string | null; end_time: string | null; human_time_text: string | null; venue: string | null };
 export type EventDetailProgram = { name: string; date: string | null; start_time: string | null; end_time: string | null; schedule_text: string | null; venue: string | null; description: string | null; tags: string[]; featured: boolean; occurrences: EventProgramOccurrence[] };
 export type EventDetailEnrichment = { summary: string; source_url: string; source_kind: string; source_priority: number; highlights: EventDetailHighlight[]; programs: EventDetailProgram[] };
+export type EventDetailImage = { image_url: string; source_type: string | null; source_page_url: string | null; is_primary: boolean; sort_order: number };
 export function validDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);

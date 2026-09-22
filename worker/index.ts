@@ -670,6 +670,27 @@ export default {
           .first<Record<string, unknown>>();
         if (!row)
           return json({ error: "확인된 행사 정보를 찾을 수 없습니다." }, 404);
+        const additionalImages = await env.DB.prepare(
+          `SELECT image_url,source_type,source_page_url,sort_order
+           FROM event_additional_images
+           WHERE event_id=? AND image_status='ok' AND image_url LIKE 'https://%'
+           ORDER BY sort_order ASC LIMIT 5`,
+        )
+          .bind(eventId)
+          .all<{
+            image_url: string;
+            source_type: string | null;
+            source_page_url: string | null;
+            sort_order: number;
+          }>();
+        const images = [
+          ...(row.image_url && row.image_status === "ok" && String(row.image_url).startsWith("https://")
+            ? [{ image_url: String(row.image_url), source_type: row.image_source_type as string | null, source_page_url: row.image_source_page_url as string | null, is_primary: true, sort_order: 1 }]
+            : []),
+          ...additionalImages.results.map((image) => ({ ...image, is_primary: false })),
+        ].filter((image, index, items) =>
+          items.findIndex((candidate) => candidate.image_url === image.image_url) === index,
+        ).slice(0, 5);
         const evidence = await env.DB.prepare(
           `SELECT ev.field,ev.excerpt,ev.checked_at,s.name,s.url,s.kind,s.priority
           FROM event_evidence ev JOIN sources s ON s.id=ev.source_id WHERE ev.event_id=? ORDER BY s.priority,ev.field`,
@@ -756,6 +777,7 @@ export default {
         }));
         return json({
           event: serialize(row),
+          images,
           evidence: evidence.results,
           contact_phone: contactPhone,
           operating_hours: parseOperatingHours(row.operating_hours_json),

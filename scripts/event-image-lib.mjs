@@ -31,3 +31,14 @@ export function chooseTourApiImage(raw, inventory = []) {
       }
     : null;
 }
+
+export function tourApiImageCandidates(raw) {
+  const primary = imageUrl(raw?.firstimage) || imageUrl(raw?.firstimage2);
+  const secondary = imageUrl(raw?.firstimage2);
+  return [
+    ...(primary ? [{ url: primary, sort_order: 1 }] : []),
+    ...(primary && secondary && secondary !== primary
+      ? [{ url: secondary, sort_order: 2 }]
+      : []),
+  ];
+}

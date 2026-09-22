@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { imageUrl, chooseTourApiImage } from "../scripts/event-image-lib.mjs";
+import { imageUrl, chooseTourApiImage, tourApiImageCandidates } from "../scripts/event-image-lib.mjs";
 import { readFileSync } from "node:fs";
 
 test("official image URL filter accepts HTTPS images and rejects unsafe assets", () => {
@@ -11,6 +11,13 @@ test("official image URL filter accepts HTTPS images and rejects unsafe assets",
   assert.equal(imageUrl("http://example.com/a.jpg"), null);
   assert.equal(imageUrl("https://example.com/logo.png"), null);
   assert.equal(imageUrl("not a url"), null);
+});
+
+test("TourAPI candidates retain firstimage then a distinct valid firstimage2", () => {
+  assert.deepEqual(tourApiImageCandidates({ firstimage: "https://example.com/first.jpg", firstimage2: "https://example.com/second.jpg" }), [{ url: "https://example.com/first.jpg", sort_order: 1 }, { url: "https://example.com/second.jpg", sort_order: 2 }]);
+  assert.deepEqual(tourApiImageCandidates({ firstimage: "https://example.com/first.jpg", firstimage2: "https://example.com/first.jpg" }), [{ url: "https://example.com/first.jpg", sort_order: 1 }]);
+  assert.deepEqual(tourApiImageCandidates({ firstimage: "https://example.com/first.jpg", firstimage2: "http://example.com/second.jpg" }), [{ url: "https://example.com/first.jpg", sort_order: 1 }]);
+  assert.deepEqual(tourApiImageCandidates({ firstimage: "https://example.com/first.jpg", firstimage2: "https://example.com/icon.png" }), [{ url: "https://example.com/first.jpg", sort_order: 1 }]);
 });
 
 test("TourAPI firstimage has priority over firstimage2 and stored inventory", () => {

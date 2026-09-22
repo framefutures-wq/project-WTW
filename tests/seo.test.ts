@@ -32,6 +32,9 @@ async function setup() {
       DB.prepare("INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES('seo-event_1','source',?,?,?)").bind(field, "확인", now),
     ),
     DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at) VALUES('seo-event_1','https://images.example.test/event.jpg','official','https://example.test/event',1,'ok',?)").bind(now),
+    DB.prepare("INSERT INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,last_checked_at) VALUES('seo-event_1','https://images.example.test/event-2.jpg','tourapi','https://example.test/event',2,'ok',?)").bind(now),
+    DB.prepare("INSERT INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,last_checked_at) VALUES('seo-event_1','https://images.example.test/event-3.jpg','tourapi','https://example.test/event',3,'ok',?)").bind(now),
+    DB.prepare("INSERT INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,last_checked_at) VALUES('seo-event_1','https://images.example.test/blocked.jpg','tourapi','https://example.test/event',4,'blocked',?)").bind(now),
     DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES('hidden','숨김','설명','서울','장소','주소','2026-09-21','2026-10-01','unknown','scheduled','pending',0,'source',?,?)").bind(now, now),
   ]);
   const env = {
@@ -70,6 +73,20 @@ test("event pages are self-canonical, escaped, and expose one factual Event JSON
   } finally {
     await mf.dispose();
   }
+});
+
+test("detail API returns primary then distinct usable additional images only", async () => {
+  const { mf, env } = await setup();
+  try {
+    await (env as { DB: D1Database }).DB.prepare("INSERT OR IGNORE INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,last_checked_at) VALUES('seo-event_1','https://images.example.test/event.jpg','tourapi','https://example.test/event',5,'ok',?)").bind(new Date().toISOString()).run();
+    const response = await worker.fetch(new Request("https://galteum.com/api/events/seo-event_1"), env as never);
+    const body = await response.json() as { images: { image_url: string; is_primary: boolean; sort_order: number }[] };
+    assert.deepEqual(body.images, [
+      { image_url: "https://images.example.test/event.jpg", source_type: "official", source_page_url: "https://example.test/event", is_primary: true, sort_order: 1 },
+      { image_url: "https://images.example.test/event-2.jpg", source_type: "tourapi", source_page_url: "https://example.test/event", sort_order: 2, is_primary: false },
+      { image_url: "https://images.example.test/event-3.jpg", source_type: "tourapi", source_page_url: "https://example.test/event", sort_order: 3, is_primary: false },
+    ]);
+  } finally { await mf.dispose(); }
 });
 
 test("root canonical, sitemap, robots, and event 404s follow the public visibility contract", async () => {

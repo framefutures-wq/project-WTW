@@ -29,6 +29,7 @@ import {
   type EventItem,
   type EventResponse,
   type EventDetailEnrichment,
+  type EventDetailImage,
   type DateRange,
   type Tag,
   validDate,
@@ -90,6 +91,7 @@ type Detail = {
   contact_phone: ContactPhone | null;
   operating_hours: EventOperatingHours[];
   enrichment: EventDetailEnrichment | null;
+  images: EventDetailImage[];
 };
 type PageResponse = Omit<EventResponse, "total"> & { total?: number };
 type NearbyLocation = { lat: number; lng: number };
