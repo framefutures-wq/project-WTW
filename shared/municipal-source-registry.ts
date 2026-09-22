@@ -85,7 +85,7 @@ export function detectMunicipalDocumentSignals(html: string): MunicipalDocumentS
   if (/class=["'][^"']*(?:con_item|card|event[_-]?item|festival[_-]?item)[^"']*["']/i.test(html))
     signals.add("html_cards");
   if (
-    /<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?["@]type["']?\s*:\s*["']?Event\b/i.test(
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?["']@type["']\s*:\s*["']Event\b/i.test(
       html,
     )
   )
