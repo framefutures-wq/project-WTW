@@ -512,6 +512,7 @@ export default function App() {
     resultsRef = useRef<HTMLElement | null>(null),
     regionFilterRef = useRef<HTMLSelectElement | null>(null),
     contentFilterRef = useRef<HTMLDivElement | null>(null),
+    advancedFiltersRef = useRef<HTMLDetailsElement | null>(null),
     batchProgress = useRef(
       new Map<number, { loadedPages: number; scrollY: number }>(),
     ),
@@ -1001,12 +1002,16 @@ export default function App() {
     }
   }
   function focusFilter(target: "region" | "theme") {
+    if (target === "theme" && advancedFiltersRef.current)
+      advancedFiltersRef.current.open = true;
     const element =
       target === "region" ? regionFilterRef.current : contentFilterRef.current;
     element?.scrollIntoView({ behavior: "smooth", block: "center" });
     if (target === "region") element?.focus();
     else
-      (element?.querySelector("button") as HTMLButtonElement | null)?.focus();
+      requestAnimationFrame(() =>
+        (element?.querySelector("button") as HTMLButtonElement | null)?.focus(),
+      );
   }
   const pushScope = [
     region ? regionLabel(region) : null,
@@ -1362,6 +1367,7 @@ export default function App() {
               </button>
             </div>
             <details
+              ref={advancedFiltersRef}
               className="advanced-filters"
               open={Boolean(
                 audience ||
