@@ -1269,36 +1269,7 @@ export default function App() {
                   <Search size={16} />
                 </button>
               </form>
-              <div className="compact-nav-actions">
-                <label className="compact-region">
-                  <MapPin size={14} />
-                  <select
-                    aria-label="상단 지역"
-                    value={region}
-                    onChange={(event) => {
-                      if (location) {
-                        setLocation(null);
-                        setSort("date");
-                      }
-                      change(setRegion, event.target.value, "region");
-                    }}
-                  >
-                    <option value="">전국</option>
-                    {REGION_OPTIONS.map(({ queryValue, label }) => (
-                      <option key={queryValue} value={queryValue}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  className="compact-category"
-                  onClick={() => focusFilter("theme")}
-                >
-                  <SlidersHorizontal size={14} />
-                  카테고리
-                </button>
-              </div>
+
             </>
           )}
           <button className="trust-link" onClick={() => setAbout(true)}>
