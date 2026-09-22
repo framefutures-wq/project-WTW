@@ -51,7 +51,7 @@ test("higher-priority enrichment is preserved and detail failure retains the bas
     await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"));
     assert.equal((await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='tourapi-1'").first<{ summary: string }>())?.summary, "보호된 공식 소개");
     globalThis.fetch = (async () => { throw new Error("network"); }) as typeof fetch;
-    const failed = await enrichTourApiDetails(env as never, new Date("2026-09-29T00:00:00Z"));
+    const failed = await enrichTourApiDetails(env as never, new Date("2026-09-30T00:00:00Z"));
     assert.equal(failed.failed, 1);
     assert.equal((await DB.prepare("SELECT count(*) n FROM events WHERE id='tourapi-1'").first<{ n: number }>())?.n, 1);
   } finally { restore(); await mf.dispose(); }
