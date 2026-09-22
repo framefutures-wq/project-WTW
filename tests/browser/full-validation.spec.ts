@@ -12,6 +12,7 @@ import {
   type EventItem,
   type EventResponse,
 } from "../../shared/domain";
+import { PAGE_SIZE } from "../../shared/list-exploration";
 
 type Row = EventItem & { tag_list: string | null };
 type ApiBody = Partial<EventResponse> & {
@@ -154,10 +155,10 @@ async function assertResults(
   }
   await expect(page.locator(".results")).toHaveAttribute("aria-busy", "false");
   await expect(page.locator(".event-card")).toHaveCount(
-    Math.min(match.length, 9),
+    Math.min(match.length, PAGE_SIZE),
   );
   await expect(page.locator(".event-card h3")).toHaveText(
-    match.slice(0, 9).map((e) => e.title),
+    match.slice(0, PAGE_SIZE).map((e) => e.title),
   );
   await expect(page.locator(".result-heading h2 span")).toHaveText(
     String(match.length),
