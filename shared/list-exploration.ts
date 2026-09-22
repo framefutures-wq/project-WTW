@@ -1,6 +1,6 @@
 /** The bounded list exploration contract used by the client. */
-export const PAGE_SIZE = 9;
-export const PAGES_PER_BATCH = 4;
+export const PAGE_SIZE = 12;
+export const PAGES_PER_BATCH = 3;
 export const MAX_VISIBLE_ITEMS = PAGE_SIZE * PAGES_PER_BATCH;
 
 export function batchStartPage(batchIndex: number): number {
