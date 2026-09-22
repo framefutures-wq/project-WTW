@@ -21,7 +21,7 @@ body {
 }
 
 .header {
-  height: 64px;
+  height: 58px;
   position: sticky;
   top: 0;
   z-index: 30;
@@ -31,19 +31,19 @@ body {
 }
 
 .header-inner {
-  max-width: 1500px;
+  max-width: 1360px;
   height: 100%;
-  padding: 0 28px;
-  gap: 18px;
-}
-
-.header-compact .header-inner {
+  padding: 0 24px;
   gap: 16px;
 }
 
+.header-compact .header-inner {
+  gap: 14px;
+}
+
 .compact-search {
-  width: min(470px, 34vw);
-  height: 40px;
+  width: min(390px, 30vw);
+  height: 36px;
   margin-right: 0;
   padding: 0 5px 0 16px;
   border: 1px solid #dfe3e6;
@@ -78,9 +78,9 @@ body {
 
 .compact-search-clear,
 .compact-search-submit {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -99,16 +99,17 @@ body {
   color: #fff;
 }
 
-.compact-controls {
+.compact-nav-actions {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 0 0 auto;
 }
 
 .compact-region,
 .compact-category {
-  height: 40px;
+  height: 36px;
   border: 1px solid #e0e3e6;
   border-radius: 999px;
   background: #fff;
@@ -120,7 +121,7 @@ body {
 }
 
 .compact-region {
-  padding: 0 11px;
+  padding: 0 10px;
 }
 
 .compact-region select {
@@ -135,8 +136,8 @@ body {
 }
 
 .compact-category {
-  padding: 0 13px;
-  font-size: 12px;
+  padding: 0 11px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -146,7 +147,7 @@ body {
 }
 
 .brand {
-  font-size: 30px;
+  font-size: 28px;
   letter-spacing: -2.3px;
   color: #101820;
 }
@@ -165,7 +166,7 @@ body {
 }
 
 .header-compact .trust-link {
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .trust-link:hover {
@@ -173,8 +174,8 @@ body {
 }
 
 main {
-  max-width: 1500px;
-  padding: 0 28px;
+  max-width: 1360px;
+  padding: 0 24px;
 }
 
 /* Hero: use a real verified event image when one exists. */
@@ -646,7 +647,7 @@ h1 > span {
 }
 
 .result-heading h2 {
-  font-size: 36px;
+  font-size: 32px;
   line-height: 1.12;
   letter-spacing: -1.9px;
   margin: 6px 0 8px;
@@ -704,7 +705,7 @@ h1 > span {
 
 .subsection-heading h3 {
   margin: 0;
-  font-size: 27px;
+  font-size: 24px;
   line-height: 1.15;
   letter-spacing: -1.2px;
 }
@@ -744,7 +745,7 @@ h1 > span {
 
 .event-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 42px 30px;
+  gap: 38px 26px;
 }
 
 .event-card {
@@ -769,7 +770,7 @@ h1 > span {
 .scene {
   aspect-ratio: 4 / 3;
   height: auto;
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   background: #f0f1f2;
   transition: transform .18s ease, box-shadow .18s ease;
@@ -777,7 +778,7 @@ h1 > span {
 
 .featured-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 30px;
+  gap: 26px;
 }
 
 .featured-grid .scene {
@@ -806,7 +807,7 @@ h1 > span {
 }
 
 .card-content {
-  padding: 13px 2px 0;
+  padding: 11px 2px 0;
   display: flex;
   flex-direction: column;
 }
@@ -826,7 +827,7 @@ h1 > span {
 .card-content h3 {
   order: 1;
   color: #181d22;
-  font-size: 19px;
+  font-size: 17px;
   line-height: 1.28;
   letter-spacing: -.65px;
   margin: 0 0 8px;
@@ -835,7 +836,7 @@ h1 > span {
 .event-date {
   order: 2;
   color: #3e464e;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   margin: 0 0 7px;
 }
@@ -843,14 +844,14 @@ h1 > span {
 .card-meta {
   order: 3;
   color: #67717a;
-  font-size: 12px;
+  font-size: 11px;
   margin: 0 0 5px;
 }
 
 .venue {
   order: 4;
   color: #79818a;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.45;
   white-space: nowrap;
   overflow: hidden;
@@ -986,7 +987,7 @@ footer small {
     padding-right: 24px;
   }
 
-  .compact-controls {
+  .compact-nav-actions {
     gap: 8px;
   }
 
@@ -1038,7 +1039,7 @@ footer small {
     margin-right: 0;
   }
 
-  .compact-controls,
+  .compact-nav-actions,
   .header-compact .trust-link {
     display: none;
   }

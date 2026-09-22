@@ -1269,9 +1269,9 @@ export default function App() {
                   <Search size={16} />
                 </button>
               </form>
-              <div className="compact-controls">
+              <div className="compact-nav-actions">
                 <label className="compact-region">
-                  <MapPin size={15} />
+                  <MapPin size={14} />
                   <select
                     aria-label="상단 지역"
                     value={region}
@@ -1295,7 +1295,7 @@ export default function App() {
                   className="compact-category"
                   onClick={() => focusFilter("theme")}
                 >
-                  <SlidersHorizontal size={15} />
+                  <SlidersHorizontal size={14} />
                   카테고리
                 </button>
               </div>
