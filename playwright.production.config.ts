@@ -1,11 +1,18 @@
 import { defineConfig } from "@playwright/test";
-const outputDir = process.env.TEST_OUTPUT_DIR ?? "test-results";
+
+const baseURL = process.env.TEST_BASE_URL;
+if (!baseURL) {
+  throw new Error("TEST_BASE_URL is required for production browser verification.");
+}
+
+const outputDir = process.env.TEST_OUTPUT_DIR ?? "test-results/production";
+
 export default defineConfig({
   testDir: "./tests/browser",
-  testIgnore: ["tourapi-real.spec.ts", "production-smoke.spec.ts"],
+  testMatch: "production-smoke.spec.ts",
   outputDir,
   use: {
-    baseURL: process.env.TEST_BASE_URL ?? "http://127.0.0.1:8787",
+    baseURL,
     trace: "retain-on-failure",
   },
   reporter: [

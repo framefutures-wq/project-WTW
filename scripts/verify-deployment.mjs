@@ -93,7 +93,7 @@ for (const path of staticAssets) {
   assert.deepEqual(buffers[1], buffers[0], path);
 }
 console.log(`PASS: 로컬 ↔ 배포 API ${comparisons.length}개 응답 일치`);
-for (const name of ["test:smoke", "test:ui"]) {
+for (const name of ["test:smoke", "test:ui:prod"]) {
   const result = spawnSync("npm", ["run", name], {
     stdio: "inherit",
     env: {

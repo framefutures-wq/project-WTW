@@ -42,7 +42,8 @@
     "municipal:apply": "node --import tsx scripts/municipal-apply.mjs",
     "push:vapid:production": "node scripts/setup-web-push-vapid.mjs --production",
     "test:ui:contract": "node scripts/contract-browser.mjs",
-    "dev:sample": "npm run build && wrangler dev --local --var APP_MODE:sample --test-scheduled"
+    "dev:sample": "npm run build && wrangler dev --local --var APP_MODE:sample --test-scheduled",
+    "test:ui:prod": "playwright test --config playwright.production.config.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
