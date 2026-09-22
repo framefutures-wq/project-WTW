@@ -304,7 +304,15 @@ Audit:
 - 샘플 seed도 현재 deterministic fact/companion classifier 계약에 맞췄다.
 - 기간 변경 시 결과 제목이 실제 선택 기간과 맞도록 보정했다.
 - 최신 모바일/브라우저 QA main commit: `176d1b0e`
-- 다음 우선순위는 **행사/지역 coverage 확대**다. 한 번에 한 소스씩 공식 목록 안정성·파서 안전성을 확인해 추가한다.
+- 행사/지역 coverage 확대를 시작했다. 한 번에 한 소스씩 공식 목록 안정성·파서 안전성을 확인해 추가한다.
+- 2026-09-22 기준 부천시 공식 **부천페스타·가을 > 9월~10월 기타 축제 및 행사**를 municipal source로 추가했다.
+  - source key: `bucheon`
+  - canonical list: `https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003`
+  - 연도/기간/장소/주요내용만 보수적으로 파싱
+  - per-event detail URL이 없는 공식 city schedule로 취급
+  - 기존 duplicate/retry/last-known-good/Zero-Human gate를 그대로 적용
+  - main commit: `87cc6419`
+- 다음 coverage 작업은 **다음 공식 소스 1개를 조사·추가**하는 것이다.
 
 ## 15. 새 세션 시작 방법
 
