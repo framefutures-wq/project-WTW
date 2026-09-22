@@ -504,7 +504,8 @@ export default function App() {
     );
   const [detailRetry, setDetailRetry] = useState(0);
   const [mode, setMode] = useState(""),
-    [about, setAbout] = useState(false);
+    [about, setAbout] = useState(false),
+    [compactHeader, setCompactHeader] = useState(false);
   const [analyticsConfig, setAnalyticsConfig] =
     useState<AnalyticsRuntimeConfig | null>(null);
   const [pushConfig, setPushConfig] = useState<PushConfig | null>(null),
@@ -518,6 +519,7 @@ export default function App() {
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null),
     resultsRef = useRef<HTMLElement | null>(null),
+    heroRef = useRef<HTMLElement | null>(null),
     regionFilterRef = useRef<HTMLSelectElement | null>(null),
     contentFilterRef = useRef<HTMLDivElement | null>(null),
     advancedFiltersRef = useRef<HTMLDetailsElement | null>(null),
@@ -532,6 +534,16 @@ export default function App() {
       setAnalyticsConfig(next);
       trackPageView("initial");
     });
+  }, []);
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCompactHeader(entry.intersectionRatio < 0.2),
+      { threshold: [0, 0.2], rootMargin: "-68px 0px 0px 0px" },
+    );
+    observer.observe(hero);
+    return () => observer.disconnect();
   }, []);
   useEffect(() => {
     fetch("/api/meta")
@@ -1207,14 +1219,87 @@ export default function App() {
   };
   return (
     <>
-      <header className="header">
+      <header className={compactHeader ? "header header-compact" : "header"}>
         <div className="header-inner">
           <a href="/" className="brand" aria-label="갈틈 홈">
             갈틈
           </a>
-          <span className="header-tagline">
-            오늘, 어디 가지?
-          </span>
+          {!compactHeader && (
+            <span className="header-tagline">
+              오늘, 어디 가지?
+            </span>
+          )}
+          {compactHeader && (
+            <>
+              <form
+                className="compact-search"
+                role="search"
+                aria-label="상단 행사 검색"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setQuery(search.trim());
+                  resultsRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }}
+              >
+                <Search size={17} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="어디 갈까요?"
+                  aria-label="상단 행사 이름 또는 장소 검색"
+                  maxLength={80}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    className="compact-search-clear"
+                    onClick={() => setSearch("")}
+                    aria-label="상단 검색어 지우기"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="compact-search-submit"
+                  aria-label="상단에서 검색하기"
+                >
+                  <Search size={16} />
+                </button>
+              </form>
+              <label className="compact-region">
+                <MapPin size={15} />
+                <select
+                  aria-label="상단 지역"
+                  value={region}
+                  onChange={(event) => {
+                    if (location) {
+                      setLocation(null);
+                      setSort("date");
+                    }
+                    change(setRegion, event.target.value, "region");
+                  }}
+                >
+                  <option value="">전국</option>
+                  {REGION_OPTIONS.map(({ queryValue, label }) => (
+                    <option key={queryValue} value={queryValue}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="compact-category"
+                onClick={() => focusFilter("theme")}
+              >
+                <SlidersHorizontal size={15} />
+                카테고리
+              </button>
+            </>
+          )}
           <button className="trust-link" onClick={() => setAbout(true)}>
             <ShieldCheck size={17} />
             정보 확인 원칙
@@ -1231,7 +1316,10 @@ export default function App() {
         </div>
       )}
       <main>
-        <section className={heroImage ? "hero hero-with-image" : "hero"}>
+        <section
+          ref={heroRef}
+          className={heroImage ? "hero hero-with-image" : "hero"}
+        >
           {heroImage && (
             <img
               className="hero-media"

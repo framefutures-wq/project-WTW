@@ -61,3 +61,13 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("recommended");
   await expect(page.locator(".distance")).toHaveCount(0);
 });
+
+test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toHaveCount(0);
+  await page.locator(".results").scrollIntoViewIfNeeded();
+  await expect(page.locator(".header")).toHaveClass(/header-compact/);
+  await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toBeVisible();
+  await expect(page.getByLabel("상단 지역")).toBeVisible();
+  await expect(page.getByRole("button", { name: "카테고리", exact: true })).toBeVisible();
+});
