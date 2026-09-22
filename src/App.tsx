@@ -128,6 +128,14 @@ const PERIODS: { value: Period; label: string; small: string }[] = [
   { value: "weekend", label: "이번 주말", small: "기다려온 쉬는 날" },
   { value: "next-weekend", label: "다음 주말", small: "미리 계획해요" },
 ];
+const QUICK_CATEGORIES = [
+  { value: "", label: "전체", symbol: "⌁", hint: "모든 행사" },
+  { value: "food", label: "먹거리", symbol: "◉", hint: "시장 · 푸드" },
+  { value: "fireworks", label: "불꽃", symbol: "✦", hint: "야간 · 불꽃" },
+  { value: "flowers", label: "꽃", symbol: "✿", hint: "정원 · 꽃축제" },
+  { value: "experience", label: "체험", symbol: "△", hint: "직접 해보기" },
+  { value: "performance", label: "공연", symbol: "♫", hint: "공연 · 무대" },
+] as const;
 const dateLabel = (date: string) => {
   const localDate = date.includes("T") ? koreaDate(new Date(date)) : date;
   return `${Number(localDate.slice(5, 7))}.${Number(localDate.slice(8, 10))}`;
@@ -1252,18 +1260,79 @@ export default function App() {
               <Compass size={17} />
               계획은 가볍게, 하루는 특별하게
             </div>
-            {heroEvent && (
-              <button
-                className="hero-feature"
-                onClick={() => setSelected(heroEvent.id)}
-              >
-                <span>
-                  <small>이번 주말 먼저 보기</small>
-                  <strong>{heroEvent.title}</strong>
-                </span>
-                <ArrowRight size={18} />
+            <form
+              className="hero-search"
+              role="search"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setQuery(search.trim());
+                resultsRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+            >
+              <label className="hero-search-field">
+                <Search size={21} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="축제, 행사, 장소를 검색해 보세요"
+                  aria-label="행사 이름 또는 장소 검색"
+                  maxLength={80}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    className="hero-search-clear"
+                    onClick={() => setSearch("")}
+                    aria-label="검색어 지우기"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </label>
+              <button type="submit" className="hero-search-submit">
+                찾아보기
               </button>
-            )}
+            </form>
+          </div>
+        </section>
+        <section className="quick-discovery" aria-label="빠른 카테고리">
+          <div className="quick-discovery-heading">
+            <div>
+              <span>빠르게 둘러보기</span>
+              <h2>뭐 하고 싶어요?</h2>
+            </div>
+            <p>관심 있는 주제를 누르면 바로 골라드려요.</p>
+          </div>
+          <div className="quick-category-grid">
+            {QUICK_CATEGORIES.map((category) => (
+              <button
+                key={category.value || "all"}
+                className={
+                  theme === category.value
+                    ? "quick-category active"
+                    : "quick-category"
+                }
+                onClick={() =>
+                  change(
+                    setTheme,
+                    theme === category.value && category.value ? "" : category.value,
+                    "theme",
+                  )
+                }
+                aria-pressed={theme === category.value}
+              >
+                <span className="quick-category-symbol" aria-hidden="true">
+                  {category.symbol}
+                </span>
+                <span>
+                  <strong>{category.label}</strong>
+                  <small>{category.hint}</small>
+                </span>
+              </button>
+            ))}
           </div>
         </section>
         <section className="discovery" aria-label="행사 검색 및 필터">
@@ -1402,24 +1471,6 @@ export default function App() {
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="search">
-                <Search size={19} />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="행사 이름이나 장소를 검색해 보세요"
-                  aria-label="행사 이름 또는 장소 검색"
-                  maxLength={80}
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    aria-label="검색어 지우기"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
               </label>
               <button
                 className="location-button"
@@ -1725,8 +1776,11 @@ export default function App() {
           ) : discoveryMode && events.length > 4 ? (
             <div className="discovery-results">
               <section className="featured-events" aria-label="먼저 둘러볼 행사">
-                <div className="featured-intro">
-                  <span>갈틈 픽</span>
+                <div className="subsection-heading">
+                  <div>
+                    <span>갈틈 추천</span>
+                    <h3>이번 주말 먼저 볼 곳</h3>
+                  </div>
                   <p>사진부터 가볍게 둘러보세요.</p>
                 </div>
                 <div className="event-grid featured-grid">
