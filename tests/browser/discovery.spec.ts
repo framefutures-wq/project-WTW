@@ -68,14 +68,19 @@ test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({
   await page.locator(".results").scrollIntoViewIfNeeded();
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toBeVisible();
-  await expect(page.getByLabel("상단 지역")).toBeVisible();
-  await expect(page.getByRole("button", { name: "카테고리", exact: true })).toBeVisible();
+  await expect(page.locator(".region-quick-trigger")).toBeVisible();
+  await expect(page.locator(".category-quick-trigger")).toBeVisible();
 });
 
-test("스크롤 상단 탐색은 지역·카테고리를 한 세트만 보여준다", async ({ page }) => {
+test("스크롤 상단 탐색은 검색과 지역·카테고리가 겹치지 않는다", async ({ page }) => {
   await page.goto("/");
   await page.locator(".results").scrollIntoViewIfNeeded();
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
-  await expect(page.getByLabel("상단 지역")).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "카테고리", exact: true })).toHaveCount(1);
+  await expect(page.locator(".region-quick-trigger")).toHaveCount(1);
+  await expect(page.locator(".category-quick-trigger")).toHaveCount(1);
+  const search = await page.locator(".compact-search").boundingBox();
+  const region = await page.locator(".region-quick-trigger").boundingBox();
+  expect(search).not.toBeNull();
+  expect(region).not.toBeNull();
+  expect(search!.x + search!.width + 12).toBeLessThanOrEqual(region!.x);
 });
