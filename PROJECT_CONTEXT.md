@@ -255,7 +255,7 @@ Audit:
 현재 우선순위:
 
 1. **Municipal Zero-Human v2** 설계·구현
-2. 전국 지자체 coverage를 확장 가능한 공통 ingestion 구조로 전환
+2. 전국 지자체 coverage 확장 시작: Registry에 `generic_fallback` onboarding을 추가했다. 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image fallback으로 진입할 수 있으며, core 불명확 시 기존 retry·confirmation 정책을 유지한다. 2026-09-22 신규 3곳(서초구·청주시·강릉시)을 조사했지만 generic signal 또는 HTTPS 검증 조건을 충족한 곳이 없어 Registry 추가는 보류했다. 상세 사유: `docs/municipal-source-survey-2026-09-22.md`.
 3. 10시 base 완료 즉시 detail handoff + 11시 watchdog/recovery 구현
 4. Search Console `sitemap.xml` 제출 상태 확인
 5. 무료 공개 후 실제 traffic 관찰

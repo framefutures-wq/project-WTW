@@ -3,12 +3,11 @@ import {
   assessMunicipalSourceDocument,
   municipalSourceAllowsUrl,
   type MunicipalSourceDefinition,
-  type MunicipalSourceKey,
 } from "./municipal-source-registry";
 
 export type SelectionGate = "MAIN" | "NEARBY_ONLY" | "EXCLUDE" | "REVIEW";
 export type MunicipalCandidate = {
-  source: MunicipalSourceKey;
+  source: string;
   source_candidate_id: string;
   title: string;
   start_date: string | null;
@@ -218,16 +217,15 @@ export function createEnrichmentCandidate(candidate: MunicipalCandidate, detailH
 }
 
 
-export const MUNICIPAL_PARSERS = {
+export const MUNICIPAL_PARSERS: Partial<
+  Record<string, (html: string) => MunicipalCandidate[]>
+> = {
   paju: parsePajuList,
   suwon: parseSuwonList,
   goyang: parseGoyangList,
   hwaseong: parseHwaseongList,
   bucheon: parseBucheonAutumnList,
-} satisfies Record<
-  MunicipalSourceKey,
-  (html: string) => MunicipalCandidate[]
->;
+};
 
 type JsonRecord = Record<string, unknown>;
 
@@ -355,10 +353,11 @@ export function extractMunicipalCandidates(
   assessment: ReturnType<typeof assessMunicipalSourceDocument>;
 } {
   const assessment = assessMunicipalSourceDocument(source, html);
-  if (assessment.status === "healthy")
+  const parser = MUNICIPAL_PARSERS[source.key];
+  if (source.ingestion === "registered_parser" && parser && assessment.status === "healthy")
     return {
       mode: "registered",
-      candidates: MUNICIPAL_PARSERS[source.key](html),
+      candidates: parser(html),
       assessment,
     };
 
@@ -372,4 +371,3 @@ export function extractMunicipalCandidates(
   // Until their extractor is explicitly verified, keep last-known-good and retry.
   return { mode: "retry", candidates: [], assessment };
 }
-

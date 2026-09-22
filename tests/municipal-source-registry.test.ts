@@ -7,6 +7,7 @@ import {
   MUNICIPAL_SOURCE_REGISTRY,
   municipalSourceAllowsUrl,
   municipalSourceByKey,
+  type MunicipalSourceDefinition,
 } from "../shared/municipal-source-registry";
 import {
   extractMunicipalCandidates,
@@ -14,24 +15,60 @@ import {
   selectMunicipalGate,
 } from "../shared/municipal-discovery";
 
-const fixtureByKey = {
+const fixtureByKey: Record<string, string> = {
   paju: "fixtures/municipal-discovery-paju.html",
   suwon: "fixtures/municipal-discovery-suwon.html",
   goyang: "fixtures/municipal-discovery-goyang.html",
   hwaseong: "fixtures/municipal-discovery-hwaseong.html",
   bucheon: "fixtures/municipal-discovery-bucheon.html",
-} as const;
+};
 
-test("registry is the single source list and every registered source has a parser", () => {
+test("registry keeps existing parser-backed sources explicit", () => {
   assert.deepEqual(
     MUNICIPAL_SOURCE_REGISTRY.map((source) => source.key),
     ["paju", "suwon", "goyang", "hwaseong", "bucheon"],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY) {
+    assert.equal(source.ingestion, "registered_parser");
     assert.equal(typeof MUNICIPAL_PARSERS[source.key], "function");
     assert.equal(new URL(source.url).protocol, "https:");
     assert(source.allowedHosts.includes(new URL(source.url).hostname));
   }
+});
+
+test("generic registry sources enter JSON-LD fallback without a dedicated parser", () => {
+  const source = {
+    key: "generic-fixture",
+    region: "경기",
+    locality: "가상시",
+    url: "https://events.example.go.kr/calendar",
+    allowedHosts: ["events.example.go.kr"],
+    healthMarkers: ["공식 행사 일정"],
+    expectedSignals: ["structured_event", "pdf_attachment", "image_attachment"],
+    ingestion: "generic_fallback",
+  } satisfies MunicipalSourceDefinition;
+  const html = `
+    공식 행사 일정
+    <script type="application/ld+json">
+      {"@type":"Event","@id":"https://events.example.go.kr/events/2026-festival","name":"2026 가상시 가을축제","startDate":"2026-10-24","endDate":"2026-10-25","location":{"name":"가상공원"}}
+    </script>
+  `;
+  const assessment = assessMunicipalSourceDocument(source, html);
+  assert.equal(assessment.status, "healthy");
+  assert.equal(assessment.reason, "generic_fallback_contract_present");
+  assert.equal(MUNICIPAL_PARSERS[source.key], undefined);
+  const extracted = extractMunicipalCandidates(source, html);
+  assert.equal(extracted.mode, "structured_event");
+  assert.equal(extracted.candidates.length, 1);
+  assert.deepEqual(
+    [
+      extracted.candidates[0].source,
+      extracted.candidates[0].start_date,
+      extracted.candidates[0].end_date,
+      extracted.candidates[0].venue,
+    ],
+    ["generic-fixture", "2026-10-24", "2026-10-25", "가상공원"],
+  );
 });
 
 test("current municipal fixtures satisfy their registered parser contracts", () => {
@@ -43,7 +80,9 @@ test("current municipal fixtures satisfy their registered parser contracts", () 
       "healthy",
       `${source.key}: ${assessment.reason}`,
     );
-    assert(MUNICIPAL_PARSERS[source.key](html).length > 0);
+    const parser = MUNICIPAL_PARSERS[source.key];
+    assert(parser);
+    assert(parser(html).length > 0);
   }
 });
 

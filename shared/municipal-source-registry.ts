@@ -1,13 +1,3 @@
-export const MUNICIPAL_SOURCE_KEYS = [
-  "paju",
-  "suwon",
-  "goyang",
-  "hwaseong",
-  "bucheon",
-] as const;
-
-export type MunicipalSourceKey = (typeof MUNICIPAL_SOURCE_KEYS)[number];
-
 export type MunicipalDocumentSignal =
   | "html_list"
   | "html_table"
@@ -17,13 +7,15 @@ export type MunicipalDocumentSignal =
   | "image_attachment";
 
 export type MunicipalSourceDefinition = {
-  key: MunicipalSourceKey;
+  /** A durable source slug. New generic sources do not require a code change here. */
+  key: string;
   region: string;
   locality: string;
   url: string;
   allowedHosts: readonly string[];
   healthMarkers: readonly string[];
   expectedSignals: readonly MunicipalDocumentSignal[];
+  ingestion: "registered_parser" | "generic_fallback";
 };
 
 export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
@@ -35,6 +27,7 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     allowedHosts: ["tour.paju.go.kr"],
     healthMarkers: ["list-info"],
     expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
   },
   {
     key: "suwon",
@@ -44,6 +37,7 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     allowedHosts: ["swcf.or.kr", "www.swcf.or.kr"],
     healthMarkers: ["<table"],
     expectedSignals: ["html_table"],
+    ingestion: "registered_parser",
   },
   {
     key: "goyang",
@@ -53,6 +47,7 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     allowedHosts: ["goyang.go.kr", "www.goyang.go.kr"],
     healthMarkers: ["con_item"],
     expectedSignals: ["html_cards"],
+    ingestion: "registered_parser",
   },
   {
     key: "hwaseong",
@@ -62,6 +57,7 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     allowedHosts: ["tour.hscity.go.kr"],
     healthMarkers: ["listBoard"],
     expectedSignals: ["html_table"],
+    ingestion: "registered_parser",
   },
   {
     key: "bucheon",
@@ -71,10 +67,11 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     allowedHosts: ["bucheon.go.kr", "www.bucheon.go.kr"],
     healthMarkers: ["9월~10월 기타 축제 및 행사"],
     expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
   },
 ];
 
-export function municipalSourceByKey(key: MunicipalSourceKey) {
+export function municipalSourceByKey(key: string) {
   return MUNICIPAL_SOURCE_REGISTRY.find((source) => source.key === key) ?? null;
 }
 
@@ -135,7 +132,10 @@ export function assessMunicipalSourceDocument(
     return {
       status: "healthy",
       observedSignals,
-      reason: "registered_parser_contract_present",
+      reason:
+        source.ingestion === "registered_parser"
+          ? "registered_parser_contract_present"
+          : "generic_fallback_contract_present",
     };
   if (observedSignals.length)
     return {
