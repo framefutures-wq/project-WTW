@@ -2009,211 +2009,220 @@ export default function App() {
             )}
           </div>
         ) : detail ? (
-          <div>
-            <Scene
-              event={detail.event}
-              detail
-              onExpand={(image, title) => setLightbox({ image, title })}
-            />
-            <div className="detail-body">
-              <span className="eyebrow">
-                {detail.event.region} ·{" "}
-                {detail.event.verification === "sample"
-                  ? "가상 샘플"
-                  : "출처 확인"}
-              </span>
-              <h2>{detail.event.title}</h2>
-              {detail.event.is_sample === 1 && (
-                <div className="detail-warning">
-                  실제 행사가 아닙니다. 일정·장소·가격·좌표 모두 기능 검증용
-                  샘플입니다.
-                </div>
-              )}
-              <StatusNotice event={detail.event} />
-              <TrustInfo event={detail.event} />
-              {detail.enrichment?.summary && (
-                <section className="detail-description detail-enrichment-summary">
-                  <h3>행사 소개</h3>
-                  <p>{detail.enrichment.summary}</p>
-                </section>
-              )}
-              {detail.enrichment?.highlights.length ? (
-                <section className="detail-enrichment detail-highlights">
-                  <h3>주요 볼거리</h3>
-                  <div className="detail-tags">
-                    {detail.enrichment.highlights.map((highlight) => (
-                      <span className="chip" key={highlight.label}>
-                        {highlight.label}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-              {detail.enrichment?.programs.some(
-                (program) => program.featured,
-              ) ? (
-                <section className="detail-enrichment detail-featured">
-                  <h3>주요 일정</h3>
-                  <div className="detail-programs">
-                    {detail.enrichment.programs
-                      .filter((program) => program.featured)
-                      .map((program) => (
-                        <article className="detail-program" key={program.name}>
-                          <strong>{program.name}</strong>
-                          {detailProgramSchedule(program) && (
-                            <span>{detailProgramSchedule(program)}</span>
-                          )}
-                          {detailProgramVenue(program) && (
-                            <small>{detailProgramVenue(program)}</small>
-                          )}
+          (() => {
+            const location = locationLines(detail.event);
+            const operatingHours = formatOperatingHours(
+              selectOperatingHours(
+                detail.operating_hours,
+                eventDisplayRange,
+              ),
+            );
+            const price = detail.event.price_text?.trim();
+            const officialUrl =
+              officialDetailSource(detail) ??
+              (hasOfficialSource(detail.event)
+                ? safeUrl(detail.event.trust_source_url)
+                : null);
+            const description =
+              detail.enrichment?.summary ??
+              usefulDescription(detail.event.description);
+            return (
+              <div className="detail-shell">
+                <div className="detail-hero-grid">
+                  <Scene
+                    event={detail.event}
+                    detail
+                    onExpand={(image, title) => setLightbox({ image, title })}
+                  />
+                  <div className="detail-summary-panel">
+                    <span className="eyebrow">
+                      {detail.event.region} ·{" "}
+                      {detail.event.verification === "sample"
+                        ? "가상 샘플"
+                        : "출처 확인"}
+                    </span>
+                    <h2>{detail.event.title}</h2>
+                    {detail.event.is_sample === 1 && (
+                      <div className="detail-warning">
+                        실제 행사가 아닙니다. 일정·장소·가격·좌표 모두 기능 검증용
+                        샘플입니다.
+                      </div>
+                    )}
+                    <StatusNotice event={detail.event} />
+                    <TrustInfo event={detail.event} />
+                    <div className="detail-key-facts" aria-label="핵심 행사 정보">
+                      <article className="detail-fact">
+                        <CalendarDays size={18} />
+                        <span>
+                          <small>일정</small>
+                          <strong>
+                            {detailDateRange(
+                              detail.event.start_date,
+                              detail.event.end_date,
+                            )}
+                          </strong>
+                        </span>
+                      </article>
+                      {operatingHours && (
+                        <article className="detail-fact">
+                          <Clock3 size={18} />
+                          <span>
+                            <small>운영시간</small>
+                            <strong>{operatingHours}</strong>
+                          </span>
                         </article>
-                      ))}
-                  </div>
-                </section>
-              ) : null}
-              {(() => {
-                const location = locationLines(detail.event);
-                const price = detail.event.price_text?.trim();
-                return (
-                  <dl>
-                    <dt>일정</dt>
-                    <dd>
-                      {detailDateRange(
-                        detail.event.start_date,
-                        detail.event.end_date,
                       )}
-                    </dd>
-                    {formatOperatingHours(
-                      selectOperatingHours(
-                        detail.operating_hours,
-                        eventDisplayRange,
-                      ),
-                    ) && (
-                      <>
-                        <dt>운영시간</dt>
-                        <dd>
-                          {formatOperatingHours(
-                            selectOperatingHours(
-                              detail.operating_hours,
-                              eventDisplayRange,
-                            ),
-                          )}
-                        </dd>
-                      </>
-                    )}
-                    {location.primary && (
-                      <>
-                        <dt>장소</dt>
-                        <dd>
-                          {location.primary}
-                          {location.secondary && (
-                            <small>{location.secondary}</small>
-                          )}
-                        </dd>
-                      </>
-                    )}
-                    {price && (
-                      <>
-                        <dt>비용</dt>
-                        <dd>{price}</dd>
-                      </>
-                    )}
-                    {detail.event.pet_policy !== "unknown" && (
-                      <>
-                        <dt>반려동물</dt>
-                        <dd>
-                          {detail.event.pet_policy === "allowed"
-                            ? "동반 가능"
-                            : "동반 불가"}
-                        </dd>
-                      </>
-                    )}
-                    {detail.contact_phone && (
-                      <>
-                        <dt>문의</dt>
-                        <dd className="contact-phone">
-                          <span>{detail.contact_phone.display}</span>
+                      {location.primary && (
+                        <article className="detail-fact detail-fact-wide">
+                          <MapPin size={18} />
+                          <span>
+                            <small>장소</small>
+                            <strong>{location.primary}</strong>
+                            {location.secondary && <em>{location.secondary}</em>}
+                          </span>
+                        </article>
+                      )}
+                      {price && (
+                        <article className="detail-fact">
+                          <span className="detail-fact-symbol" aria-hidden="true">
+                            ₩
+                          </span>
+                          <span>
+                            <small>비용</small>
+                            <strong>{price}</strong>
+                          </span>
+                        </article>
+                      )}
+                      {detail.contact_phone && (
+                        <article className="detail-fact">
+                          <Phone size={18} />
+                          <span>
+                            <small>문의</small>
+                            <strong>{detail.contact_phone.display}</strong>
+                          </span>
                           <a
                             href={detail.contact_phone.href}
                             aria-label={`${detail.contact_phone.display}로 전화하기`}
                           >
-                            <Phone size={16} /> 전화하기
+                            전화
                           </a>
-                        </dd>
-                      </>
-                    )}
-                  </dl>
-                );
-              })()}
-              {!detail.enrichment?.summary &&
-                usefulDescription(detail.event.description) && (
-                  <section className="detail-description">
-                    <h3>행사 소개</h3>
-                    <p>{usefulDescription(detail.event.description)}</p>
-                  </section>
-                )}
-              {detail.enrichment?.programs.some(
-                (program) => !program.featured,
-              ) ? (
-                <section className="detail-enrichment detail-program-list">
-                  <h3>프로그램</h3>
-                  <div className="detail-programs">
-                    {detail.enrichment.programs
-                      .filter((program) => !program.featured)
-                      .map((program) => (
-                        <article className="detail-program" key={program.name}>
-                          <strong>{program.name}</strong>
-                          {detailProgramSchedule(program) && (
-                            <span>{detailProgramSchedule(program)}</span>
-                          )}
-                          {detailProgramVenue(program) && (
-                            <small>{detailProgramVenue(program)}</small>
-                          )}
-                          {program.description && <p>{program.description}</p>}
                         </article>
-                      ))}
+                      )}
+                    </div>
+                    {detail.event.pet_policy !== "unknown" && (
+                      <div className="detail-quick-note">
+                        반려동물{" "}
+                        <strong>
+                          {detail.event.pet_policy === "allowed"
+                            ? "동반 가능"
+                            : "동반 불가"}
+                        </strong>
+                      </div>
+                    )}
+                    {officialUrl && (
+                      <a
+                        className="primary source-button detail-official-link detail-official-link-top"
+                        href={officialUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          trackOfficialLinkClick(
+                            detail.event.id,
+                            detail.event.source_kind,
+                          )
+                        }
+                      >
+                        공식 안내 확인 <ExternalLink size={16} />
+                      </a>
+                    )}
                   </div>
-                </section>
-              ) : null}
-              <div className="detail-tags detail-event-tags">
-                {detail.event.tags.map((t) => (
-                  <span className="chip" key={t}>
-                    {tagLabel(t)}
-                  </span>
-                ))}
+                </div>
+                <div className="detail-body">
+                  {description && (
+                    <section className="detail-description detail-enrichment-summary">
+                      <h3>행사 소개</h3>
+                      <p>{description}</p>
+                    </section>
+                  )}
+                  {detail.enrichment?.highlights.length ? (
+                    <section className="detail-enrichment detail-highlights">
+                      <h3>주요 볼거리</h3>
+                      <div className="detail-tags">
+                        {detail.enrichment.highlights.map((highlight) => (
+                          <span className="chip" key={highlight.label}>
+                            {highlight.label}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+                  {detail.enrichment?.programs.some(
+                    (program) => program.featured,
+                  ) ? (
+                    <section className="detail-enrichment detail-featured">
+                      <h3>주요 일정</h3>
+                      <div className="detail-programs">
+                        {detail.enrichment.programs
+                          .filter((program) => program.featured)
+                          .map((program) => (
+                            <article className="detail-program" key={program.name}>
+                              <strong>{program.name}</strong>
+                              {detailProgramSchedule(program) && (
+                                <span>{detailProgramSchedule(program)}</span>
+                              )}
+                              {detailProgramVenue(program) && (
+                                <small>{detailProgramVenue(program)}</small>
+                              )}
+                            </article>
+                          ))}
+                      </div>
+                    </section>
+                  ) : null}
+                  {detail.enrichment?.programs.some(
+                    (program) => !program.featured,
+                  ) ? (
+                    <section className="detail-enrichment detail-program-list">
+                      <h3>프로그램</h3>
+                      <div className="detail-programs">
+                        {detail.enrichment.programs
+                          .filter((program) => !program.featured)
+                          .map((program) => (
+                            <article className="detail-program" key={program.name}>
+                              <strong>{program.name}</strong>
+                              {detailProgramSchedule(program) && (
+                                <span>{detailProgramSchedule(program)}</span>
+                              )}
+                              {detailProgramVenue(program) && (
+                                <small>{detailProgramVenue(program)}</small>
+                              )}
+                              {program.description && <p>{program.description}</p>}
+                            </article>
+                          ))}
+                      </div>
+                    </section>
+                  ) : null}
+                  <div className="detail-tags detail-event-tags">
+                    {detail.event.tags.map((t) => (
+                      <span className="chip" key={t}>
+                        {tagLabel(t)}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="detail-source-row">
+                    <p className="detail-source">
+                      출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
+                      {formatTrustDate(detail.event.checked_at) && (
+                        <> · 마지막 확인 {formatTrustDate(detail.event.checked_at)}</>
+                      )}
+                    </p>
+                    <button className="detail-back" onClick={close}>
+                      목록으로 돌아가기
+                    </button>
+                  </div>
+                </div>
               </div>
-              {(officialDetailSource(detail) ??
-                (hasOfficialSource(detail.event) &&
-                  safeUrl(detail.event.trust_source_url))) && (
-                <a
-                  className="primary source-button detail-official-link"
-                  href={
-                    officialDetailSource(detail) ??
-                    safeUrl(detail.event.trust_source_url)
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    trackOfficialLinkClick(
-                      detail.event.id,
-                      detail.event.source_kind,
-                    )
-                  }
-                >
-                  공식 안내 보기 <ExternalLink size={16} />
-                </a>
-              )}
-              <p className="detail-source">
-                출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
-                {formatTrustDate(detail.event.checked_at) && (
-                  <> · 마지막 확인 {formatTrustDate(detail.event.checked_at)}</>
-                )}
-              </p>
-              <button className="detail-back" onClick={close}>
-                목록으로 돌아가기
-              </button>
-            </div>
-          </div>
+            );
+          })()
         ) : (
           <div className="about-content">
             <Sparkles size={28} />
