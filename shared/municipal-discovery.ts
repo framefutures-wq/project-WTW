@@ -1,5 +1,10 @@
 import { normalizeMunicipalTitle } from "./municipal-duplicate";
-import type { MunicipalSourceKey } from "./municipal-source-registry";
+import {
+  assessMunicipalSourceDocument,
+  municipalSourceAllowsUrl,
+  type MunicipalSourceDefinition,
+  type MunicipalSourceKey,
+} from "./municipal-source-registry";
 
 export type SelectionGate = "MAIN" | "NEARBY_ONLY" | "EXCLUDE" | "REVIEW";
 export type MunicipalCandidate = {
@@ -223,3 +228,148 @@ export const MUNICIPAL_PARSERS = {
   MunicipalSourceKey,
   (html: string) => MunicipalCandidate[]
 >;
+
+type JsonRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): JsonRecord | null =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as JsonRecord)
+    : null;
+
+const jsonLdEventNodes = (value: unknown): JsonRecord[] => {
+  if (Array.isArray(value)) return value.flatMap(jsonLdEventNodes);
+  const record = asRecord(value);
+  if (!record) return [];
+  const type = record["@type"];
+  const types = Array.isArray(type) ? type : [type];
+  const self = types.some((entry) => entry === "Event") ? [record] : [];
+  const graph = jsonLdEventNodes(record["@graph"]);
+  return [...self, ...graph];
+};
+
+const structuredDate = (value: unknown) => {
+  if (typeof value !== "string") return null;
+  return /^(20\d{2}-\d{2}-\d{2})(?:T|$)/.exec(value.trim())?.[1] ?? null;
+};
+
+const structuredVenue = (value: unknown): string | null => {
+  if (typeof value === "string") return clean(value) || null;
+  const location = asRecord(value);
+  if (!location) return null;
+  if (typeof location.name === "string") return clean(location.name) || null;
+  if (typeof location.address === "string") return clean(location.address) || null;
+  const address = asRecord(location.address);
+  if (!address) return null;
+  for (const key of ["name", "streetAddress"]) {
+    if (typeof address[key] === "string" && clean(address[key] as string))
+      return clean(address[key] as string);
+  }
+  return null;
+};
+
+const officialStructuredUrl = (
+  source: MunicipalSourceDefinition,
+  value: unknown,
+) => {
+  if (typeof value !== "string" || !value.trim()) return source.url;
+  try {
+    const resolved = new URL(value, source.url).toString();
+    return municipalSourceAllowsUrl(source, resolved) ? resolved : source.url;
+  } catch {
+    return source.url;
+  }
+};
+
+export function parseStructuredMunicipalEvents(
+  source: MunicipalSourceDefinition,
+  html: string,
+): MunicipalCandidate[] {
+  const scripts = [
+    ...html.matchAll(
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+    ),
+  ];
+  const nodes: JsonRecord[] = [];
+  for (const script of scripts) {
+    try {
+      nodes.push(...jsonLdEventNodes(JSON.parse(script[1].trim())));
+    } catch {
+      // Malformed JSON-LD is not trusted as event evidence.
+    }
+  }
+
+  return nodes.flatMap<MunicipalCandidate>((node) => {
+    const title = typeof node.name === "string" ? clean(node.name) : "";
+    if (!title) return [];
+    const start_date = structuredDate(node.startDate);
+    const end_date = structuredDate(node.endDate);
+    const venue = structuredVenue(node.location);
+    const official_url = officialStructuredUrl(
+      source,
+      node.url ?? node["@id"],
+    );
+    const rawIdentity =
+      typeof node["@id"] === "string"
+        ? node["@id"]
+        : typeof node.url === "string"
+          ? node.url
+          : `${title}-${start_date ?? "unknown"}`;
+    const source_candidate_id =
+      normalizeMunicipalTitle(String(rawIdentity)).slice(0, 80) ||
+      normalizeMunicipalTitle(title).slice(0, 60);
+    const snippet =
+      typeof node.description === "string"
+        ? clean(node.description).slice(0, 280) || null
+        : null;
+    const missingCore = !start_date || !end_date || !venue;
+    return [
+      {
+        source: source.key,
+        source_candidate_id,
+        title,
+        start_date,
+        end_date,
+        region: source.region,
+        locality: source.locality,
+        venue,
+        official_url,
+        category: "구조화 공식행사",
+        snippet,
+        image_candidate: null,
+        ...(missingCore
+          ? { parse_error: "structured_event_missing_core" }
+          : !validRange(start_date, end_date)
+            ? { parse_error: "invalid_date_range" }
+            : {}),
+      },
+    ];
+  });
+}
+
+export function extractMunicipalCandidates(
+  source: MunicipalSourceDefinition,
+  html: string,
+): {
+  mode: "registered" | "structured_event" | "retry";
+  candidates: MunicipalCandidate[];
+  assessment: ReturnType<typeof assessMunicipalSourceDocument>;
+} {
+  const assessment = assessMunicipalSourceDocument(source, html);
+  if (assessment.status === "healthy")
+    return {
+      mode: "registered",
+      candidates: MUNICIPAL_PARSERS[source.key](html),
+      assessment,
+    };
+
+  if (assessment.observedSignals.includes("structured_event")) {
+    const candidates = parseStructuredMunicipalEvents(source, html);
+    if (candidates.length)
+      return { mode: "structured_event", candidates, assessment };
+  }
+
+  // PDF/image signals are intentionally detected but not guessed from.
+  // Until their extractor is explicitly verified, keep last-known-good and retry.
+  return { mode: "retry", candidates: [], assessment };
+}
+
