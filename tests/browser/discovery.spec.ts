@@ -62,6 +62,26 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await expect(page.locator(".distance")).toHaveCount(0);
 });
 
+test("1920x900 초기 화면에서 행사 카드 이미지가 바로 보인다", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await page.goto("/");
+  await expect(page.locator(".header")).not.toHaveClass(/header-compact/);
+  const hero = await page.locator(".hero").boundingBox();
+  const category = await page.locator(".quick-category").first().boundingBox();
+  const firstScene = await page.locator(".event-card .scene").first().boundingBox();
+  const sampleBanner = await page.locator(".sample-banner").boundingBox();
+  expect(hero).not.toBeNull();
+  expect(category).not.toBeNull();
+  expect(firstScene).not.toBeNull();
+  expect(hero!.height).toBeLessThanOrEqual(230);
+  expect(category!.height).toBeLessThanOrEqual(54);
+  const productionAdjustedY = firstScene!.y - (sampleBanner?.height ?? 0);
+  expect(productionAdjustedY).toBeLessThanOrEqual(820);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
 test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toHaveCount(0);
