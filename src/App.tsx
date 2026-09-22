@@ -2058,9 +2058,11 @@ export default function App() {
                       </div>
                     )}
                     <StatusNotice event={detail.event} />
-                    <TrustInfo event={detail.event} />
-                    <div className="detail-key-facts" aria-label="핵심 행사 정보">
-                      <article className="detail-fact">
+                    <div
+                      className="detail-primary-facts"
+                      aria-label="언제 어디서 열리나요"
+                    >
+                      <article className="detail-primary-fact detail-date-fact">
                         <CalendarDays size={18} />
                         <span>
                           <small>일정</small>
@@ -2072,17 +2074,8 @@ export default function App() {
                           </strong>
                         </span>
                       </article>
-                      {operatingHours && (
-                        <article className="detail-fact">
-                          <Clock3 size={18} />
-                          <span>
-                            <small>운영시간</small>
-                            <strong>{operatingHours}</strong>
-                          </span>
-                        </article>
-                      )}
                       {location.primary && (
-                        <article className="detail-fact detail-fact-wide">
+                        <article className="detail-primary-fact detail-location-fact">
                           <MapPin size={18} />
                           <span>
                             <small>장소</small>
@@ -2091,43 +2084,7 @@ export default function App() {
                           </span>
                         </article>
                       )}
-                      {price && (
-                        <article className="detail-fact">
-                          <span className="detail-fact-symbol" aria-hidden="true">
-                            ₩
-                          </span>
-                          <span>
-                            <small>비용</small>
-                            <strong>{price}</strong>
-                          </span>
-                        </article>
-                      )}
-                      {detail.contact_phone && (
-                        <article className="detail-fact">
-                          <Phone size={18} />
-                          <span>
-                            <small>문의</small>
-                            <strong>{detail.contact_phone.display}</strong>
-                          </span>
-                          <a
-                            href={detail.contact_phone.href}
-                            aria-label={`${detail.contact_phone.display}로 전화하기`}
-                          >
-                            전화
-                          </a>
-                        </article>
-                      )}
                     </div>
-                    {detail.event.pet_policy !== "unknown" && (
-                      <div className="detail-quick-note">
-                        반려동물{" "}
-                        <strong>
-                          {detail.event.pet_policy === "allowed"
-                            ? "동반 가능"
-                            : "동반 불가"}
-                        </strong>
-                      </div>
-                    )}
                     {officialUrl && (
                       <a
                         className="primary source-button detail-official-link detail-official-link-top"
@@ -2144,15 +2101,59 @@ export default function App() {
                         공식 안내 확인 <ExternalLink size={16} />
                       </a>
                     )}
+                    {(operatingHours || price || detail.contact_phone) && (
+                      <div className="detail-supporting-facts" aria-label="추가 행사 정보">
+                        {operatingHours && (
+                          <article className="detail-supporting-fact">
+                            <Clock3 size={18} />
+                            <span>
+                              <small>운영시간</small>
+                              <strong>{operatingHours}</strong>
+                            </span>
+                          </article>
+                        )}
+                        {price && (
+                          <article className="detail-supporting-fact">
+                            <span className="detail-supporting-symbol" aria-hidden="true">
+                              ₩
+                            </span>
+                            <span>
+                              <small>비용</small>
+                              <strong>{price}</strong>
+                            </span>
+                          </article>
+                        )}
+                        {detail.contact_phone && (
+                          <article className="detail-supporting-fact">
+                            <Phone size={18} />
+                            <span>
+                              <small>문의</small>
+                              <strong>{detail.contact_phone.display}</strong>
+                            </span>
+                            <a
+                              href={detail.contact_phone.href}
+                              aria-label={`${detail.contact_phone.display}로 전화하기`}
+                            >
+                              전화
+                            </a>
+                          </article>
+                        )}
+                      </div>
+                    )}
+                    <TrustInfo event={detail.event} />
+                    {detail.event.pet_policy !== "unknown" && (
+                      <div className="detail-quick-note">
+                        반려동물{" "}
+                        <strong>
+                          {detail.event.pet_policy === "allowed"
+                            ? "동반 가능"
+                            : "동반 불가"}
+                        </strong>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="detail-body">
-                  {description && (
-                    <section className="detail-description detail-enrichment-summary">
-                      <h3>행사 소개</h3>
-                      <p>{description}</p>
-                    </section>
-                  )}
                   {detail.enrichment?.highlights.length ? (
                     <section className="detail-enrichment detail-highlights">
                       <h3>주요 볼거리</h3>
@@ -2170,11 +2171,14 @@ export default function App() {
                   ) ? (
                     <section className="detail-enrichment detail-featured">
                       <h3>주요 일정</h3>
-                      <div className="detail-programs">
+                      <div className="detail-programs detail-timeline">
                         {detail.enrichment.programs
                           .filter((program) => program.featured)
                           .map((program) => (
-                            <article className="detail-program" key={program.name}>
+                            <article
+                              className="detail-program detail-timeline-item"
+                              key={program.name}
+                            >
                               <strong>{program.name}</strong>
                               {detailProgramSchedule(program) && (
                                 <span>{detailProgramSchedule(program)}</span>
@@ -2196,7 +2200,10 @@ export default function App() {
                         {detail.enrichment.programs
                           .filter((program) => !program.featured)
                           .map((program) => (
-                            <article className="detail-program" key={program.name}>
+                            <article
+                              className="detail-program detail-program-card"
+                              key={program.name}
+                            >
                               <strong>{program.name}</strong>
                               {detailProgramSchedule(program) && (
                                 <span>{detailProgramSchedule(program)}</span>
@@ -2210,6 +2217,12 @@ export default function App() {
                       </div>
                     </section>
                   ) : null}
+                  {description && (
+                    <section className="detail-description detail-enrichment-summary">
+                      <h3>행사 소개</h3>
+                      <p>{description}</p>
+                    </section>
+                  )}
                   <div className="detail-tags detail-event-tags">
                     {detail.event.tags.map((t) => (
                       <span className="chip" key={t}>

@@ -151,9 +151,9 @@ test("상세는 핵심 일정·장소를 소개보다 먼저 보여준다", asyn
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("button").click();
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  await expect(dialog.locator(".detail-key-facts")).toBeVisible();
-  await expect(dialog.locator(".detail-fact").first()).toContainText("일정");
-  const facts = await dialog.locator(".detail-key-facts").boundingBox();
+  await expect(dialog.locator(".detail-primary-facts")).toBeVisible();
+  await expect(dialog.locator(".detail-primary-fact").first()).toContainText("일정");
+  const facts = await dialog.locator(".detail-primary-facts").boundingBox();
   const description = await dialog.locator(".detail-description").first().boundingBox();
   if (description) {
     expect(facts).not.toBeNull();
@@ -183,7 +183,7 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
 
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator(".detail-key-facts")).toBeVisible();
+  await expect(dialog.locator(".detail-primary-facts")).toBeVisible();
   await expect(dialog.getByRole("button", { name: "닫기", exact: true })).toBeVisible();
 
   const box = await dialog.boundingBox();
@@ -195,7 +195,7 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
     await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth),
   ).toBe(true);
 
-  const facts = await dialog.locator(".detail-key-facts").boundingBox();
+  const facts = await dialog.locator(".detail-primary-facts").boundingBox();
   const description = await dialog.locator(".detail-description").first().boundingBox();
   if (description) {
     expect(facts).not.toBeNull();
