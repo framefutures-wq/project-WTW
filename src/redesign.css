@@ -1749,6 +1749,10 @@ body {
   color: #a84422;
 }
 
+.result-heading h2 > .result-count {
+  color: #a84422;
+}
+
 .featured-events .recommendation-reason,
 .recommendation-reason {
   color: #d95727;
@@ -1772,6 +1776,20 @@ body {
 .card-meta {
   order: 4;
   color: #5c646b;
+}
+
+.distance {
+  color: #5c646b;
+}
+
+.discovery .primary,
+.results .primary {
+  background: #f26b38;
+}
+
+.discovery .primary:hover,
+.results .primary:hover {
+  background: #d95727;
 }
 
 .scene {
