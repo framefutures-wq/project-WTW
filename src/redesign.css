@@ -25,26 +25,26 @@ body {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: rgba(255, 255, 255, .97);
+  background: #fff;
   border-bottom: 1px solid #eceef0;
-  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 18px rgba(17, 24, 32, .025);
 }
 
 .header-inner {
-  max-width: 1720px;
+  max-width: 1500px;
   height: 100%;
-  padding: 0 32px;
+  padding: 0 28px;
   gap: 18px;
 }
 
 .header-compact .header-inner {
-  gap: 12px;
+  gap: 16px;
 }
 
 .compact-search {
-  width: min(520px, 38vw);
+  width: min(470px, 34vw);
   height: 40px;
-  margin-right: auto;
+  margin-right: 0;
   padding: 0 5px 0 16px;
   border: 1px solid #dfe3e6;
   border-radius: 999px;
@@ -97,6 +97,13 @@ body {
 .compact-search-submit {
   background: #111820;
   color: #fff;
+}
+
+.compact-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 
 .compact-region,
@@ -157,13 +164,17 @@ body {
   border-radius: 999px;
 }
 
+.header-compact .trust-link {
+  margin-left: auto;
+}
+
 .trust-link:hover {
   background: #f4f5f6;
 }
 
 main {
-  max-width: 1720px;
-  padding: 0 32px;
+  max-width: 1500px;
+  padding: 0 28px;
 }
 
 /* Hero: use a real verified event image when one exists. */
@@ -733,7 +744,7 @@ h1 > span {
 
 .event-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 40px 22px;
+  gap: 42px 30px;
 }
 
 .event-card {
@@ -766,7 +777,7 @@ h1 > span {
 
 .featured-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 22px;
+  gap: 30px;
 }
 
 .featured-grid .scene {
@@ -975,6 +986,10 @@ footer small {
     padding-right: 24px;
   }
 
+  .compact-controls {
+    gap: 8px;
+  }
+
   .event-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -988,7 +1003,7 @@ footer small {
   }
 
   .compact-search {
-    width: min(430px, 36vw);
+    width: min(390px, 34vw);
   }
 
   .compact-category {
@@ -1023,8 +1038,7 @@ footer small {
     margin-right: 0;
   }
 
-  .compact-region,
-  .compact-category,
+  .compact-controls,
   .header-compact .trust-link {
     display: none;
   }
