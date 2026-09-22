@@ -187,6 +187,19 @@ const quote = (value) =>
       ? String(value)
       : `'${String(value).replaceAll("'", "''")}'`;
 const now = new Date().toISOString();
+const factTagMap = {
+  food: "food",
+  fireworks: "fireworks",
+  flowers: "flower_garden",
+  experience: "experience",
+  performance: "performance",
+};
+const companionMap = {
+  kids: ["child", "fit"],
+  couple: ["couple", "fit"],
+  parents: ["parents", "fit"],
+  pets: ["pet", "allowed"],
+};
 let sql =
   "DELETE FROM events WHERE is_sample=1;\nINSERT OR REPLACE INTO sources(id,kind,priority,name,fetched_at) VALUES('sample-source','sample',5,'로컬 UI 검증용 가상 데이터'," +
   quote(now) +
@@ -231,8 +244,17 @@ rows.forEach((r, i) => {
     "INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at) VALUES(" +
     values.map(quote).join(",") +
     ");\n";
-  for (const tag of tags)
-    sql += `INSERT INTO event_tags(event_id,tag) VALUES(${quote(id)},${quote(tag)});\n`;
+  for (const tag of tags) {
+    sql += `INSERT INTO event_tags(event_id,tag,classifier_type,rule_version) VALUES(${quote(id)},${quote(tag)},'legacy','legacy');\n`;
+    const factTag = factTagMap[tag];
+    if (factTag)
+      sql += `INSERT INTO event_tags(event_id,tag,classifier_type,rule_version,rule_id,evidence_source_ref,evidence_field) VALUES(${quote(id)},${quote(factTag)},'deterministic_rule','fact_rules_v1','sample.seed.v1','sample-source','description');\n`;
+    const companion = companionMap[tag];
+    if (companion) {
+      const [companionType, suitabilityState] = companion;
+      sql += `INSERT INTO event_companion_suitability(event_id,companion_type,suitability_state,classifier_type,rule_version,rule_id,positive_reason_codes,caution_reason_codes,source_fact_tags) VALUES(${quote(id)},${quote(companionType)},${quote(suitabilityState)},'deterministic_rule','companion_rules_v1','sample.seed.v1','["sample_seed"]','[]','[]');\n`;
+    }
+  }
 });
 sql +=
   "INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,status,verification,is_sample,primary_source_id,checked_at) VALUES('sample-cancelled','취소된 샘플','추천에서 제외되어야 합니다.','서울','가상 장소','가상 주소'," +
