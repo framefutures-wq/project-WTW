@@ -26,7 +26,9 @@ test("event cards retain a dedicated path for confirmed status changes", () => {
 
 test("recommendation reason is a small card-only contextual label", () => {
   assert.match(source, /recommendationReasonLabel\(/);
-  assert.match(source, /sort === "recommended" && !location/);
+  assert.match(source, /period === "weekend"/);
+  assert.match(source, /sort === "recommended"/);
+  assert.match(source, /!location/);
   assert.match(source, /className="recommendation-reason"/);
   assert.match(styles, /\.recommendation-reason\s*\{[^}]*white-space: nowrap/);
 });

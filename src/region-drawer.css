@@ -34,22 +34,22 @@
    but move them out of the search field so only one set is visible. */
 body:has(.header-compact) .region-quick-trigger {
   top: 11px;
-  left: max(540px, calc((100vw - 1280px) / 2 + 520px));
+  left: max(556px, calc((100vw - 1280px) / 2 + 540px));
   height: 36px;
   font-size: 12px;
 }
 body:has(.header-compact) .category-quick-trigger {
   top: 11px;
-  left: max(660px, calc((100vw - 1280px) / 2 + 642px));
+  left: max(676px, calc((100vw - 1280px) / 2 + 662px));
   height: 36px;
   font-size: 12px;
 }
 @media (max-width: 1180px) {
   body:has(.header-compact) .region-quick-trigger {
-    left: 500px;
+    left: 514px;
   }
   body:has(.header-compact) .category-quick-trigger {
-    left: 618px;
+    left: 632px;
   }
 }
 @media (max-width: 760px) {

@@ -1117,14 +1117,23 @@ export default function App() {
     ? customRange.start === customRange.end
       ? `${dateLabel(customRange.start)}에 열리는 행사`
       : `${dateLabel(customRange.start)} ~ ${dateLabel(customRange.end)}에 열리는 행사`
-    : `${PERIODS.find((p) => p.value === period)?.label}에 열리는 행사`;
+    : period === "today"
+      ? "오늘 열리는 행사"
+      : period === "next-weekend"
+        ? "다음 주말에 열리는 행사"
+        : "이번 주말에 열리는 행사";
   const eventDisplayRange = data?.range ?? customRange ?? dateRange(period);
   const heroEvent =
     events.slice(4).find((event) => safeUrl(event.image_url)) ??
     events.find((event) => safeUrl(event.image_url)) ??
     null;
   const heroImage = heroEvent ? safeUrl(heroEvent.image_url) : undefined;
-  const discoveryMode = !active && sort === "recommended" && !location;
+  const discoveryMode =
+    period === "weekend" &&
+    !customRange &&
+    !active &&
+    sort === "recommended" &&
+    !location;
   const featuredEvents = discoveryMode ? events.slice(0, 4) : [];
   const listEvents = discoveryMode ? events.slice(4) : events;
   const activeFilterLabels = [
