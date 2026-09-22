@@ -54,7 +54,7 @@ Production Cron 현재 상태:
 - 매일 11:00 KST TourAPI detail enrichment: `0 2 * * *` UTC
 - 현재 11시 detail run은 같은 KST 운영일의 10시 base run이 `success`로 끝난 것을 D1 `sync_runs`에서 확인한 뒤 실행한다.
 
-새 운영 결정(아직 미구현):
+Zero-Human v2 결정(코드 구현 완료·production 배포 대기):
 
 - 10시 base 완료 후 11시까지 기다리지 않는다.
 - base에서 새 행사/변경 행사가 확인되는 즉시 detail 단계로 자동 handoff한다.
@@ -416,3 +416,36 @@ Audit:
 5. 신규 Queue 등 production resource가 필요하면 비용/설정/마이그레이션을 먼저 확인하고 사용자 승인 후 생성.
 6. 부천을 첫 v2 검증 source로 사용하되 부천 전용 예외 코드를 계속 쌓지 않는다.
 7. 테스트 → Actions → 기존 Worker 배포 → production smoke/detail 검증 순서로 완료한다.
+
+
+## 18. Municipal Zero-Human v2 구현 상태 (2026-09-22 최신)
+
+main 구현 완료:
+- 10시 base 성공 직후 detail 즉시 handoff + 11시 watchdog/recovery.
+- municipal Source Registry 단일화.
+- parser contract / format-change 감지 / 공식 host allowlist.
+- format 변경 시 공식 JSON-LD Event explicit-core fallback.
+- 공식 PDF/image attachment fallback 기반.
+  - source당 최대 3개 파일.
+  - 파일당 최대 5 MiB.
+  - 외부/HTTP attachment 거부.
+  - PDF는 명시적 행사명/기간/장소만 사용.
+  - 이미지 첫 판독은 AUTO_RETRY.
+  - 다른 한국 날짜에 동일 core payload hash가 다시 관측될 때만 image confirmation 통과 가능.
+  - same-day 반복이나 payload 변경은 confirmation으로 인정하지 않음.
+- D1 migration 없음.
+- 신규 Cloudflare resource 없음.
+
+주요 merge 기준:
+- immediate detail handoff 계열: 6f41ee49
+- source registry: 13088dfb
+- structured fallback: 8e4f0dbd
+- PDF/poster fallback: bd16a75d
+- PR #23 최종 Project checks / UI browser smoke success 후 merge.
+
+Production 주의:
+- 현재 production Worker는 위 최신 main 이전 버전이다.
+- 다음 파트는 최신 main을 기존 Worker에 배포하고 smoke/cron contract를 검증하는 것이다.
+- env.AI binding은 production에 아직 없다.
+- Workers AI 사용량이 발생할 수 있으므로 AI binding은 사용자 승인 전 추가하지 않는다.
+- binding이 없으면 PDF/image fallback은 fail-closed하고 기존 last-known-good를 유지한다.
