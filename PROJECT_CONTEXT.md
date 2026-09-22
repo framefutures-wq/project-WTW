@@ -237,6 +237,11 @@ Audit:
 - `scripts/audit-event-detail-completeness.mjs`
 - `shared/event-detail-completeness-audit.ts`
 
+## 작업 운영 계약
+
+- 프롬프트 작성, 모델 선택, 작업 크기, 테스트·CI·배포·최종보고 규칙은 `docs/WORKING_RULES.md`를 따른다.
+- 새 세션에서도 이 문서를 먼저 읽고 가장 낮은 충분한 모델(Luna → Terra/Medium → 필요한 경우에만 Sol/High)을 선택한다.
+
 ## 11. 로드맵
 
 완료:
