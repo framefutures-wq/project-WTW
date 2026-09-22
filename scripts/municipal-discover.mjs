@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { setDefaultResultOrder } from "node:dns";
-import { createEnrichmentCandidate, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate } from "../shared/municipal-discovery.ts";
+import { createEnrichmentCandidate, parseBucheonAutumnList, parseGoyangList, parseHwaseongList, parsePajuList, parseSuwonList, selectMunicipalGate } from "../shared/municipal-discovery.ts";
 import { lookupMunicipalDuplicate } from "./municipal-duplicate-lookup.mjs";
 import { manifestFingerprint, stableMunicipalCandidateId, temporalStatus, seoulToday } from "../shared/municipal-approval.ts";
 
@@ -14,6 +14,7 @@ const LIST_URLS = {
   suwon: "https://www.swcf.or.kr/?p=29",
   goyang: "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303",
   hwaseong: "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp",
+  bucheon: "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003",
 };
 const sourceUnique = (candidates) => [...new Map(candidates.map((candidate) => [`${candidate.source}|${candidate.title}|${candidate.start_date}|${candidate.end_date}|${candidate.venue}`, candidate])).values()];
 
@@ -38,17 +39,19 @@ async function fetchOfficial(url, cache, metrics) {
 export async function runMunicipalDiscovery({ fetchOfficialPage = fetchOfficial, execute = d1Read } = {}) {
   const metrics = { official_requests: 0, d1_rows_read: 0, parser_errors: 0, detail_requests: 0 };
   const cache = new Map();
-  const [pajuHtml, suwonHtml, goyangHtml, hwaseongHtml] = await Promise.all([
+  const [pajuHtml, suwonHtml, goyangHtml, hwaseongHtml, bucheonHtml] = await Promise.all([
     fetchOfficialPage(LIST_URLS.paju, cache, metrics),
     fetchOfficialPage(LIST_URLS.suwon, cache, metrics),
     fetchOfficialPage(LIST_URLS.goyang, cache, metrics),
     fetchOfficialPage(LIST_URLS.hwaseong, cache, metrics),
+    fetchOfficialPage(LIST_URLS.bucheon, cache, metrics),
   ]);
   const discovered = [
     ...sourceUnique(parsePajuList(pajuHtml)).slice(0, 10),
     ...sourceUnique(parseSuwonList(suwonHtml)).slice(0, 10),
     ...sourceUnique(parseGoyangList(goyangHtml)).slice(0, 10),
     ...sourceUnique(parseHwaseongList(hwaseongHtml)).slice(0, 10),
+    ...sourceUnique(parseBucheonAutumnList(bucheonHtml)).slice(0, 10),
   ];
   const results = [];
   for (const candidate of discovered) {
