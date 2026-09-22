@@ -1112,6 +1112,79 @@ export default function App() {
     query ? `검색: ${query}` : null,
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
+  const renderEventCard = (event: EventItem) => (
+    <article className="event-card" key={event.id}>
+      <button
+        className="card-button"
+        onClick={() => setSelected(event.id)}
+        aria-label={`${event.title} 상세 보기`}
+      >
+        <Scene event={event} />
+        <div className="card-content">
+          <div className="card-meta">
+            <span>
+              <MapPin size={13} />
+              {event.region}
+            </span>
+          </div>
+          {sort === "recommended" &&
+            !location &&
+            (() => {
+              const reason = recommendationReasonLabel(
+                event,
+                eventDisplayRange,
+                customRange ? "custom" : period,
+              );
+              return reason ? (
+                <span className="recommendation-reason">{reason}</span>
+              ) : null;
+            })()}
+          <h3>{event.title}</h3>
+          <p className="venue">{event.venue}</p>
+          <p className="event-date">
+            <CalendarDays size={14} />
+            {formatEventDateLabel({
+              eventStart: event.start_date,
+              eventEnd: event.end_date,
+              selectedRange: eventDisplayRange,
+              selectionMode: customRange ? "custom" : period,
+            })}
+            {location && (
+              <span className="distance">
+                {event.distance_km === null
+                  ? "거리 미확인"
+                  : displayDistance(event.distance_km)}
+              </span>
+            )}
+          </p>
+          {formatOperatingHours(event.operating_hours ?? null) && (
+            <p className="event-hours">
+              <Clock3 size={14} />
+              {formatOperatingHours(event.operating_hours ?? null)}
+            </p>
+          )}
+          <div className="card-tags">
+            {event.tags.slice(0, 3).map((t) => (
+              <span key={t}>#{tagLabel(t)}</span>
+            ))}
+          </div>
+          <div
+            className={`card-bottom${cardStatusLabel(event) ? " card-bottom-status" : ""}`}
+          >
+            {event.is_sample ? (
+              <span>
+                <Info size={13} />
+                실제 행사가 아닌 샘플
+              </span>
+            ) : (
+              <TrustInfo event={event} card />
+            )}
+            <ArrowRight size={17} />
+          </div>
+        </div>
+      </button>
+    </article>
+  );
   const close = () => {
     if (selected && detailHistory.current) {
       window.history.back();
@@ -1658,80 +1731,7 @@ export default function App() {
                 </div>
                 <div className="event-grid featured-grid">
               {featuredEvents.map((event) => (
-                <article className="event-card" key={event.id}>
-                  <button
-                    className="card-button"
-                    onClick={() => setSelected(event.id)}
-                    aria-label={`${event.title} 상세 보기`}
-                  >
-                    <Scene event={event} />
-                    <div className="card-content">
-                      <div className="card-meta">
-                        <span>
-                          <MapPin size={13} />
-                          {event.region}
-                        </span>
-                      </div>
-                      {sort === "recommended" && !location &&
-                        (() => {
-                          const reason = recommendationReasonLabel(
-                            event,
-                            eventDisplayRange,
-                            customRange ? "custom" : period,
-                          );
-                          return reason ? (
-                            <span className="recommendation-reason">
-                              {reason}
-                            </span>
-                          ) : null;
-                        })()}
-                      <h3>{event.title}</h3>
-                      <p className="venue">{event.venue}</p>
-                      <p className="event-date">
-                        <CalendarDays size={14} />
-                        {formatEventDateLabel({
-                          eventStart: event.start_date,
-                          eventEnd: event.end_date,
-                          selectedRange: eventDisplayRange,
-                          selectionMode: customRange ? "custom" : period,
-                        })}
-                        {location && (
-                          <span className="distance">
-                            {event.distance_km === null
-                              ? "거리 미확인"
-                              : displayDistance(event.distance_km)}
-                          </span>
-                        )}
-                      </p>
-                      {formatOperatingHours(event.operating_hours ?? null) && (
-                        <p className="event-hours">
-                          <Clock3 size={14} />
-                          {formatOperatingHours(event.operating_hours ?? null)}
-                        </p>
-                      )}
-                      <div className="card-tags">
-                        {event.tags.slice(0, 3).map((t) => (
-                          <span key={t}>#{tagLabel(t)}</span>
-                        ))}
-                      </div>
-                      <div
-                        className={`card-bottom${
-                          cardStatusLabel(event) ? " card-bottom-status" : ""
-                        }`}
-                      >
-                        {event.is_sample ? (
-                          <span>
-                            <Info size={13} />
-                            실제 행사가 아닌 샘플
-                          </span>
-                        ) : (
-                          <TrustInfo event={event} card />
-                        )}
-                        <ArrowRight size={17} />
-                      </div>
-                    </div>
-                  </button>
-                </article>
+                renderEventCard(event)
               ))}
                 </div>
               </section>
@@ -1745,80 +1745,7 @@ export default function App() {
                 </div>
                 <div className="event-grid">
               {listEvents.map((event) => (
-                <article className="event-card" key={event.id}>
-                  <button
-                    className="card-button"
-                    onClick={() => setSelected(event.id)}
-                    aria-label={`${event.title} 상세 보기`}
-                  >
-                    <Scene event={event} />
-                    <div className="card-content">
-                      <div className="card-meta">
-                        <span>
-                          <MapPin size={13} />
-                          {event.region}
-                        </span>
-                      </div>
-                      {sort === "recommended" && !location &&
-                        (() => {
-                          const reason = recommendationReasonLabel(
-                            event,
-                            eventDisplayRange,
-                            customRange ? "custom" : period,
-                          );
-                          return reason ? (
-                            <span className="recommendation-reason">
-                              {reason}
-                            </span>
-                          ) : null;
-                        })()}
-                      <h3>{event.title}</h3>
-                      <p className="venue">{event.venue}</p>
-                      <p className="event-date">
-                        <CalendarDays size={14} />
-                        {formatEventDateLabel({
-                          eventStart: event.start_date,
-                          eventEnd: event.end_date,
-                          selectedRange: eventDisplayRange,
-                          selectionMode: customRange ? "custom" : period,
-                        })}
-                        {location && (
-                          <span className="distance">
-                            {event.distance_km === null
-                              ? "거리 미확인"
-                              : displayDistance(event.distance_km)}
-                          </span>
-                        )}
-                      </p>
-                      {formatOperatingHours(event.operating_hours ?? null) && (
-                        <p className="event-hours">
-                          <Clock3 size={14} />
-                          {formatOperatingHours(event.operating_hours ?? null)}
-                        </p>
-                      )}
-                      <div className="card-tags">
-                        {event.tags.slice(0, 3).map((t) => (
-                          <span key={t}>#{tagLabel(t)}</span>
-                        ))}
-                      </div>
-                      <div
-                        className={`card-bottom${
-                          cardStatusLabel(event) ? " card-bottom-status" : ""
-                        }`}
-                      >
-                        {event.is_sample ? (
-                          <span>
-                            <Info size={13} />
-                            실제 행사가 아닌 샘플
-                          </span>
-                        ) : (
-                          <TrustInfo event={event} card />
-                        )}
-                        <ArrowRight size={17} />
-                      </div>
-                    </div>
-                  </button>
-                </article>
+                renderEventCard(event)
               ))}
                 </div>
               </section>
@@ -1826,80 +1753,7 @@ export default function App() {
           ) : (
             <div className="event-grid">
               {events.map((event) => (
-                <article className="event-card" key={event.id}>
-                  <button
-                    className="card-button"
-                    onClick={() => setSelected(event.id)}
-                    aria-label={`${event.title} 상세 보기`}
-                  >
-                    <Scene event={event} />
-                    <div className="card-content">
-                      <div className="card-meta">
-                        <span>
-                          <MapPin size={13} />
-                          {event.region}
-                        </span>
-                      </div>
-                      {sort === "recommended" && !location &&
-                        (() => {
-                          const reason = recommendationReasonLabel(
-                            event,
-                            eventDisplayRange,
-                            customRange ? "custom" : period,
-                          );
-                          return reason ? (
-                            <span className="recommendation-reason">
-                              {reason}
-                            </span>
-                          ) : null;
-                        })()}
-                      <h3>{event.title}</h3>
-                      <p className="venue">{event.venue}</p>
-                      <p className="event-date">
-                        <CalendarDays size={14} />
-                        {formatEventDateLabel({
-                          eventStart: event.start_date,
-                          eventEnd: event.end_date,
-                          selectedRange: eventDisplayRange,
-                          selectionMode: customRange ? "custom" : period,
-                        })}
-                        {location && (
-                          <span className="distance">
-                            {event.distance_km === null
-                              ? "거리 미확인"
-                              : displayDistance(event.distance_km)}
-                          </span>
-                        )}
-                      </p>
-                      {formatOperatingHours(event.operating_hours ?? null) && (
-                        <p className="event-hours">
-                          <Clock3 size={14} />
-                          {formatOperatingHours(event.operating_hours ?? null)}
-                        </p>
-                      )}
-                      <div className="card-tags">
-                        {event.tags.slice(0, 3).map((t) => (
-                          <span key={t}>#{tagLabel(t)}</span>
-                        ))}
-                      </div>
-                      <div
-                        className={`card-bottom${
-                          cardStatusLabel(event) ? " card-bottom-status" : ""
-                        }`}
-                      >
-                        {event.is_sample ? (
-                          <span>
-                            <Info size={13} />
-                            실제 행사가 아닌 샘플
-                          </span>
-                        ) : (
-                          <TrustInfo event={event} card />
-                        )}
-                        <ArrowRight size={17} />
-                      </div>
-                    </div>
-                  </button>
-                </article>
+                renderEventCard(event)
               ))}
             </div>
           )}
