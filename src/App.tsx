@@ -1621,9 +1621,11 @@ export default function App() {
         >
           <div className="result-heading">
             <div>
-              <span className="section-kicker">YOUR NEXT LITTLE ADVENTURE</span>
+              <span className="section-kicker">
+                {discoveryMode ? "갈틈 추천" : "찾은 행사"}
+              </span>
               <h2>
-                {discoveryMode ? "이번 주말 먼저 볼 곳" : selectedRangeLabel}{" "}
+                {discoveryMode ? "이번 주말, 여기 어때요?" : selectedRangeLabel}{" "}
                 {data && <span>{data.total}</span>}
               </h2>
               {data && (
@@ -1633,9 +1635,7 @@ export default function App() {
                     ` – ${dateLabel(data.range.end)}`}{" "}
                   · {region ? regionLabel(region) : "전국"}
                   {location && " · 내 주변 · 가까운순 · 직선거리 기준"}
-                  {mode === "sample"
-                    ? " · 가상 행사 미리보기"
-                    : " · 출처에 등록된 행사 · 출발 전 개최 여부 확인"}
+                  {mode === "sample" && " · 가상 행사 미리보기"}
                   {data.nearby_candidate_limited &&
                     " · 주변 후보가 많아 가까운 일부만 보여드려요"}
                 </p>
@@ -1724,10 +1724,10 @@ export default function App() {
               <section className="featured-events" aria-label="먼저 둘러볼 행사">
                 <div className="subsection-heading">
                   <div>
-                    <span>FIRST LOOK</span>
+                    <span>먼저 보기</span>
                     <h3>먼저 둘러볼 행사</h3>
                   </div>
-                  <p>추천순에서 먼저 눈여겨볼 네 곳이에요.</p>
+                  <p>사진부터 가볍게 둘러보세요.</p>
                 </div>
                 <div className="event-grid featured-grid">
               {featuredEvents.map((event) => (
@@ -1738,7 +1738,7 @@ export default function App() {
               <section className="all-events-section" aria-label="더 둘러볼 행사">
                 <div className="subsection-heading">
                   <div>
-                    <span>EXPLORE MORE</span>
+                    <span>더 보기</span>
                     <h3>더 둘러보기</h3>
                   </div>
                   <p>{selectedRangeLabel}</p>

@@ -16,7 +16,7 @@
 }
 
 body {
-  background: #fff;
+  background: #f3f4f5;
   color: var(--ink);
 }
 
@@ -191,9 +191,12 @@ h1 > span {
 
 /* Date/search discovery is intentionally lighter than the content cards. */
 .discovery {
-  margin-top: 22px;
-  border: 0;
-  box-shadow: none;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #e7e9eb;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(20, 28, 35, .04);
   overflow: visible;
 }
 
@@ -245,7 +248,7 @@ h1 > span {
 }
 
 .filter-body {
-  padding: 16px 0 0;
+  padding: 14px 0 0;
 }
 
 .search-row {
@@ -393,26 +396,28 @@ h1 > span {
 
 /* Results: editorial hierarchy first, database metadata second. */
 .results {
-  margin-top: 58px;
+  margin-top: 34px;
 }
 
 .result-heading {
   align-items: flex-end;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  padding: 0 2px;
 }
 
 .section-kicker {
   display: inline-block;
-  font-size: 9px;
-  color: #8d96a0;
-  letter-spacing: 1.7px;
+  font-size: 10px;
+  color: #6f7780;
+  font-weight: 800;
+  letter-spacing: .02em;
 }
 
 .result-heading h2 {
-  font-size: 34px;
-  line-height: 1.15;
-  letter-spacing: -1.7px;
-  margin: 7px 0 7px;
+  font-size: 36px;
+  line-height: 1.12;
+  letter-spacing: -1.9px;
+  margin: 6px 0 8px;
 }
 
 .result-heading h2 span {
@@ -434,7 +439,7 @@ h1 > span {
 
 .discovery-results {
   display: grid;
-  gap: 50px;
+  gap: 28px;
 }
 
 .subsection-heading {
@@ -442,33 +447,71 @@ h1 > span {
   justify-content: space-between;
   align-items: flex-end;
   gap: 20px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .subsection-heading span {
   display: block;
-  margin-bottom: 5px;
-  color: #969ea6;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.6px;
+  margin-bottom: 6px;
+  color: #7b838b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .01em;
 }
 
 .subsection-heading h3 {
   margin: 0;
-  font-size: 23px;
-  letter-spacing: -1px;
+  font-size: 27px;
+  line-height: 1.15;
+  letter-spacing: -1.2px;
 }
 
 .subsection-heading p {
   margin: 0;
-  color: #838b94;
-  font-size: 11px;
+  color: #737b84;
+  font-size: 12px;
+}
+
+.featured-events {
+  padding: 28px;
+  border-radius: 26px;
+  background: #171b20;
+  color: #fff;
+}
+
+.featured-events .subsection-heading span,
+.featured-events .subsection-heading p {
+  color: #9ea6ae;
+}
+
+.featured-events .subsection-heading h3,
+.featured-events .card-content h3 {
+  color: #fff;
+}
+
+.featured-events .event-date {
+  color: #d6dbe0;
+}
+
+.featured-events .card-meta,
+.featured-events .venue {
+  color: #9fa7af;
+}
+
+.featured-events .recommendation-reason {
+  color: #c9bcff;
+}
+
+.all-events-section {
+  padding: 30px 28px 34px;
+  border: 1px solid #e4e6e8;
+  border-radius: 26px;
+  background: #fff;
 }
 
 .event-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 38px 22px;
+  gap: 40px 22px;
 }
 
 .event-card {
@@ -487,18 +530,25 @@ h1 > span {
 .card-button {
   text-align: left;
   width: 100%;
+  cursor: pointer;
 }
 
 .scene {
-  aspect-ratio: 16 / 11;
+  aspect-ratio: 4 / 3;
   height: auto;
   border-radius: 16px;
   overflow: hidden;
   background: #f0f1f2;
+  transition: transform .18s ease, box-shadow .18s ease;
 }
 
 .featured-grid .scene {
   aspect-ratio: 4 / 3;
+}
+
+.event-card:hover .scene {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(17, 24, 32, .14);
 }
 
 .event-card .scene-with-image::after {
@@ -527,39 +577,43 @@ h1 > span {
   order: 0;
   align-self: flex-start;
   margin: 0 0 7px;
-  border-radius: 999px;
-  background: #f0edff;
-  color: #5b36d6;
-  font-size: 10px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #6a50db;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .card-content h3 {
   order: 1;
   color: #181d22;
-  font-size: 17px;
-  line-height: 1.35;
-  letter-spacing: -.55px;
-  margin: 0 0 7px;
+  font-size: 19px;
+  line-height: 1.28;
+  letter-spacing: -.65px;
+  margin: 0 0 8px;
 }
 
 .event-date {
   order: 2;
-  color: #414a53;
-  font-size: 12px;
-  margin: 0 0 6px;
+  color: #3e464e;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 7px;
 }
 
 .card-meta {
   order: 3;
-  color: #707983;
-  font-size: 11px;
+  color: #67717a;
+  font-size: 12px;
   margin: 0 0 5px;
 }
 
 .venue {
   order: 4;
-  color: #7b838b;
-  font-size: 11px;
+  color: #79818a;
+  font-size: 12px;
+  line-height: 1.45;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -730,6 +784,13 @@ footer small {
     padding: 0 16px;
   }
 
+  .discovery {
+    margin-left: -4px;
+    margin-right: -4px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
   .hero {
     margin: 10px -16px 0;
     min-height: 360px;
@@ -852,7 +913,7 @@ footer small {
   }
 
   .discovery-results {
-    gap: 38px;
+    gap: 24px;
   }
 
   .subsection-heading {
@@ -860,11 +921,23 @@ footer small {
   }
 
   .subsection-heading h3 {
-    font-size: 21px;
+    font-size: 22px;
   }
 
   .subsection-heading p {
     margin-top: 4px;
+  }
+
+  .featured-events {
+    padding: 18px 14px 20px;
+    border-radius: 20px;
+  }
+
+  .all-events-section {
+    padding: 20px 0 24px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .event-grid {
@@ -875,15 +948,18 @@ footer small {
   .scene,
   .featured-grid .scene {
     border-radius: 12px;
-    aspect-ratio: 1 / 1.06;
+    aspect-ratio: 1 / 1.03;
   }
 
   .card-content h3 {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .card-meta,
-  .venue,
+  .venue {
+    font-size: 10.5px;
+  }
+
   .event-date {
     font-size: 11px;
   }
