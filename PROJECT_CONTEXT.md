@@ -327,16 +327,29 @@ Audit:
   - 상세페이지 자체 정보 구조보다 **대표 이미지 표현이 부자연스러운 것이 가장 큰 문제**였다.
   - 스크롤 후 홈 sticky UI는 현재 정상으로 평가됐다.
   - 홈 첫 화면도 큰 포스터형에서 낮은 검색 배너형으로 정리되어 해결된 상태다.
-- 이 대화에서는 `367dedd6`의 **production deploy 완료 로그를 아직 확인하지 못했다.**
-- 새 세션의 첫 실무 순서:
-  1. 최신 `origin/main`과 Actions success 재확인
-  2. `367dedd6` 이후 추가 commit이 없다면 production 배포 필요 여부 확인
-  3. 배포 후 상세 이미지 프레임을 코드/production smoke 기준으로 확인
-  4. 상세 UI가 안정되면 **지자체 상세보강(부천부터) → 다음 공식 지역 coverage** 순서로 진행
+- 상세 이미지 수정의 production 반영은 **2026-09-22 완료**됐다.
+  - 배포 기준 HEAD: `4b8bc6631ff99243407ef67eed6632567b80303d`
+  - Cloudflare Version ID: `5e2d5068-a88d-49f0-b059-3a89ef3f880c`
+  - production smoke 통과
+  - production UI desktop/mobile 2/2 통과
+  - 실제 `galteum.com` 상세 대표이미지 조건 desktop 높이 ≤360px·비율 1.15~1.5, mobile 높이 ≤300px·비율 >1.15 통과
+- 이후 dev dry-run에도 Bucheon source를 포함하도록 `scripts/municipal-discover.mjs`를 보완했다.
+  - main commit: `e740bf0f`
+  - Project checks: success
+  - production behavior 변경이 아닌 dev QA 보완이라 추가 Cloudflare deploy는 하지 않는다.
+- 다음 실무 순서:
+  1. 최신 `origin/main`과 Actions success 확인
+  2. **지자체 상세보강(부천부터)** 진행
+  3. core 일정/장소와 충돌하는 공식 상세자료는 덮어쓰지 않고 last-known-good/재시도 원칙 유지
+  4. 부천 보강이 안정되면 다음 공식 지역 coverage 추가
 - 부천 municipal source는 main에 들어가 있다.
   - source key: `bucheon`
   - 기본 수집은 행사명/날짜/장소/주요내용 중심
-  - 다음 데이터 작업은 부천 공식 보도자료/행사별 페이지를 안전하게 연결해 대표이미지/운영시간/상세소개/문의 등을 보강하는 방식이 유력하다.
+  - 공식 상세자료 사전조사 결과:
+    - 시민어울림한마당 전용 관광 페이지는 2026-10-09 및 문의처 등 core와 일치하는 상세정보를 제공
+    - 복사골청소년예술제는 canonical 가을 목록/최근 안전관리 보도자료가 2026-10-10, 별도 관광 페이지가 2026-10-11로 공식 소스 충돌 상태
+    - 2026 부천페스타 가을 공식 소셜 안내에는 제13회 부천시민 자전거대축제 2026-10-24 13:00~16:00이 명시됨
+  - 다음 데이터 작업은 **canonical core는 유지하고 충돌 없는 공식 상세자료만 non-core enrichment에 연결**해 운영시간/상세소개/문의/이미지 후보를 보강하는 것이다.
 
 ## 16. 새 세션 시작 방법
 
