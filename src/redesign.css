@@ -1564,3 +1564,240 @@ footer small {
     font-size: 35px;
   }
 }
+
+/* Home + card visual system v2: warm canvas, charcoal hierarchy, restrained discovery orange. */
+:root {
+  --ink: #171a1d;
+  --ink-soft: #343a40;
+  --surface: #ffffff;
+  --surface-soft: #f0ece4;
+  --line-strong: #ded8cf;
+  --accent: #f26b38;
+  --accent-soft: #fff0e9;
+  --brand: #171a1d;
+  --green: #155d4b;
+  --muted: #5d646a;
+  --line: #e3ddd4;
+  --paper: #ffffff;
+  background: #f7f4ee;
+}
+
+body {
+  background: #f7f4ee;
+  color: #171a1d;
+}
+
+.header {
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom-color: rgba(23, 26, 29, 0.1);
+  box-shadow: 0 5px 20px rgba(23, 26, 29, 0.05);
+  backdrop-filter: blur(14px);
+}
+
+.brand,
+.compact-search input,
+.hero-search-field input,
+.region-select select,
+.filter-label,
+.card-content h3,
+.result-heading h2,
+.subsection-heading h3 {
+  color: #171a1d;
+}
+
+.header-tagline,
+.trust-link,
+.result-heading p,
+.subsection-heading p,
+.card-meta,
+.venue,
+.section-kicker {
+  color: #343a40;
+}
+
+.compact-search {
+  border-color: #e2ddd5;
+  background: #f7f4ee;
+  color: #343a40;
+}
+
+.compact-search:focus-within,
+.search:focus-within {
+  border-color: #f26b38;
+  box-shadow: 0 0 0 3px rgba(242, 107, 56, 0.14);
+}
+
+.compact-search-submit,
+.hero-search-submit {
+  background: #f26b38;
+}
+
+.compact-search-submit:hover,
+.hero-search-submit:hover {
+  background: #d95727;
+}
+
+.sample-banner {
+  background: #fff0e9;
+  color: #8e3d21;
+}
+
+.hero {
+  border: 1px solid rgba(23, 26, 29, 0.12);
+  box-shadow: 0 18px 36px rgba(39, 31, 23, 0.13);
+  background: linear-gradient(120deg, #171a1d 0%, #343a40 55%, #8b4833 100%);
+}
+
+.hero-shade {
+  background:
+    linear-gradient(90deg, rgba(23, 26, 29, 0.86) 0%, rgba(23, 26, 29, 0.66) 42%, rgba(23, 26, 29, 0.2) 74%, rgba(23, 26, 29, 0.08) 100%),
+    linear-gradient(0deg, rgba(23, 26, 29, 0.28), transparent 58%);
+}
+
+.hero:not(.hero-with-image)::before {
+  opacity: 0.82;
+  background:
+    radial-gradient(circle at 82% 20%, rgba(242, 107, 56, 0.98) 0 4%, transparent 4.5%),
+    radial-gradient(ellipse at 72% 120%, #bf5935 0 9%, transparent 9.5%),
+    radial-gradient(ellipse at 83% 118%, #e38a56 0 12%, transparent 12.5%);
+}
+
+.hero .eyebrow,
+.hero .eyebrow > span {
+  color: #ffc3a8;
+}
+
+.hero .eyebrow > span {
+  background: #f26b38;
+}
+
+.quick-category,
+.region-select,
+.location-button,
+.advanced-filters,
+.date-picker,
+.result-tools .reset,
+.sort {
+  border-color: #e1dbd2;
+  box-shadow: none;
+}
+
+.quick-category {
+  background: rgba(255, 255, 255, 0.76);
+  color: #171a1d;
+}
+
+.quick-category:hover {
+  border-color: #f0a282;
+  box-shadow: 0 10px 22px rgba(67, 42, 29, 0.1);
+}
+
+.quick-category.active {
+  border-color: #f26b38;
+  box-shadow: inset 0 0 0 1px #f26b38;
+}
+
+.quick-category-symbol {
+  background: #f3ede5;
+}
+
+.quick-category.active .quick-category-symbol,
+.period.active,
+.chip.chosen {
+  background: #f26b38;
+  border-color: #f26b38;
+}
+
+.discovery {
+  background: transparent;
+  border-color: #e4ded5;
+}
+
+.period,
+.region-select,
+.location-button,
+.advanced-filters,
+.date-picker,
+.search,
+.advanced-filter-body,
+.result-tools .reset,
+.sort {
+  background: #ffffff;
+}
+
+.period {
+  color: #343a40;
+  border-color: #e1dbd2;
+}
+
+.search {
+  background: #ffffff;
+  border-color: #e1dbd2;
+}
+
+.advanced-filter-body {
+  background: #faf8f4;
+}
+
+.active-filter {
+  background: #fff0e9;
+  color: #a84422;
+}
+
+.result-count {
+  background: #fff0e9;
+  color: #a84422;
+}
+
+.featured-events .recommendation-reason,
+.recommendation-reason {
+  color: #d95727;
+}
+
+.recommendation-reason::before {
+  content: "✦";
+  margin-right: 5px;
+  color: #f26b38;
+}
+
+.event-date {
+  color: #343a40;
+}
+
+.venue {
+  order: 3;
+  color: #343a40;
+}
+
+.card-meta {
+  order: 4;
+  color: #5c646b;
+}
+
+.scene {
+  background: #e9e2d8;
+}
+
+.event-card:hover .scene {
+  box-shadow: 0 14px 30px rgba(50, 35, 24, 0.18);
+}
+
+.scene-fallback {
+  background: linear-gradient(145deg, #f2e6da, #e4eee8);
+}
+
+.principle {
+  background: #fff0e9;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    border-right: 0;
+    border-left: 0;
+    box-shadow: 0 14px 26px rgba(39, 31, 23, 0.14);
+  }
+
+  .quick-category {
+    background: #ffffff;
+  }
+}

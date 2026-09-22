@@ -474,6 +474,7 @@ Production 주의:
 
 - 현재 usage limit으로 끊긴 municipal onboarding 작업을 먼저 마무리한다.
 - 그 다음 데이터 coverage 확대를 잠시 멈추고 **홈 / 카드 / 상세 / 모바일 UI를 한 디자인 시스템으로 정리**한다.
+- UI v2 첫 bounded task로 홈과 행사카드의 시각체계를 완료했다. `src/redesign.css`에서 웜 아이보리 canvas·차콜 본문·절제된 오렌지 CTA/선택 상태를 적용했으며, PC 4열·모바일 2열 및 검색/필터 동작은 유지했다.
 - UI/상세 v2가 안정된 뒤 상세 enrichment 품질 확대와 전국 coverage 확장을 재개한다.
 
 ### 톤앤매너 / 컬러 시스템
