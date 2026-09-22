@@ -48,11 +48,19 @@
 - GitHub source of truth
 - GitHub Codespaces + Codex CLI
 
-Production Cron:
+Production Cron 현재 상태:
 
 - 매일 10:00 KST base sync: `0 1 * * *` UTC
 - 매일 11:00 KST TourAPI detail enrichment: `0 2 * * *` UTC
-- 11시 detail run은 같은 KST 운영일의 10시 base run이 `success`로 끝난 것을 D1 `sync_runs`에서 자동 확인한 뒤에만 실행한다. 실패·running·누락이면 `tourapi-detail` run을 `skipped`로 기록하며, 일상적인 사람 승인은 필요 없는 Zero-Human 방식이다.
+- 현재 11시 detail run은 같은 KST 운영일의 10시 base run이 `success`로 끝난 것을 D1 `sync_runs`에서 확인한 뒤 실행한다.
+
+새 운영 결정(아직 미구현):
+
+- 10시 base 완료 후 11시까지 기다리지 않는다.
+- base에서 새 행사/변경 행사가 확인되는 즉시 detail 단계로 자동 handoff한다.
+- 전체 base가 10:05에 끝났다면 detail도 10:05부터 진행한다.
+- 11:00 Cron은 주 작업이 아니라 미완료·실패·재시도 대상을 보충하는 watchdog/recovery 역할로 유지한다.
+- 이미 완료한 detail을 11시에 중복 처리하지 않도록 상태 기반 idempotency를 유지한다.
 
 ## 4. 데이터/정확성 원칙
 
@@ -246,10 +254,12 @@ Audit:
 
 현재 우선순위:
 
-1. Search Console에 `sitemap.xml` 제출
-2. 무료 공개 후 실제 traffic 관찰
-3. 행사/지역 coverage 확대
-4. 수익화는 traffic 확보 뒤 진행
+1. **Municipal Zero-Human v2** 설계·구현
+2. 전국 지자체 coverage를 확장 가능한 공통 ingestion 구조로 전환
+3. 10시 base 완료 즉시 detail handoff + 11시 watchdog/recovery 구현
+4. Search Console `sitemap.xml` 제출 상태 확인
+5. 무료 공개 후 실제 traffic 관찰
+6. 수익화는 traffic 확보 뒤 진행
 
 수익화는 현재 보류한다.
 
@@ -363,3 +373,46 @@ Audit:
 6. 이전 대화 전체를 다시 재구성하려 하지 말고 이 문서를 handoff 기준으로 사용
 
 이 문서는 중요한 제품 결정이나 운영 상태가 바뀔 때 갱신한다.
+
+
+## 17. Municipal Zero-Human v2 결정 (2026-09-22)
+
+### 목표
+
+- 전국 지자체 행사 수집을 사람의 일상 검수 없이 운영한다.
+- 특정 지자체 5곳만 관리하는 것이 목표가 아니라, 전국 coverage를 늘려도 사람이 매일 소스를 확인하지 않아도 되는 구조를 만든다.
+
+### 문제 인식
+
+- 지자체별로 홈페이지 구조가 다르고, 같은 지자체도 다음 공지에서 HTML / table / PDF / 이미지 포스터 등 형식을 바꿀 수 있다.
+- 지자체별 고정 HTML parser를 계속 추가하는 방식은 전국 확장 시 유지보수 병목이 된다.
+- parser 실패나 format 변경을 '행사 없음'으로 오판하면 기존 데이터를 잘못 지울 수 있다.
+
+### v2 원칙
+
+- 공식 Source Registry를 두고 source URL/정책/신뢰도/허용 host를 관리한다.
+- 문서 형식 변화를 감지한다.
+- HTML / table / structured data / PDF / image 등의 extractor를 공통 Event Candidate 형태로 수렴시킨다.
+- 추출 실패는 source failure/AUTO_RETRY로 처리하고 기존 last-known-good를 유지한다.
+- 확실한 candidate만 AUTO_PUBLISH한다.
+- 애매한 후보를 사람 검수 큐로 보내지 않는다.
+- source 하나의 장애가 다른 source, TourAPI, private source, push 흐름을 막지 않는다.
+- 이미지/PDF 기반 정보도 core 날짜·장소를 불확실하게 추측해서 저장하지 않는다.
+
+### 스케줄/오케스트레이션 결정
+
+- 10:00 KST base sync가 시작점이다.
+- source/candidate 처리 완료 시 상세보강 대상은 즉시 다음 단계로 handoff한다.
+- base 전체 완료 시각이 10:05라면 detail 작업도 즉시 시작한다.
+- 11:00 KST Cron은 pending/failed/retry 대상만 확인하는 watchdog/recovery로 남긴다.
+- D1 상태를 기준으로 idempotent하게 동작해 동일 detail을 중복 처리하지 않는다.
+
+### 다음 구현 순서
+
+1. 현재 `worker/cron.ts`, `sync_runs`, detail state와 충돌 없이 즉시 handoff 가능한 구조 설계.
+2. 11시 detail Cron을 recovery/watchdog 역할로 재정의.
+3. municipal Source Registry와 format detection/extractor 인터페이스 설계.
+4. bounded concurrency/queue가 필요한 규모와 Cloudflare 신규 resource 필요 여부 검증.
+5. 신규 Queue 등 production resource가 필요하면 비용/설정/마이그레이션을 먼저 확인하고 사용자 승인 후 생성.
+6. 부천을 첫 v2 검증 source로 사용하되 부천 전용 예외 코드를 계속 쌓지 않는다.
+7. 테스트 → Actions → 기존 Worker 배포 → production smoke/detail 검증 순서로 완료한다.
