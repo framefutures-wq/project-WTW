@@ -70,6 +70,23 @@ test("production discovery shell and public endpoints are healthy", async ({
     const detail = await page.goto(`/events/${encodeURIComponent(eventId)}`);
     expect(detail?.ok()).toBe(true);
     await expect(page.getByRole("dialog")).toBeVisible();
+
+    const scene = page.locator(".detail-dialog .scene-detail");
+    await expect(scene).toBeVisible();
+    const sceneBox = await scene.boundingBox();
+    expect(sceneBox).not.toBeNull();
+    const sceneRatio = sceneBox!.width / sceneBox!.height;
+    const viewportWidth = page.viewportSize()?.width ?? 0;
+    if (viewportWidth >= 1000) {
+      expect(sceneBox!.height).toBeLessThanOrEqual(360);
+      expect(sceneBox!.height).toBeGreaterThan(220);
+      expect(sceneRatio).toBeGreaterThan(1.15);
+      expect(sceneRatio).toBeLessThan(1.5);
+    } else {
+      expect(sceneBox!.height).toBeLessThanOrEqual(300);
+      expect(sceneRatio).toBeGreaterThan(1.15);
+    }
+
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",
       `https://galteum.com/events/${eventId}`,
