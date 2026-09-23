@@ -515,3 +515,9 @@ UI 기준:
 
 - 첫 deterministic queue 9개 광역단체를 공식 HTTPS source read-only 조사로 확정했다: 강원·충남·제주는 `ONBOARDING_READY`, 충북·전북은 `COLLECTOR_GAP`, 경기·전남·경북·경남은 `WATCH`.
 - inventory는 다음 queue 위치(수도권 하위단체부터)로 진행하며, 이번 batch에서는 Registry·collector·D1·production·Cron을 변경하지 않았다. 다음 bounded task는 이 결과를 기준으로 E onboarding을 별도 수행한다.
+
+## 2026-09-23 Phase 6E — ONBOARDING_READY batch probe
+
+- 4개 후보를 current generic collector와 공식 HTTP live probe로 다시 검증했으나 이번 batch의 ACTIVE 승격은 **0개**다. 광주는 legacy page의 `dmgj.kr` detail cross-host/ownership migration을 fail-closed로 `WATCH` 처리했고, 강원은 repeated HTTP timeout으로 `WATCH` 처리했다.
+- 충남(`pageIndex=1..3`)과 제주(canonical festival/list)는 official list·full-year core를 제공하지만 current generic extractor가 각각 0 candidates로 fail-closed되어 `COLLECTOR_GAP`으로 되돌렸다. dedicated parser나 list→detail 기능은 추가하지 않았다.
+- Registry는 기존 ACTIVE 9개를 유지했다. D1 write, municipal one-shot, Cron manual run, production deploy는 하지 않았다. 다음 운영 순서는 **내일 C 10:00 자동 Cron 검증 → D 11:00 TourAPI watchdog → B deterministic survey queue 재개**다.
