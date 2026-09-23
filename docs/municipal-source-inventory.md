@@ -15,13 +15,13 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | --- | ---: |
 | ACTIVE | 9 |
 | ONBOARDING_READY | 21 |
-| COLLECTOR_GAP | 30 |
-| WATCH | 114 |
+| COLLECTOR_GAP | 32 |
+| WATCH | 127 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 71 |
+| UNREVIEWED | 56 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `chungnam-계룡` · 2. `chungnam-공주` · 3. `chungnam-금산` · 4. `chungnam-논산` · 5. `chungnam-당진` · 6. `chungnam-보령` · 7. `chungnam-부여` · 8. `chungnam-서산` · 9. `chungnam-서천` · 10. `chungnam-아산` · 11. `chungnam-예산` · 12. `chungnam-천안` · 13. `chungnam-청양` · 14. `chungnam-태안` · 15. `chungnam-홍성` · 16. `jeonbuk-고창` · 17. `jeonbuk-군산` · 18. `jeonbuk-김제` · 19. `jeonbuk-남원` · 20. `jeonbuk-무주`
+First 20 queue entries: 1. `jeonbuk-고창` · 2. `jeonbuk-군산` · 3. `jeonbuk-김제` · 4. `jeonbuk-남원` · 5. `jeonbuk-무주` · 6. `jeonbuk-부안` · 7. `jeonbuk-순창` · 8. `jeonbuk-완주` · 9. `jeonbuk-익산` · 10. `jeonbuk-임실` · 11. `jeonbuk-장수` · 12. `jeonbuk-전주` · 13. `jeonbuk-정읍` · 14. `jeonbuk-진안` · 15. `gyeongbuk-경산` · 16. `gyeongbuk-경주` · 17. `gyeongbuk-고령` · 18. `gyeongbuk-구미` · 19. `gyeongbuk-김천` · 20. `gyeongbuk-문경`

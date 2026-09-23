@@ -723,3 +723,11 @@ UI 기준:
 - inventory 총 245: **ACTIVE 9 / READY 21 / GAP 30 / WATCH 114 / EXCLUDE 0 / UNREVIEWED 71**. 다음 queue는 **`chungnam-계룡`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-23 Phase 6B — 충남 하위 15개 source 조사 완료
+
+- 충남 하위 15개 시·군을 current official source 기준으로 조사해 모두 UNREVIEWED에서 제거했다.
+- **COLLECTOR_GAP 2**: `chungnam-논산`, `chungnam-당진` — current/durable 공식 문화·축제 목록은 title·기간·detail을 제공하지만 venue가 list에 일관되게 self-contained하지 않아 기존 `list_detail_core_followup_needed`.
+- **WATCH 13**: 계룡·공주·금산·보령·부여·서산·서천·아산·예산·천안·청양·태안·홍성. 대표 사유는 개별 공지/대표축제 detail, 행정 일정 혼합, current payload/freshness 미검증, 문서/보도자료 중심이다.
+- inventory 총 245: **ACTIVE 9 / READY 21 / GAP 32 / WATCH 127 / EXCLUDE 0 / UNREVIEWED 56**. 다음 queue는 **`jeonbuk-고창`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+
