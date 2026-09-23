@@ -510,3 +510,8 @@ UI 기준:
 - `docs/municipal-source-inventory.json`에 17개 광역단체와 228개 하위 시·군·구/제주 행정시, 총 245개 조사 단위를 기록했다. 행정안전부 지방자치단체 행정구역 현황과 행안부 시군구 데이터 스키마를 authority로 남겼다.
 - 현재 baseline: ACTIVE 9 / ONBOARDING_READY 1 / COLLECTOR_GAP 2 / WATCH 2 / EXCLUDE 0 / UNREVIEWED 231. 기존 Registry 9개와 울산·부산·대구·광주·세종 상태가 모두 반영됐다.
 - `npm run municipal:inventory:check`은 unique key, parent ordering, status enum, summary/queue 일치와 generated JSON/Markdown freshness를 검증한다. 다음 위치는 **전국 inventory baseline 완료 → 다음 B 조사 batch → E onboarding**이다. Registry, D1, Cron, production은 이 작업에서 변경하지 않는다.
+
+## 2026-09-23 Phase 6B — 첫 광역단체 조사 batch
+
+- 첫 deterministic queue 9개 광역단체를 공식 HTTPS source read-only 조사로 확정했다: 강원·충남·제주는 `ONBOARDING_READY`, 충북·전북은 `COLLECTOR_GAP`, 경기·전남·경북·경남은 `WATCH`.
+- inventory는 다음 queue 위치(수도권 하위단체부터)로 진행하며, 이번 batch에서는 Registry·collector·D1·production·Cron을 변경하지 않았다. 다음 bounded task는 이 결과를 기준으로 E onboarding을 별도 수행한다.
