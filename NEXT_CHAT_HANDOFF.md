@@ -588,3 +588,9 @@ UI 기준:
 - 2026-07-01 시행 전남광주통합특별시 설치 특별법에 따라 구 광주광역시·전라남도 root 두 개를 제거하고 `jeonnam-gwangju` UNREVIEWED root 하나로 통합했다. 기존 5개 자치구와 22개 시·군의 UNREVIEWED 상태를 유지하고 새 root에 WATCH를 상속하지 않았다. 종전 Gwangju/Jeonnam root의 WATCH 판단은 당시 조사 기록으로만 보존한다.
 - 광역 root 16개, 연구 단위 총 245개. ACTIVE 9 / READY 2 / GAP 15 / WATCH 20 / EXCLUDE 0 / UNREVIEWED 199. 인천 child 11개, 통합특별시 child 27개. 제주 행정시 2개는 기존 research-unit 정책대로 포함한다.
 - 갱신된 전체 deterministic queue는 **`jeonnam-gwangju` root부터**이며, 그 다음 하위 조사 대상은 **`incheon-강화`**다. 이번 작업은 baseline/data/docs만 변경했으며 Registry, collector, production, D1, Cron/manual ingestion에는 영향이 없다.
+
+## 2026-09-23 Phase 6B — 전남광주통합특별시 광역 root source 조사
+
+- 통합특별시 공식 누리집(`https://www.jeonnam.go.kr/`)은 현재 통합특별시 명칭·주소를 표시하고 관광객 메뉴에 `시군축제 일정`을 노출한다. 다만 실제 listing target과 지속성, 행사별 full-year date·venue·durable detail·pagination은 확인하지 못했다. 구 전남 legacy domain의 HTTP probe가 timeout/DNS 오류였으므로 구 광주 source와 결합하거나 이전 root 판정을 상속하지 않았다.
+- 따라서 `jeonnam-gwangju`는 **WATCH** (`official_tourism_listing_unverified`, `source_core_unverified`)로 분류한다. live listing이 열리지 않아 current collector extraction 적합성도 판정 불가다.
+- inventory summary는 ACTIVE 9 / READY 2 / GAP 15 / WATCH 21 / EXCLUDE 0 / UNREVIEWED 198, 총 245다. root가 queue에서 빠져 다음 deterministic 조사 대상은 **`incheon-강화`**다. validation 후 commit/push 예정이며 production·D1·Cron/manual ingestion·Registry·collector는 변경하지 않는다.

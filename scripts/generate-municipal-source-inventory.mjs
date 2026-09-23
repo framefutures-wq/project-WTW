@@ -60,6 +60,7 @@ const divisions = {
 };
 
 const known = {
+  "jeonnam-gwangju": ["WATCH", "https://www.jeonnam.go.kr/", "official_tourism_listing_unverified", "source_core_unverified", "현재 통합특별시 공식 누리집(구 전라남도청)이 통합특별시 명칭·주소로 운영되며 관광객 메뉴에 ‘시군축제 일정’ 링크가 노출된다. 다만 live HTTP 요청은 timeout/DNS 오류로 목록 target과 지속성, 2026 full-year start/end·venue·detail URL·pagination 및 generic extraction을 확인하지 못했다. 구 전남 축제 목록과 구 광주 source를 임의 결합하거나 legacy 내용을 계승하지 않으며, 확인 가능한 광역 canonical source가 확보될 때까지 WATCH."],
   seoul: ["ACTIVE", "https://hangang.seoul.go.kr/www/eventMng/list.do?mid=538", "official_event_listing", "generic_fallback", "한강사업본부 행사 source; 서울 전체 coverage를 뜻하지 않음"],
   "seoul-gangnam": ["ONBOARDING_READY", "https://www.gangnam.go.kr/office/gfac/board/gfac_lifeculture/list.do?mid=gfac_festival06", "official_culture_listing", "generic_fallback_paginated", "강남문화재단(강남구 산하 공식 문화기관) 축제 목록. live 목록에서 title·2026 full-year 행사기간·행사장소·first-party detail URL이 같은 항목 블록에 있고 페이지네이션도 확인되어 현재 generic collector의 self-contained extraction에 적합함. 대표 항목은 2026 강남생활문화축제(2026-10-17~2026-10-18, 일원에코파크 및 에코센터)." , "https://www.gangnam.go.kr"],
   "seoul-gangdong": ["WATCH", "https://www.gangdong.go.kr/web/culture/contents/gdc030_040", "official_culture_detail", "source_core_inconsistent", "강동구청 강동문화포털의 선사문화축제 일정표는 공식 소유권과 행사별 장소를 확인할 수 있으나 live 페이지가 2025 일정표 중심의 정적 프로그램 표이고, source-wide 지속 목록에서 2026 full-year 행사기간·detail URL·pagination을 일관되게 제공하지 않음. 보도자료의 2026 동 지역축제는 단발성 공지라 canonical daily source로 승격하지 않음.", "https://www.gangdong.go.kr"],
@@ -165,7 +166,7 @@ export function validate(inventory) {
   const regionRoots = inventory.municipalities.filter((item) => item.key === item.region_key);
   if (regionRoots.some((item) => ["gwangju", "jeonnam"].includes(item.key) || ["광주광역시", "전라남도"].includes(item.locality))) throw new Error("abolished regional root remains");
   const integratedRoot = inventory.municipalities.find((item) => item.key === "jeonnam-gwangju");
-  if (!integratedRoot || integratedRoot.source_status !== "UNREVIEWED") throw new Error("integrated root must be unreviewed");
+  if (!integratedRoot) throw new Error("integrated city root is missing");
   if (inventory.municipalities.filter((item) => item.region_key === "jeonnam-gwangju" && item.key !== "jeonnam-gwangju").length !== 27) throw new Error("integrated city must have exactly 27 children");
   if (inventory.municipalities.filter((item) => item.region_key === "incheon" && item.key !== "incheon").length !== 11) throw new Error("Incheon must have exactly 11 children");
   if (regionRoots.length !== 16) throw new Error(`expected 16 current provincial-level roots, got ${regionRoots.length}`);
