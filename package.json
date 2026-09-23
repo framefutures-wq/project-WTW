@@ -24,6 +24,7 @@
     "tourapi:sync": "node scripts/tourapi-sync.mjs",
     "tourapi:detail:once": "node scripts/run-tourapi-detail-once.mjs",
     "municipal:once": "node scripts/run-municipal-once.mjs",
+    "municipal:inventory:check": "node scripts/generate-municipal-source-inventory.mjs --check",
     "discover:everland": "node --import tsx scripts/discover-everland.mjs",
     "source-registry:candidates": "node --import tsx scripts/source-registry-candidates.mjs",
     "audit:everland:readiness": "node --import tsx scripts/audit-everland-readiness.mjs",

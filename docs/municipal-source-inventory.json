@@ -1,0 +1,4620 @@
+{
+  "schema_version": 1,
+  "authority": {
+    "administrative_boundary_source": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardList.do?bbsId=BBSMSTR_000000000055",
+    "cross_check_source": "https://www.data.go.kr/data/3033254/fileData.do",
+    "checked_at": "2026-09-23"
+  },
+  "generated_at": "2026-09-23",
+  "municipalities": [
+    {
+      "key": "seoul",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "서울특별시",
+      "government_level": "special_city",
+      "official_homepage": "https://www.seoul.go.kr",
+      "source_status": "ACTIVE",
+      "source_url": "https://hangang.seoul.go.kr/www/eventMng/list.do?mid=538",
+      "source_type": "official_event_listing",
+      "collector_fit": "generic_fallback",
+      "notes": "한강사업본부 행사 source; 서울 전체 coverage를 뜻하지 않음",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-jongno",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "종로구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-jung",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "중구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-yongsan",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "용산구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-seongdong",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "성동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-gwangjin",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "광진구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-dongdaemun",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "동대문구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-jungnang",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "중랑구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-seongbuk",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "성북구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-gangbuk",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "강북구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-dobong",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "도봉구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-nowon",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "노원구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-eunpyeong",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "은평구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-seodaemun",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "서대문구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-mapo",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "마포구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-yangcheon",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "양천구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-gangseo",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "강서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-guro",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "구로구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-geumcheon",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "금천구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-yeongdeungpo",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "영등포구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-dongjak",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "동작구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-gwanak",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "관악구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-seocho",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "서초구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-gangnam",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "강남구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-songpa",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "송파구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "seoul-gangdong",
+      "region_key": "seoul",
+      "region": "서울특별시",
+      "locality": "강동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 0
+    },
+    {
+      "key": "busan",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "부산광역시",
+      "government_level": "metropolitan_city",
+      "official_homepage": "https://www.busan.go.kr",
+      "source_status": "COLLECTOR_GAP",
+      "source_url": "https://www.visitbusan.net/schedule/list.do?boardId=BBS_0000009&menuCd=DOM_000000204012000000&month=0",
+      "source_type": "official_tourism_listing",
+      "collector_fit": "list_detail_core_followup_needed",
+      "notes": "목록에 venue가 없어 bounded detail core follow-up 필요",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-jung",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "중구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-서",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-동",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-영도",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "영도구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-부산진",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "부산진구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-동래",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "동래구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-남",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "남구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-북",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "북구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-해운대",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "해운대구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-사하",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "사하구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-금정",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "금정구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-gangseo",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "강서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-연제",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "연제구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-수영",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "수영구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-사상",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "사상구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "busan-기장",
+      "region_key": "busan",
+      "region": "부산광역시",
+      "locality": "기장군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 1
+    },
+    {
+      "key": "daegu",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "대구광역시",
+      "government_level": "metropolitan_city",
+      "official_homepage": "https://www.daegu.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://tour.daegu.go.kr/index.do?menu_id=00002932&servletPath=%2Findex.do",
+      "source_type": "official_tourism_listing",
+      "collector_fit": "source_core_inconsistent",
+      "notes": "연도 없는 recurring date가 섞여 있음",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-jung",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "중구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-동",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-서",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-남",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "남구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-북",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "북구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-수성",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "수성구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-달서",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "달서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-달성",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "달성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "daegu-군위",
+      "region_key": "daegu",
+      "region": "대구광역시",
+      "locality": "군위군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 2
+    },
+    {
+      "key": "incheon",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "인천광역시",
+      "government_level": "metropolitan_city",
+      "official_homepage": "https://www.incheon.go.kr",
+      "source_status": "ACTIVE",
+      "source_url": "https://www.incheon.go.kr/res/RE050101/",
+      "source_type": "official_event_listing",
+      "collector_fit": "generic_fallback_paginated",
+      "notes": "Registry key incheon-res",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-jung",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "중구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-동",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-미추홀",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "미추홀구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-연수",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "연수구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-남동",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "남동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-부평",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "부평구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-계양",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "계양구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-서",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-강화",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "강화군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-옹진",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "옹진군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "gwangju",
+      "region_key": "gwangju",
+      "region": "광주광역시",
+      "locality": "광주광역시",
+      "government_level": "metropolitan_city",
+      "official_homepage": "https://www.gwangju.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://tour.gwangju.go.kr/home/tour/culture/festival.cs?m=315",
+      "source_type": "official_tourism_listing",
+      "collector_fit": "generic_fallback_paginated_probe",
+      "notes": "상태 query와 bounded live probe 전",
+      "checked_at": "2026-09-23",
+      "region_order": 4
+    },
+    {
+      "key": "gwangju-동",
+      "region_key": "gwangju",
+      "region": "광주광역시",
+      "locality": "동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 4
+    },
+    {
+      "key": "gwangju-서",
+      "region_key": "gwangju",
+      "region": "광주광역시",
+      "locality": "서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 4
+    },
+    {
+      "key": "gwangju-남",
+      "region_key": "gwangju",
+      "region": "광주광역시",
+      "locality": "남구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 4
+    },
+    {
+      "key": "gwangju-북",
+      "region_key": "gwangju",
+      "region": "광주광역시",
+      "locality": "북구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 4
+    },
+    {
+      "key": "gwangju-광산",
+      "region_key": "gwangju",
+      "region": "광주광역시",
+      "locality": "광산구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 4
+    },
+    {
+      "key": "daejeon",
+      "region_key": "daejeon",
+      "region": "대전광역시",
+      "locality": "대전광역시",
+      "government_level": "metropolitan_city",
+      "official_homepage": "https://www.daejeon.go.kr",
+      "source_status": "ACTIVE",
+      "source_url": "https://daejeon.go.kr/fvu/FvuEventList.do?menuSeq=504",
+      "source_type": "official_event_listing",
+      "collector_fit": "generic_fallback",
+      "notes": "Registry key daejeon-fvu",
+      "checked_at": "2026-09-23",
+      "region_order": 5
+    },
+    {
+      "key": "daejeon-동",
+      "region_key": "daejeon",
+      "region": "대전광역시",
+      "locality": "동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 5
+    },
+    {
+      "key": "daejeon-jung",
+      "region_key": "daejeon",
+      "region": "대전광역시",
+      "locality": "중구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 5
+    },
+    {
+      "key": "daejeon-서",
+      "region_key": "daejeon",
+      "region": "대전광역시",
+      "locality": "서구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 5
+    },
+    {
+      "key": "daejeon-유성",
+      "region_key": "daejeon",
+      "region": "대전광역시",
+      "locality": "유성구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 5
+    },
+    {
+      "key": "daejeon-대덕",
+      "region_key": "daejeon",
+      "region": "대전광역시",
+      "locality": "대덕구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 5
+    },
+    {
+      "key": "ulsan",
+      "region_key": "ulsan",
+      "region": "울산광역시",
+      "locality": "울산광역시",
+      "government_level": "metropolitan_city",
+      "official_homepage": "https://www.ulsan.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://tour.ulsan.go.kr/tour/korean/unit/fstvl/list.ulsan?mId=001003001000000000&searchDvsn1=1",
+      "source_type": "official_tourism_listing",
+      "collector_fit": "source_core_inconsistent",
+      "notes": "source-wide full-year exact core 부족",
+      "checked_at": "2026-09-23",
+      "region_order": 6
+    },
+    {
+      "key": "ulsan-jung",
+      "region_key": "ulsan",
+      "region": "울산광역시",
+      "locality": "중구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 6
+    },
+    {
+      "key": "ulsan-남",
+      "region_key": "ulsan",
+      "region": "울산광역시",
+      "locality": "남구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 6
+    },
+    {
+      "key": "ulsan-동",
+      "region_key": "ulsan",
+      "region": "울산광역시",
+      "locality": "동구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 6
+    },
+    {
+      "key": "ulsan-북",
+      "region_key": "ulsan",
+      "region": "울산광역시",
+      "locality": "북구",
+      "government_level": "district",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 6
+    },
+    {
+      "key": "ulsan-울주",
+      "region_key": "ulsan",
+      "region": "울산광역시",
+      "locality": "울주군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 6
+    },
+    {
+      "key": "sejong",
+      "region_key": "sejong",
+      "region": "세종특별자치시",
+      "locality": "세종특별자치시",
+      "government_level": "special_self_governing_city",
+      "official_homepage": "https://www.sejong.go.kr",
+      "source_status": "COLLECTOR_GAP",
+      "source_url": "https://www.sjcf.or.kr/hangeul/www/prfr/list.do?key=2504150023",
+      "source_type": "official_culture_listing",
+      "collector_fit": "list_detail_core_followup_needed",
+      "notes": "목록 venue 부재",
+      "checked_at": "2026-09-23",
+      "region_order": 7
+    },
+    {
+      "key": "gyeonggi",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "경기도",
+      "government_level": "province",
+      "official_homepage": "https://www.gg.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-suwon",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "수원시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "ACTIVE",
+      "source_url": "https://www.swcf.or.kr/?p=29",
+      "source_type": "official_event_listing",
+      "collector_fit": "registered_parser",
+      "notes": "Registry key suwon",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-성남",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "성남시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-의정부",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "의정부시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-안양",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "안양시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-bucheon",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "부천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "ACTIVE",
+      "source_url": "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003",
+      "source_type": "official_event_listing",
+      "collector_fit": "registered_parser",
+      "notes": "Registry key bucheon",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-광명",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "광명시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-평택",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "평택시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-동두천",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "동두천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-안산",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "안산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-goyang",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "고양시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "ACTIVE",
+      "source_url": "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303",
+      "source_type": "official_event_listing",
+      "collector_fit": "registered_parser",
+      "notes": "Registry key goyang",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-과천",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "과천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-구리",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "구리시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-남양주",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "남양주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-오산",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "오산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-시흥",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "시흥시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-군포",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "군포시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-의왕",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "의왕시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-하남",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "하남시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-용인",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "용인시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-paju",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "파주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "ACTIVE",
+      "source_url": "https://tour.paju.go.kr/user/link/cultural/BD_index.do",
+      "source_type": "official_event_listing",
+      "collector_fit": "registered_parser",
+      "notes": "Registry key paju",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-이천",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "이천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-안성",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "안성시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-김포",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "김포시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-hwaseong",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "화성시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "ACTIVE",
+      "source_url": "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp",
+      "source_type": "official_event_listing",
+      "collector_fit": "registered_parser",
+      "notes": "Registry key hwaseong",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-광주",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "광주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-양주",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "양주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-포천",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "포천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-여주",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "여주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-연천",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "연천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-가평",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "가평군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gyeonggi-양평",
+      "region_key": "gyeonggi",
+      "region": "경기도",
+      "locality": "양평군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 8
+    },
+    {
+      "key": "gangwon",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "강원특별자치도",
+      "government_level": "special_self_governing_province",
+      "official_homepage": "https://state.gwd.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-춘천",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "춘천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-원주",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "원주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-강릉",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "강릉시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-동해",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "동해시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-taebaek",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "태백시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "ACTIVE",
+      "source_url": "https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502",
+      "source_type": "official_event_listing",
+      "collector_fit": "generic_fallback",
+      "notes": "Registry key taebaek",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-속초",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "속초시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-삼척",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "삼척시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-홍천",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "홍천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-횡성",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "횡성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-영월",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "영월군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-평창",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "평창군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-정선",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "정선군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-철원",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "철원군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-화천",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "화천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-양구",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "양구군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-인제",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "인제군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-고성",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "고성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "gangwon-양양",
+      "region_key": "gangwon",
+      "region": "강원특별자치도",
+      "locality": "양양군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 9
+    },
+    {
+      "key": "chungbuk",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "충청북도",
+      "government_level": "province",
+      "official_homepage": "https://www.chungbuk.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-청주",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "청주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-충주",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "충주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-제천",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "제천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-보은",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "보은군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-옥천",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "옥천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-영동",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "영동군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-증평",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "증평군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-진천",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "진천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-괴산",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "괴산군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-음성",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "음성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungbuk-단양",
+      "region_key": "chungbuk",
+      "region": "충청북도",
+      "locality": "단양군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 10
+    },
+    {
+      "key": "chungnam",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "충청남도",
+      "government_level": "province",
+      "official_homepage": "https://www.chungnam.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-천안",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "천안시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-공주",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "공주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-보령",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "보령시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-아산",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "아산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-서산",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "서산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-논산",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "논산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-계룡",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "계룡시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-당진",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "당진시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-금산",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "금산군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-부여",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "부여군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-서천",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "서천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-청양",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "청양군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-홍성",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "홍성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-예산",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "예산군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "chungnam-태안",
+      "region_key": "chungnam",
+      "region": "충청남도",
+      "locality": "태안군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 11
+    },
+    {
+      "key": "jeonbuk",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "전북특별자치도",
+      "government_level": "special_self_governing_province",
+      "official_homepage": "https://www.jeonbuk.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-전주",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "전주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-군산",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "군산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-익산",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "익산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-정읍",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "정읍시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-남원",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "남원시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-김제",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "김제시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-완주",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "완주군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-진안",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "진안군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-무주",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "무주군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-장수",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "장수군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-임실",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "임실군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-순창",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "순창군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-고창",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "고창군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonbuk-부안",
+      "region_key": "jeonbuk",
+      "region": "전북특별자치도",
+      "locality": "부안군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 12
+    },
+    {
+      "key": "jeonnam",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "전라남도",
+      "government_level": "province",
+      "official_homepage": "https://www.jeonnam.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-목포",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "목포시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-여수",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "여수시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-순천",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "순천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-나주",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "나주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-광양",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "광양시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-담양",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "담양군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-곡성",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "곡성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-구례",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "구례군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-고흥",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "고흥군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-보성",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "보성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-화순",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "화순군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-장흥",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "장흥군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-강진",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "강진군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-해남",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "해남군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-영암",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "영암군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-무안",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "무안군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-함평",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "함평군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-영광",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "영광군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-장성",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "장성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-완도",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "완도군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-진도",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "진도군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "jeonnam-신안",
+      "region_key": "jeonnam",
+      "region": "전라남도",
+      "locality": "신안군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 13
+    },
+    {
+      "key": "gyeongbuk",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "경상북도",
+      "government_level": "province",
+      "official_homepage": "https://www.gb.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-포항",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "포항시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-경주",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "경주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-김천",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "김천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-안동",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "안동시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-구미",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "구미시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-영주",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "영주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-영천",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "영천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-상주",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "상주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-문경",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "문경시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-경산",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "경산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-의성",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "의성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-청송",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "청송군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-영양",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "영양군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-영덕",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "영덕군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-청도",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "청도군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-고령",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "고령군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-성주",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "성주군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-칠곡",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "칠곡군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-예천",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "예천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-봉화",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "봉화군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-울진",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "울진군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongbuk-울릉",
+      "region_key": "gyeongbuk",
+      "region": "경상북도",
+      "locality": "울릉군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 14
+    },
+    {
+      "key": "gyeongnam",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "경상남도",
+      "government_level": "province",
+      "official_homepage": "https://www.gyeongnam.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-창원",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "창원시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-진주",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "진주시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-통영",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "통영시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-사천",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "사천시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-김해",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "김해시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-밀양",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "밀양시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-거제",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "거제시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-양산",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "양산시",
+      "government_level": "city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-의령",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "의령군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-함안",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "함안군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-창녕",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "창녕군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-고성",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "고성군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-남해",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "남해군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-하동",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "하동군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-산청",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "산청군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-함양",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "함양군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-거창",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "거창군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "gyeongnam-합천",
+      "region_key": "gyeongnam",
+      "region": "경상남도",
+      "locality": "합천군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 15
+    },
+    {
+      "key": "jeju",
+      "region_key": "jeju",
+      "region": "제주특별자치도",
+      "locality": "제주특별자치도",
+      "government_level": "special_self_governing_province",
+      "official_homepage": "https://www.jeju.go.kr",
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "광역단체 자체 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 16
+    },
+    {
+      "key": "jeju-제주",
+      "region_key": "jeju",
+      "region": "제주특별자치도",
+      "locality": "제주시",
+      "government_level": "administrative_city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 16
+    },
+    {
+      "key": "jeju-서귀포",
+      "region_key": "jeju",
+      "region": "제주특별자치도",
+      "locality": "서귀포시",
+      "government_level": "administrative_city",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 16
+    }
+  ],
+  "survey_queue": [
+    {
+      "rank": 1,
+      "municipality_key": "gyeonggi"
+    },
+    {
+      "rank": 2,
+      "municipality_key": "gangwon"
+    },
+    {
+      "rank": 3,
+      "municipality_key": "chungbuk"
+    },
+    {
+      "rank": 4,
+      "municipality_key": "chungnam"
+    },
+    {
+      "rank": 5,
+      "municipality_key": "jeonbuk"
+    },
+    {
+      "rank": 6,
+      "municipality_key": "jeonnam"
+    },
+    {
+      "rank": 7,
+      "municipality_key": "gyeongbuk"
+    },
+    {
+      "rank": 8,
+      "municipality_key": "gyeongnam"
+    },
+    {
+      "rank": 9,
+      "municipality_key": "jeju"
+    },
+    {
+      "rank": 10,
+      "municipality_key": "seoul-gangnam"
+    },
+    {
+      "rank": 11,
+      "municipality_key": "seoul-gangdong"
+    },
+    {
+      "rank": 12,
+      "municipality_key": "seoul-gangbuk"
+    },
+    {
+      "rank": 13,
+      "municipality_key": "seoul-gangseo"
+    },
+    {
+      "rank": 14,
+      "municipality_key": "seoul-gwanak"
+    },
+    {
+      "rank": 15,
+      "municipality_key": "seoul-gwangjin"
+    },
+    {
+      "rank": 16,
+      "municipality_key": "seoul-guro"
+    },
+    {
+      "rank": 17,
+      "municipality_key": "seoul-geumcheon"
+    },
+    {
+      "rank": 18,
+      "municipality_key": "seoul-nowon"
+    },
+    {
+      "rank": 19,
+      "municipality_key": "seoul-dobong"
+    },
+    {
+      "rank": 20,
+      "municipality_key": "seoul-dongdaemun"
+    },
+    {
+      "rank": 21,
+      "municipality_key": "seoul-dongjak"
+    },
+    {
+      "rank": 22,
+      "municipality_key": "seoul-mapo"
+    },
+    {
+      "rank": 23,
+      "municipality_key": "seoul-seodaemun"
+    },
+    {
+      "rank": 24,
+      "municipality_key": "seoul-seocho"
+    },
+    {
+      "rank": 25,
+      "municipality_key": "seoul-seongdong"
+    },
+    {
+      "rank": 26,
+      "municipality_key": "seoul-seongbuk"
+    },
+    {
+      "rank": 27,
+      "municipality_key": "seoul-songpa"
+    },
+    {
+      "rank": 28,
+      "municipality_key": "seoul-yangcheon"
+    },
+    {
+      "rank": 29,
+      "municipality_key": "seoul-yeongdeungpo"
+    },
+    {
+      "rank": 30,
+      "municipality_key": "seoul-yongsan"
+    },
+    {
+      "rank": 31,
+      "municipality_key": "seoul-eunpyeong"
+    },
+    {
+      "rank": 32,
+      "municipality_key": "seoul-jongno"
+    },
+    {
+      "rank": 33,
+      "municipality_key": "seoul-jung"
+    },
+    {
+      "rank": 34,
+      "municipality_key": "seoul-jungnang"
+    },
+    {
+      "rank": 35,
+      "municipality_key": "incheon-강화"
+    },
+    {
+      "rank": 36,
+      "municipality_key": "incheon-계양"
+    },
+    {
+      "rank": 37,
+      "municipality_key": "incheon-남동"
+    },
+    {
+      "rank": 38,
+      "municipality_key": "incheon-동"
+    },
+    {
+      "rank": 39,
+      "municipality_key": "incheon-미추홀"
+    },
+    {
+      "rank": 40,
+      "municipality_key": "incheon-부평"
+    },
+    {
+      "rank": 41,
+      "municipality_key": "incheon-서"
+    },
+    {
+      "rank": 42,
+      "municipality_key": "incheon-연수"
+    },
+    {
+      "rank": 43,
+      "municipality_key": "incheon-옹진"
+    },
+    {
+      "rank": 44,
+      "municipality_key": "incheon-jung"
+    },
+    {
+      "rank": 45,
+      "municipality_key": "gyeonggi-가평"
+    },
+    {
+      "rank": 46,
+      "municipality_key": "gyeonggi-과천"
+    },
+    {
+      "rank": 47,
+      "municipality_key": "gyeonggi-광명"
+    },
+    {
+      "rank": 48,
+      "municipality_key": "gyeonggi-광주"
+    },
+    {
+      "rank": 49,
+      "municipality_key": "gyeonggi-구리"
+    },
+    {
+      "rank": 50,
+      "municipality_key": "gyeonggi-군포"
+    },
+    {
+      "rank": 51,
+      "municipality_key": "gyeonggi-김포"
+    },
+    {
+      "rank": 52,
+      "municipality_key": "gyeonggi-남양주"
+    },
+    {
+      "rank": 53,
+      "municipality_key": "gyeonggi-동두천"
+    },
+    {
+      "rank": 54,
+      "municipality_key": "gyeonggi-성남"
+    },
+    {
+      "rank": 55,
+      "municipality_key": "gyeonggi-시흥"
+    },
+    {
+      "rank": 56,
+      "municipality_key": "gyeonggi-안산"
+    },
+    {
+      "rank": 57,
+      "municipality_key": "gyeonggi-안성"
+    },
+    {
+      "rank": 58,
+      "municipality_key": "gyeonggi-안양"
+    },
+    {
+      "rank": 59,
+      "municipality_key": "gyeonggi-양주"
+    },
+    {
+      "rank": 60,
+      "municipality_key": "gyeonggi-양평"
+    },
+    {
+      "rank": 61,
+      "municipality_key": "gyeonggi-여주"
+    },
+    {
+      "rank": 62,
+      "municipality_key": "gyeonggi-연천"
+    },
+    {
+      "rank": 63,
+      "municipality_key": "gyeonggi-오산"
+    },
+    {
+      "rank": 64,
+      "municipality_key": "gyeonggi-용인"
+    },
+    {
+      "rank": 65,
+      "municipality_key": "gyeonggi-의왕"
+    },
+    {
+      "rank": 66,
+      "municipality_key": "gyeonggi-의정부"
+    },
+    {
+      "rank": 67,
+      "municipality_key": "gyeonggi-이천"
+    },
+    {
+      "rank": 68,
+      "municipality_key": "gyeonggi-평택"
+    },
+    {
+      "rank": 69,
+      "municipality_key": "gyeonggi-포천"
+    },
+    {
+      "rank": 70,
+      "municipality_key": "gyeonggi-하남"
+    },
+    {
+      "rank": 71,
+      "municipality_key": "busan-gangseo"
+    },
+    {
+      "rank": 72,
+      "municipality_key": "busan-금정"
+    },
+    {
+      "rank": 73,
+      "municipality_key": "busan-기장"
+    },
+    {
+      "rank": 74,
+      "municipality_key": "busan-남"
+    },
+    {
+      "rank": 75,
+      "municipality_key": "busan-동"
+    },
+    {
+      "rank": 76,
+      "municipality_key": "busan-동래"
+    },
+    {
+      "rank": 77,
+      "municipality_key": "busan-부산진"
+    },
+    {
+      "rank": 78,
+      "municipality_key": "busan-북"
+    },
+    {
+      "rank": 79,
+      "municipality_key": "busan-사상"
+    },
+    {
+      "rank": 80,
+      "municipality_key": "busan-사하"
+    },
+    {
+      "rank": 81,
+      "municipality_key": "busan-서"
+    },
+    {
+      "rank": 82,
+      "municipality_key": "busan-수영"
+    },
+    {
+      "rank": 83,
+      "municipality_key": "busan-연제"
+    },
+    {
+      "rank": 84,
+      "municipality_key": "busan-영도"
+    },
+    {
+      "rank": 85,
+      "municipality_key": "busan-jung"
+    },
+    {
+      "rank": 86,
+      "municipality_key": "busan-해운대"
+    },
+    {
+      "rank": 87,
+      "municipality_key": "daegu-군위"
+    },
+    {
+      "rank": 88,
+      "municipality_key": "daegu-남"
+    },
+    {
+      "rank": 89,
+      "municipality_key": "daegu-달서"
+    },
+    {
+      "rank": 90,
+      "municipality_key": "daegu-달성"
+    },
+    {
+      "rank": 91,
+      "municipality_key": "daegu-동"
+    },
+    {
+      "rank": 92,
+      "municipality_key": "daegu-북"
+    },
+    {
+      "rank": 93,
+      "municipality_key": "daegu-서"
+    },
+    {
+      "rank": 94,
+      "municipality_key": "daegu-수성"
+    },
+    {
+      "rank": 95,
+      "municipality_key": "daegu-jung"
+    },
+    {
+      "rank": 96,
+      "municipality_key": "gwangju-광산"
+    },
+    {
+      "rank": 97,
+      "municipality_key": "gwangju-남"
+    },
+    {
+      "rank": 98,
+      "municipality_key": "gwangju-동"
+    },
+    {
+      "rank": 99,
+      "municipality_key": "gwangju-북"
+    },
+    {
+      "rank": 100,
+      "municipality_key": "gwangju-서"
+    },
+    {
+      "rank": 101,
+      "municipality_key": "daejeon-대덕"
+    },
+    {
+      "rank": 102,
+      "municipality_key": "daejeon-동"
+    },
+    {
+      "rank": 103,
+      "municipality_key": "daejeon-서"
+    },
+    {
+      "rank": 104,
+      "municipality_key": "daejeon-유성"
+    },
+    {
+      "rank": 105,
+      "municipality_key": "daejeon-jung"
+    },
+    {
+      "rank": 106,
+      "municipality_key": "ulsan-남"
+    },
+    {
+      "rank": 107,
+      "municipality_key": "ulsan-동"
+    },
+    {
+      "rank": 108,
+      "municipality_key": "ulsan-북"
+    },
+    {
+      "rank": 109,
+      "municipality_key": "ulsan-울주"
+    },
+    {
+      "rank": 110,
+      "municipality_key": "ulsan-jung"
+    },
+    {
+      "rank": 111,
+      "municipality_key": "gangwon-강릉"
+    },
+    {
+      "rank": 112,
+      "municipality_key": "gangwon-고성"
+    },
+    {
+      "rank": 113,
+      "municipality_key": "gangwon-동해"
+    },
+    {
+      "rank": 114,
+      "municipality_key": "gangwon-삼척"
+    },
+    {
+      "rank": 115,
+      "municipality_key": "gangwon-속초"
+    },
+    {
+      "rank": 116,
+      "municipality_key": "gangwon-양구"
+    },
+    {
+      "rank": 117,
+      "municipality_key": "gangwon-양양"
+    },
+    {
+      "rank": 118,
+      "municipality_key": "gangwon-영월"
+    },
+    {
+      "rank": 119,
+      "municipality_key": "gangwon-원주"
+    },
+    {
+      "rank": 120,
+      "municipality_key": "gangwon-인제"
+    },
+    {
+      "rank": 121,
+      "municipality_key": "gangwon-정선"
+    },
+    {
+      "rank": 122,
+      "municipality_key": "gangwon-철원"
+    },
+    {
+      "rank": 123,
+      "municipality_key": "gangwon-춘천"
+    },
+    {
+      "rank": 124,
+      "municipality_key": "gangwon-평창"
+    },
+    {
+      "rank": 125,
+      "municipality_key": "gangwon-홍천"
+    },
+    {
+      "rank": 126,
+      "municipality_key": "gangwon-화천"
+    },
+    {
+      "rank": 127,
+      "municipality_key": "gangwon-횡성"
+    },
+    {
+      "rank": 128,
+      "municipality_key": "chungbuk-괴산"
+    },
+    {
+      "rank": 129,
+      "municipality_key": "chungbuk-단양"
+    },
+    {
+      "rank": 130,
+      "municipality_key": "chungbuk-보은"
+    },
+    {
+      "rank": 131,
+      "municipality_key": "chungbuk-영동"
+    },
+    {
+      "rank": 132,
+      "municipality_key": "chungbuk-옥천"
+    },
+    {
+      "rank": 133,
+      "municipality_key": "chungbuk-음성"
+    },
+    {
+      "rank": 134,
+      "municipality_key": "chungbuk-제천"
+    },
+    {
+      "rank": 135,
+      "municipality_key": "chungbuk-증평"
+    },
+    {
+      "rank": 136,
+      "municipality_key": "chungbuk-진천"
+    },
+    {
+      "rank": 137,
+      "municipality_key": "chungbuk-청주"
+    },
+    {
+      "rank": 138,
+      "municipality_key": "chungbuk-충주"
+    },
+    {
+      "rank": 139,
+      "municipality_key": "chungnam-계룡"
+    },
+    {
+      "rank": 140,
+      "municipality_key": "chungnam-공주"
+    },
+    {
+      "rank": 141,
+      "municipality_key": "chungnam-금산"
+    },
+    {
+      "rank": 142,
+      "municipality_key": "chungnam-논산"
+    },
+    {
+      "rank": 143,
+      "municipality_key": "chungnam-당진"
+    },
+    {
+      "rank": 144,
+      "municipality_key": "chungnam-보령"
+    },
+    {
+      "rank": 145,
+      "municipality_key": "chungnam-부여"
+    },
+    {
+      "rank": 146,
+      "municipality_key": "chungnam-서산"
+    },
+    {
+      "rank": 147,
+      "municipality_key": "chungnam-서천"
+    },
+    {
+      "rank": 148,
+      "municipality_key": "chungnam-아산"
+    },
+    {
+      "rank": 149,
+      "municipality_key": "chungnam-예산"
+    },
+    {
+      "rank": 150,
+      "municipality_key": "chungnam-천안"
+    },
+    {
+      "rank": 151,
+      "municipality_key": "chungnam-청양"
+    },
+    {
+      "rank": 152,
+      "municipality_key": "chungnam-태안"
+    },
+    {
+      "rank": 153,
+      "municipality_key": "chungnam-홍성"
+    },
+    {
+      "rank": 154,
+      "municipality_key": "jeonbuk-고창"
+    },
+    {
+      "rank": 155,
+      "municipality_key": "jeonbuk-군산"
+    },
+    {
+      "rank": 156,
+      "municipality_key": "jeonbuk-김제"
+    },
+    {
+      "rank": 157,
+      "municipality_key": "jeonbuk-남원"
+    },
+    {
+      "rank": 158,
+      "municipality_key": "jeonbuk-무주"
+    },
+    {
+      "rank": 159,
+      "municipality_key": "jeonbuk-부안"
+    },
+    {
+      "rank": 160,
+      "municipality_key": "jeonbuk-순창"
+    },
+    {
+      "rank": 161,
+      "municipality_key": "jeonbuk-완주"
+    },
+    {
+      "rank": 162,
+      "municipality_key": "jeonbuk-익산"
+    },
+    {
+      "rank": 163,
+      "municipality_key": "jeonbuk-임실"
+    },
+    {
+      "rank": 164,
+      "municipality_key": "jeonbuk-장수"
+    },
+    {
+      "rank": 165,
+      "municipality_key": "jeonbuk-전주"
+    },
+    {
+      "rank": 166,
+      "municipality_key": "jeonbuk-정읍"
+    },
+    {
+      "rank": 167,
+      "municipality_key": "jeonbuk-진안"
+    },
+    {
+      "rank": 168,
+      "municipality_key": "jeonnam-강진"
+    },
+    {
+      "rank": 169,
+      "municipality_key": "jeonnam-고흥"
+    },
+    {
+      "rank": 170,
+      "municipality_key": "jeonnam-곡성"
+    },
+    {
+      "rank": 171,
+      "municipality_key": "jeonnam-광양"
+    },
+    {
+      "rank": 172,
+      "municipality_key": "jeonnam-구례"
+    },
+    {
+      "rank": 173,
+      "municipality_key": "jeonnam-나주"
+    },
+    {
+      "rank": 174,
+      "municipality_key": "jeonnam-담양"
+    },
+    {
+      "rank": 175,
+      "municipality_key": "jeonnam-목포"
+    },
+    {
+      "rank": 176,
+      "municipality_key": "jeonnam-무안"
+    },
+    {
+      "rank": 177,
+      "municipality_key": "jeonnam-보성"
+    },
+    {
+      "rank": 178,
+      "municipality_key": "jeonnam-순천"
+    },
+    {
+      "rank": 179,
+      "municipality_key": "jeonnam-신안"
+    },
+    {
+      "rank": 180,
+      "municipality_key": "jeonnam-여수"
+    },
+    {
+      "rank": 181,
+      "municipality_key": "jeonnam-영광"
+    },
+    {
+      "rank": 182,
+      "municipality_key": "jeonnam-영암"
+    },
+    {
+      "rank": 183,
+      "municipality_key": "jeonnam-완도"
+    },
+    {
+      "rank": 184,
+      "municipality_key": "jeonnam-장성"
+    },
+    {
+      "rank": 185,
+      "municipality_key": "jeonnam-장흥"
+    },
+    {
+      "rank": 186,
+      "municipality_key": "jeonnam-진도"
+    },
+    {
+      "rank": 187,
+      "municipality_key": "jeonnam-함평"
+    },
+    {
+      "rank": 188,
+      "municipality_key": "jeonnam-해남"
+    },
+    {
+      "rank": 189,
+      "municipality_key": "jeonnam-화순"
+    },
+    {
+      "rank": 190,
+      "municipality_key": "gyeongbuk-경산"
+    },
+    {
+      "rank": 191,
+      "municipality_key": "gyeongbuk-경주"
+    },
+    {
+      "rank": 192,
+      "municipality_key": "gyeongbuk-고령"
+    },
+    {
+      "rank": 193,
+      "municipality_key": "gyeongbuk-구미"
+    },
+    {
+      "rank": 194,
+      "municipality_key": "gyeongbuk-김천"
+    },
+    {
+      "rank": 195,
+      "municipality_key": "gyeongbuk-문경"
+    },
+    {
+      "rank": 196,
+      "municipality_key": "gyeongbuk-봉화"
+    },
+    {
+      "rank": 197,
+      "municipality_key": "gyeongbuk-상주"
+    },
+    {
+      "rank": 198,
+      "municipality_key": "gyeongbuk-성주"
+    },
+    {
+      "rank": 199,
+      "municipality_key": "gyeongbuk-안동"
+    },
+    {
+      "rank": 200,
+      "municipality_key": "gyeongbuk-영덕"
+    },
+    {
+      "rank": 201,
+      "municipality_key": "gyeongbuk-영양"
+    },
+    {
+      "rank": 202,
+      "municipality_key": "gyeongbuk-영주"
+    },
+    {
+      "rank": 203,
+      "municipality_key": "gyeongbuk-영천"
+    },
+    {
+      "rank": 204,
+      "municipality_key": "gyeongbuk-예천"
+    },
+    {
+      "rank": 205,
+      "municipality_key": "gyeongbuk-울릉"
+    },
+    {
+      "rank": 206,
+      "municipality_key": "gyeongbuk-울진"
+    },
+    {
+      "rank": 207,
+      "municipality_key": "gyeongbuk-의성"
+    },
+    {
+      "rank": 208,
+      "municipality_key": "gyeongbuk-청도"
+    },
+    {
+      "rank": 209,
+      "municipality_key": "gyeongbuk-청송"
+    },
+    {
+      "rank": 210,
+      "municipality_key": "gyeongbuk-칠곡"
+    },
+    {
+      "rank": 211,
+      "municipality_key": "gyeongbuk-포항"
+    },
+    {
+      "rank": 212,
+      "municipality_key": "gyeongnam-거제"
+    },
+    {
+      "rank": 213,
+      "municipality_key": "gyeongnam-거창"
+    },
+    {
+      "rank": 214,
+      "municipality_key": "gyeongnam-고성"
+    },
+    {
+      "rank": 215,
+      "municipality_key": "gyeongnam-김해"
+    },
+    {
+      "rank": 216,
+      "municipality_key": "gyeongnam-남해"
+    },
+    {
+      "rank": 217,
+      "municipality_key": "gyeongnam-밀양"
+    },
+    {
+      "rank": 218,
+      "municipality_key": "gyeongnam-사천"
+    },
+    {
+      "rank": 219,
+      "municipality_key": "gyeongnam-산청"
+    },
+    {
+      "rank": 220,
+      "municipality_key": "gyeongnam-양산"
+    },
+    {
+      "rank": 221,
+      "municipality_key": "gyeongnam-의령"
+    },
+    {
+      "rank": 222,
+      "municipality_key": "gyeongnam-진주"
+    },
+    {
+      "rank": 223,
+      "municipality_key": "gyeongnam-창녕"
+    },
+    {
+      "rank": 224,
+      "municipality_key": "gyeongnam-창원"
+    },
+    {
+      "rank": 225,
+      "municipality_key": "gyeongnam-통영"
+    },
+    {
+      "rank": 226,
+      "municipality_key": "gyeongnam-하동"
+    },
+    {
+      "rank": 227,
+      "municipality_key": "gyeongnam-함안"
+    },
+    {
+      "rank": 228,
+      "municipality_key": "gyeongnam-함양"
+    },
+    {
+      "rank": 229,
+      "municipality_key": "gyeongnam-합천"
+    },
+    {
+      "rank": 230,
+      "municipality_key": "jeju-서귀포"
+    },
+    {
+      "rank": 231,
+      "municipality_key": "jeju-제주"
+    }
+  ],
+  "summary": {
+    "ACTIVE": 9,
+    "ONBOARDING_READY": 1,
+    "COLLECTOR_GAP": 2,
+    "WATCH": 2,
+    "EXCLUDE": 0,
+    "UNREVIEWED": 231
+  }
+}

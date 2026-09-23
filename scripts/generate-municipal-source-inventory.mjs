@@ -1,0 +1,151 @@
+import { readFileSync, writeFileSync } from "node:fs";
+
+const checkedAt = "2026-09-23";
+const statuses = new Set([
+  "ACTIVE",
+  "ONBOARDING_READY",
+  "COLLECTOR_GAP",
+  "WATCH",
+  "EXCLUDE",
+  "UNREVIEWED",
+]);
+const authority = {
+  administrative_boundary_source: "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardList.do?bbsId=BBSMSTR_000000000055",
+  cross_check_source: "https://www.data.go.kr/data/3033254/fileData.do",
+  checked_at: checkedAt,
+};
+
+const metros = [
+  ["seoul", "서울특별시", "special_city", "https://www.seoul.go.kr"],
+  ["busan", "부산광역시", "metropolitan_city", "https://www.busan.go.kr"],
+  ["daegu", "대구광역시", "metropolitan_city", "https://www.daegu.go.kr"],
+  ["incheon", "인천광역시", "metropolitan_city", "https://www.incheon.go.kr"],
+  ["gwangju", "광주광역시", "metropolitan_city", "https://www.gwangju.go.kr"],
+  ["daejeon", "대전광역시", "metropolitan_city", "https://www.daejeon.go.kr"],
+  ["ulsan", "울산광역시", "metropolitan_city", "https://www.ulsan.go.kr"],
+  ["sejong", "세종특별자치시", "special_self_governing_city", "https://www.sejong.go.kr"],
+  ["gyeonggi", "경기도", "province", "https://www.gg.go.kr"],
+  ["gangwon", "강원특별자치도", "special_self_governing_province", "https://state.gwd.go.kr"],
+  ["chungbuk", "충청북도", "province", "https://www.chungbuk.go.kr"],
+  ["chungnam", "충청남도", "province", "https://www.chungnam.go.kr"],
+  ["jeonbuk", "전북특별자치도", "special_self_governing_province", "https://www.jeonbuk.go.kr"],
+  ["jeonnam", "전라남도", "province", "https://www.jeonnam.go.kr"],
+  ["gyeongbuk", "경상북도", "province", "https://www.gb.go.kr"],
+  ["gyeongnam", "경상남도", "province", "https://www.gyeongnam.go.kr"],
+  ["jeju", "제주특별자치도", "special_self_governing_province", "https://www.jeju.go.kr"],
+];
+
+const divisions = {
+  seoul: "종로구,중구,용산구,성동구,광진구,동대문구,중랑구,성북구,강북구,도봉구,노원구,은평구,서대문구,마포구,양천구,강서구,구로구,금천구,영등포구,동작구,관악구,서초구,강남구,송파구,강동구",
+  busan: "중구,서구,동구,영도구,부산진구,동래구,남구,북구,해운대구,사하구,금정구,강서구,연제구,수영구,사상구,기장군",
+  daegu: "중구,동구,서구,남구,북구,수성구,달서구,달성군,군위군",
+  incheon: "중구,동구,미추홀구,연수구,남동구,부평구,계양구,서구,강화군,옹진군",
+  gwangju: "동구,서구,남구,북구,광산구",
+  daejeon: "동구,중구,서구,유성구,대덕구",
+  ulsan: "중구,남구,동구,북구,울주군",
+  gyeonggi: "수원시,성남시,의정부시,안양시,부천시,광명시,평택시,동두천시,안산시,고양시,과천시,구리시,남양주시,오산시,시흥시,군포시,의왕시,하남시,용인시,파주시,이천시,안성시,김포시,화성시,광주시,양주시,포천시,여주시,연천군,가평군,양평군",
+  gangwon: "춘천시,원주시,강릉시,동해시,태백시,속초시,삼척시,홍천군,횡성군,영월군,평창군,정선군,철원군,화천군,양구군,인제군,고성군,양양군",
+  chungbuk: "청주시,충주시,제천시,보은군,옥천군,영동군,증평군,진천군,괴산군,음성군,단양군",
+  chungnam: "천안시,공주시,보령시,아산시,서산시,논산시,계룡시,당진시,금산군,부여군,서천군,청양군,홍성군,예산군,태안군",
+  jeonbuk: "전주시,군산시,익산시,정읍시,남원시,김제시,완주군,진안군,무주군,장수군,임실군,순창군,고창군,부안군",
+  jeonnam: "목포시,여수시,순천시,나주시,광양시,담양군,곡성군,구례군,고흥군,보성군,화순군,장흥군,강진군,해남군,영암군,무안군,함평군,영광군,장성군,완도군,진도군,신안군",
+  gyeongbuk: "포항시,경주시,김천시,안동시,구미시,영주시,영천시,상주시,문경시,경산시,의성군,청송군,영양군,영덕군,청도군,고령군,성주군,칠곡군,예천군,봉화군,울진군,울릉군",
+  gyeongnam: "창원시,진주시,통영시,사천시,김해시,밀양시,거제시,양산시,의령군,함안군,창녕군,고성군,남해군,하동군,산청군,함양군,거창군,합천군",
+  jeju: "제주시,서귀포시",
+};
+
+const known = {
+  seoul: ["ACTIVE", "https://hangang.seoul.go.kr/www/eventMng/list.do?mid=538", "official_event_listing", "generic_fallback", "한강사업본부 행사 source; 서울 전체 coverage를 뜻하지 않음"],
+  busan: ["COLLECTOR_GAP", "https://www.visitbusan.net/schedule/list.do?boardId=BBS_0000009&menuCd=DOM_000000204012000000&month=0", "official_tourism_listing", "list_detail_core_followup_needed", "목록에 venue가 없어 bounded detail core follow-up 필요"],
+  daegu: ["WATCH", "https://tour.daegu.go.kr/index.do?menu_id=00002932&servletPath=%2Findex.do", "official_tourism_listing", "source_core_inconsistent", "연도 없는 recurring date가 섞여 있음"],
+  incheon: ["ACTIVE", "https://www.incheon.go.kr/res/RE050101/", "official_event_listing", "generic_fallback_paginated", "Registry key incheon-res"],
+  gwangju: ["ONBOARDING_READY", "https://tour.gwangju.go.kr/home/tour/culture/festival.cs?m=315", "official_tourism_listing", "generic_fallback_paginated_probe", "상태 query와 bounded live probe 전"],
+  daejeon: ["ACTIVE", "https://daejeon.go.kr/fvu/FvuEventList.do?menuSeq=504", "official_event_listing", "generic_fallback", "Registry key daejeon-fvu"],
+  ulsan: ["WATCH", "https://tour.ulsan.go.kr/tour/korean/unit/fstvl/list.ulsan?mId=001003001000000000&searchDvsn1=1", "official_tourism_listing", "source_core_inconsistent", "source-wide full-year exact core 부족"],
+  sejong: ["COLLECTOR_GAP", "https://www.sjcf.or.kr/hangeul/www/prfr/list.do?key=2504150023", "official_culture_listing", "list_detail_core_followup_needed", "목록 venue 부재"],
+  "gyeonggi-paju": ["ACTIVE", "https://tour.paju.go.kr/user/link/cultural/BD_index.do", "official_event_listing", "registered_parser", "Registry key paju"],
+  "gyeonggi-suwon": ["ACTIVE", "https://www.swcf.or.kr/?p=29", "official_event_listing", "registered_parser", "Registry key suwon"],
+  "gyeonggi-goyang": ["ACTIVE", "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303", "official_event_listing", "registered_parser", "Registry key goyang"],
+  "gyeonggi-hwaseong": ["ACTIVE", "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", "official_event_listing", "registered_parser", "Registry key hwaseong"],
+  "gyeonggi-bucheon": ["ACTIVE", "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003", "official_event_listing", "registered_parser", "Registry key bucheon"],
+  "gangwon-taebaek": ["ACTIVE", "https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502", "official_event_listing", "generic_fallback", "Registry key taebaek"],
+};
+
+const roman = {
+  "서울특별시":"seoul","부산광역시":"busan","대구광역시":"daegu","인천광역시":"incheon","광주광역시":"gwangju","대전광역시":"daejeon","울산광역시":"ulsan","세종특별자치시":"sejong","경기도":"gyeonggi","강원특별자치도":"gangwon","충청북도":"chungbuk","충청남도":"chungnam","전북특별자치도":"jeonbuk","전라남도":"jeonnam","경상북도":"gyeongbuk","경상남도":"gyeongnam","제주특별자치도":"jeju",
+  "파주시":"paju","수원시":"suwon","고양시":"goyang","화성시":"hwaseong","부천시":"bucheon","태백시":"taebaek",
+  "종로구":"jongno","중구":"jung","용산구":"yongsan","성동구":"seongdong","광진구":"gwangjin","동대문구":"dongdaemun","중랑구":"jungnang","성북구":"seongbuk","강북구":"gangbuk","도봉구":"dobong","노원구":"nowon","은평구":"eunpyeong","서대문구":"seodaemun","마포구":"mapo","양천구":"yangcheon","강서구":"gangseo","구로구":"guro","금천구":"geumcheon","영등포구":"yeongdeungpo","동작구":"dongjak","관악구":"gwanak","서초구":"seocho","강남구":"gangnam","송파구":"songpa","강동구":"gangdong",
+};
+const slug = (name) => roman[name] ?? name.replace(/시$|군$|구$/u, "").replace(/\s/g, "").toLowerCase();
+const level = (name, parent) => parent === "jeju" ? "administrative_city" : name.endsWith("군") ? "county" : name.endsWith("구") ? "district" : "city";
+const queueBucket = (entry) => {
+  if (entry.government_level !== "metro" && entry.government_level !== "province" && entry.government_level !== "special_city" && entry.government_level !== "metropolitan_city" && entry.government_level !== "special_self_governing_city" && entry.government_level !== "special_self_governing_province") return [entry.region_key === "seoul" || entry.region_key === "gyeonggi" || entry.region_key === "incheon" ? 1 : 3, entry.region_order, entry.locality];
+  return [0, entry.region_order, entry.locality];
+};
+
+export function buildInventory() {
+  const entries = [];
+  metros.forEach(([regionKey, region, governmentLevel, homepage], regionOrder) => {
+    const metroKnown = known[regionKey];
+    entries.push({
+      key: regionKey, region_key: regionKey, region, locality: region, government_level: governmentLevel,
+      official_homepage: homepage, source_status: metroKnown?.[0] ?? "UNREVIEWED", source_url: metroKnown?.[1] ?? null,
+      source_type: metroKnown?.[2] ?? null, collector_fit: metroKnown?.[3] ?? "unreviewed", notes: metroKnown?.[4] ?? "광역단체 자체 행사 source 미조사", checked_at: checkedAt, region_order: regionOrder,
+    });
+    for (const locality of (divisions[regionKey] ?? "").split(",").filter(Boolean)) {
+      const key = `${regionKey}-${slug(locality)}`;
+      const itemKnown = known[key];
+      entries.push({
+        key, region_key: regionKey, region, locality, government_level: level(locality, regionKey), official_homepage: null,
+        source_status: itemKnown?.[0] ?? "UNREVIEWED", source_url: itemKnown?.[1] ?? null,
+        source_type: itemKnown?.[2] ?? null, collector_fit: itemKnown?.[3] ?? "unreviewed", notes: itemKnown?.[4] ?? "공식 행사 source 미조사", checked_at: checkedAt, region_order: regionOrder,
+      });
+    }
+  });
+  const queue = entries.filter((entry) => entry.source_status === "UNREVIEWED").sort((a, b) => {
+    const left = queueBucket(a), right = queueBucket(b);
+    return left[0] - right[0] || left[1] - right[1] || left[2].localeCompare(right[2], "ko");
+  }).map((entry, index) => ({ rank: index + 1, municipality_key: entry.key }));
+  const summary = Object.fromEntries([...statuses].map((status) => [status, entries.filter((entry) => entry.source_status === status).length]));
+  return { schema_version: 1, authority, generated_at: checkedAt, municipalities: entries, survey_queue: queue, summary };
+}
+
+export function validate(inventory) {
+  const keys = new Set();
+  for (const item of inventory.municipalities) {
+    if (keys.has(item.key)) throw new Error(`duplicate municipality key: ${item.key}`);
+    keys.add(item.key);
+    if (!statuses.has(item.source_status)) throw new Error(`invalid status: ${item.key}`);
+    for (const field of ["region", "locality", "government_level", "official_homepage", "source_status", "source_url", "source_type", "collector_fit", "notes", "checked_at"])
+      if (!(field in item)) throw new Error(`missing required field ${field}: ${item.key}`);
+    if (!item.region || !item.locality || !item.government_level || !item.checked_at) throw new Error(`empty required field: ${item.key}`);
+    if (item.key !== item.region_key) {
+      if (!keys.has(item.region_key)) throw new Error(`parent region must precede child: ${item.key}`);
+      const parent = inventory.municipalities.find((candidate) => candidate.key === item.region_key);
+      if (!parent || parent.region !== item.region || parent.locality !== item.region) throw new Error(`invalid parent relation: ${item.key}`);
+    }
+  }
+  const actual = Object.fromEntries([...statuses].map((status) => [status, inventory.municipalities.filter((item) => item.source_status === status).length]));
+  if (JSON.stringify(actual) !== JSON.stringify(inventory.summary)) throw new Error("summary mismatch");
+  if (inventory.survey_queue.length !== actual.UNREVIEWED) throw new Error("queue count mismatch");
+  if (new Set(inventory.survey_queue.map((item) => item.municipality_key)).size !== inventory.survey_queue.length) throw new Error("queue duplicate");
+  if (!inventory.survey_queue.every((item, index) => item.rank === index + 1 && inventory.municipalities.find((candidate) => candidate.key === item.municipality_key)?.source_status === "UNREVIEWED")) throw new Error("queue ordering mismatch");
+  for (const [key, [status, sourceUrl]] of Object.entries(known)) {
+    const item = inventory.municipalities.find((candidate) => candidate.key === key);
+    if (!item || item.source_status !== status || item.source_url !== sourceUrl) throw new Error(`known source mismatch: ${key}`);
+  }
+}
+
+const inventory = buildInventory();
+validate(inventory);
+const json = `${JSON.stringify(inventory, null, 2)}\n`;
+const markdown = `# Municipal Source Master Inventory\n\nGenerated from \`docs/municipal-source-inventory.json\`; do not hand-edit counts.\n\n- Administrative-boundary authority: ${authority.administrative_boundary_source}\n- Cross-check: ${authority.cross_check_source}\n- Checked: ${checkedAt}\n- Total research units: ${inventory.municipalities.length}\n\n| Status | Count |\n| --- | ---: |\n${Object.entries(inventory.summary).map(([status, count]) => `| ${status} | ${count} |`).join("\n")}\n\n## Deterministic survey queue\n\nOrder: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become \`ONBOARDING_READY\`; common collector deficiencies become \`COLLECTOR_GAP\`; source-side deficiencies become \`WATCH\`; unsuitable sources become \`EXCLUDE\`. When 3–5 \`ONBOARDING_READY\` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.\n\nFirst 20 queue entries: ${inventory.survey_queue.slice(0, 20).map(({ rank, municipality_key }) => `${rank}. \`${municipality_key}\``).join(" · ")}\n`;
+
+if (process.argv.includes("--check")) {
+  if (readFileSync("docs/municipal-source-inventory.json", "utf8") !== json) throw new Error("inventory JSON is not generated from the canonical catalog");
+  if (readFileSync("docs/municipal-source-inventory.md", "utf8") !== markdown) throw new Error("inventory summary is stale");
+  console.log(JSON.stringify({ total: inventory.municipalities.length, summary: inventory.summary, queue_first: inventory.survey_queue.slice(0, 10) }));
+} else {
+  writeFileSync("docs/municipal-source-inventory.json", json);
+  writeFileSync("docs/municipal-source-inventory.md", markdown);
+}

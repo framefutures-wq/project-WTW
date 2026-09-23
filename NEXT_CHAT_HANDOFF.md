@@ -504,3 +504,9 @@ UI 기준:
 - 잘못된 페이지를 자동승격하지 않도록 **fail-closed**가 원칙이다. 새 source 검증 실패 시 기존 last-known-good를 유지하고 AUTO_RETRY/관찰 상태를 유지한다.
 - 현재 단계에서는 전국 municipal coverage를 먼저 넓혀 실제 source 변경/플랫폼 패턴을 축적하고, 반복되는 유형을 근거로 Phase 6 후반에 공통 self-healing 기능을 구현한다.
 - 이 항목은 선택 아이디어가 아니라 **갈틈 No-Human 운영의 필수 후반 과제**로 취급한다.
+
+## 2026-09-23 Phase 6B — 전국 municipal inventory baseline
+
+- `docs/municipal-source-inventory.json`에 17개 광역단체와 228개 하위 시·군·구/제주 행정시, 총 245개 조사 단위를 기록했다. 행정안전부 지방자치단체 행정구역 현황과 행안부 시군구 데이터 스키마를 authority로 남겼다.
+- 현재 baseline: ACTIVE 9 / ONBOARDING_READY 1 / COLLECTOR_GAP 2 / WATCH 2 / EXCLUDE 0 / UNREVIEWED 231. 기존 Registry 9개와 울산·부산·대구·광주·세종 상태가 모두 반영됐다.
+- `npm run municipal:inventory:check`은 unique key, parent ordering, status enum, summary/queue 일치와 generated JSON/Markdown freshness를 검증한다. 다음 위치는 **전국 inventory baseline 완료 → 다음 B 조사 batch → E onboarding**이다. Registry, D1, Cron, production은 이 작업에서 변경하지 않는다.
