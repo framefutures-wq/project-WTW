@@ -85,7 +85,7 @@ test("home keeps a dense four-column desktop grid and a safe mobile structure", 
   await expect(
     page
       .locator(".event-card", { hasText: "이미지 없는 행사" })
-      .locator(".scene-fallback"),
+      .locator(".card-info-graphic"),
   ).toBeVisible();
 
   const layout = await page.evaluate(() => {

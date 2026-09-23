@@ -144,6 +144,32 @@ const dateLabel = (date: string) => {
   const localDate = date.includes("T") ? koreaDate(new Date(date)) : date;
   return `${Number(localDate.slice(5, 7))}.${Number(localDate.slice(8, 10))}`;
 };
+const homeFallbackInfo = (event: EventItem) => {
+  const start = validDate(event.start_date) ? event.start_date : null;
+  const end = validDate(event.end_date) ? event.end_date : null;
+  const posterDate = (value: string) =>
+    `${value.slice(5, 7)}.${value.slice(8, 10)}`;
+  const date =
+    start && end
+      ? start === end
+        ? posterDate(start)
+        : `${posterDate(start)} — ${posterDate(end)}`
+      : start
+        ? posterDate(start)
+        : null;
+  const duration =
+    start && end && start !== end
+      ? Math.floor(
+          (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) /
+            86_400_000,
+        ) + 1
+      : null;
+  return {
+    date,
+    duration: duration && duration > 1 ? `${duration}일간` : null,
+    region: event.region.trim() || null,
+  };
+};
 const detailDate = (date: string) => {
   const [year, month, day] = date.split("-");
   return year && month && day
@@ -362,6 +388,7 @@ export function Scene({
     event.start_date === event.end_date
       ? dateLabel(event.start_date)
       : `${dateLabel(event.start_date)} ~ ${dateLabel(event.end_date)}`;
+  const cardInfo = homeFallbackInfo(event);
   const className = `scene scene-${theme}${detail ? " scene-detail" : ""}${image && !imageFailed ? " scene-with-image" : ""}${fit === "contain" && !detail ? " scene-contain" : ""}`;
   const content = (
     <>
@@ -390,22 +417,31 @@ export function Scene({
             </div>
           </div>
         ) : (
-          <div className="scene-fallback" aria-hidden="true">
-            <div className="scene-sun" />
-            <div className="hill hill-one" />
-            <div className="hill hill-two" />
-            <span className="scene-symbol">
-              {icons[theme as keyof typeof icons]}
-            </span>
-            <span className="scene-stem" />
-            <span className="scene-dot dot-one" />
-            <span className="scene-dot dot-two" />
-            <span className="scene-caption">
-              {THEMES[theme as keyof typeof THEMES]}를 만나는 하루
-            </span>
-            <span className="sample-stamp">
-              {event.is_sample ? "가상 행사" : "주제 일러스트"}
-            </span>
+          <div
+            className="card-info-graphic"
+            role="img"
+            aria-label={`공식 행사 정보: ${[
+              cardInfo.date,
+              cardInfo.duration,
+              cardInfo.region,
+            ]
+              .filter(Boolean)
+              .join(", ")}`}
+          >
+            <span className="card-info-graphic-label">공식 일정</span>
+            <div className="card-info-graphic-facts">
+              {cardInfo.date && (
+                <strong className="card-info-graphic-date">
+                  {cardInfo.date}
+                </strong>
+              )}
+              <span className="card-info-graphic-meta">
+                {[cardInfo.duration, cardInfo.region]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            </div>
+            <span className="card-info-graphic-brand">갈틈</span>
           </div>
         )
       )}

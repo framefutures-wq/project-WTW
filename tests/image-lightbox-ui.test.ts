@@ -103,7 +103,7 @@ test("rendered contain/detail layers use the same source and cover cards omit th
   );
 });
 
-test("detail without an image uses an event-data graphic while cards retain their fallback", () => {
+test("detail and cards without an image use their respective event-data graphics", () => {
   const detail = renderToStaticMarkup(
     createElement(Scene, { event: fallbackEvent, detail: true }),
   );
@@ -115,7 +115,12 @@ test("detail without an image uses an event-data graphic while cards retain thei
   assert.match(detail, />공연</);
   assert.match(detail, /9\.26 ~ 9\.28/);
   assert.doesNotMatch(detail, /scene-fallback/);
-  assert.match(card, /scene-fallback/);
+  assert.match(card, /card-info-graphic/);
+  assert.match(card, />09.26 — 09.28</);
+  assert.match(card, />3일간 · 서울</);
+  assert.match(card, /role="img"/);
+  assert.doesNotMatch(card, /주제 일러스트|체험을 만나는 하루/);
+  assert.doesNotMatch(app, /scene-sun|hill-one|hill-two|scene-stem|scene-dot/);
   assert.match(app, /imageFailed\) && \(/);
   assert.match(redesign, /\.detail-info-graphic\s*\{[\s\S]*background: #f7f4ee/);
   assert.match(redesign, /\.detail-info-graphic-orbit[\s\S]*#f26b38/);
