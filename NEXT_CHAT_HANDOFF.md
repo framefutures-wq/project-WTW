@@ -134,7 +134,7 @@
 6. 최신 `origin/main` 확인
 7. GitHub Actions 확인
 8. 현재 working tree와 중단 지점 확인
-9. 태백시 / 서울 한강 municipal onboarding은 완료됐다. **현재는 UI / 브랜드 시스템 v2부터 이어간다.** 전국 coverage 확대는 UI/상세 v2가 안정될 때까지 잠시 멈춘다.
+9. 태백시 / 서울 한강 municipal onboarding과 홈/상세 UI v2는 완료됐다. **현재는 전국 municipal/source coverage 확대를 이어간다.** TourAPI detail backlog/recovery는 2026-09-24 11:00 KST scheduled watchdog 관찰 대기이며 그 전까지 해당 계통은 동결한다.
 
 ## 대화 톤
 
@@ -266,11 +266,11 @@ UI 기준:
 - 2026-09-23 production 관측에서 network 최종 실패 8건은 `unknown_network`·`under_1s`였고 inline retry 복구는 0건이었다. 다음 작업은 이 runtime subtype이 왜 원문 없이 unknown으로 분류되는지 안전하게 진단하는 bounded audit이다.
 
 
-## 2026-09-23 최신 인수인계 — 홈 UI / 상세 UI v2 종료, TourAPI detail 운영 확인으로 이동
+## 2026-09-23 최신 인수인계 — TourAPI 관찰 대기 / municipal coverage 재개
 
 ### 실제 최신 기준
 
-- 최신 main: `c496d96` — `test: align production detail media smoke`
+- 상태 저장 직전 main: `fcc6e4a` — `docs: close detail ui v2 release`
 - 상세 UI production 기준 main: `eaa56db` — `fix: preserve secondary detail poster`
 - 현재 production Worker version: `b7ad1cae-cf68-4f3b-aac6-0ac8e4c2c13e`
 - `c496d96`은 adaptive layout에 맞춘 production smoke test-only commit이며 Worker 재배포는 하지 않았다.
@@ -308,32 +308,34 @@ UI 기준:
 
 홈 UI와 상세 UI는 새로운 회귀가 없는 한 다시 열지 않는다.
 
-### TourAPI detail 안정화 상태
+### TourAPI detail 안정화 상태 — 관찰 대기
 
 - candidate priority: retry-due failed → never-processed → 7-day TTL.
 - state retry: 첫 실패 +30m, 이후 +2h/+4h/+8h/+16h, max +24h.
-- detail endpoint의 network/timeout만 500ms 후 1회 inline retry, run 전체 retry budget 25.
-- 관측 필드: attempts, retry_attempted/recovered/exhausted, failure_endpoints, network_failure_subtypes, failure_latency.
-- production 관측상 inline 500ms retry는 복구 효과가 없었지만, 시간이 지난 state retry에서는 다수 정상 복구됐다.
-- 마지막 측정 never_processed: **78**.
-- 춘천막국수닭갈비축제 `tourapi-1230074`: 마지막 측정 기준 never-processed, 후보 순위 **18위**.
-- 이 상태에서는 network 오류 0%를 만들려고 계속 파지 않는다. 정상 state retry로 결국 success가 되는지 보며 backlog를 소진한다.
-- UI 상세 마감 후 backlog 소진/상세 품질 점검으로 돌아간다.
+- 최신 production D1 read-only snapshot: 대상 219 / success 123 / empty 0 / failed 18 / never_processed 78.
+- failed 18건은 모두 retry-due, retry-waiting 0. failure_count는 1회 8건 / 2회 10건.
+- 최근 manual detail run은 candidates 25 / enriched 16 / failed 9였고, retry_attempted 8 / retry_recovered 0 / retry_exhausted 8이었다.
+- 주요 실패는 network_or_timeout / unknown_network이며, 최신 측정까지 inline retry recovery는 0이다.
+- 춘천막국수닭갈비축제 `tourapi-1230074`는 never_processed, 당시 후보 우선순위 19위.
+- 가장 최근 run은 manual이었고, 다음 scheduled watchdog은 **2026-09-24 11:00 KST (02:00 UTC)**다.
+- scheduled 결과가 나오기 전에는 recovery 여부를 확정하지 않는다.
+- 그 전까지 TourAPI detail 코드 변경 / manual detail run / 공식 상세 enrichment 품질 강화는 보류한다.
+- 이 항목은 삭제하거나 완료 처리하지 않고 **관찰 대기**로 유지한다.
 
 ### 현재 로드맵
 
 1. ✅ Cloudflare 운영 기반 / 기본 서비스
 2. ✅ 홈 UI v2
 3. ✅ **상세페이지 UI v2 production 마감**
-4. 🟡 **TourAPI detail backlog 소진 / recovery 확인 — 현재 위치**
-5. ⏳ 공식 상세 enrichment 품질 강화
-6. ⏳ 전국 municipal/source coverage 확대
+4. ⏸️ **TourAPI detail backlog 소진 / recovery 확인 — 2026-09-24 11:00 KST scheduled watchdog 관찰 대기**
+5. ⏳ **공식 상세 enrichment 품질 강화 — 4번 확인 전 보류**
+6. 🟡 **전국 municipal/source coverage 확대 — 현재 위치**
 7. ⏳ SEO / Search Console / 검색 유입 점검
 8. ⏳ 모바일 최종 polish
 9. ⏳ 수익화 준비
 10. ⏳ Zero-Human 운영 자동화 최종 점검
 
-다음 세션은 production D1을 read-only로 다시 측정해 backlog가 실제로 감소했는지 확인한다. 마지막 측정값 never_processed `78`과 `tourapi-1230074` 후보 순위 `18`은 과거 마지막 관측값일 뿐 최신값으로 단정하지 않는다.
+현재는 6번을 진행한다. 4번은 다음 scheduled watchdog 완료 후 동일한 read-only D1 측정으로만 재개하며, 그 전에는 TourAPI detail 계통을 건드리지 않는다.
 
 ### 새 채팅 시작 시 고정 순서
 

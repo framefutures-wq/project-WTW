@@ -262,10 +262,10 @@ Audit:
 현재 우선순위:
 
 1. 태백시 전체일정캘린더와 서울 한강 행사·공연 정보의 `generic_fallback` onboarding을 완료했다. 태백시의 행정·회의·교육 등 비행사 일정은 exclusion gate로 차단하고, 서울 한강은 source card의 명시적 축제·문화예술·공연 category만 후보로 허용한다.
-2. **상세 UI v2 production release를 완료했다.** 홈 UI와 상세 UI는 새로운 회귀가 없는 한 다시 열지 않는다.
-3. **TourAPI detail backlog 소진 / recovery 운영 확인**을 현재 작업 위치로 둔다. production D1은 read-only로 다시 측정해 backlog 감소와 state retry/recovery 동작을 확인한다.
-4. 그 다음 **공식 상세정보 자동 보강 품질**을 확대한다. organizer/municipality/TourAPI 등 공식 근거가 있는 소개·운영시간·프로그램·문의·요금·이미지만 사용한다.
-5. 이후 **전국 지자체 coverage 확대**를 재개한다. `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입하며, 불명확한 core는 기존 retry·confirmation/last-known-good 정책을 유지한다. 상세 survey: `docs/municipal-source-survey-2026-09-22.md`.
+2. **홈 UI v2와 상세 UI v2 production release를 완료했다.** 새로운 회귀가 없는 한 다시 열지 않는다.
+3. **TourAPI detail backlog/recovery는 관찰 대기 상태다.** 2026-09-23 최신 read-only snapshot은 대상 219 / success 123 / empty 0 / failed 18 / never_processed 78, retry-due 18 / retry-waiting 0이다. 다음 실제 scheduled watchdog은 2026-09-24 11:00 KST이며, 그 전에는 manual detail run이나 TourAPI detail 코드 변경으로 관찰 조건을 섞지 않는다.
+4. **공식 상세 enrichment 품질 강화는 위 scheduled recovery 확인 전까지 보류한다.** TourAPI detail 계통은 동결한다.
+5. **현재 작업 위치는 전국 municipal/source coverage 확대다.** TourAPI detail과 독립적인 범위에서 공식 source를 한 번에 하나씩 조사·onboarding한다. `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입하며, 불명확한 core는 기존 retry·confirmation/last-known-good 정책을 유지한다. 상세 survey: `docs/municipal-source-survey-2026-09-22.md`.
 6. Search Console `sitemap.xml` 제출 상태 확인 → 무료 공개 traffic 관찰 → traffic 확보 뒤 수익화 순서로 진행한다.
 
 수익화는 현재 보류한다.
@@ -620,3 +620,15 @@ UI benchmark:
 10. ⏳ Zero-Human 운영 자동화 최종 점검
 
 다음 세션은 TourAPI detail backlog 소진 및 state retry/recovery 운영 확인부터 시작한다. production D1을 read-only로 다시 측정해 backlog가 실제로 감소했는지 확인한다. 홈 UI와 상세 UI는 새로운 회귀 또는 새로운 실패 유형이 있을 때만 다시 연다.
+
+
+## 22. 2026-09-23 운영 전환 — TourAPI 관찰 대기 / municipal coverage 재개
+
+- 상태 저장 직전 main: `fcc6e4a` — 상세 UI v2 release 문서 마감.
+- TourAPI detail 최신 read-only snapshot: 대상 219 / success 123 / empty 0 / failed 18 / never_processed 78.
+- failed 18건은 모두 retry-due, retry-waiting 0. failure_count는 1회 8건 / 2회 10건.
+- 최근 manual detail run은 candidates 25 / enriched 16 / failed 9였고, retry_attempted 8 / retry_recovered 0 / retry_exhausted 8. 주요 실패는 network_or_timeout / unknown_network.
+- `tourapi-1230074` 춘천막국수닭갈비축제는 never_processed, 당시 후보 우선순위 19위.
+- 다음 scheduled watchdog은 **2026-09-24 11:00 KST (02:00 UTC)**. 이 실행 결과 전에는 recovery 판단을 확정하지 않는다.
+- 그 전까지 TourAPI detail 코드는 변경하지 않고 manual detail run도 하지 않는다. 공식 상세 enrichment 품질 강화도 보류한다.
+- 현재 개발 작업은 **전국 municipal/source coverage 확대**로 이동한다. TourAPI detail과 독립된 source onboarding만 진행한다.
