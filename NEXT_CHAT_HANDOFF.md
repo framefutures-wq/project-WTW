@@ -435,3 +435,16 @@ UI 기준:
 - 우선순위는 **울산 alternate canonical 최종 조사 → 부산/대구/광주/세종 등 다음 광역지역 공식 source 조사 → ACTIVE-ready / WATCH / COLLECTOR GAP / EXCLUDE 분류 → 바로 온보딩 가능한 후보 3~5개 대기열 확보**다.
 - 10시 인천 scheduled ingestion과 11시 TourAPI watchdog이 정상임을 확인하면, ACTIVE-ready 후보를 지역마다 하루씩 기다리지 않고 bounded task로 등록하고 **3~5개 단위 batch deploy/다음 정규 Cron 검증**을 기본 운영 방식으로 삼는다.
 - 공통 collector 자체를 크게 수정하는 새 유형이 발견된 경우에만 별도 운영 검증을 둔다. 단순 Registry onboarding마다 24시간 대기하지 않는다.
+
+
+### 부산 source 조사 — COLLECTOR GAP
+
+- 공식 canonical 후보: `https://www.visitbusan.net/schedule/list.do?boardId=BBS_0000009&menuCd=DOM_000000204012000000&month=0` (Visit Busan 축제·행사).
+- Visit Busan은 페이지 하단에 `Copyright Busan Metropolitan City`를 명시하고 부산광역시 개인정보/저작권 정책으로 연결되는 공식 관광 채널이다.
+- 2026 행사·축제 목록은 제목 + full-year 기간을 안정적으로 제공하고, 월/페이지 단위 목록도 존재한다.
+- 대표 detail URL은 `/schedule/view.do?boardId=BBS_0000009&dataSid=...` 형태의 durable first-party URL이다.
+- detail 표본에서는 광안리 M 드론×레이저쇼, 별바다부산 나이트마켓, 복천박물관 기획전, 달맞이 문화페스타, 광복로 발코니 뮤직쇼 등이 full-year 기간 + 장소 + 주소를 명시했다.
+- 다만 list card 자체에는 venue가 없고 현재 generic collector는 title/date/venue가 같은 self-contained block에 있어야 candidate를 만든다. 따라서 현 구조로는 list만으로 ACTIVE onboarding할 수 없다.
+- 일부 광역/분산형 행사(예: 부산돼지국밥대전)는 detail에도 단일 venue가 없으므로, 향후 list→detail core follow-up을 구현하더라도 candidate 단위 fail-closed가 필요하다.
+- 분류: **COLLECTOR GAP**. source 품질은 좋지만 현재 공통 collector에 bounded list→detail core fan-out 능력이 없다.
+- 10시 전에는 부산 때문에 새 collector 기능을 즉시 구현하지 않고, 대구/광주/세종 등 더 단순한 ACTIVE-ready source 조사를 계속해 3~5개 대기열을 먼저 확보한다.
