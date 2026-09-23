@@ -1837,6 +1837,150 @@ const known = {
     "generic_fallback",
     "포항문화재단 문화포털은 공연·전시·행사·교육·축제 필터와 2026 current/future 문화정보를 지속 제공하며 항목에 title·explicit date/period·venue를 self-contained로 노출한다. 별도 대표축제 목록도 연도·상태·장소를 제공해 READY.",
     "https://www.pohang.go.kr"
+  ],
+  "gyeongnam-거제": [
+    "ONBOARDING_READY",
+    "https://tour.geoje.go.kr/board/list.geoje?boardId=FESTIVAL&contentsSid=8213&menuCd=DOM_000008504014001000",
+    "official_tourism_event_listing",
+    "generic_fallback_paginated",
+    "거제시 공식 문화관광 행사일정표는 2026 월별 calendar/list에서 title·explicit full-year 기간·venue·time·first-party detail을 동일 candidate에 제공한다. current/future 항목과 문화예술과 ownership이 확인되어 READY.",
+    "https://www.geoje.go.kr"
+  ],
+  "gyeongnam-거창": [
+    "WATCH",
+    "https://www.geochang.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "거창군 공식 홈페이지/문화관광에서 2026 개별 축제·공연 정보는 확인 대상이지만 군 전체 문화행사를 title·explicit full-year date·venue·durable detail과 함께 지속 공급하는 current canonical bounded listing을 검증하지 못했다. 개별 공지를 결합하지 않아 WATCH.",
+    "https://www.geochang.go.kr"
+  ],
+  "gyeongnam-고성": [
+    "WATCH",
+    "https://www.goseong.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "경남 고성군 공식 홈페이지·문화관광의 개별 2026 축제/행사 정보는 확인되지만 군 전체 행사의 current canonical listing과 source-wide full-year core·pagination을 이번 조사에서 안정적으로 검증하지 못했다. WATCH.",
+    "https://www.goseong.go.kr"
+  ],
+  "gyeongnam-김해": [
+    "WATCH",
+    "https://www.gimhae.go.kr/",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "김해시 공식 홈페이지와 문화시설·축제 안내에는 2026 current 문화정보가 있으나 행사·교육·모집/시설 프로그램이 분산·혼합되어 시 전체 문화행사의 canonical event-only bounded listing과 일관된 full-year core를 확정하지 못했다. WATCH.",
+    "https://www.gimhae.go.kr"
+  ],
+  "gyeongnam-남해": [
+    "WATCH",
+    "https://www.namhae.go.kr/tour/00011/00039.web",
+    "official_tourism_festival_collection",
+    "source_freshness_unverified",
+    "남해군 공식 문화관광 ‘주요 축제/행사’는 대표 행사 collection을 제공하지만 확인한 source는 소수 정적 소개 중심이고 행사별 current 2026 exact full-year date·durable detail이 source-wide로 유지되는지 검증하지 못했다. WATCH.",
+    "https://www.namhae.go.kr"
+  ],
+  "gyeongnam-밀양": [
+    "COLLECTOR_GAP",
+    "https://www.miryang.go.kr/tur/sim/EgovSchdulList.do?mnNo=40100000000",
+    "official_tourism_event_calendar",
+    "list_detail_core_followup_needed",
+    "밀양시 문화관광 공식 축제행사일정은 2026 행사·공연·전시·버스킹을 월별로 지속 제공하며 title·explicit date와 first-party detail을 노출한다. 일부 대형 행사 row에서 venue가 self-contained하지 않아 기존 bounded list→detail follow-up으로 core를 보완해야 하는 GAP.",
+    "https://www.miryang.go.kr"
+  ],
+  "gyeongnam-사천": [
+    "WATCH",
+    "https://www.sacheon.go.kr/",
+    "official_government_portal",
+    "source_wide_listing_missing",
+    "사천시 공식 홈페이지/문화관광에서 2026 사천에어쇼 등 flagship 행사와 개별 문화정보는 확인되지만 시 전체 문화행사를 지속 공급하는 canonical bounded listing·pagination을 검증하지 못했다. 대표행사를 확대하지 않고 WATCH.",
+    "https://www.sacheon.go.kr"
+  ],
+  "gyeongnam-산청": [
+    "ONBOARDING_READY",
+    "https://www.sancheong.go.kr/tour/selectSchdulWeb.do?key=545&yyyymm=20260519",
+    "official_tourism_event_calendar",
+    "generic_fallback",
+    "산청군 공식 문화관광 행사일정은 2026 월별 calendar/list에서 구분·explicit 기간·행사명·주최·venue·first-party detail을 self-contained로 제공한다. current generic collector 후보로 READY.",
+    "https://www.sancheong.go.kr"
+  ],
+  "gyeongnam-양산": [
+    "COLLECTOR_GAP",
+    "https://yangsan.go.kr/tour/event/calendar.do?mid=0101040000&token=1786624632639",
+    "official_tourism_event_calendar",
+    "list_detail_core_followup_needed",
+    "양산시 공식 관광 event calendar와 detail은 2026 current/future 행사에 explicit 기간·venue를 제공하고 durable first-party detail 구조가 확인된다. 다만 calendar/card 자체에서 multi-day period·venue core가 모든 candidate에 self-contained한지 확정되지 않아 기존 bounded list→detail follow-up 적용이 필요한 GAP.",
+    "https://www.yangsan.go.kr"
+  ],
+  "gyeongnam-의령": [
+    "COLLECTOR_GAP",
+    "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=FESTIVAL&contentsSid=933&cpath=%2Ftour&menuCd=DOM_000000304001000000",
+    "official_tourism_festival_listing",
+    "list_detail_core_followup_needed",
+    "의령군 문화관광 공식 축제 목록은 6개 대표 축제를 durable detail과 venue 정보로 제공하지만 list row에는 explicit full-year 기간이 self-contained하지 않아 detail follow-up으로 core 보완이 필요하다. 기존 bounded list→detail GAP으로 분류.",
+    "https://www.uiryeong.go.kr"
+  ],
+  "gyeongnam-창녕": [
+    "WATCH",
+    "https://www.cng.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "창녕군 공식 홈페이지·문화관광에서 대표축제와 개별 행사 정보는 확인되지만 군 전체 문화행사의 current canonical bounded listing과 candidate-level full-year date·venue·detail·pagination을 검증하지 못했다. WATCH.",
+    "https://www.cng.go.kr"
+  ],
+  "gyeongnam-창원": [
+    "WATCH",
+    "https://www.changwon.go.kr/",
+    "official_government_portal",
+    "source_scope_inconsistent",
+    "창원시 및 창원문화재단 official source에서 공연·전시·축제와 current 공지는 확인되지만 시설별/공지별로 분산되고 시 전체 문화행사를 한 canonical event-only listing으로 안정적으로 제공하는 source-wide contract를 이번 조사에서 검증하지 못했다. WATCH.",
+    "https://www.changwon.go.kr"
+  ],
+  "gyeongnam-통영": [
+    "WATCH",
+    "https://www.tongyeong.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "통영시 공식 홈페이지·문화관광에서 한산대첩축제 등 2026 개별 행사 정보는 확인되지만 시 전체 문화행사의 current canonical bounded listing과 일관된 full-year date·venue·durable detail을 검증하지 못했다. WATCH.",
+    "https://www.tongyeong.go.kr"
+  ],
+  "gyeongnam-하동": [
+    "WATCH",
+    "https://www.hadong.go.kr/",
+    "official_government_portal",
+    "source_wide_listing_missing",
+    "하동군 공식 홈페이지·문화관광의 야생차문화축제 등 flagship/개별 행사 정보는 current하게 확인되지만 군 전체 행사를 candidate 단위로 지속 공급하는 canonical listing·pagination을 검증하지 못했다. WATCH.",
+    "https://www.hadong.go.kr"
+  ],
+  "gyeongnam-함안": [
+    "WATCH",
+    "https://www.haman.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "함안군 공식 홈페이지·문화관광의 2026 대표축제·공연 안내는 확인 대상이나 군 전체 문화행사를 지속 공급하는 canonical bounded listing의 exact full-year core와 pagination을 이번 조사에서 확정하지 못했다. WATCH.",
+    "https://www.haman.go.kr"
+  ],
+  "gyeongnam-함양": [
+    "WATCH",
+    "https://www.hygn.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "함양군 공식 홈페이지·문화관광의 개별 축제·문화행사 정보는 확인되지만 군 전체 행사에 대해 title·explicit full-year date·venue·durable detail을 일관되게 제공하는 current canonical listing을 검증하지 못했다. WATCH.",
+    "https://www.hygn.go.kr"
+  ],
+  "gyeongnam-합천": [
+    "WATCH",
+    "https://www.hc.go.kr/",
+    "official_government_portal",
+    "source_wide_listing_missing",
+    "합천군 공식 source에서 2026 대표축제·개별 행사 공지는 확인되지만 군 전체 문화행사를 지속 공급하는 canonical all-event bounded listing을 확인하지 못했다. 단일 행사 공지를 결합하지 않아 WATCH.",
+    "https://www.hc.go.kr"
+  ],
+  "gyeongnam-진주": [
+    "WATCH",
+    "https://www.jinju.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "진주시 및 진주문화관광재단 official source는 2026 문화사업·축제·공연 정보를 제공하지만 이번 조사에서 시 전체 문화행사의 current canonical event-only listing과 candidate-level full-year core/pagination을 안정적으로 검증하지 못했다. WATCH.",
+    "https://www.jinju.go.kr"
   ]
 };
 

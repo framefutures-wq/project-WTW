@@ -14,14 +14,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 27 |
-| COLLECTOR_GAP | 36 |
-| WATCH | 153 |
+| ONBOARDING_READY | 29 |
+| COLLECTOR_GAP | 39 |
+| WATCH | 166 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 20 |
+| UNREVIEWED | 2 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `gyeongnam-거제` · 2. `gyeongnam-거창` · 3. `gyeongnam-고성` · 4. `gyeongnam-김해` · 5. `gyeongnam-남해` · 6. `gyeongnam-밀양` · 7. `gyeongnam-사천` · 8. `gyeongnam-산청` · 9. `gyeongnam-양산` · 10. `gyeongnam-의령` · 11. `gyeongnam-진주` · 12. `gyeongnam-창녕` · 13. `gyeongnam-창원` · 14. `gyeongnam-통영` · 15. `gyeongnam-하동` · 16. `gyeongnam-함안` · 17. `gyeongnam-함양` · 18. `gyeongnam-합천` · 19. `jeju-서귀포` · 20. `jeju-제주`
+First 20 queue entries: 1. `jeju-서귀포` · 2. `jeju-제주`

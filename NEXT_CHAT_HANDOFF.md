@@ -750,3 +750,12 @@ UI 기준:
 - 경북 하위 UNREVIEWED는 0. 다음 deterministic queue는 **`gyeongnam-거제`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙 유지.
 
+## 2026-09-24 Phase 6B — 경남 하위 18개 source 조사 완료
+
+- 경남 하위 18개 시·군을 current official source 기준으로 조사해 모두 UNREVIEWED에서 제거했다.
+- **ONBOARDING_READY 2**: `gyeongnam-거제`, `gyeongnam-산청` — official 월별 행사 listing에서 title·explicit full-year 기간·venue·detail이 self-contained.
+- **COLLECTOR_GAP 3**: `gyeongnam-밀양`, `gyeongnam-양산`, `gyeongnam-의령` — current/durable official calendar/list는 충분하지만 venue 또는 multi-day core가 detail follow-up이 필요해 기존 `list_detail_core_followup_needed`.
+- **WATCH 13**: 거창·고성·김해·남해·사천·창녕·창원·통영·하동·함안·함양·합천·진주. 대표 사유는 flagship/개별 공지 중심, source-wide canonical listing 미검증, 시설별/행정 콘텐츠 혼합, freshness 부족이다.
+- inventory 총 245: **ACTIVE 9 / READY 29 / GAP 39 / WATCH 166 / EXCLUDE 0 / UNREVIEWED 2**. 다음 queue는 **`jeju-서귀포`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+
