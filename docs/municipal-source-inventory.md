@@ -15,13 +15,13 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | --- | ---: |
 | ACTIVE | 9 |
 | ONBOARDING_READY | 17 |
-| COLLECTOR_GAP | 28 |
-| WATCH | 82 |
+| COLLECTOR_GAP | 29 |
+| WATCH | 86 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 109 |
+| UNREVIEWED | 104 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `daejeon-대덕` · 2. `daejeon-동` · 3. `daejeon-서` · 4. `daejeon-유성` · 5. `daejeon-jung` · 6. `ulsan-남` · 7. `ulsan-동` · 8. `ulsan-북` · 9. `ulsan-울주` · 10. `ulsan-jung` · 11. `gangwon-강릉` · 12. `gangwon-고성` · 13. `gangwon-동해` · 14. `gangwon-삼척` · 15. `gangwon-속초` · 16. `gangwon-양구` · 17. `gangwon-양양` · 18. `gangwon-영월` · 19. `gangwon-원주` · 20. `gangwon-인제`
+First 20 queue entries: 1. `ulsan-남` · 2. `ulsan-동` · 3. `ulsan-북` · 4. `ulsan-울주` · 5. `ulsan-jung` · 6. `gangwon-강릉` · 7. `gangwon-고성` · 8. `gangwon-동해` · 9. `gangwon-삼척` · 10. `gangwon-속초` · 11. `gangwon-양구` · 12. `gangwon-양양` · 13. `gangwon-영월` · 14. `gangwon-원주` · 15. `gangwon-인제` · 16. `gangwon-정선` · 17. `gangwon-철원` · 18. `gangwon-춘천` · 19. `gangwon-평창` · 20. `gangwon-홍천`

@@ -690,3 +690,11 @@ UI 기준:
 - 전남광주통합특별시 하위 UNREVIEWED는 0. 다음 deterministic survey queue는 **`daejeon-대덕`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙을 유지한다.
 
+## 2026-09-23 Phase 6B — 대전 하위 5개 source 조사 완료
+
+- 대전 하위 5개 구를 current official source 기준으로 live read-only 조사해 모두 UNREVIEWED에서 제거했다.
+- **COLLECTOR_GAP 1**: `daejeon-동` — 공식 통합예약 ‘축제/행사’는 title·explicit 기간·durable detail을 제공하고 detail에서 venue가 확인되므로 기존 `list_detail_core_followup_needed` + event signal 적용 후보.
+- **WATCH 4**: `daejeon-대덕`, `daejeon-서`, `daejeon-유성`, `daejeon-jung`. 대덕/서는 canonical event-only listing 미확인, 유성은 self-contained 문화공연 목록이 현재 종료된 1건뿐이라 freshness 미확정, 중구는 대표축제 detail과 일부 불완전 마을축제 표 중심이라 source-wide exact listing이 부족하다.
+- 이번 변화: READY +0 / GAP +1 / WATCH +4 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 17 / GAP 29 / WATCH 86 / EXCLUDE 0 / UNREVIEWED 104**.
+- 다음 deterministic queue는 **`ulsan-남`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+
