@@ -235,6 +235,8 @@ export async function runDetailScheduled(
           failed: 0,
           failure_reasons: {},
           failure_endpoints: {},
+          network_failure_subtypes: {},
+          failure_latency: {},
         }),
       )
       .run();

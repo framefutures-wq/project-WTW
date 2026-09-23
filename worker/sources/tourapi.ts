@@ -14,6 +14,22 @@ import {
 
 export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
+export type TourApiNetworkFailureSubtype = "timeout" | "connection" | "tls" | "preview_restriction" | "timeout_api_unavailable" | "unknown_network";
+export class TourApiNetworkError extends Error {
+  constructor(readonly subtype: TourApiNetworkFailureSubtype, endpoint: string, cause?: unknown) {
+    super(`TourAPI ${endpoint} network/timeout failure (${subtype})`, { cause });
+  }
+}
+export function classifyTourApiNetworkFailure(error: unknown): TourApiNetworkFailureSubtype {
+  const name = error instanceof Error ? error.name : "";
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("timeout is not a function")) return "timeout_api_unavailable";
+  if (message.includes("preview")) return "preview_restriction";
+  if (/\b(?:ssl|tls|certificate)\b/.test(message)) return "tls";
+  if (name === "TimeoutError" || name === "AbortError" || message.includes("timeout")) return "timeout";
+  if (name === "TypeError" || /network|fetch failed|connection/.test(message)) return "connection";
+  return "unknown_network";
+}
 export type TourApiRow = Record<string, unknown>;
 type Row = TourApiRow;
 const FACT_FIELDS = ["title", "overview", "program", "subevent", "eventplace", "placeinfo", "playtime", "parking", "parkinginfo", "agelimit", "usetimefestival"];
@@ -114,22 +130,10 @@ export async function tourApiRequest(
       signal: AbortSignal.timeout(20_000),
     });
   } catch (error) {
-    const errorName =
-      error instanceof Error &&
-      ["TypeError", "Error", "TimeoutError", "AbortError"].includes(error.name)
-        ? error.name
-        : "unknown";
-    const reason =
-      error instanceof Error && error.message.includes("preview")
-        ? "preview_restriction"
-        : error instanceof Error && error.message.includes("SSL")
-          ? "tls_failure"
-          : error instanceof Error &&
-              error.message.includes("timeout is not a function")
-            ? "timeout_api_unavailable"
-            : "network";
-    throw new Error(
-      `TourAPI ${endpoint} network/timeout failure (${errorName},${reason})`,
+    throw new TourApiNetworkError(
+      classifyTourApiNetworkFailure(error),
+      endpoint,
+      error,
     );
   }
   if (!response.ok) {

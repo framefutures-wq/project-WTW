@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  classifyTourApiNetworkFailure,
   date,
   mapFestival,
   parseTourResponse,
@@ -25,6 +26,16 @@ const row = {
 };
 const regions = new Map([["11", "서울"]]);
 const now = "2026-09-18T00:00:00.000Z";
+test("TourAPI network failures classify into sanitized subtypes", () => {
+  const timeout = new Error("request aborted"); timeout.name = "TimeoutError";
+  const connection = new TypeError("fetch failed");
+  assert.equal(classifyTourApiNetworkFailure(timeout), "timeout");
+  assert.equal(classifyTourApiNetworkFailure(connection), "connection");
+  assert.equal(classifyTourApiNetworkFailure(new Error("SSL handshake failed")), "tls");
+  assert.equal(classifyTourApiNetworkFailure(new Error("preview environment restriction")), "preview_restriction");
+  assert.equal(classifyTourApiNetworkFailure(new Error("AbortSignal.timeout is not a function")), "timeout_api_unavailable");
+  assert.equal(classifyTourApiNetworkFailure(new Error("opaque failure")), "unknown_network");
+});
 test("TourAPI dates reject impossible dates and ambiguous formats", () => {
   assert.equal(date("20260229"), null);
   assert.equal(date("20240229"), "2024-02-29");

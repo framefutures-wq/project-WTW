@@ -6,6 +6,7 @@ import {
   classifyDetailFailure,
   detailRetryAt,
   enrichTourApiDetails,
+  failureLatencyBucket,
   selectTourApiDetailCandidates,
 } from "../worker/sources/tourapi-detail";
 
@@ -108,6 +109,8 @@ test("TourAPI detail maps only official summary, venue, whole-event hours, fee, 
       failed: 0,
       failure_reasons: {},
       failure_endpoints: {},
+      network_failure_subtypes: {},
+      failure_latency: {},
     });
     assert.deepEqual(
       await DB.prepare(
@@ -295,6 +298,18 @@ test("detail failures are classified without persisting raw error messages", () 
   assert.equal(classifyDetailFailure(new Error("unexpected")), "other");
 });
 
+test("detail failure latency buckets have stable boundaries", () => {
+  assert.equal(failureLatencyBucket(0), "under_1s");
+  assert.equal(failureLatencyBucket(999), "under_1s");
+  assert.equal(failureLatencyBucket(1_000), "1_to_5s");
+  assert.equal(failureLatencyBucket(4_999), "1_to_5s");
+  assert.equal(failureLatencyBucket(5_000), "5_to_15s");
+  assert.equal(failureLatencyBucket(14_999), "5_to_15s");
+  assert.equal(failureLatencyBucket(15_000), "15_to_25s");
+  assert.equal(failureLatencyBucket(25_000), "15_to_25s");
+  assert.equal(failureLatencyBucket(25_001), "over_25s");
+});
+
 test("a transient detail endpoint failure retries once and recovers", async () => {
   const { mf, DB, env } = await setup();
   const original = globalThis.fetch;
@@ -325,14 +340,17 @@ test("a transient detail endpoint failure retries once and recovers", async () =
 test("a transient detail endpoint failure retries exactly once then records the endpoint", async () => {
   const { mf, env } = await setup();
   const original = globalThis.fetch;
+  let clock = 0;
   globalThis.fetch = (async () => { throw new Error("network"); }) as typeof fetch;
   try {
-    const result = await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"), { sleep: async () => {} });
+    const result = await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"), { sleep: async () => { clock += 500; }, nowMs: () => clock });
     assert.equal(result.attempts, 2);
     assert.equal(result.retry_attempted, 1);
     assert.equal(result.retry_exhausted, 1);
     assert.deepEqual(result.failure_reasons, { network_or_timeout: 1 });
     assert.deepEqual(result.failure_endpoints, { detailCommon2: 1 });
+    assert.deepEqual(result.network_failure_subtypes, { connection: 1 });
+    assert.deepEqual(result.failure_latency, { under_1s: 1 });
   } finally {
     globalThis.fetch = original;
     await mf.dispose();

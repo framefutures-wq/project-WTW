@@ -53,6 +53,8 @@ function dependencies(
     failed: 0,
     failure_reasons: {},
     failure_endpoints: {},
+    network_failure_subtypes: {},
+    failure_latency: {},
   },
 ): ScheduledDependencies {
   return {
