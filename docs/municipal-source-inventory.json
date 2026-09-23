@@ -3665,12 +3665,12 @@
       "region": "제주특별자치도",
       "locality": "제주시",
       "government_level": "administrative_city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.jejusi.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.jejusi.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "제주시 공식 source에는 2026 월대천축제·삼양검은모래축제·레저힐링축제 등 개별 행사 공지와 행정예고가 있으나 시 전체 문화행사를 title·explicit full-year date·venue·durable detail과 함께 지속 공급하는 canonical bounded listing을 확인하지 못했다. 개별 공지·계약자료를 daily source로 결합하지 않아 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 15
     },
@@ -3680,32 +3680,23 @@
       "region": "제주특별자치도",
       "locality": "서귀포시",
       "government_level": "administrative_city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.seogwipo.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://eticket.seogwipo.go.kr/",
+      "source_type": "official_city_reservation_portal",
+      "collector_fit": "source_scope_inconsistent",
+      "notes": "서귀포시 공식 E-ticket은 공연 예약과 행사/교육 예약을 운영하고 2026 개별 프로그램의 일정·장소를 제공하지만 event/education 목록은 건강·교육·체험 등 예약성 프로그램이 혼합되고 서귀포시 전체 문화행사를 대표하는 canonical event-only feed로 보기 어렵다. source-wide 문화행사 coverage가 검증될 때까지 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 15
     }
   ],
-  "survey_queue": [
-    {
-      "rank": 1,
-      "municipality_key": "jeju-서귀포"
-    },
-    {
-      "rank": 2,
-      "municipality_key": "jeju-제주"
-    }
-  ],
+  "survey_queue": [],
   "summary": {
     "ACTIVE": 9,
     "ONBOARDING_READY": 29,
     "COLLECTOR_GAP": 39,
-    "WATCH": 166,
+    "WATCH": 168,
     "EXCLUDE": 0,
-    "UNREVIEWED": 2
+    "UNREVIEWED": 0
   }
 }

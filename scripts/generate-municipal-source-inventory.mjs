@@ -1981,6 +1981,22 @@ const known = {
     "source_canonical_listing_unverified",
     "진주시 및 진주문화관광재단 official source는 2026 문화사업·축제·공연 정보를 제공하지만 이번 조사에서 시 전체 문화행사의 current canonical event-only listing과 candidate-level full-year core/pagination을 안정적으로 검증하지 못했다. WATCH.",
     "https://www.jinju.go.kr"
+  ],
+  "jeju-서귀포": [
+    "WATCH",
+    "https://eticket.seogwipo.go.kr/",
+    "official_city_reservation_portal",
+    "source_scope_inconsistent",
+    "서귀포시 공식 E-ticket은 공연 예약과 행사/교육 예약을 운영하고 2026 개별 프로그램의 일정·장소를 제공하지만 event/education 목록은 건강·교육·체험 등 예약성 프로그램이 혼합되고 서귀포시 전체 문화행사를 대표하는 canonical event-only feed로 보기 어렵다. source-wide 문화행사 coverage가 검증될 때까지 WATCH.",
+    "https://www.seogwipo.go.kr"
+  ],
+  "jeju-제주": [
+    "WATCH",
+    "https://www.jejusi.go.kr/",
+    "official_government_portal",
+    "source_wide_listing_missing",
+    "제주시 공식 source에는 2026 월대천축제·삼양검은모래축제·레저힐링축제 등 개별 행사 공지와 행정예고가 있으나 시 전체 문화행사를 title·explicit full-year date·venue·durable detail과 함께 지속 공급하는 canonical bounded listing을 확인하지 못했다. 개별 공지·계약자료를 daily source로 결합하지 않아 WATCH.",
+    "https://www.jejusi.go.kr"
   ]
 };
 

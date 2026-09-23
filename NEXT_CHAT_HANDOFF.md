@@ -759,3 +759,12 @@ UI 기준:
 - inventory 총 245: **ACTIVE 9 / READY 29 / GAP 39 / WATCH 166 / EXCLUDE 0 / UNREVIEWED 2**. 다음 queue는 **`jeju-서귀포`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-24 Phase 6B — 전국 municipal/source survey 분류 완료
+
+- 제주 마지막 2개 research unit을 조사했다. `jeju-제주`, `jeju-서귀포` 모두 **WATCH**: 개별 2026 행사/예약 정보는 공식 source에서 확인되지만 시 전체 문화행사를 지속 공급하는 canonical event-only bounded listing과 source-wide core를 검증하지 못했다.
+- 이로써 전국 **245 research units 전부 분류 완료**, deterministic survey queue는 비었다. **UNREVIEWED 0**.
+- 최종 inventory: **ACTIVE 9 / ONBOARDING_READY 29 / COLLECTOR_GAP 39 / WATCH 168 / EXCLUDE 0 / UNREVIEWED 0**.
+- survey 중 발견된 공통 collector gap은 기존 `list_detail_core_followup_needed`, `generic_html_card_structure_gap`, JS/API/access-protection 계열에 유지했고, 애매한 source는 READY로 과대판정하지 않고 WATCH로 fail-closed했다.
+- 이번 전국 survey는 Registry·collector·production·D1·Cron/manual ingestion을 변경하지 않았다. 2026-09-24 **10:00 KST C 정규 Cron read-only 검증 → 11:00 KST D TourAPI watchdog read-only 검증** 이후 Phase 6E에서 READY source를 3~5개 단위로 onboarding한다.
+- 조사 단계 종료 후 운영 우선순위: C → D → Phase 6E READY onboarding → 공통 GAP 해소 순이다.
+
