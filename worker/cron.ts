@@ -189,8 +189,15 @@ export async function runDetailScheduled(
   env: Env,
   now = new Date(),
   dependencies = productionDependencies,
-  trigger: "base_handoff" | "watchdog" = "watchdog",
+  trigger: "base_handoff" | "watchdog" | "manual" = "watchdog",
+  manualRunId?: string,
 ) {
+  if (trigger === "manual" && manualRunId) {
+    const existing = await env.DB.prepare(
+      "SELECT status FROM sync_runs WHERE provider='tourapi-detail' AND json_extract(message,'$.manual_run_id')=? AND status IN ('running','success') LIMIT 1",
+    ).bind(manualRunId).first();
+    if (existing) return { status: "skipped", reason: "manual_already_executed" };
+  }
   const window = baseWindow(now);
   const base = await env.DB.prepare(
     "SELECT id,status,started_at,finished_at FROM sync_runs WHERE provider='tourapi' AND started_at>=? AND started_at<? ORDER BY started_at DESC LIMIT 1",
@@ -241,7 +248,7 @@ export async function runDetailScheduled(
     )
       .bind(
         new Date().toISOString(),
-        JSON.stringify({ trigger, base_run: base.id, ...detail }),
+        JSON.stringify({ trigger, base_run: base.id, ...(trigger === "manual" && manualRunId ? { manual_run_id: manualRunId } : {}), ...detail }),
         started,
       )
       .run();
