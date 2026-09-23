@@ -448,3 +448,30 @@ UI 기준:
 - 일부 광역/분산형 행사(예: 부산돼지국밥대전)는 detail에도 단일 venue가 없으므로, 향후 list→detail core follow-up을 구현하더라도 candidate 단위 fail-closed가 필요하다.
 - 분류: **COLLECTOR GAP**. source 품질은 좋지만 현재 공통 collector에 bounded list→detail core fan-out 능력이 없다.
 - 10시 전에는 부산 때문에 새 collector 기능을 즉시 구현하지 않고, 대구/광주/세종 등 더 단순한 ACTIVE-ready source 조사를 계속해 3~5개 대기열을 먼저 확보한다.
+
+
+### 대구 / 광주 / 세종 source 조사 — 10시 전 후보 큐 완료
+
+- **대구: WATCH**
+  - 공식 source: `https://tour.daegu.go.kr/index.do?menu_id=00002932&servletPath=%2Findex.do` (대구관광 연간축제일정).
+  - 대구광역시 공식 관광 채널이지만 list/detail의 기간이 `01월중`, `매년 10월말, 11월초경`, 연도 없는 월·일 형태 등 recurring/stale 표현이 섞여 있어 2026 exact full-year core를 source-wide로 신뢰할 수 없다.
+  - 대구시 본청의 2026 판타지아대구페스타 공지는 6개 봄축제의 exact 날짜·장소를 제공하지만 단발성 공지라 daily Zero-Human canonical source로 쓰지 않는다.
+  - source-side exact-date 일관성이 생기기 전까지 WATCH.
+
+- **광주: ONBOARDING-READY 후보 (아직 ACTIVE 아님)**
+  - 공식 source: `https://tour.gwangju.go.kr/home/tour/culture/festival.cs?m=315` (광주관광 축제/행사).
+  - list card 한 블록에 제목 + `2026.MM.DD ~ 2026.MM.DD` full-year 기간 + 장소 + 연락처/주최/주관/요금이 함께 있어 현재 generic self-contained candidate 요건과 잘 맞는다.
+  - 공식 페이지에는 진행중/진행예정 상태와 pagination이 존재하며, pageIndex 기반 다중 페이지가 확인된다.
+  - 단, 현재 public fetch로는 `진행 예정`의 실제 query value를 확정하지 못했으므로 Registry 등록 전 bounded live probe에서 상태 query와 page 1~N을 정확히 확인해야 한다.
+  - 이 probe가 통과하면 전용 parser 없이 generic_fallback + bounded pagination으로 우선 onboarding 후보.
+
+- **세종: COLLECTOR GAP**
+  - 공식 public-source 후보: `https://www.sjcf.or.kr/hangeul/www/prfr/list.do?key=2504150023` (세종시문화관광재단 한글문화도시 공연/전시/교육).
+  - list는 유형/진행상태/제목/full-year 기간을 안정적으로 제공하고 first-party detail은 기간 + 장소 + 주최/주관 + 시간/가격을 명시한다.
+  - 하지만 list block 자체에는 venue가 없어서 현재 generic collector의 self-contained title/date/venue 요건을 만족하지 못한다.
+  - 부산과 같은 bounded list→detail core follow-up 계열의 공통 collector gap으로 분류한다. 단일 축제 사이트 `sjfestival.kr`는 세종 전체 coverage canonical로 사용하지 않는다.
+
+- **10시 전 source 조사 큐는 여기서 닫는다.**
+  - 울산 WATCH / 부산 COLLECTOR GAP / 대구 WATCH / 광주 ONBOARDING-READY / 세종 COLLECTOR GAP.
+  - 더 많은 지역을 무작정 늘리지 않고, 2026-09-24 10:00 KST 인천 scheduled ingestion과 11:00 TourAPI watchdog을 먼저 확인한다.
+  - 두 checkpoint가 정상이고 광주 bounded live probe까지 통과하면 광주를 다음 실제 Registry onboarding 1순위로 진행한다.
