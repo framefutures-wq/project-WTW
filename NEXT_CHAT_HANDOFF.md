@@ -316,16 +316,18 @@ UI 기준:
 - live read-only dry-run은 `generic_html`, 10 candidates, 10 complete, parse error 0으로 통과했다. 기존 Worker에 배포했고 production 기본 smoke는 desktop/mobile 모두 통과했다.
 - municipal cron 수동 실행과 D1 write는 하지 않았다. 다음 위치는 다른 공식 municipal 행사 목록 source 1개를 같은 read-only survey로 조사하는 것이다.
 
-### 인천 source 조사 — 보류
+### 인천 source onboarding — ACTIVE / production deployed
 
 - 공식 canonical: `https://www.incheon.go.kr/res/RE050101/`.
 - 12페이지 × 페이지당 10건이며 시작일 내림차순이다. page 1은 가장 먼 미래 행사라 현재 worker의 단일-page fetch와 맞지 않는다.
 - page 1~3의 문화행사 gate 보강 후 30건 분포는 MAIN 21 / NEARBY_ONLY 2 / REVIEW 7 / EXCLUDE 0이다. 뮤지컬·콘서트·연주회·독창회·개인전·회원(작품)전·작가(회)전 등 명시적 장르만 MAIN으로 올렸고, 단순 공연/음악회는 NEARBY_ONLY에 남겼다.
 - 기념식·성과공유회·교육·세미나·기관 업무 등 행정/교육 신호는 문화 키워드보다 먼저 EXCLUDE한다. `성과공유회 기념 콘서트` 회귀도 EXCLUDE다.
-- raw HTML의 literal `<광화문연가>` 같은 제목 손실은 공통 cleaner 보강으로 해결했다. 아직 registry 등록/production deploy는 하지 않았다.
+- raw HTML의 literal `<광화문연가>` 같은 제목 손실은 공통 cleaner 보강으로 해결했다.
 - registry-level bounded pagination 공통 기능도 완료했다. `curPage` 1~3 live dry-run은 각 10건, `generic_html` healthy, 총 30 unique/core-complete, parse error 0이었다. page 순서 대신 가까운 미래 시작일 우선으로 병합했으며, 중복 identity는 없었다.
 - municipal daily publish cap starvation도 해결했다. `MAX_PUBLISH=10`은 유지하되 신규·payload 변경·state 없는 기존 candidate만 mutation slot을 소비한다. 동일 payload의 verified revalidation은 slot을 소비하지 않아 뒤쪽 신규 candidate를 막지 않으며, retry canonical refresh도 같은 기준을 사용한다.
-- 인천은 아직 **ACTIVE 전 단계**다. collector/pagination/selection gap은 해소됐으며, 다음은 registry ACTIVE onboarding과 기존 Worker deploy다.
+- `incheon-res`를 `generic_fallback` ACTIVE source로 등록했고, 전용 parser나 category allowlist는 없다. `curPage` 1~3 bounded pagination을 사용한다.
+- production Worker Version: `a9714493-3e39-4fa6-8621-96265d5cc355`. galteum.com basic smoke 및 desktop/mobile production browser smoke가 통과했다.
+- municipal cron은 수동 실행하지 않았다. 첫 실제 ingestion은 **2026-09-24 10:00 KST base cron 이후** read-only D1/sync_runs로 확인한다.
 
 ### 울산 source 조사 — 보류
 
@@ -357,7 +359,7 @@ UI 기준:
 3. ✅ **상세페이지 UI v2 production 마감**
 4. ⏸️ **TourAPI detail backlog 소진 / recovery 확인 — 2026-09-24 11:00 KST scheduled watchdog 관찰 대기**
 5. ⏳ **공식 상세 enrichment 품질 강화 — 4번 확인 전 보류**
-6. 🟡 **전국 municipal/source coverage 확대 — 인천 ACTIVE onboarding + production deploy, 울산모아는 WATCH**
+6. 🟡 **전국 municipal/source coverage 확대 — 인천 첫 scheduled ingestion 확인 후 다음 공식 municipal source 조사, 울산모아는 WATCH**
 7. ⏳ SEO / Search Console / 검색 유입 점검
 8. ⏳ 모바일 최종 polish
 9. ⏳ 수익화 준비
@@ -392,14 +394,14 @@ UI 기준:
 
 ### 현재 분류
 
-- 인천 온라인통합예약: **COLLECTOR GAP**
+- 인천 온라인통합예약: **ACTIVE**
   - 공식 데이터 자체는 행사명/장소/full-year 기간/운영기관/문의/포스터 등 품질이 충분하다.
   - generic list extractor의 `<dt>일자</dt>` full-year 기간 파싱과 literal `<...>` title preservation 1단계를 완료했다.
   - live dry-run은 `generic_html`, 10 candidates, 10 core-complete, parse error 0이며 `뮤지컬 <광화문연가>`도 보존됐다.
   - bounded pagination은 완료했다. `curPage` 1~3을 bounded fetch해 각 10건, 총 30 unique/core-complete를 `generic_html`로 추출했고 parse error는 없었다. candidate는 현재/가까운 미래 우선으로 deterministic merge된다.
   - 문화행사 selection도 완료했다. 명시적 일반 대중 문화행사는 MAIN, 단순 공연/음악회/합창은 NEARBY_ONLY, 행정·교육 신호는 EXCLUDE로 우선 처리한다. 직전 30건 live snapshot의 최종 deterministic 분포는 MAIN 21 / NEARBY_ONLY 2 / REVIEW 7 / EXCLUDE 0이다. 남은 REVIEW는 장르 신호가 없는 서정적 제목, 동문전·기념전 등으로 보수적으로 유지했다. 최종 키워드 추가 뒤 공식 host fetch가 연결 단계에서 실패했으나, 해당 `회원작품전` 한 건의 REVIEW→MAIN 전환은 targeted regression으로 고정했다.
   - daily publish cap은 신규/변경 mutation만 세므로 앞쪽 동일 payload 재검증이 인천 신규 MAIN 후보를 starvation시키지 않는다.
-  - registry 등록은 남아 있어 ACTIVE onboarding 전 단계다.
+  - `incheon-res` registry onboarding과 Worker production deploy를 완료했다. Worker Version은 `a9714493-3e39-4fa6-8621-96265d5cc355`이며, 첫 실제 scheduled ingestion은 2026-09-24 10:00 KST base cron 이후에만 read-only로 확인한다.
 - 울산모아: **WATCH 후보**
   - raw 날짜가 2자리 연도, 외부 detail host, sessionized link, featured-only 구조라 source-side 제약이 크다.
   - 별도 canonical full-year source가 발견되지 않으면 WATCH/보류로 유지한다.
@@ -412,8 +414,8 @@ UI 기준:
 2. ✅ registry-level bounded pagination을 공통으로 구현. source당 1~3 page hard cap, candidate identity dedupe, 현재/가까운 미래 우선, pagination source의 retry canonical refresh 재발견을 검증했다. non-pagination source의 기존 MAX_PER_SOURCE=25 circuit breaker 의미는 유지된다.
 3. ✅ 일반 대중 대상 뮤지컬/콘서트/연주회/전시류의 명시적 signal을 MAIN으로 보강하고, 기념식/성과공유회/교육/포럼/행정성 신호는 우선 EXCLUDE하도록 문화행사 selection gate를 검증했다.
 4. ✅ daily publish cap은 신규/변경 mutation만 소비하도록 보강해 앞쪽 동일 payload revalidation의 starvation을 막았다.
-5. **다음: 인천 source를 ACTIVE onboarding하고 live read-only dry-run → targeted tests/typecheck → 기존 Worker deploy → production smoke로 닫는다.**
-6. 인천 해결 후에는 **Phase 6 전국 municipal/source coverage 확대의 다음 공식 source 조사로 즉시 복귀**한다. 인천 때문에 UI/SEO/수익화로 이동하지 않는다.
+5. ✅ 인천 source를 ACTIVE onboarding하고 live read-only dry-run → targeted tests/typecheck → 기존 Worker deploy → production smoke로 닫았다. municipal cron은 수동 실행하지 않는다.
+6. **다음: 2026-09-24 10:00 KST scheduled base cron 이후 인천 첫 ingestion을 read-only로 확인한 뒤, Phase 6 전국 municipal/source coverage의 다음 공식 source 조사로 복귀한다.** 인천 때문에 UI/SEO/수익화로 이동하지 않는다.
 
 ### 고정 시간 작업
 
