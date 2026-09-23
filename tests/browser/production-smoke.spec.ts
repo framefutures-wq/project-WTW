@@ -81,10 +81,10 @@ test("production discovery shell and public endpoints are healthy", async ({
       page.getByRole("dialog").getByRole("heading", { name: eventTitle }),
     ).toBeVisible();
 
-    const pairedMedia = page.locator(
-      ".detail-dialog .detail-media-pair button",
-    );
-    const scene = (await pairedMedia.count())
+    const mediaPair = page.locator(".detail-dialog .detail-media-pair");
+    const pairedMedia = mediaPair.locator("button");
+    const hasMediaPair = (await mediaPair.count()) > 0;
+    const scene = hasMediaPair
       ? pairedMedia.first()
       : page
           .locator(".detail-dialog .detail-media, .detail-dialog .scene-detail")
@@ -92,16 +92,30 @@ test("production discovery shell and public endpoints are healthy", async ({
     await expect(scene).toBeVisible();
     const sceneBox = await scene.boundingBox();
     expect(sceneBox).not.toBeNull();
-    const sceneRatio = sceneBox!.width / sceneBox!.height;
     const viewportWidth = page.viewportSize()?.width ?? 0;
     if (viewportWidth >= 1000) {
-      expect(sceneBox!.height).toBeLessThanOrEqual(360);
-      expect(sceneBox!.height).toBeGreaterThan(220);
-      expect(sceneRatio).toBeGreaterThan(1.15);
-      expect(sceneRatio).toBeLessThan(1.5);
+      const mediaBox = hasMediaPair ? await mediaPair.boundingBox() : sceneBox;
+      expect(mediaBox).not.toBeNull();
+      const mediaRatio = mediaBox!.width / mediaBox!.height;
+      expect(mediaBox!.height).toBeLessThanOrEqual(360);
+      expect(mediaBox!.height).toBeGreaterThan(220);
+      expect(mediaRatio).toBeGreaterThan(1.15);
+      expect(mediaRatio).toBeLessThan(1.5);
     } else {
-      expect(sceneBox!.height).toBeLessThanOrEqual(300);
-      expect(sceneRatio).toBeGreaterThan(1.15);
+      const mediaItems = hasMediaPair
+        ? pairedMedia
+        : page.locator(
+            ".detail-dialog .detail-media, .detail-dialog .scene-detail",
+          );
+      if (hasMediaPair) expect(await pairedMedia.count()).toBe(2);
+      const itemCount = await mediaItems.count();
+      expect(itemCount).toBeGreaterThan(0);
+      for (let index = 0; index < itemCount; index += 1) {
+        const itemBox = await mediaItems.nth(index).boundingBox();
+        expect(itemBox).not.toBeNull();
+        expect(itemBox!.height).toBeLessThanOrEqual(300);
+        expect(itemBox!.width / itemBox!.height).toBeGreaterThan(1.15);
+      }
     }
 
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
