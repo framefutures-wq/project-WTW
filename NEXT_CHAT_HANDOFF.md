@@ -279,7 +279,6 @@ UI 기준:
 - detail run message에 `retry_attempted`, `retry_recovered`, `retry_exhausted`, `failure_endpoints`, `network_failure_subtypes`, `failure_latency` sanitized 집계를 남긴다.
 - 2026-09-23 production 관측에서 network 최종 실패 8건은 `unknown_network`·`under_1s`였고 inline retry 복구는 0건이었다. 다음 작업은 이 runtime subtype이 왜 원문 없이 unknown으로 분류되는지 안전하게 진단하는 bounded audit이다.
 
-
 ## 2026-09-23 최신 인수인계 — TourAPI 관찰 대기 / municipal coverage 재개
 
 ### 실제 최신 기준
@@ -394,7 +393,6 @@ UI 기준:
 
 실제 code/production > PROJECT_CONTEXT > NEXT_CHAT_HANDOFF > 세부 규칙 문서 순으로 우선한다.
 
-
 ## 2026-09-23 작업순서 보정 — 인천 collector gap 해결 후 복귀 지점
 
 현재 큰 로드맵은 변경하지 않는다. 현재 작업은 여전히 **6. 전국 municipal/source coverage 확대**다.
@@ -441,7 +439,6 @@ UI 기준:
 - checkpoint 후 Phase 4 상태만 갱신하고, 별도 장애/고위험 문제가 없으면 현재 진행 중인 municipal coverage 작업으로 복귀한다.
 - Phase 5 공식 상세 enrichment는 Phase 4 결과가 확인된 뒤 별도 우선순위로 다시 결정한다.
 
-
 ## 2026-09-23 10시 전 작업 운영
 
 - 인천은 ACTIVE/production 배포 완료이며 첫 실제 scheduled ingestion은 2026-09-24 10:00 KST 이후 read-only로 확인한다.
@@ -449,7 +446,6 @@ UI 기준:
 - 우선순위는 **울산 alternate canonical 최종 조사 → 부산/대구/광주/세종 등 다음 광역지역 공식 source 조사 → ACTIVE-ready / WATCH / COLLECTOR GAP / EXCLUDE 분류 → 바로 온보딩 가능한 후보 3~5개 대기열 확보**다.
 - 10시 인천 scheduled ingestion과 11시 TourAPI watchdog이 정상임을 확인하면, ACTIVE-ready 후보를 지역마다 하루씩 기다리지 않고 bounded task로 등록하고 **3~5개 단위 batch deploy/다음 정규 Cron 검증**을 기본 운영 방식으로 삼는다.
 - 공통 collector 자체를 크게 수정하는 새 유형이 발견된 경우에만 별도 운영 검증을 둔다. 단순 Registry onboarding마다 24시간 대기하지 않는다.
-
 
 ### 부산 source 조사 — COLLECTOR GAP
 
@@ -462,7 +458,6 @@ UI 기준:
 - 일부 광역/분산형 행사(예: 부산돼지국밥대전)는 detail에도 단일 venue가 없으므로, 향후 list→detail core follow-up을 구현하더라도 candidate 단위 fail-closed가 필요하다.
 - 분류: **COLLECTOR GAP**. source 품질은 좋지만 현재 공통 collector에 bounded list→detail core fan-out 능력이 없다.
 - 10시 전에는 부산 때문에 새 collector 기능을 즉시 구현하지 않고, 대구/광주/세종 등 더 단순한 ACTIVE-ready source 조사를 계속해 3~5개 대기열을 먼저 확보한다.
-
 
 ### 대구 / 광주 / 세종 source 조사 — 10시 전 후보 큐 완료
 
@@ -489,7 +484,6 @@ UI 기준:
   - 울산 WATCH / 부산 COLLECTOR GAP / 대구 WATCH / 광주 ONBOARDING-READY / 세종 COLLECTOR GAP.
   - 더 많은 지역을 무작정 늘리지 않고, 2026-09-24 10:00 KST 인천 scheduled ingestion과 11:00 TourAPI watchdog을 먼저 확인한다.
   - 두 checkpoint가 정상이고 광주 bounded live probe까지 통과하면 광주를 다음 실제 Registry onboarding 1순위로 진행한다.
-
 
 ## 2026-09-23 확정 — Municipal Source Self-Healing (Phase 6 후반 필수 과제)
 
@@ -554,3 +548,17 @@ UI 기준:
 - 반복 collector gap: **4개** — `seoul-dongjak`, `seoul-mapo`, `seoul-seocho`, `seoul-songpa`. 공통 패턴은 **list에 title/date는 있으나 venue가 없거나 JS/API 렌더링으로 현재 generic collector가 self-contained core를 읽지 못하고 detail follow-up이 필요한 유형**이다. 이번 task에서는 구현하지 않았다.
 - 이번 batch 변화: `ONBOARDING_READY +1`, `COLLECTOR_GAP +4`, `WATCH +5`, `EXCLUDE +0`. 누적 `ONBOARDING_READY`는 **2개**(`seoul-gangnam`, `seoul-yeongdeungpo`)다.
 - 조사 후 inventory: ACTIVE 9 / ONBOARDING_READY 2 / COLLECTOR_GAP 10 / WATCH 22 / EXCLUDE 0 / UNREVIEWED 202, 총 245. 다음 deterministic queue는 **`seoul-yongsan`부터** 시작한다.
+
+## 2026-09-23 Phase 6 — 공통 municipal list→detail core follow-up 구현
+
+- `MunicipalSourceDefinition.listDetailFollowup` opt-in capability를 추가했다. 선언이 없는 기존 ACTIVE 9 source는 기존 list-only extraction 경로를 그대로 유지하며, 현재 Registry에는 이 capability를 켠 source가 없다.
+- opt-in source만 반복 list/card block에서 **title + allowlisted first-party durable detail URL**과 event/date/category signal을 가진 partial을 제한적으로 만들고, source/run당 detail fetch를 **최대 10건**으로 제한한다. active → 가까운 미래 → 이후 미래 → 종료 → date-less stable identity 순으로 deterministic 선택한다.
+- detail final redirect host도 allowlist를 다시 검증한다. detail에서 title identity, explicit full-year start/end, venue가 모두 확인될 때만 complete candidate가 되고, list/date/venue conflict·cross-host·missing core·title mismatch는 candidate 단위로 fail-closed한다. 한 detail failure가 다른 candidate를 막지 않는다.
+- follow-up으로 이미 읽은 detail HTML은 worker `SourceCandidate`에 보존해 MAIN/NEW enrichment가 같은 URL을 다시 fetch하지 않는다.
+- read-only live probe (2026-09-23 KST):
+  - `busan`: list partial 6, attempted 6, complete 6, rejected 0. final gate는 MAIN 4 / NEARBY_ONLY 2로 **실제 unlock 가능**을 확인했다.
+  - `seoul-mapo`: partial 0, attempted 0. 현재 live list의 detail action은 JavaScript `seq` 형태라 generic HTTPS detail URL 최소 요건을 충족하지 않아 별도 JS/action URL gap으로 유지한다.
+  - `seoul-songpa`: partial 4, attempted 4, complete 0; `detail_missing_core`/`detail_title_mismatch`로 fail-closed했다. canonical event-card recognition은 후속 onboarding 검증이 필요하다.
+  - `sejong`: partial 3, attempted 3, complete 0; navigation-like links의 `detail_missing_core`로 fail-closed했다. actual event-list block recognition은 후속 onboarding 검증이 필요하다.
+- 여전히 별도 범위: `seoul-dongjak` JS/API rendered, `chungnam`·`jeju` generic HTML card structure. dedicated parser, Registry onboarding, D1 write, Cron/manual ingestion, production deploy는 하지 않았다.
+- 다음 순서: **C 2026-09-24 10:00 KST 기존 ACTIVE 9 read-only Cron 검증 → D 2026-09-24 11:00 KST TourAPI watchdog read-only 검증 → 검증된 list→detail source (우선 부산) batch onboarding**. 이후 조사 queue는 `seoul-yongsan`부터 재개한다.

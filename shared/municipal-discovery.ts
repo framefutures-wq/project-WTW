@@ -22,6 +22,21 @@ export type MunicipalCandidate = {
   parse_error?: string;
 };
 
+/** A list-only observation is never publishable; its detail must complete core. */
+export type MunicipalListDetailPartial = {
+  source: string;
+  source_candidate_id: string;
+  title: string;
+  start_date: string | null;
+  end_date: string | null;
+  venue: string | null;
+  region: string;
+  locality: string;
+  official_url: string;
+  category: string | null;
+  snippet: string | null;
+};
+
 const clean = (value: string) =>
   value
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -89,6 +104,16 @@ const definitionValue = (html: string, labels: string[]) => {
   return pair ? clean(pair[1]) || null : null;
 };
 
+/** Common card/detail label-value markup without assuming one site's tags. */
+const classPairValue = (html: string, labels: string[]) => {
+  const label = labels.map((value) => value.split("").join("\\s*")).join("|");
+  const pair = new RegExp(
+    `<(?:div|span|p|strong)\\b[^>]*class=["'][^"']*(?:name|label)[^"']*["'][^>]*>\\s*(?:${label})\\s*<\\/(?:div|span|p|strong)>\\s*<(?:div|span|p)\\b[^>]*class=["'][^"']*(?:detail|value|text)[^"']*["'][^>]*>([\\s\\S]*?)<\\/(?:div|span|p)>`,
+    "i",
+  ).exec(html);
+  return pair ? clean(pair[1]) || null : null;
+};
+
 const toExplicitDate = (year: string, month: string, day: string) =>
   `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 
@@ -127,13 +152,15 @@ const singleExplicitDate = (value: string) => {
 
 const titleFromBlock = (html: string, text: string) =>
   htmlAttribute(html, "data-title") ??
-  classValue(html, "(?:reservation-name|title|titl?\\b|subject|name\\b)") ??
+  classValue(html, "tit_view_sub\\b") ??
+  classValue(html, "(?:reservation-name|title|tit(?:_|\\b)|subject|name\\b)") ??
   definitionValue(html, ["행사명", "축제명", "공연명", "제목"]) ??
   labeledValue(text, ["행사명", "축제명", "공연명", "제목"]);
 
 const venueFromBlock = (html: string, text: string) =>
   htmlAttribute(html, "data-venue") ??
   definitionValue(html, ["행사장", "장소", "위치", "venue", "location"]) ??
+  classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]) ??
   labeledValue(text, ["행사장", "장소", "위치", "venue", "location"]) ??
   inlineLabeledValue(text, ["행사장", "장소", "위치", "venue", "location"]) ??
   classValue(html, "(?:venue|location|place)");
@@ -143,6 +170,15 @@ const dateFromBlock = (html: string, text: string) => {
     htmlAttribute(html, "data-date") ??
     classValue(html, "(?:date|period|schedule)") ??
     definitionValue(html, [
+      "행사기간",
+      "기간",
+      "일시",
+      "행사일",
+      "일자",
+      "날짜",
+      "date",
+    ]) ??
+    classPairValue(html, [
       "행사기간",
       "기간",
       "일시",
@@ -357,6 +393,79 @@ export function parseGenericMunicipalHtml(
       ]),
     ).values(),
   ];
+}
+
+/**
+ * Reads only a repeated list/card block with an explicit event signal and a
+ * first-party detail URL.  This deliberately does not make a candidate from
+ * navigation links, and its output must be completed by a detail fetch.
+ */
+export function parseGenericMunicipalListDetailPartials(
+  source: MunicipalSourceDefinition,
+  html: string,
+): MunicipalListDetailPartial[] {
+  if (!source.listDetailFollowup) return [];
+  const document = html.replace(/<!--[\s\S]*?-->/g, "");
+  const blocks = [
+    ...elementBlocks(document, "li"),
+    ...elementBlocks(document, "article", "(?:card|item|event)"),
+    ...elementBlocks(document, "div", "(?:card|item|event)"),
+    ...elementBlocks(document, "section", "(?:card|item|event)"),
+  ];
+  const partials = blocks.flatMap<MunicipalListDetailPartial>((block) => {
+    const text = blockText(block);
+    const title = titleFromBlock(block, text);
+    const dates = dateFromBlock(block, text);
+    const category = categoryFromBlock(block, text);
+    const official_url = officialUrlFromBlock(source, block);
+    const eventSignal =
+      Boolean(dates || category) ||
+      /(?:행사명|축제명|공연명|행사기간|기간|일시|축제|페스티벌|공연|전시|문화제)/.test(
+        text,
+      );
+    if (
+      !title ||
+      !official_url ||
+      official_url === source.url ||
+      !eventSignal ||
+      (source.genericAllowedCategories &&
+        (!category ||
+          !source.genericAllowedCategories.some((allowed) =>
+            category.includes(allowed),
+          )))
+    )
+      return [];
+    return [
+      {
+        source: source.key,
+        source_candidate_id: normalizeMunicipalTitle(
+          `${official_url}|${title}`,
+        ).slice(0, 120),
+        title,
+        start_date: dates?.start_date ?? null,
+        end_date: dates?.end_date ?? null,
+        venue: venueFromBlock(block, text),
+        region: source.region,
+        locality: source.locality,
+        official_url,
+        category: category ?? "공식 HTML 행사",
+        snippet: null,
+      },
+    ];
+  });
+  return [
+    ...new Map(
+      partials.map((partial) => [partial.official_url, partial]),
+    ).values(),
+  ];
+}
+
+/** Parses one official detail document without permitting fields from its list. */
+export function parseGenericMunicipalDetail(
+  source: MunicipalSourceDefinition,
+  html: string,
+): MunicipalCandidate | null {
+  return genericCandidateFromBlock(source, html);
 }
 
 export function parsePajuList(html: string): MunicipalCandidate[] {
@@ -913,6 +1022,7 @@ export function extractMunicipalCandidates(
 ): {
   mode: "registered" | "structured_event" | "generic_html" | "retry";
   candidates: MunicipalCandidate[];
+  partialCandidates?: MunicipalListDetailPartial[];
   assessment: ReturnType<typeof assessMunicipalSourceDocument>;
 } {
   const assessment = assessMunicipalSourceDocument(source, html);
@@ -944,8 +1054,17 @@ export function extractMunicipalCandidates(
     )
   ) {
     const candidates = parseGenericMunicipalHtml(source, html);
-    if (candidates.length)
-      return { mode: "generic_html", candidates, assessment };
+    const partialCandidates = parseGenericMunicipalListDetailPartials(
+      source,
+      html,
+    );
+    if (candidates.length || partialCandidates.length)
+      return {
+        mode: "generic_html",
+        candidates,
+        partialCandidates,
+        assessment,
+      };
   }
 
   // PDF/image signals are intentionally detected but not guessed from here.

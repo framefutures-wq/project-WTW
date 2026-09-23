@@ -23,6 +23,14 @@ export type MunicipalSourceDefinition = {
     queryParam: string;
     maxPages: number;
   };
+  /**
+   * Opt in to bounded first-party detail reads when a canonical list has a
+   * title/link but deliberately omits part of the event core.  Omitted means
+   * the legacy single-page extraction path remains unchanged.
+   */
+  listDetailFollowup?: {
+    maxDetails: number;
+  };
 };
 
 export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [

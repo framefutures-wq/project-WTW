@@ -46,6 +46,9 @@ test("registry keeps existing parser-backed sources explicit", () => {
     assert.equal(new URL(source.url).protocol, "https:");
     assert(source.allowedHosts.includes(new URL(source.url).hostname));
   }
+  assert(
+    MUNICIPAL_SOURCE_REGISTRY.every((source) => !source.listDetailFollowup),
+  );
 });
 
 test("Daejeon FVU is a generic table source without a dedicated parser", () => {
