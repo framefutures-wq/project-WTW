@@ -160,6 +160,12 @@ test("two detail images render a main and secondary image with independent contr
   assert.match(detail, /detail-media-main/);
   assert.match(detail, /detail-media-secondary/);
   assert.equal((detail.match(/<button/g) ?? []).length, 2);
+  assert.equal((detail.match(/scene-image-backdrop/g) ?? []).length, 2);
+  assert.match(
+    redesign,
+    /\.detail-media-pair \.scene-image-foreground,[\s\S]*object-fit: contain/,
+  );
+  assert.doesNotMatch(redesign, /\.detail-media-secondary \.scene-image-foreground/);
   assert.match(redesign, /\.detail-media-pair\s*\{[\s\S]*grid-template-columns/);
 });
 

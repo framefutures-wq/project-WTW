@@ -941,10 +941,6 @@ footer small {
   object-fit: contain;
 }
 
-.detail-media-secondary .scene-image-foreground {
-  object-fit: cover;
-}
-
 .detail-dialog .scene-detail .detail-info-graphic {
   position: absolute;
   inset: 0;

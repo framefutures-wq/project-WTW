@@ -495,7 +495,7 @@ export function DetailMedia({
     <div className="detail-media detail-media-pair">
       {active.slice(0, 2).map((image, index) => (
         <button key={image} type="button" className={index === 0 ? "detail-media-main" : "detail-media-secondary"} onClick={() => onExpand(image, event.title)} aria-label={`${event.title} ${index === 0 ? "대표" : "추가"} 이미지 크게 보기`}>
-          <EventImageLayers image={image} title={event.title} backdrop={index === 0} loading="eager" onImageError={() => fail(image)} />
+          <EventImageLayers image={image} title={event.title} backdrop loading="eager" onImageError={() => fail(image)} />
         </button>
       ))}
     </div>
