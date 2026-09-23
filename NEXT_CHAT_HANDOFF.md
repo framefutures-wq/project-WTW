@@ -672,3 +672,12 @@ UI 기준:
 - 이번 batch 변화: READY +1 / GAP +1 / WATCH +8 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 16 / GAP 24 / WATCH 70 / EXCLUDE 0 / UNREVIEWED 126**.
 - 다음 queue는 **`jeonnam-gwangju-목포`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙 유지.
 
+## 2026-09-23 Phase 6B — 전남광주통합특별시 하위 batch 2/3
+
+- 다음 10개(`목포`, `무안`, `보성`, `북구`, `서구`, `순천`, `신안`, `여수`, `영광`, `영암`)를 current official source 기준으로 live read-only 조사했다.
+- **ONBOARDING_READY 1**: `jeonnam-gwangju-목포` — 목포시 문예시설 공연·행사일정에서 title·explicit full-year 기간·venue·detail이 self-contained.
+- **COLLECTOR_GAP 1**: `jeonnam-gwangju-여수` — 월별 문화행사 calendar는 current/durable하지만 multi-day full-year 기간은 detail 보완이 필요해 기존 `list_detail_core_followup_needed`.
+- **WATCH 8**: `무안`, `보성`, `북구`, `서구`, `순천`, `신안`, `영광`, `영암`. source-wide canonical listing 미확인, 행정/문화 혼합 일정, static/PDF 안내, 대표축제 단일 detail 등의 사유로 fail-closed했다.
+- 이번 변화: READY +1 / GAP +1 / WATCH +8 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 17 / GAP 25 / WATCH 78 / EXCLUDE 0 / UNREVIEWED 116**.
+- 다음 queue는 **`jeonnam-gwangju-완도`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+

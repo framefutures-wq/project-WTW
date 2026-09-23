@@ -14,14 +14,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 16 |
-| COLLECTOR_GAP | 24 |
-| WATCH | 70 |
+| ONBOARDING_READY | 17 |
+| COLLECTOR_GAP | 25 |
+| WATCH | 78 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 126 |
+| UNREVIEWED | 116 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `jeonnam-gwangju-목포` · 2. `jeonnam-gwangju-무안` · 3. `jeonnam-gwangju-보성` · 4. `jeonnam-gwangju-북` · 5. `jeonnam-gwangju-서` · 6. `jeonnam-gwangju-순천` · 7. `jeonnam-gwangju-신안` · 8. `jeonnam-gwangju-여수` · 9. `jeonnam-gwangju-영광` · 10. `jeonnam-gwangju-영암` · 11. `jeonnam-gwangju-완도` · 12. `jeonnam-gwangju-장성` · 13. `jeonnam-gwangju-장흥` · 14. `jeonnam-gwangju-진도` · 15. `jeonnam-gwangju-함평` · 16. `jeonnam-gwangju-해남` · 17. `jeonnam-gwangju-화순` · 18. `daejeon-대덕` · 19. `daejeon-동` · 20. `daejeon-서`
+First 20 queue entries: 1. `jeonnam-gwangju-완도` · 2. `jeonnam-gwangju-장성` · 3. `jeonnam-gwangju-장흥` · 4. `jeonnam-gwangju-진도` · 5. `jeonnam-gwangju-함평` · 6. `jeonnam-gwangju-해남` · 7. `jeonnam-gwangju-화순` · 8. `daejeon-대덕` · 9. `daejeon-동` · 10. `daejeon-서` · 11. `daejeon-유성` · 12. `daejeon-jung` · 13. `ulsan-남` · 14. `ulsan-동` · 15. `ulsan-북` · 16. `ulsan-울주` · 17. `ulsan-jung` · 18. `gangwon-강릉` · 19. `gangwon-고성` · 20. `gangwon-동해`
