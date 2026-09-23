@@ -644,3 +644,14 @@ UI 기준:
 - C 2026-09-24 10:00 KST / D 11:00 KST 운영 checkpoint는 우선순위를 유지하며, 그 전 production/Registry onboarding은 하지 않는다.
 - destructive D1, secret/resource/비용/아웃리지 위험 작업만 사용자 확인 대상으로 남긴다.
 
+## 2026-09-23 Phase 6B — 부산 하위 16개 source 조사 완료
+
+- 부산 하위 16개 구·군을 current official municipality/official affiliated culture·tourism source 기준으로 live read-only 조사해 모두 UNREVIEWED에서 제거했다.
+- **ONBOARDING_READY 2**: `busan-동`(동구 문화관광 공연·전시 목록: 기간·장소 self-contained, bounded list), `busan-해운대`(해운대문화회관 공연 프로그램: 50건·5페이지, date+venue self-contained).
+- **COLLECTOR_GAP 3**: `busan-부산진`, `busan-동래`, `busan-남`. 모두 source는 current/durable하지만 목록에서 venue가 완전하지 않아 기존 `list_detail_core_followup_needed` 공통 GAP으로 분류했다.
+- **WATCH 11**: `busan-jung`, `busan-서`, `busan-영도`, `busan-북`, `busan-사하`, `busan-금정`, `busan-gangseo`, `busan-연제`, `busan-수영`, `busan-사상`, `busan-기장`. 이유는 month-only/recurring date 혼재, source-wide canonical listing 미확인, current candidate payload/freshness 미검증, 개별 festival/detail만 존재하는 경우 등이며 불명확한 사실을 결합하지 않고 fail-closed했다.
+- 부산 광역 root의 기존 `COLLECTOR_GAP(list_detail_core_followup_needed)` 판정은 변경하지 않았다. 하위 source와 광역 source overlap은 이후 onboarding duplicate gate에서 다룬다.
+- 이번 batch 변화: READY +2 / GAP +3 / WATCH +11 / EXCLUDE +0. inventory는 총 245; **ACTIVE 9 / READY 14 / GAP 23 / WATCH 54 / EXCLUDE 0 / UNREVIEWED 145**.
+- 부산 하위 UNREVIEWED는 0. 다음 deterministic survey queue는 **`daegu-군위`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙을 유지한다.
+
