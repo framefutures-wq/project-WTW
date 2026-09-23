@@ -482,3 +482,18 @@ UI 기준:
   - 울산 WATCH / 부산 COLLECTOR GAP / 대구 WATCH / 광주 ONBOARDING-READY / 세종 COLLECTOR GAP.
   - 더 많은 지역을 무작정 늘리지 않고, 2026-09-24 10:00 KST 인천 scheduled ingestion과 11:00 TourAPI watchdog을 먼저 확인한다.
   - 두 checkpoint가 정상이고 광주 bounded live probe까지 통과하면 광주를 다음 실제 Registry onboarding 1순위로 진행한다.
+
+
+## 2026-09-23 확정 — Municipal Source Self-Healing (Phase 6 후반 필수 과제)
+
+- 갈틈의 Zero-Human 목표에는 **source self-healing**을 포함한다.
+- 기존 municipal 공식 source의 URL/도메인/플랫폼/페이지 구조가 바뀌면, 현재처럼 단순히 실패를 감지하는 데서 끝내지 않고 장기적으로 다음 자동 복구 계층을 구현한다:
+  1. 기존 source 이상/format change 감지
+  2. 해당 지자체의 공식 도메인·공식 채널에서 대체 행사 source 자동 탐색
+  3. official host/ownership, title/date/venue core, canonical URL, parser/extractor 적합성 검증
+  4. 일정 기간 반복 관측으로 안정성 확인
+  5. 검증이 충분한 경우에만 Registry source 자동 전환
+  6. 기존 source는 안전하게 폐기/비활성화
+- 잘못된 페이지를 자동승격하지 않도록 **fail-closed**가 원칙이다. 새 source 검증 실패 시 기존 last-known-good를 유지하고 AUTO_RETRY/관찰 상태를 유지한다.
+- 현재 단계에서는 전국 municipal coverage를 먼저 넓혀 실제 source 변경/플랫폼 패턴을 축적하고, 반복되는 유형을 근거로 Phase 6 후반에 공통 self-healing 기능을 구현한다.
+- 이 항목은 선택 아이디어가 아니라 **갈틈 No-Human 운영의 필수 후반 과제**로 취급한다.
