@@ -42,227 +42,1626 @@ const metros = [
 ];
 
 const divisions = {
-  seoul: "종로구,중구,용산구,성동구,광진구,동대문구,중랑구,성북구,강북구,도봉구,노원구,은평구,서대문구,마포구,양천구,강서구,구로구,금천구,영등포구,동작구,관악구,서초구,강남구,송파구,강동구",
-  busan: "중구,서구,동구,영도구,부산진구,동래구,남구,북구,해운대구,사하구,금정구,강서구,연제구,수영구,사상구,기장군",
-  daegu: "중구,동구,서구,남구,북구,수성구,달서구,달성군,군위군",
-  incheon: "강화군,옹진군,제물포구,영종구,미추홀구,연수구,남동구,부평구,계양구,서해구,검단구",
-  "jeonnam-gwangju-목포": ["ONBOARDING_READY","https://www.mokpo.go.kr/art/performance/art_schedule","official_city_arts_schedule","generic_fallback_paginated","목포시 공식 문예시설 공연·행사일정은 2026 월별 일정에서 공연/행사 건수를 유지하고, 목록/홈 카드에 title·explicit full-year 기간·venue·first-party detail을 self-contained로 제공한다. 시 직영 문예시설 범위라는 scope를 명시하되 현재 source 구조는 generic extraction 후보로 충분해 READY.","https://www.mokpo.go.kr"],
-  "jeonnam-gwangju-무안": ["WATCH","https://www.muan.go.kr/","official_government_portal","source_canonical_listing_unverified","무안군 공식 홈페이지와 문화관광/축제 공지에서 2026 개별 행사·축제 정보는 확인 대상이지만, 이번 live 조사에서 군 전체 문화행사를 지속적으로 묶는 canonical listing의 title·explicit full-year start/end·venue·durable detail·bounded pagination을 안정적으로 확인하지 못했다. 단발 공지와 대표축제를 결합하지 않아 WATCH.","https://www.muan.go.kr"],
-  "jeonnam-gwangju-보성": ["WATCH","https://www.boseong.go.kr/","official_government_portal","source_canonical_listing_unverified","보성군 공식 홈페이지/문화관광에는 보성다향대축제 등 2026 대표 축제 정보가 있으나 이번 조사에서 군 전체 행사를 candidate 단위로 지속 공급하는 current canonical listing과 pagination을 확인하지 못했다. 개별 축제 detail을 source-wide feed로 확대하지 않아 WATCH.","https://www.boseong.go.kr"],
-  "jeonnam-gwangju-북": ["WATCH","https://bukgu.gwangju.kr/","official_government_portal","source_canonical_listing_unverified","북구 공식 홈페이지의 문화행사·공연 공지와 2026 개별 프로그램은 확인 대상이지만, source-wide event-only canonical listing에서 title·explicit full-year date·venue·durable detail·bounded pagination을 일관되게 검증하지 못했다. 행정/모집 공지와 개별 콘텐츠를 합치지 않고 WATCH.","https://bukgu.gwangju.kr"],
-  "jeonnam-gwangju-서": ["WATCH","https://www.seogu.gwangju.kr/","official_government_portal","source_canonical_listing_unverified","서구 공식 홈페이지에서 지역 축제·문화행사와 공연 관련 정보는 확인되지만, 이번 live 조사에서 current 행사 전용 canonical listing의 exact full-year date·venue·durable detail·pagination을 source-wide로 검증하지 못했다. 과거 사업자료나 개별 마을행사를 daily source로 승격하지 않아 WATCH.","https://www.seogu.gwangju.kr"],
-  "jeonnam-gwangju-순천": ["WATCH","https://www.suncheon.go.kr/kr/news/0007/0003/","official_government_schedule_listing","source_scope_inconsistent","순천시 공식 시정업무일정은 2026 주간주요행사를 지속 게시하고 시청 내 ‘행사/공연’ 메뉴도 존재하지만, 확인 가능한 listing은 행정 일정과 문화행사가 혼합되고 현재 event-only source-wide title·explicit full-year date·venue·durable detail 구조를 안정적으로 검증하지 못했다. 카드뉴스/개별 공지를 결합하지 않고 WATCH.","https://www.suncheon.go.kr"],
-  "jeonnam-gwangju-신안": ["WATCH","https://www.shinan.go.kr/","official_government_tourism_portal","source_core_inconsistent","신안군 공식 홈페이지는 신안축제 메뉴와 2026년 꽃축제 일정 안내를 제공하지만 확인된 연간 자료는 PDF/정적 안내 중심이고, 모든 행사에 대해 durable detail URL·pagination·self-contained full-year core를 지속 제공하는 canonical listing은 확인하지 못했다. 정적 로드맵을 daily source로 승격하지 않아 WATCH.","https://www.shinan.go.kr"],
-  "jeonnam-gwangju-여수": ["COLLECTOR_GAP","https://www.yeosu.go.kr/tour/culture_festa/month_event","official_tourism_culture_calendar","list_detail_core_followup_needed","여수관광문화 공식 ‘월별 문화행사’는 2026 현재/미래 공연·전시·축제를 월별로 지속 제공하고 title·venue·first-party detail을 노출한다. detail에는 explicit full-year start/end와 장소가 명시되지만 월간 grid만으로는 multi-day 기간 core가 항상 self-contained하지 않아 기존 bounded list→detail follow-up 적용이 필요한 공통 GAP.","https://www.yeosu.go.kr"],
-  "jeonnam-gwangju-영광": ["WATCH","https://www.yeonggwang.go.kr/","official_government_portal","source_canonical_listing_unverified","영광군 공식 홈페이지/문화관광에서 2026 대표 축제와 개별 행사 공지는 확인 대상이지만, 군 전체 문화행사의 title·explicit full-year 기간·venue·durable detail을 함께 유지하는 지속 canonical listing과 bounded pagination을 이번 조사에서 검증하지 못했다. 개별 축제 안내를 확대하지 않아 WATCH.","https://www.yeonggwang.go.kr"],
-  "jeonnam-gwangju-영암": ["WATCH","https://www.yeongam.go.kr/","official_government_portal","source_canonical_listing_unverified","영암군 공식 홈페이지/문화관광에는 왕인문화축제 등 2026 대표 행사 정보가 있으나, 이번 live 조사에서 군 전체 행사에 대한 current canonical listing·pagination과 source-wide self-contained core를 확인하지 못했다. 대표축제 detail을 daily all-event source로 간주하지 않아 WATCH.","https://www.yeongam.go.kr"],
-  "jeonnam-gwangju-완도": ["WATCH","https://www.wando.go.kr/tour/","official_tourism_event_calendar","source_payload_unverified","완도문화관광 메인에는 2026 월별 ‘완도군 주요행사일정’ calendar와 전체보기 구조가 있고 개별 대표축제는 explicit 기간·장소를 제공한다. 다만 이번 live 확인에서 calendar candidate의 title/date/venue/detail payload가 직접 노출되지 않아 source-wide generic extraction과 current 행사 coverage를 확정하지 못했다. 개별 축제 detail과 calendar를 임의 결합하지 않아 WATCH.","https://www.wando.go.kr"],
-  "jeonnam-gwangju-장성": ["COLLECTOR_GAP","https://www.jangseong.go.kr/home/visit/bbs/board.php?bo_table=events","official_tourism_festival_listing","list_detail_core_followup_needed","장성군 공식 여행/문화관광의 2026 축제 목록은 current year 항목과 explicit full-year 기간을 지속 제공하고 durable first-party detail로 연결된다. 목록에는 venue가 self-contained하지 않지만 detail에서 황룡강변 등 venue/address를 확인할 수 있어 기존 bounded list→detail follow-up으로 core 완성이 가능한 GAP.","https://www.jangseong.go.kr"],
-  "jeonnam-gwangju-장흥": ["WATCH","https://www.jangheung.go.kr/","official_government_portal","source_canonical_listing_unverified","장흥군 공식 홈페이지/문화관광에서 물축제 등 2026 대표축제와 개별 행사 정보는 확인 대상이지만, 이번 live 조사에서 군 전체 행사를 지속 공급하는 canonical event listing의 title·explicit full-year date·venue·durable detail·bounded pagination을 안정적으로 검증하지 못했다. 대표축제 detail을 source-wide feed로 확대하지 않아 WATCH.","https://www.jangheung.go.kr"],
-  "jeonnam-gwangju-진도": ["COLLECTOR_GAP","https://www.jindo.go.kr/home/board/B0016.cs?categoryId=2&m=22","official_government_culture_event_news","list_detail_core_followup_needed","진도군 공식 군정소식의 ‘문화/행사’ 카테고리는 1천 건 이상 누적된 durable pagination과 2026 현재 문화행사 title·first-party detail을 지속 제공한다. 목록 snippet에는 일부 기간/장소가 보이지만 행사·모집·프로그램이 혼합되고 core가 일관되게 self-contained하지 않아 detail follow-up + event signal이 필요한 기존 공통 GAP.","https://www.jindo.go.kr"],
-  "jeonnam-gwangju-함평": ["COLLECTOR_GAP","https://www.hampyeong.go.kr/tour/main.do","official_tourism_festival_listing","list_detail_core_followup_needed","함평군 공식 문화관광 메인은 2026 현재/미래 대표축제의 title과 explicit 기간(꽃무릇축제 9/16~9/20, 국향대전 10/23~11/8 등)을 지속 노출하고 각 축제 안내로 연결한다. 메인 list에는 venue가 self-contained하지 않으므로 first-party detail follow-up으로 장소/core를 보완해야 하는 공통 GAP으로 분류한다.","https://www.hampyeong.go.kr"],
-  "jeonnam-gwangju-해남": ["WATCH","https://www.haenam.go.kr/","official_government_portal","source_canonical_listing_unverified","해남군 공식 홈페이지/문화관광에는 2026 축제·문화행사와 개별 공지가 존재하지만 이번 live 조사에서 군 전체 행사를 title·explicit full-year date·venue·durable detail과 함께 지속 제공하는 canonical bounded listing을 확인하지 못했다. 개별 축제/보도자료를 결합하지 않고 WATCH.","https://www.haenam.go.kr"],
-  "jeonnam-gwangju-화순": ["WATCH","https://www.hwasun.go.kr/board.do?M=010502010000&S=S05&b_code=0000000310","official_tourism_notice_listing","source_scope_too_narrow","화순군 문화관광 공지사항은 2026 현재 갱신되고 pagination도 있으나 live 목록의 대부분이 꽃강길 음악분수 운영·취소 안내이며 군 전체 문화·축제 행사를 대표하는 event source가 아니다. 봄꽃축제 같은 개별 공지를 별도 사실과 결합하지 않고 source scope 부족으로 WATCH.","https://www.hwasun.go.kr"],
+  "seoul": "종로구,중구,용산구,성동구,광진구,동대문구,중랑구,성북구,강북구,도봉구,노원구,은평구,서대문구,마포구,양천구,강서구,구로구,금천구,영등포구,동작구,관악구,서초구,강남구,송파구,강동구",
+  "busan": "중구,서구,동구,영도구,부산진구,동래구,남구,북구,해운대구,사하구,금정구,강서구,연제구,수영구,사상구,기장군",
+  "daegu": "중구,동구,서구,남구,북구,수성구,달서구,달성군,군위군",
+  "incheon": "강화군,옹진군,제물포구,영종구,미추홀구,연수구,남동구,부평구,계양구,서해구,검단구",
   "jeonnam-gwangju": "동구,서구,남구,북구,광산구,목포시,여수시,순천시,나주시,광양시,담양군,곡성군,구례군,고흥군,보성군,화순군,장흥군,강진군,해남군,영암군,무안군,함평군,영광군,장성군,완도군,진도군,신안군",
-  daejeon: "동구,중구,서구,유성구,대덕구",
-  "daejeon-대덕": ["WATCH","https://www.daedeok.go.kr/dpt/","official_government_portal","source_canonical_listing_unverified","대덕구 공식 누리집은 구정소식에 ‘행사소식’ 메뉴를 두고 2026 대덕물빛축제·동춘당문화제·대덕거리 페스티벌 등 개별 행사/보도·공고를 현재 제공한다. 다만 이번 live 조사에서 문화·축제만을 지속 공급하는 canonical listing의 title·explicit full-year start/end·venue·durable detail·bounded pagination을 source-wide로 검증하지 못했다. 보도/공고를 결합해 daily source로 승격하지 않아 WATCH.","https://www.daedeok.go.kr"],
-  "daejeon-동": ["COLLECTOR_GAP","https://www.donggu.go.kr/yeyak/www/index.do","official_integrated_reservation_event_listing","list_detail_core_followup_needed","동구 공식 통합예약의 ‘축제/행사’ 목록은 2026 동구동락 축제 등 current/future title과 explicit full-year 기간, durable first-party detail을 지속 제공한다. detail에는 장소·운영기관·기간이 명시되지만 목록에는 venue가 self-contained하지 않고 건강/체험성 프로그램도 섞여 있어 기존 bounded list→detail follow-up과 event signal이 필요한 공통 GAP.","https://www.donggu.go.kr"],
-  "daejeon-서": ["WATCH","https://www.seogu.go.kr/kor/","official_government_portal","source_canonical_listing_unverified","대전 서구 공식 누리집에서 2026 행사 관련 공고·입찰과 개별 문화행사 정보는 확인되지만, 이번 live 조사에서 관람 대상 문화·축제를 지속적으로 묶는 canonical event listing의 full-year date·venue·detail·bounded pagination을 검증하지 못했다. 행정 공고/입찰 목록을 행사 source로 대체하지 않아 WATCH.","https://www.seogu.go.kr"],
-  "daejeon-유성": ["WATCH","https://www.yuseong.go.kr/prog/cultprfr/tour/sub04_04/list.do","official_tourism_culture_performance_listing","source_freshness_unverified","유성구 공식 문화관광 ‘문화공연’은 title·explicit full-year 기간·시간·venue를 self-contained로 제공하지만 2026-09-23 live 목록은 총 1건이며 해당 ‘한 여름밤의 유성 뮤직페스타’는 2026-08-07~08-09로 이미 종료됐다. 별도 2026 마을축제 일정 공지는 존재하지만 이를 자동 결합하지 않고, current/future 지속 갱신이 확인될 때까지 WATCH.","https://www.yuseong.go.kr"],
-  "daejeon-jung": ["WATCH","https://www.djjunggu.go.kr/tour/sub02_01.do","official_tourism_festival_detail","source_wide_listing_missing","중구 문화관광은 효문화뿌리축제의 2026-10-02~10-04 기간·뿌리공원 venue 등 core를 충실히 제공하고 마을축제/이달의 공연 메뉴도 운영한다. 그러나 대표축제는 개별 detail이고 마을축제 표는 일부 날짜가 비어 있거나 과거 venue 표기가 남아 source-wide exact full-year canonical listing으로 쓰기 어렵다. 개별 페이지 사실을 결합하지 않고 WATCH.","https://www.djjunggu.go.kr"],
-  ulsan: "중구,남구,동구,북구,울주군",
-  gyeonggi: "수원시,성남시,의정부시,안양시,부천시,광명시,평택시,동두천시,안산시,고양시,과천시,구리시,남양주시,오산시,시흥시,군포시,의왕시,하남시,용인시,파주시,이천시,안성시,김포시,화성시,광주시,양주시,포천시,여주시,연천군,가평군,양평군",
-  gangwon: "춘천시,원주시,강릉시,동해시,태백시,속초시,삼척시,홍천군,횡성군,영월군,평창군,정선군,철원군,화천군,양구군,인제군,고성군,양양군",
-  chungbuk: "청주시,충주시,제천시,보은군,옥천군,영동군,증평군,진천군,괴산군,음성군,단양군",
-  "chungbuk-괴산": ["WATCH","https://www.goesan.go.kr/www/selectBbsNttList.do?bbsNo=213&integrDeptCode=&key=136","official_government_news_listing","source_not_event_canonical","괴산군 공식 ‘오늘의 뉴스’는 2026 괴산고추축제·별별락장 등 행사 일시/장소를 current 보도로 제공하지만 전체 보도자료 listing이며 event-only canonical schedule이 아니다. 보도기사에서 candidate를 조합하지 않고 WATCH.","https://www.goesan.go.kr"],
-  "chungbuk-단양": ["WATCH","https://danyang.go.kr/dy21/779","official_government_weekly_schedule","source_core_inconsistent","단양군 공식 주간행사는 2026 월별로 다수 일정을 제공하지만 회의·행정·단체행사와 관광행사가 혼합되고 행사별 venue/detail core가 일관되지 않다. 문화·축제 전용 source를 확인하지 못해 WATCH.","https://danyang.go.kr"],
-  "chungbuk-보은": ["WATCH","https://www.boeun.go.kr/","official_government_portal","source_canonical_listing_unverified","보은군은 2026 대추축제·속리산축제 등 current 행사 계획과 주간행사를 공식 자료로 제공하지만, 문화·축제의 title·explicit full-year date·venue·durable detail을 함께 유지하는 canonical listing/pagination을 검증하지 못했다. 업무보고/주간첨부를 source로 승격하지 않아 WATCH.","https://www.boeun.go.kr"],
-  "chungbuk-영동": ["COLLECTOR_GAP","https://www.yd21.go.kr/ydft","official_affiliated_festival_schedule","list_detail_core_followup_needed","영동군 문화관광재단 공식 홈페이지는 2026 곶감·와인·포도·난계국악축제의 title과 explicit full-year 기간을 current 일정표로 제공한다. 목록 일정표에는 venue가 self-contained하지 않아 행사 detail/축제 페이지 follow-up으로 core 보완이 필요한 기존 GAP.","https://www.yd21.go.kr"],
-  "chungbuk-옥천": ["ONBOARDING_READY","https://oc.go.kr/tour/selectTnTursmResrceListU.do?key=2529&rcpp=9&sa1=%EC%B6%95%EC%A0%9C%EC%B2%B4%ED%97%98&so1=ORDR","official_tourism_festival_listing","generic_fallback_paginated","옥천 문화관광 ‘축제/체험’은 12건·2페이지 listing에서 옥천묘목축제·청산생선국수축제·지용제·포도복숭아축제 등 2026 항목의 title·explicit 기간·venue·연락처를 self-contained로 제공한다. 과거/연도 없는 항목은 fail-closed 제외하면 current 2026 후보를 안전하게 추출할 수 있어 READY.","https://www.oc.go.kr"],
-  "chungbuk-음성": ["WATCH","https://www.eumseong.go.kr/","official_government_portal","source_canonical_listing_unverified","음성군 공식 홈페이지/문화관광에서 2026 지역축제와 문화행사 정보는 확인 대상이나 이번 live 조사에서 군 전체 행사를 지속 공급하는 current canonical listing의 full-year date·venue·detail·bounded pagination을 검증하지 못했다. 개별 공지를 결합하지 않아 WATCH.","https://www.eumseong.go.kr"],
-  "chungbuk-제천": ["WATCH","https://www.jecheon.go.kr/","official_government_portal","source_canonical_listing_unverified","제천시 공식 홈페이지/문화관광은 지역 축제·공연 정보를 제공하지만 이번 조사에서 current 행사 전체의 title·explicit full-year start/end·venue·durable detail을 self-contained로 유지하는 canonical bounded listing을 검증하지 못했다. 대표축제/개별 공지를 확대하지 않아 WATCH.","https://www.jecheon.go.kr"],
-  "chungbuk-증평": ["WATCH","https://www.jp.go.kr/kor/cop/bbs/BBSMSTR_000000000135/selectBoardArticle.do?nttId=B00000057359xw3jW1bm","official_government_festival_notice","source_not_persistent_listing","증평군 공식 공지는 2026 들노래축제·인삼골축제의 확정 일정을 명시하지만 하나의 편집형 뉴스/공고이고 행사별 durable listing/pagination이 아니다. 대표축제 일정 공지를 daily canonical source로 승격하지 않아 WATCH.","https://www.jp.go.kr"],
-  "chungbuk-진천": ["WATCH","https://www.jincheon.go.kr/home/sub.do?menukey=2908","official_government_notice_listing","source_core_inconsistent","진천군 공식 공지와 SNS는 2026 생거진천 문화축제의 explicit 기간·장소를 current 제공하지만 공지 listing은 모집·행정정보가 혼합되고 문화행사 전용 source-wide core가 없다. SNS/개별 공지를 canonical feed로 쓰지 않아 WATCH.","https://www.jincheon.go.kr"],
-  "chungbuk-청주": ["WATCH","https://www.cheongju.go.kr/www/index.do","official_government_culture_notice","source_document_schedule","청주시 공식 홈페이지는 2026-09 현재 매월 ‘공연·행사일정표’를 연속 게시하고 다음달 10월 일정표까지 제공해 freshness는 확인된다. 다만 현재 노출은 월별 일정표 게시물/문서 중심으로 candidate-level durable HTML list·detail·pagination을 검증하지 못해 WATCH로 보류한다.","https://www.cheongju.go.kr"],
-  "chungbuk-충주": ["WATCH","https://www.chungju.go.kr/","official_government_portal","source_canonical_listing_unverified","충주시 공식 홈페이지/문화관광의 2026 행사·축제 정보는 존재하지만 이번 live 조사에서 관람 행사 전체를 지속 공급하는 canonical listing과 title·explicit full-year date·venue·detail·bounded pagination을 검증하지 못했다. 개별 보도/축제 페이지를 결합하지 않아 WATCH.","https://www.chungju.go.kr"],
-  chungnam: "천안시,공주시,보령시,아산시,서산시,논산시,계룡시,당진시,금산군,부여군,서천군,청양군,홍성군,예산군,태안군",
-  "chungnam-계룡": ["WATCH","https://www.gyeryong.go.kr/","official_government_portal","source_canonical_listing_unverified","계룡시·계룡문화관광재단은 2026 군문화축제 및 연계행사 계획을 공식적으로 운영하지만 이번 조사에서 시 전체 문화행사를 candidate 단위로 지속 공급하는 canonical listing과 pagination을 확인하지 못했다. 채용/민원 답변 등 보조 근거를 event feed로 쓰지 않아 WATCH.","https://www.gyeryong.go.kr"],
-  "chungnam-공주": ["WATCH","https://www.gongju.go.kr/","official_government_portal","source_not_event_canonical","공주시 공식 홈페이지는 2026 유구섬유축제 등 행사 일정·장소를 개별 공고/기업소식으로 제공하지만 지속 event-only canonical listing을 확인하지 못했다. 모집 공고를 daily source로 승격하지 않아 WATCH.","https://www.gongju.go.kr"],
-  "chungnam-금산": ["WATCH","https://www.geumsan.go.kr/","official_government_portal","source_core_inconsistent","금산군 공식 홈페이지는 주간행사 및 2026 축제 준비 공지를 current 제공하지만 행정·회의·문화행사가 혼합되고 문화축제 전용 self-contained listing을 검증하지 못했다. 개별 보도와 결합하지 않아 WATCH.","https://www.geumsan.go.kr"],
-  "chungnam-논산": ["COLLECTOR_GAP","https://www.nonsan.go.kr/site/cntf/","official_affiliated_culture_listing","list_detail_core_followup_needed","논산문화관광재단 공식 홈페이지는 2026 current/future 공연·문화행사의 title·explicit date/period·durable detail을 지속 제공하지만 목록에서 venue가 일관되게 self-contained하지 않아 detail follow-up이 필요한 공통 GAP.","https://www.nonsan.go.kr"],
-  "chungnam-당진": ["COLLECTOR_GAP","https://www.dangjin.go.kr/prog/fstvlSchedule/tour/sub04_01/list.do","official_tourism_festival_schedule","list_detail_core_followup_needed","당진시 문화관광 공식 축제일정은 2026 current/future 축제 title과 explicit date range를 지속 제공하고 first-party detail로 연결되나 list에서 venue가 self-contained하지 않아 bounded detail follow-up이 필요한 GAP.","https://www.dangjin.go.kr"],
-  "chungnam-보령": ["WATCH","https://www.boryeong.go.kr/","official_government_tourism_portal","source_canonical_listing_unverified","보령시 공식 홈페이지/문화관광은 머드축제 등 2026 대표행사 정보를 제공하지만 이번 조사에서 시 전체 문화행사의 exact full-year date·venue·durable detail을 지속 공급하는 canonical bounded listing을 안정적으로 검증하지 못했다. 대표축제 detail을 확대하지 않아 WATCH.","https://www.boryeong.go.kr"],
-  "chungnam-부여": ["WATCH","https://www.buyeo.go.kr/html/kr/","official_government_portal","source_not_persistent_listing","부여군 공식 홈페이지는 제72회 백제문화제 2026-10-03~10-11, 부여 시가지 일원 등 current 핵심 행사를 메인 ISSUE로 명시하지만 이는 homepage/editorial 노출이며 군 전체 행사의 durable canonical listing/pagination이 아니다. WATCH.","https://www.buyeo.go.kr"],
-  "chungnam-서산": ["WATCH","https://www.seosan.go.kr/tour/","official_tourism_portal","source_wide_listing_missing","서산 문화관광은 류방택별축제 등 개별 행사 프로그램과 장소를 상세히 제공하지만 확인한 구조는 축제별 detail이고 2026 전체 행사를 지속 공급하는 canonical list/pagination을 검증하지 못했다. WATCH.","https://www.seosan.go.kr"],
-  "chungnam-서천": ["WATCH","https://www.seocheon.go.kr/cop/smt/1/SCH5/public/sub03_01/monthList.do","official_government_event_calendar","source_freshness_unverified","서천군 공식 주요행사안내는 2026 월별 calendar와 행사명·행사일자·행사장소 컬럼을 갖지만 확인한 2026-11 화면은 후보가 비어 있어 current 지속성/freshness를 검증하지 못했다. 구조만으로 READY 처리하지 않아 WATCH.","https://www.seocheon.go.kr"],
-  "chungnam-아산": ["WATCH","https://www.asan.go.kr/","official_government_portal","source_canonical_listing_unverified","아산시는 2026 문화유산 활용 축제와 개별 공연·행사를 공식 자료로 제공하지만 확인한 자료는 중장기계획/PDF·소식지 중심이며 candidate-level current canonical HTML listing을 검증하지 못했다. WATCH.","https://www.asan.go.kr"],
-  "chungnam-예산": ["WATCH","https://www.yesan.go.kr/","official_government_portal","source_not_persistent_listing","예산군은 2026 가을 지역축제들의 날짜·장소를 공식 보도자료로 current 안내하지만 하나의 편집형 보도자료이며 행사별 지속 listing/pagination이 아니다. 보도자료를 canonical daily source로 승격하지 않아 WATCH.","https://www.yesan.go.kr"],
-  "chungnam-천안": ["WATCH","https://www.cnac.or.kr/","official_affiliated_arts_center_listing","source_freshness_unverified","천안예술의전당은 연간/월간 공연 목록에서 title·기간·공연장·detail을 self-contained로 제공하는 좋은 구조지만 검색/라이브 확인 결과 최신 노출이 2025 일정 중심이라 2026-09 current freshness를 검증하지 못했다. 구조만으로 READY 처리하지 않고 WATCH.","https://www.cheonan.go.kr"],
-  "chungnam-청양": ["WATCH","https://www.cheongyang.go.kr/","official_government_portal","source_canonical_listing_unverified","청양군 공식 홈페이지/관광 영역에서 2026 축제·문화행사 정보는 확인 대상이나 군 전체 행사를 지속 공급하는 current canonical listing의 full-year date·venue·detail·bounded pagination을 검증하지 못했다. WATCH.","https://www.cheongyang.go.kr"],
-  "chungnam-태안": ["WATCH","https://www.taean.go.kr/prog/artCulture/tour/sub04_02/list.do","official_tourism_performance_calendar","source_payload_unverified","태안 문화관광 공식 공연안내는 2026 월별/연간 calendar 구조를 제공하지만 live 검색 결과에서 candidate 행사 title·venue·detail payload가 확인되지 않아 current coverage와 generic extraction을 확정하지 못했다. WATCH.","https://www.taean.go.kr"],
-  "chungnam-홍성": ["WATCH","https://www.hongseong.go.kr/","official_government_portal","source_canonical_listing_unverified","홍성군 공식 홈페이지/문화관광에서 2026 지역축제·행사 정보는 확인 대상이나 이번 조사에서 행사 전체를 title·explicit full-year date·venue·durable detail과 함께 공급하는 canonical bounded listing을 검증하지 못했다. WATCH.","https://www.hongseong.go.kr"],
-  jeonbuk: "전주시,군산시,익산시,정읍시,남원시,김제시,완주군,진안군,무주군,장수군,임실군,순창군,고창군,부안군",
-  gyeongbuk: "포항시,경주시,김천시,안동시,구미시,영주시,영천시,상주시,문경시,경산시,의성군,청송군,영양군,영덕군,청도군,고령군,성주군,칠곡군,예천군,봉화군,울진군,울릉군",
-  gyeongnam: "창원시,진주시,통영시,사천시,김해시,밀양시,거제시,양산시,의령군,함안군,창녕군,고성군,남해군,하동군,산청군,함양군,거창군,합천군",
-  jeju: "제주시,서귀포시",
+  "daejeon": "동구,중구,서구,유성구,대덕구",
+  "ulsan": "중구,남구,동구,북구,울주군",
+  "gyeonggi": "수원시,성남시,의정부시,안양시,부천시,광명시,평택시,동두천시,안산시,고양시,과천시,구리시,남양주시,오산시,시흥시,군포시,의왕시,하남시,용인시,파주시,이천시,안성시,김포시,화성시,광주시,양주시,포천시,여주시,연천군,가평군,양평군",
+  "gangwon": "춘천시,원주시,강릉시,동해시,태백시,속초시,삼척시,홍천군,횡성군,영월군,평창군,정선군,철원군,화천군,양구군,인제군,고성군,양양군",
+  "chungbuk": "청주시,충주시,제천시,보은군,옥천군,영동군,증평군,진천군,괴산군,음성군,단양군",
+  "chungnam": "천안시,공주시,보령시,아산시,서산시,논산시,계룡시,당진시,금산군,부여군,서천군,청양군,홍성군,예산군,태안군",
+  "jeonbuk": "전주시,군산시,익산시,정읍시,남원시,김제시,완주군,진안군,무주군,장수군,임실군,순창군,고창군,부안군",
+  "gyeongbuk": "포항시,경주시,김천시,안동시,구미시,영주시,영천시,상주시,문경시,경산시,의성군,청송군,영양군,영덕군,청도군,고령군,성주군,칠곡군,예천군,봉화군,울진군,울릉군",
+  "gyeongnam": "창원시,진주시,통영시,사천시,김해시,밀양시,거제시,양산시,의령군,함안군,창녕군,고성군,남해군,하동군,산청군,함양군,거창군,합천군",
+  "jeju": "제주시,서귀포시"
 };
 
 const known = {
-  "jeonnam-gwangju-강진": ["WATCH","https://www.gangjin.go.kr/culture/","official_tourism_festival_portal","source_canonical_listing_unverified","강진문화관광은 여러 축제/행사 메뉴와 2026 개별 축제의 explicit date·venue를 제공하지만 이번 live 확인에서 source-wide current 행사 listing·pagination을 안정적으로 확보하지 못했고 portal fetch도 timeout이 관측됐다. 개별 축제 detail만으로 daily canonical source를 추정하지 않아 WATCH.","https://www.gangjin.go.kr"],
-  "jeonnam-gwangju-고흥": ["WATCH","https://www.goheung.go.kr/index.do","official_government_portal","source_core_inconsistent","고흥군 공식 홈페이지는 고흥유자축제·드론쇼 버스킹과 주간행사를 현재 노출하고 관광 공식 영역도 연결하지만, 문화/축제 event-only canonical listing에서 title·explicit full-year start/end·venue·durable detail·bounded pagination을 source-wide로 확인하지 못했다. 단일 축제/홈 teaser를 승격하지 않아 WATCH.","https://www.goheung.go.kr"],
-  "jeonnam-gwangju-곡성": ["ONBOARDING_READY","https://www.gokseong.go.kr/tour/festivity/event","official_tourism_event_listing","generic_fallback_paginated","곡성문화관광 공연/체험행사 목록은 2026 월별 문화달력과 축제/행사를 지속 제공하며 동일 list에서 title·explicit full-year period·venue를 확인할 수 있고 6페이지 pagination이 있다. 행사일정 calendar와 first-party detail 체계도 유지돼 current generic self-contained 후보로 READY.","https://www.gokseong.go.kr"],
-  "jeonnam-gwangju-광산": ["WATCH","https://www.gwangsan.go.kr/","official_government_portal","source_canonical_listing_unverified","광산구청은 현재 광산구 캘린더·광산문화캘린더 메뉴와 2026 개별 문화예술제 공지에서 explicit 기간·장소를 제공하지만, 이번 조사에서 해당 문화 calendar의 source-wide stable payload·pagination·self-contained core를 끝까지 검증하지 못했다. 개별 새소식 게시물을 canonical source로 승격하지 않아 WATCH.","https://www.gwangsan.go.kr"],
-  "jeonnam-gwangju-광양": ["COLLECTOR_GAP","https://gwangyang.go.kr/tour/board.es?bid=0044&mid=a31301000000","official_tourism_notice_listing","list_detail_core_followup_needed","광양시 문화관광 공지사항은 81페이지로 지속 갱신되고 2026 행사 안내 title과 durable first-party detail을 제공한다. 목록은 title·게시일 중심이지만 detail에는 explicit 행사기간·venue·주최가 있어 기존 bounded list→detail follow-up으로 core 완성이 가능한 공통 GAP이다. 관광 일반공지 혼합은 event signal로 fail-closed 처리 필요.","https://gwangyang.go.kr"],
-  "jeonnam-gwangju-구례": ["WATCH","https://www.gurye.go.kr/tour/","official_tourism_portal","source_canonical_listing_unverified","구례군 공식 관광포털과 2026 산수유꽃축제 같은 공식 행사 core는 확인되지만, 이번 live 조사에서는 여러 행사를 지속적으로 묶는 current canonical event listing과 pagination을 확인하지 못했다. 개별 대표축제/관광 detail을 source-wide feed로 확대하지 않아 WATCH.","https://www.gurye.go.kr"],
-  "jeonnam-gwangju-나주": ["WATCH","https://www.naju.go.kr/www/administration/scheduled/monthly","official_government_event_calendar","source_core_inconsistent","나주시 공식 시정행사일정은 월별 2026 calendar를 제공하지만 행정 일정 중심이라 갈틈 대상 문화·축제 source로 event-only core가 일관되지 않는다. 별도 문화관광 축제 메뉴는 과거 연도별 소개가 섞여 current durable all-event listing으로 검증되지 않아 WATCH.","https://www.naju.go.kr"],
-  "jeonnam-gwangju-남": ["WATCH","https://www.namgu.gwangju.kr/board.es?mid=a70306000000&bid=0364","official_tourism_event_calendar","source_freshness_unverified","남구 공식 문화관광에는 전용 ‘축제행사 일정’ 2026 월간 calendar와 문화관광과 ownership이 확인되지만 2026-09 live calendar에는 실제 event candidate가 노출되지 않아 current freshness·title/date/venue/detail payload를 검증하지 못했다. 구조만으로 READY 처리하지 않고 WATCH.","https://www.namgu.gwangju.kr"],
-  "jeonnam-gwangju-담양": ["WATCH","https://www.damyang.go.kr/index.damyang","official_tourism_festival_portal","source_core_inconsistent","담양군 공식 홈페이지는 담양대나무축제·고서포도축제·산타축제 등 연중 축제 목록을 노출하지만 현재 메인 목록은 ‘5월/8월/12월’ 같은 month-only 반복 시기 중심이고 행사별 explicit full-year start/end·durable detail·pagination이 self-contained하지 않다. 연도 추론 없이 WATCH.","https://www.damyang.go.kr"],
-  "jeonnam-gwangju-동": ["WATCH","https://www.donggucc.kr/www/cmd.do?opencode=psche","official_affiliated_culture_venue_calendar","source_scope_too_narrow","동구 문화센터 공식 행사일정은 2026 월간 calendar를 제공하지만 실제 내용은 휴관·강좌/센터 프로그램 중심이며 동구 전체 축제·문화행사를 대표하는 canonical source가 아니다. 구 전체 event core와 durable pagination을 확인하지 못해 WATCH.","https://www.donggu.kr"],
-  "jeonnam-gwangju": ["WATCH", "https://www.jeonnam.go.kr/", "official_tourism_listing_unverified", "source_core_unverified", "현재 통합특별시 공식 누리집(구 전라남도청)이 통합특별시 명칭·주소로 운영되며 관광객 메뉴에 ‘시군축제 일정’ 링크가 노출된다. 다만 live HTTP 요청은 timeout/DNS 오류로 목록 target과 지속성, 2026 full-year start/end·venue·detail URL·pagination 및 generic extraction을 확인하지 못했다. 구 전남 축제 목록과 구 광주 source를 임의 결합하거나 legacy 내용을 계승하지 않으며, 확인 가능한 광역 canonical source가 확보될 때까지 WATCH."],
-  seoul: ["ACTIVE", "https://hangang.seoul.go.kr/www/eventMng/list.do?mid=538", "official_event_listing", "generic_fallback", "한강사업본부 행사 source; 서울 전체 coverage를 뜻하지 않음"],
-  "seoul-gangnam": ["ONBOARDING_READY", "https://www.gangnam.go.kr/office/gfac/board/gfac_lifeculture/list.do?mid=gfac_festival06", "official_culture_listing", "generic_fallback_paginated", "강남문화재단(강남구 산하 공식 문화기관) 축제 목록. live 목록에서 title·2026 full-year 행사기간·행사장소·first-party detail URL이 같은 항목 블록에 있고 페이지네이션도 확인되어 현재 generic collector의 self-contained extraction에 적합함. 대표 항목은 2026 강남생활문화축제(2026-10-17~2026-10-18, 일원에코파크 및 에코센터)." , "https://www.gangnam.go.kr"],
-  "seoul-gangdong": ["WATCH", "https://www.gangdong.go.kr/web/culture/contents/gdc030_040", "official_culture_detail", "source_core_inconsistent", "강동구청 강동문화포털의 선사문화축제 일정표는 공식 소유권과 행사별 장소를 확인할 수 있으나 live 페이지가 2025 일정표 중심의 정적 프로그램 표이고, source-wide 지속 목록에서 2026 full-year 행사기간·detail URL·pagination을 일관되게 제공하지 않음. 보도자료의 2026 동 지역축제는 단발성 공지라 canonical daily source로 승격하지 않음.", "https://www.gangdong.go.kr"],
-  "seoul-gangbuk": ["WATCH", "https://child.gangbuk.go.kr/", "official_government_portal", "source_core_inconsistent", "강북구 공식 포털에서 백맥축제·문화/행사 예약 항목은 확인되지만 홈페이지 혼합 콘텐츠와 개별 모집/보도 페이지가 중심이다. 행사별 title·date·venue는 일부 detail에서 확인되나 지속적으로 갱신되는 full-year canonical listing 및 안정적인 pagination을 확인하지 못했고 generic collector의 source-wide self-contained extraction을 확정할 수 없음.", "https://www.gangbuk.go.kr"],
-  "seoul-gangseo": ["WATCH", "https://www.gangseo.seoul.kr/munhwa/mh010204", "official_culture_detail", "source_core_missing", "강서문화관광의 겸재문화예술제 공식 detail은 title·2026-05-09 기간·겸재정선미술관/궁산근린공원 장소를 제공하지만, 확인한 canonical 페이지는 개별 행사 detail이고 source-wide 행사 listing·pagination·지속 detail index를 확인하지 못함. 단발성 행사 detail을 generic daily source로 승격하지 않음.", "https://www.gangseo.seoul.kr"],
-  "seoul-gwanak": ["WATCH", "https://www.gwanak.go.kr/site/gwanak/main.do", "official_government_portal", "source_core_missing", "관악구청 공식 포털의 문화관광소식·예약/교육 상세에서 개별 행사 사실은 확인되지만 홈페이지는 혼합 게시판/예약 포털이며, 행사·축제의 title·full-year date·venue를 함께 유지하는 durable canonical listing과 pagination을 확인하지 못함. 관악강감찬축제 관련 과거 전자책/보도자료는 daily source로 사용하지 않음.", "https://www.gwanak.go.kr"],
-  "seoul-gwangjin": ["WATCH", "https://www.gwangjin.go.kr/portal/main/main.do", "official_government_portal", "source_core_missing", "광진구청 공식 포털에서 주간행사·개별 행사/보도자료는 확인되지만 축제·문화 일정이 혼합 게시판과 개별 공지로 분산되어 있다. source-wide full-year date·venue·durable detail URL을 함께 제공하는 canonical listing과 pagination을 live 확인하지 못함.", "https://www.gwangjin.go.kr"],
-  "seoul-guro": ["WATCH", "https://www.guro.go.kr/www/index.do", "official_government_portal", "source_core_missing", "구로구청 공식 홈페이지와 월간 소식/예약 영역에서 행사 title·일시·장소가 개별 콘텐츠로 보이지만 행사·축제용 durable listing이 아니라 홈페이지 혼합 feed와 예약/소식 콘텐츠 구조다. source-wide full-year core와 안정적인 detail/list pagination을 확인하지 못해 generic collector source로 확정하지 않음.", "https://www.guro.go.kr"],
-  "seoul-geumcheon": ["WATCH", "https://www.geumcheon.go.kr/shub/index.do", "official_government_portal", "source_core_missing", "금천구 공식 소셜허브·미디어홍보에서 과학축제 등 행사 제목과 게시일은 확인되지만, 행사기간·장소·durable detail이 source-wide로 함께 유지되는 공식 일정 listing이 아니라 홍보 feed/개별 게시물 구조다. pagination과 current generic self-contained extraction을 확인하지 못함.", "https://www.geumcheon.go.kr"],
-  "seoul-nowon": ["WATCH", "https://www.nowon.kr/www/index.do", "official_government_portal", "source_core_missing", "노원구청 공식 홈페이지는 축제행사·문화공연 메뉴와 개별 행사 안내를 제공하지만 확인한 live 구조는 홈페이지 메뉴/공지·보도/행사 detail이 혼합되어 있다. 행사별 full-year date·venue는 일부 확인되나 source-wide durable listing·pagination과 generic collector의 일관된 self-contained extraction을 확정하지 못함.", "https://www.nowon.kr"],
-  "seoul-dobong": ["WATCH", "https://tour.dobong.go.kr/Contents.asp?code=10003458", "official_tourism_detail", "source_core_inconsistent", "도봉구 공식 문화관광의 축제와 문화행사 페이지는 정월대보름·도봉한글잔치·도봉옛길 문화제 등 title·장소·반복 시기/내용을 제공하지만 exact full-year start/end가 아닌 음력·기념일·월중 표현이 섞인 정적 소개 페이지다. durable event listing·pagination과 generic full-year extraction을 확인하지 못함.", "https://www.dobong.go.kr"],
-  "seoul-dongdaemun": ["WATCH", "https://www.ddm.go.kr/www/index.do", "official_government_portal", "source_core_inconsistent", "동대문구청 공식 홈페이지의 문화행사 feed에서 2026 잇다마켓·청년축제 등 title/date와 개별 detail은 확인되지만 구정소식·교육·문화행사가 혼합된 homepage feed다. 행사별 venue와 source-wide full-year durable listing/pagination을 일관되게 확인하지 못해 generic self-contained source로 확정하지 않음.", "https://www.ddm.go.kr"],
-  "seoul-dongjak": ["COLLECTOR_GAP", "https://www.dongjak.go.kr/yeyak/main/main.do", "official_reservation_listing", "list_detail_core_followup_needed_js_rendered", "동작구청 공식 통합예약의 문화/행사 source는 공식 ownership과 행사 detail 체계를 확인할 수 있으나 live 목록이 예약 포털의 JS/API·필터 구조로 렌더링되어 현재 generic HTML collector가 self-contained candidate를 안정적으로 읽지 못함. 행사 detail에서 core 확인이 필요한 공통 list→detail/렌더링 gap 유형이며 구현은 하지 않음.", "https://www.dongjak.go.kr"],
-  "seoul-mapo": ["COLLECTOR_GAP", "https://www.mfac.or.kr/", "official_culture_listing", "list_detail_core_followup_needed", "마포문화재단(마포구 산하 공식 문화기관) live 공연·전시 목록은 title·2026 full-year start/end·first-party detail URL을 제공하지만 목록 블록에 venue가 없고 venue는 detail follow-up에서 확인해야 함. 현재 generic collector의 self-contained extraction 조건을 만족하지 않는 기존 list→detail core gap 유형.", "https://www.mapo.go.kr"],
-  "seoul-seodaemun": ["WATCH", "https://sdm.go.kr/culture/index.do", "official_culture_portal", "source_core_missing", "서대문구 공식 문화관광 포털은 벚꽃축제·어린이축제·서대문독립민주축제 등 행사 index와 개별 공지/프로그램을 제공하지만 live source-wide 목록에서 각 항목의 exact full-year start/end·venue·durable detail을 함께 유지하는 pagination listing을 확인하지 못함.", "https://www.sdm.go.kr"],
-  "seoul-seocho": ["COLLECTOR_GAP", "https://www.seocho.go.kr/site/seocho/CinemaHeaven.do", "official_culture_calendar", "list_detail_core_followup_needed", "서초구 공식 문화·행사달력은 2026-09 live calendar에서 행사 title과 날짜별 항목 및 first-party detail URL을 제공하지만 calendar list에는 venue와 full-year start/end가 self-contained로 없고 detail follow-up이 필요함. 마포·송파와 동일한 list→detail core gap 유형이며 구현은 하지 않음.", "https://www.seocho.go.kr"],
-  "seoul-seongdong": ["WATCH", "https://www.sd.go.kr/tour/index.do", "official_tourism_portal", "source_core_missing", "성동구 공식 문화관광 포털과 두모포 페스티벌 detail은 official ownership·venue·반복 시기를 확인할 수 있으나 대표 detail은 ‘매년 6월 말~7월 초’이고 포털 전체에서 행사별 exact full-year listing/pagination을 확인하지 못함. 연도 추론 없이 WATCH 유지.", "https://www.sd.go.kr"],
-  "seoul-seongbuk": ["WATCH", "https://www.sb.go.kr/tour/index.do", "official_tourism_portal", "source_core_inconsistent", "성북구 공식 문화관광 포털의 Festival & Event 영역과 선잠제 등 detail은 행사명·장소/소개를 제공하지만 live 페이지가 static festival landing 중심이고 exact full-year start/end·durable listing/pagination을 source-wide로 확인하지 못함.", "https://www.sb.go.kr"],
-  "seoul-songpa": ["COLLECTOR_GAP", "https://www.songpa.go.kr/culture/index.do", "official_culture_calendar", "list_detail_core_followup_needed", "송파구 공식 문화관광 포털은 축제/공연/전시/행사 calendar와 2026 호수벚꽃축제 등 title·full-year date·first-party detail 링크를 제공하지만 live 목록에 venue가 self-contained로 포함되지 않음. 서초·마포와 동일한 list→detail core gap 유형이며 구현은 하지 않음.", "https://www.songpa.go.kr"],
-  "seoul-yangcheon": ["WATCH", "https://www.yangcheon.go.kr/", "official_government_portal", "source_core_missing", "양천구 공식 홈페이지와 평생학습 포털에서 문화 프로그램·주민 행사 안내는 확인되지만 source-wide 행사·축제의 title·exact full-year date·venue·durable detail을 함께 제공하는 지속 canonical listing/pagination을 확인하지 못함. 과거 마을자료/단발성 공지는 daily source로 사용하지 않음.", "https://www.yangcheon.go.kr"],
-  "seoul-yeongdeungpo": ["ONBOARDING_READY", "https://www.ydp.go.kr/tour/selectTnTursmSchdulListU.do?key=4016", "official_tourism_listing", "generic_fallback_paginated", "영등포구 공식 문화관광 문화행사 일정 목록. live listing 구조에서 title·full-year start/end·venue가 같은 카드/목록 블록에 있고 first-party detail URL·기간/구분 검색 구조가 확인되어 current generic self-contained extraction에 적합함. 개별 detail은 기간·장소·주최를 제공하며 URL은 공식 ydp.go.kr host로 유지됨.", "https://www.ydp.go.kr"],
-  "seoul-yongsan": ["COLLECTOR_GAP", "https://yongsanculture.or.kr/site/main/home", "official_culture_listing", "generic_html_card_structure_gap", "용산구 공식 출연기관 용산문화재단의 지속 갱신 문화 listing은 협력전시 PARALLAX 등에서 title·2026 full-year start/end·venue·first-party static HTTPS detail URL을 같은 slide 항목에 제공한다. 다만 live HTML은 `slide`/`txt-wr` 카드 구조라 current generic extractor가 0 candidates로 fail-closed했다. list→detail core 부족이 아니라 기존 충남·제주와 같은 generic HTML card structure gap이다.", "https://www.yongsan.go.kr"],
-  "seoul-eunpyeong": ["COLLECTOR_GAP", "https://www.efac.or.kr/page03/sub01.php", "official_culture_listing", "generic_html_card_structure_gap", "은평구 산하 은평문화재단 문화사업 일정은 title·2026 full-year date·venue·주최/주관 및 first-party detail을 지속적으로 제공한다. 대표 live 항목은 제35회 전국무용제 부대행사 해외무용단 쇼케이스(2026-09-29, 은평문화예술회관 공연장)이며 목록/상세 구조가 유지된다. 현재 generic extractor read-only probe는 0 candidates여서 충남·제주·용산과 같은 generic HTML card structure gap으로 분류한다.", "https://www.ep.go.kr"],
-  "seoul-jongno": ["COLLECTOR_GAP", "https://culture.jongno.go.kr/media/ko/index.do", "official_culture_listing", "generic_html_card_structure_gap", "종로문화재단의 공식 종로문화플랫폼 행사/축제 listing은 윤동주문학제 등 title·2026 full-year start/end·venue·same-host durable detail URL을 같은 항목에서 제공하고 지속 갱신된다. pagination/목록 구조도 있으나 current generic extractor read-only probe가 0 candidates여서 venue follow-up이 아닌 generic HTML card structure gap으로 분류한다.", "https://www.jongno.go.kr"],
-  "seoul-jung": ["COLLECTOR_GAP", "https://www.caci.or.kr/", "official_culture_listing", "generic_html_card_structure_gap", "중구청이 설립·운영하는 중구문화재단(충무아트센터) 공식 문화 listing은 월요극장·뮤지컬·전시의 title·2026 full-year 기간·공연장/venue와 first-party product/detail URL을 지속 갱신한다. current generic extractor read-only probe는 main listing에서 0 candidates여서 list→detail core 부족이 아닌 generic HTML card structure gap으로 유지한다.", "https://www.junggu.seoul.kr"],
-  "seoul-jungnang": ["COLLECTOR_GAP", "https://www.jnfac.or.kr/app/show/list", "official_culture_listing", "js_api_rendered_listing_gap", "중랑구 출연 중랑문화재단의 공식 행사 source는 중랑열린버스킹 등 title·2026 full-year date와 first-party detail을 제공하며 구 공식 e학당에서도 재단 항목을 연계한다. 그러나 직접 canonical list는 Svelte/JS rendering shell로 반환되어 current generic static HTML extractor가 candidate를 만들 수 없다. static HTTPS list→detail follow-up으로 해결되지 않는 기존 동작과 같은 JS/API rendering gap이다.", "https://www.jungnang.go.kr"],
-  "incheon-강화": ["WATCH", "https://www.ganghwa.go.kr/open_content/tour/around/event.jsp", "official_tourism_event_listing", "source_core_missing", "강화군 공식 문화관광의 행사/전시일정은 HTTPS first-party이며 문화체육과 관리로 ownership 확인. 2026-09-23 live page는 게시글 없음(검색 결과 없음), title·full-year start/end·venue·durable detail·pagination candidate를 확인하지 못함. 문화행사 홈도 등록 행사가 없고 별도 2026 화개정원 축제 공지는 단발성이라 canonical daily source로 승격하지 않음. 인천 광역 ACTIVE와 중복 가능성은 있으나 하위 source 부재 판단과는 별개.", "https://www.ganghwa.go.kr"],
-  "incheon-검단": ["WATCH", "https://www.geomdan.go.kr/main/part/culture/cultural_events.jsp", "official_culture_event_page", "source_core_inconsistent", "2026-07-01 신설 검단구의 현재 공식 누리집 문화행사 페이지로 ownership 확인; 옛 서구 페이지는 승계하지 않음. 2026 가을 프로그램에 연극(10-07~10-10, 장소 미기재)과 전시(11-10~11-20, 검단터틀 갤러리/다목적 공간)가 있으나, 페이지는 계절별 편집 안내이며 durable per-event URL·반복 listing/pagination이 확인되지 않음. generic HTML 또는 list→detail로 완결하기 어려워 WATCH. 인천 광역 ACTIVE와 중복 가능성 기록.", "https://www.geomdan.go.kr"],
-  "incheon-계양": ["WATCH", "https://gysiseol.or.kr/culturebuilding/main/main.php?categoryid=03&groupid=00&menuid=01", "official_affiliated_culture_venue_listing", "source_freshness_unverified", "계양문화회관 공연일정은 계양시설관리공단 공식 시설 페이지이며 title·명시 연도 일시·공연장소·상세 링크와 3페이지 bounded listing을 확인. 다만 live 본문은 2025년~2026-01 항목 중심(검색 캐시와 직접 본문 간 갱신 시점 불일치)으로 2026-09 현재 지속 갱신·미래 일정 freshness를 확인하지 못했고, 단일 공연장 편성은 구 전체 행사 canonical source를 대표하지 않음. generic fit 보류, 인천 광역 ACTIVE와 중복 가능성 기록.", "https://www.gyeyang.go.kr"],
-  "incheon-남동": ["WATCH", "https://www.namdongcf.or.kr/user/culture/list.php?cat=1", "official_culture_foundation_listing", "source_freshness_unverified", "남동문화재단(남동구 공식 산하 문화기관) 행사 목록은 title·명시 연도 날짜·venue·first-party 상세 링크 및 10건 단위 페이지네이션 형태로 노출됨. 다만 2026-09-23 live read는 502로 실패했고 검색 인덱스는 2026-05 무렵 항목만 보여 현재 업데이트 여부를 검증하지 못함. stale 여부 해소 전 WATCH; collector 구조 fit은 미확정. 인천 광역 ACTIVE와 중복 가능성은 배제 사유가 아님.", "https://www.namdong.go.kr"],
-  "incheon-미추홀": ["WATCH", "https://www.michuhol.go.kr/main/board/view.do?board_code=board_1&search=eyJib2FyZF9jb2RlIjoiYm9hcmRfMSJ9&sq=312164", "official_event_notice", "source_core_missing", "미추홀구청 현재 공식 누리집에서 2026년 행사 공지의 title·명시 날짜·장소는 확인되나 이는 개별 단발성 공지이며, 이를 안정적으로 잇는 문화행사 목록/페이지네이션이나 source-wide durable detail index를 확인하지 못함. 공지를 canonical 지속 source로 승격하지 않고 WATCH. 인천 광역 ACTIVE 행사와 중복 가능성은 참고만 하고 이 분류의 근거로 사용하지 않음.", "https://www.michuhol.go.kr"],
-  "incheon-부평": ["WATCH", "https://www.icbp.go.kr/tour/festival/bpf.jsp", "official_tourism_festival_detail", "source_core_missing", "부평구청 문화관광 공식 HTTPS의 부평풍물대축제 소개와 축제 전용 외부 연계는 확인했지만, 확인한 구청 canonical page는 소개/detail이며 2026 full-year 개최 기간을 자체 제공하는 지속 목록·pagination이 아님. 단일 연례축제 페이지나 다른 단발 안내만으로 구 전체 canonical 행사 source로 확대하지 않음. 인천 광역 ACTIVE와 overlap 가능성은 기록하되 EXCLUDE 사유로 삼지 않음.", "https://www.icbp.go.kr"],
-  "incheon-서해": ["ONBOARDING_READY", "https://www.seohae.go.kr/open_content/culture/cultureListAll.do", "official_culture_event_listing", "generic_fallback_paginated", "2026-07-01 신설 서해구의 현재 공식 ‘서해구문화 체육·행사’ 전체행사 목록으로 현재 footer·주소·도메인에서 ownership 확인(옛 서구 source를 자동 상속한 판정 아님). live listing의 현재 서해구 문화배달(2026-07-11~07-18, 서해구 관내 곳곳) 등 title·명시 full-year start/end·venue가 각 동일 항목에 있고 같은 공식 host의 durable detail 링크 및 34페이지 bounded pagination 확인. 정적 HTML의 self-contained listing 구조로 generic collector 적합 후보. 일부 legacy ‘서구’ 명칭 기록도 섞여 있으므로 현 지자체 행사/ownership이 확인되는 개별 항목만 취급. 인천 광역 ACTIVE와 중복 가능성은 있으나 지역-specific 상세성으로 배제하지 않음; 이번 조사만으로 onboarding하지 않음.", "https://www.seohae.go.kr"],
-  "incheon-연수": ["WATCH", "https://www.yeonsu.go.kr/tour/festival/etc.asp", "official_tourism_event_listing", "source_core_missing", "연수구 공식 문화관광의 축제·행사 소식은 구청 문화관광과 관리지만 live 기타축제정보가 게시글 없음(1/0)으로 확인됨. 축제별 별도 소개/프로그램 페이지는 있으나 확인한 durable listing에서 현재 행사별 full-year start/end·venue·detail을 함께 제공하지 않으며 2026 행사 core를 source-wide로 확보할 수 없음. 연도 추론/별도 페이지 사실 결합 없이 WATCH. 인천 광역 ACTIVE 중복 가능성은 별도 참고.", "https://www.yeonsu.go.kr"],
-  "incheon-영종": ["WATCH", "https://www.yeongjong.go.kr/tour/festival/list.do", "official_tourism_event_listing", "source_core_inconsistent", "2026-07-01 신설 영종구 공식 문화관광포털의 현재 축제·공연 listing 확인; 옛 중구 source는 자동 상속하지 않음. live 목록은 1건 ‘무의도 춤축제’(2026-08-15, 무의도 하나개해수욕장 특설무대)로 명시 연도·장소 및 same-host detail이 있으나 이미 마감됐고 source-wide 단일 항목만 보여 지속적·충분한 listing과 현재 future coverage를 확인하지 못함. 날짜/장소는 관측값이며 READY 승격 근거로 과장하지 않음. 인천 광역 ACTIVE와 중복 가능성 기록.", "https://www.yeongjong.go.kr"],
-  "incheon-옹진": ["WATCH", "https://www.ongjin.go.kr/", "official_government_portal", "source_unverifiable", "옹진군 공식 도메인으로 식별되는 HTTPS homepage를 read-only 열기 시 400 응답으로 실제 문화·관광 행사 listing을 확인하지 못함. 군의회 등 별도 정보 및 비공식 안내를 canonical로 사용하지 않았으며, 현재 옹진군 ownership 아래 지속 listing, title·explicit full-year date·venue·detail·pagination 모두 미검증. 접근 가능한 first-party event source 확인 전 WATCH. 인천 광역 ACTIVE overlap은 별도 검토 대상.", "https://www.ongjin.go.kr"],
-  "incheon-제물포": ["COLLECTOR_GAP", "https://cscenter.jemulpo.go.kr/cscenter/fmcs/201", "official_affiliated_culture_venue_listing", "list_detail_core_followup_needed", "제물포구 현재 공식 홈페이지가 연결하는 제물포구문화체육센터의 HTTPS 공연·전시 목록(91건·5페이지) 및 같은 공식 host의 detail을 확인. 목록은 title·등록일만 있고 행사기간/venue는 부족하지만 detail에는 예: ‘구스타프 클림트’ 전시의 2026-08-26~10-31, 전시홀, 주최 제물포구·주관 센터가 explicit하게 명시되어 bounded list→detail follow-up으로 core 완성이 가능한 공통 gap 후보. 개별 detail facts를 목록에 미리 합치지 않으며 현행 제물포구 ownership가 명시된 항목만 취급; 옛 동구 자료 자동 승계 금지. 인천 광역 ACTIVE 중복 가능성 기록, onboarding은 하지 않음.", "https://www.jemulpo.go.kr"],
-  busan: ["COLLECTOR_GAP", "https://www.visitbusan.net/schedule/list.do?boardId=BBS_0000009&menuCd=DOM_000000204012000000&month=0", "official_tourism_listing", "list_detail_core_followup_needed", "목록에 venue가 없어 bounded detail core follow-up 필요"],
-  "busan-jung": ["WATCH","https://www.bsjunggu.go.kr/tour/index.junggu?menuCd=DOM_000000203003000000","official_tourism_annual_event_table","source_core_inconsistent","중구 문화관광의 2026 문화관광 행사일정은 행사명·기간·장소를 한 표에서 제공하고 현재 갱신되어 있다. 다만 일부 항목이 ‘10월 중/11월 중/12월 중’처럼 exact full-year date가 아니고 source-wide durable per-event detail/pagination도 없어 incomplete row를 다른 자료와 결합하거나 연도를 추론하지 않고 WATCH로 둔다.","https://www.bsjunggu.go.kr"],
-  "busan-서": ["WATCH","https://www.bsseogu.go.kr/","official_government_portal","source_canonical_listing_unverified","서구 공식 홈페이지의 2026 축제·행사 공지와 문화관광 콘텐츠는 확인 대상이지만, 이번 live 조사에서 title·explicit full-year start/end·venue·durable detail을 함께 유지하는 지속 canonical 행사 listing과 bounded pagination을 확인하지 못했다. 단발 공지를 daily source로 승격하지 않아 WATCH.","https://www.bsseogu.go.kr"],
-  "busan-동": ["ONBOARDING_READY","https://www.bsdonggu.go.kr/tour/board/list.donggu?boardId=BBS_0000336&contentsSid=1723&cpath=%2Ftour&menuCd=DOM_000000308005002000","official_tourism_culture_listing","generic_fallback_paginated","동구 문화관광 공식 공연·전시 일정은 현재 항목의 title·explicit 2026 기간·전시장소를 동일 목록에서 제공하고, 담당부서 문화체육관광국 문화관광과 ownership과 bounded list 구조가 확인된다. 현재 generic self-contained extraction 후보로 READY.","https://www.bsdonggu.go.kr"],
-  "busan-영도": ["WATCH","https://www.yeongdo.go.kr/","official_government_portal","source_canonical_listing_unverified","영도구 공식 홈페이지/통합검색에서 행사일정 검색과 문화·관광 정보 영역은 확인되지만, 이번 live 조사에서 구 전체 행사·축제의 title·explicit full-year date·venue·durable detail을 함께 제공하는 current canonical listing과 pagination을 직접 검증하지 못했다. 도서관·공고성 일정은 대체 source로 쓰지 않아 WATCH.","https://www.yeongdo.go.kr"],
-  "busan-부산진": ["COLLECTOR_GAP","https://www.bsjincf.or.kr/02_new/new08.asp","official_affiliated_culture_calendar","list_detail_core_followup_needed","부산진문화재단 공식 문화달력/전체 목록은 2026 공연·전시·행사 title과 explicit date/period, first-party detail을 지속 제공하고 2026-09 현재 갱신된다. 목록/달력에는 venue가 일관되게 self-contained하지 않아 기존 bounded list→detail follow-up으로 core를 보완해야 하는 공통 GAP으로 분류한다.","https://www.busanjin.go.kr"],
-  "busan-동래": ["COLLECTOR_GAP","https://www.dongnae.go.kr/culture/index.dongnae?menuCd=DOM_000000602001008000&type=1","official_culture_venue_listing","list_detail_core_followup_needed","동래문화회관 공식 공연·전시 안내는 310건·62페이지의 지속 목록에서 title·explicit full-year start/end를 제공하고 각 항목에 장소보기/예매 구조가 있다. venue가 목록 텍스트에 self-contained하지 않아 현재 generic list-only contract로는 core가 완성되지 않으며 기존 bounded follow-up 적용 후보로 GAP.","https://www.dongnae.go.kr"],
-  "busan-남": ["COLLECTOR_GAP","https://www.bncf.or.kr/","official_affiliated_culture_listing","list_detail_core_followup_needed","부산남구문화재단 공식 공연·전시 영역은 2026 현재/미래 항목의 title·explicit date/period와 first-party 자세히보기 링크를 지속 제공한다. 목록 카드에는 venue가 일관되게 노출되지 않아 detail follow-up으로 core 보완이 필요한 기존 공통 GAP으로 분류한다.","https://www.bsnamgu.go.kr"],
-  "busan-북": ["WATCH","https://www.bsbukgu.go.kr/","official_government_portal","source_canonical_listing_unverified","북구 공식 홈페이지를 current ownership 기준으로 조사했으나 이번 live 조사에서 행사·축제의 title·explicit full-year start/end·venue·durable detail을 함께 유지하는 안정적 canonical listing과 bounded pagination을 검증하지 못했다. 개별 공지나 외부 소개를 결합하지 않고 WATCH.","https://www.bsbukgu.go.kr"],
-  "busan-해운대": ["ONBOARDING_READY","https://www.haeundae.go.kr/culture/schedule/list.do?boardId=BBS_0000215&contentsSid=1842&cpath=%2Fculture&menuCd=DOM_000000901001002000","official_culture_venue_listing","generic_fallback_paginated","해운대구청 문화회관 공식 공연 프로그램은 현재 50건·5페이지이며 각 행에 title·explicit 2026 start/end·venue·first-party detail을 함께 제공한다. 담당부서 문화회관 ownership과 bounded pagination이 확인되어 current generic self-contained source로 READY.","https://www.haeundae.go.kr"],
-  "busan-사하": ["WATCH","https://www.saha.go.kr/tour/main.do","official_tourism_portal","source_core_inconsistent","사하구 공식 문화관광은 행사안내와 개별 축제 페이지를 운영하지만 현재 이달의 행사는 비어 있고 대표 축제 detail도 ‘매년 7~8월 중/매년 10월’ 등 recurring 시기 중심인 경우가 있다. 개별 2026 공지와 정적 소개를 결합해 exact full-year core를 만들지 않고 source-wide canonical listing이 확인될 때까지 WATCH.","https://www.saha.go.kr"],
-  "busan-금정": ["WATCH","https://www.geumjeong.go.kr/","official_government_portal","source_core_inconsistent","금정구 공식 홈페이지에서 2026 금정산성축제 관련 공지·모집 등 current 문화행사 정보는 확인 대상이지만 행정/모집 공지와 혼합되어 있고, 구 전체 관람 행사에 대해 title·explicit full-year date·venue·durable detail을 일관되게 제공하는 canonical bounded listing을 확인하지 못했다. 단일 축제 공지를 승격하지 않아 WATCH.","https://www.geumjeong.go.kr"],
-  "busan-gangseo": ["WATCH","https://www.bsgangseo.go.kr/","official_government_portal","source_canonical_listing_unverified","강서구 공식 홈페이지 ownership은 확인했으나 이번 live 조사에서 지속적으로 갱신되는 행사·축제 canonical listing과 candidate-level title·explicit full-year date·venue·durable detail·pagination을 검증하지 못했다. 비행사성 검색/계약·공고 페이지를 대체 source로 사용하지 않아 WATCH.","https://www.bsgangseo.go.kr"],
-  "busan-연제": ["WATCH","https://www.yeonje.go.kr/main.do","official_government_portal","source_core_inconsistent","연제구 공식 홈페이지에는 행사/교육 및 문화행사 메뉴와 2026 current 안내가 있으나 교육·체육 프로그램·행정성 일정이 혼합된다. 이번 조사에서 문화행사 전용 source-wide canonical listing의 exact full-year date·venue·durable detail·bounded pagination을 일관되게 검증하지 못해 WATCH.","https://www.yeonje.go.kr"],
-  "busan-수영": ["WATCH","https://www.suyeong.go.kr/","official_government_event_portal","source_canonical_listing_unverified","수영구 공식 홈페이지의 행사안내는 개별 detail에서 행사일·장소·주최/기관을 명시하고 2026 광안리 해변영화관·드론라이트쇼 등 current 항목도 노출한다. 다만 이번 live 조사에서 이를 잇는 안정적인 source-wide 행사 list URL과 pagination/전체 coverage를 직접 검증하지 못해 개별 detail만으로 READY 처리하지 않고 WATCH.","https://www.suyeong.go.kr"],
-  "busan-사상": ["WATCH","https://www.sasang.go.kr/tour/board/list.sasang?boardId=BBS_0000006&categoryCode1=01%2C02%2C03&categoryCode3=&menuCd=DOM_000000603004001000&month=10&startPage=1&year=2026","official_tourism_event_calendar","source_freshness_unverified","사상구 문화관광의 공식 공연/전시/행사 달력은 2026 연도·월·카테고리 필터와 담당부서 ownership을 제공하지만 live 2026 여러 월에서 달력 shell만 확인되고 candidate 행사 core가 노출되지 않았다. source payload/freshness를 검증할 수 있을 때까지 JS/API gap으로 단정하지 않고 WATCH.","https://www.sasang.go.kr"],
-  "busan-기장": ["WATCH","https://www.gijang.go.kr/tour/","official_tourism_festival_collection","source_wide_listing_missing","기장군 문화관광은 기장붕장어축제·일광바다축제 등 개별 공식 페이지에서 2026 exact 기간·장소·주최를 충실히 제공한다. 그러나 확인한 구조는 축제별 정적 detail collection이고 전체 행사를 candidate 단위로 지속 공급하는 canonical list/pagination이 아니므로 여러 페이지 사실을 임의 결합하지 않고 WATCH.","https://www.gijang.go.kr"],
-  daegu: ["WATCH", "https://tour.daegu.go.kr/index.do?menu_id=00002932&servletPath=%2Findex.do", "official_tourism_listing", "source_core_inconsistent", "연도 없는 recurring date가 섞여 있음"],
-  "daegu-jung": ["WATCH","https://www.jung.daegu.kr/","official_government_portal","source_canonical_listing_unverified","대구 중구 공식 홈페이지 기준으로 current 문화·축제 정보를 조사했으나 이번 live 조사에서 행사별 title·explicit full-year start/end·venue·durable detail을 지속 제공하는 canonical bounded listing을 검증하지 못했다. 개별 공지/대표축제 정보를 결합하지 않고 WATCH.","https://www.jung.daegu.kr"],
-  "daegu-동": ["WATCH","https://www.dong.daegu.kr/","official_government_portal","source_canonical_listing_unverified","대구 동구 공식 홈페이지에서 2026 문화·축제 관련 공지와 사업은 확인 대상이지만, source-wide current 행사 listing의 exact full-year date·venue·durable detail·pagination을 안정적으로 검증하지 못했다. 막창축제 등 단일 사업/공고를 daily source로 승격하지 않아 WATCH.","https://www.dong.daegu.kr"],
-  "daegu-서": ["ONBOARDING_READY","https://www.dgs.go.kr/music/contents.do?mid=0400000000","official_culture_venue_calendar","generic_fallback","대구 서구청 비원뮤직홀 공식 2026 공연일정은 월별 구조에 title·explicit start/end·place·time·전화 등 self-contained core를 제공한다. 서구문화회관 연간 일정도 current 2026 기간/작품을 제공하며 first-party ownership이 확인되어 READY.","https://www.dgs.go.kr"],
-  "daegu-남": ["WATCH","https://nam.daegu.kr/culturalcenter/","official_culture_venue_portal","source_canonical_listing_unverified","대덕문화전당의 2026 공연·전시 운영과 공식 detail은 확인되지만 이번 live 조사에서 current 전체 공연/전시를 candidate 단위로 제공하는 안정적 canonical list·pagination을 직접 검증하지 못했다. 개별 청년예술제/detail과 대관 공고를 결합하지 않고 WATCH.","https://nam.daegu.kr"],
-  "daegu-북": ["WATCH","https://www.buk.daegu.kr/","official_government_portal","source_canonical_listing_unverified","대구 북구가 주최하는 2026 떡볶이 페스티벌 등 current 행사 사실은 공식/공공 연계 자료에서 확인되지만, 북구 자체 source-wide 행사 listing과 pagination의 지속성을 이번 live 조사에서 검증하지 못했다. 단일 대표축제만으로 READY 처리하지 않아 WATCH.","https://www.buk.daegu.kr"],
-  "daegu-수성": ["WATCH","https://www.suseong.kr/","official_government_portal","source_core_inconsistent","수성문화재단/수성아트피아는 2026 월별 주요 공연 안내를 지속 게시하지만 확인된 재단 feed는 문화교육·관광·채용·공지와 혼합되고, 행사별 date·venue를 같은 durable canonical listing으로 일관되게 노출하는 source를 확정하지 못했다. 월별 공지를 합성하지 않고 WATCH.","https://www.suseong.kr"],
-  "daegu-달서": ["WATCH","https://www.dscf.or.kr/main/","official_affiliated_culture_portal","source_core_inconsistent","달서문화재단 공식 홈페이지는 2026 행복달서 대축제와 공연·문화사업을 current하게 운영하지만 home/공지·사업 콘텐츠가 혼합되어 있고 source-wide 행사별 explicit date·venue·durable detail이 self-contained한 bounded listing을 이번 조사에서 확인하지 못했다. WATCH.","https://www.dalseo.daegu.kr"],
-  "daegu-달성": ["WATCH","https://www.dalseong.daegu.kr/","official_government_portal","source_canonical_listing_unverified","달성군/달성문화재단 주최 2026 청년축제 등 개별 행사 core는 확인되지만 이번 live 조사에서 달성군 전체 행사·축제의 지속 canonical listing과 pagination을 검증하지 못했다. 외부 관광 detail을 군 source로 대체하거나 개별 사실을 합성하지 않아 WATCH.","https://www.dalseong.daegu.kr"],
-  "daegu-군위": ["WATCH","https://www.gunwi.daegu.kr/","official_government_portal","source_canonical_listing_unverified","대구 군위군 공식 홈페이지 기준으로 current 문화행사 source를 조사했으나 행사별 title·explicit full-year date·venue·durable detail을 함께 제공하는 안정적 canonical listing을 이번 live 조사에서 확보하지 못했다. 단발 공지/축제 소개를 승격하지 않고 WATCH.","https://www.gunwi.daegu.kr"],
-  incheon: ["ACTIVE", "https://www.incheon.go.kr/res/RE050101/", "official_event_listing", "generic_fallback_paginated", "Registry key incheon-res"],
-  daejeon: ["ACTIVE", "https://daejeon.go.kr/fvu/FvuEventList.do?menuSeq=504", "official_event_listing", "generic_fallback", "Registry key daejeon-fvu"],
-  ulsan: ["WATCH", "https://tour.ulsan.go.kr/tour/korean/unit/fstvl/list.ulsan?mId=001003001000000000&searchDvsn1=1", "official_tourism_listing", "source_core_inconsistent", "source-wide full-year exact core 부족"],
-  "ulsan-남": ["WATCH","https://www.ulsannamgu.go.kr/tour/board/tourFestival/calendar.do","official_tourism_event_calendar","source_payload_unverified","남구 문화·관광 공식 축제/행사 calendar는 2026 월별 구조와 관광과 ownership을 유지하고 2026-09에도 페이지 업데이트가 확인된다. 그러나 2026-09/10 live calendar는 날짜 grid만 노출되고 candidate title·full-year date·venue·detail payload가 확인되지 않아 current event coverage와 generic extraction을 확정할 수 없다. 별도 고래축제 정보와 임의 결합하지 않고 WATCH.","https://www.ulsannamgu.go.kr"],
-  "ulsan-동": ["WATCH","https://www.donggu.ulsan.kr/tour/tourBBS/CE/list.do","official_tourism_festival_listing","source_freshness_unverified","동구 문화관광 공식 축제/행사 목록은 durable first-party list/detail 체계를 갖고 과거 울산조선해양축제의 date·venue core를 제공하지만 live 목록 최신 항목은 2025 축제까지이고 2026 축제 준비 사실은 별도 공식 자료에서만 확인된다. 현재 listing 자체의 2026 freshness가 확인될 때까지 WATCH.","https://www.donggu.ulsan.kr"],
-  "ulsan-북": ["ONBOARDING_READY","https://www.bukgu.ulsan.kr/art/BBS_014List.mo","official_culture_venue_performance_listing","generic_fallback","북구청 직영 북구문화예술회관 공식 공연 목록은 2026-09/10 current·future 항목의 title·explicit full-year start/end·venue·first-party detail을 같은 카드에 self-contained로 제공한다. 별도 전시 목록도 같은 구조이며 구청 조직상 문화예술회관 ownership이 확인돼 현재 generic extraction 후보로 READY.","https://www.bukgu.ulsan.kr"],
-  "ulsan-울주": ["WATCH","https://www.ulju.ulsan.kr/","official_government_portal","source_canonical_listing_unverified","울주군 공식 홈페이지와 문화·관광 영역에서 개별 축제·공연 및 2026 행사 정보는 확인 대상이지만 이번 live 조사에서 군 전체 문화행사를 지속 공급하는 canonical listing의 title·explicit full-year date·venue·durable detail·bounded pagination을 안정적으로 확인하지 못했다. 개별 공지/대표축제를 결합하지 않아 WATCH.","https://www.ulju.ulsan.kr"],
-  "ulsan-jung": ["ONBOARDING_READY","https://www.junggu.ulsan.kr/tour/index.ulsan?menuCd=DOM_000002208005006002","official_tourism_culture_event_schedule","generic_fallback","중구 문화관광 공식 문화예술 행사일정은 2026 월별 표에서 행사명·explicit 일시·venue·내용·주최/주관을 self-contained로 제공하는 current first-party schedule이다. 단일 대표축제 소개가 아니라 월별 다수 행사 구조여서 generic extraction 후보로 READY.","https://www.junggu.ulsan.kr"],
-  sejong: ["COLLECTOR_GAP", "https://www.sjcf.or.kr/hangeul/www/prfr/list.do?key=2504150023", "official_culture_listing", "list_detail_core_followup_needed", "목록 venue 부재"],
-  gyeonggi: ["WATCH", "https://ggtour.or.kr/main", "official_tourism_portal", "source_core_inconsistent", "경기관광 메인에서 행사·축제 보도와 콘텐츠는 확인되지만, 광역 단위로 title·full-year date·venue가 함께 유지되는 canonical bounded listing을 확인하지 못함. 보도자료를 daily source로 승격하지 않음"],
-  gangwon: ["WATCH", "https://m.gangwon.to/gwtour/now/festival", "official_tourism_listing", "source_fetch_unavailable", "live HTTP probe가 repeated timeout으로 source document를 안정적으로 읽지 못함. generic extraction·pagination·candidate contract를 확인할 수 있을 때까지 ACTIVE 승격 금지"],
-  chungbuk: ["COLLECTOR_GAP", "https://tour.chungbuk.go.kr/www/selectBbsNttList.do?bbsNo=10&key=80", "official_tourism_listing", "list_detail_core_followup_needed", "충북나드리 연간축제일정에서 공식 축제 목록과 날짜는 확인되나 카드/표 변형과 일부 월·일 표기 혼재로 generic collector의 안정적 self-contained extraction을 추가 검증해야 함"],
-  chungnam: ["COLLECTOR_GAP", "https://tour.chungnam.go.kr/prog/fstvl/kor/sub02_02_02/list.do", "official_tourism_listing", "generic_html_card_structure_gap", "pageIndex=1..3 official 목록은 HTTP 200, full-year date·venue·detail 구조와 pagination을 제공하지만 현재 generic extractor는 카드 HTML에서 0 candidates로 fail-closed됨"],
-  jeonbuk: ["COLLECTOR_GAP", "https://tour.jb.go.kr/index.do", "official_tourism_listing", "list_detail_core_followup_needed", "투어전북의 현재 행사 목록과 full-year 기간은 확인되지만 대표 목록 카드에서 venue self-contained 여부가 일관되지 않아 list-detail follow-up이 필요함"],
-  gyeongbuk: ["WATCH", "https://www.gb.go.kr/Main/programs/announce/announce.do?A_CYCLE=&A_ITEM=&A_LIST=&A_TIME=&DEPT_BUSEO=&LCODE=10&MCODE=&SCODE=&mnu_uid=0&pageNo=3&strkey=&word=", "official_government_data_catalog", "source_core_missing", "경북도 행정정보공표 목록에 시군구별 지역축제·행사 데이터 항목은 있으나 현재 public bounded listing과 candidate-level durable URL을 확인하지 못함"],
-  gyeongnam: ["WATCH", "https://tour.gyeongnam.go.kr/index.gyeong", "official_tourism_portal", "source_core_missing", "경남관광 공식 포털은 확인했으나 광역 행사·축제의 full-year date·venue를 함께 제공하는 지속적 canonical listing을 확인하지 못함"],
-  jeju: ["COLLECTOR_GAP", "https://www.visitjeju.net/kr/festival", "official_tourism_listing", "generic_html_card_structure_gap", "Visit Jeju canonical festival/list endpoint는 HTTP 200과 first-party detail structure를 제공하지만 현재 generic extractor는 0 candidates. list card extraction 지원 전 ACTIVE 승격 금지"],
-  "gyeonggi-paju": ["ACTIVE", "https://tour.paju.go.kr/user/link/cultural/BD_index.do", "official_event_listing", "registered_parser", "Registry key paju"],
-  "gyeonggi-suwon": ["ACTIVE", "https://www.swcf.or.kr/?p=29", "official_event_listing", "registered_parser", "Registry key suwon"],
-  "gyeonggi-goyang": ["ACTIVE", "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303", "official_event_listing", "registered_parser", "Registry key goyang"],
-  "gyeonggi-hwaseong": ["ACTIVE", "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp", "official_event_listing", "registered_parser", "Registry key hwaseong"],
-  "gyeonggi-bucheon": ["ACTIVE", "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003", "official_event_listing", "registered_parser", "Registry key bucheon"],
-  "gyeonggi-가평": ["COLLECTOR_GAP", "https://www.gp.go.kr/portal/selectBbsNttList.do?bbsNo=76&key=443&pageIndex=1", "official_culture_event_listing", "list_detail_core_followup_needed", "가평군 공식 문화축제교육행사 게시판은 live 8페이지로 지속 갱신되고 문화체육과 행사 공지를 포함하나 목록은 제목·작성일 중심이며 venue와 explicit full-year start/end는 개별 durable detail에서 확인해야 한다. detail follow-up으로 core 완성이 가능한 정적 first-party 후보이나 현재 list만으로 self-contained 수집은 불가. 교육/행정 공지도 섞여 candidate signal은 fail-closed 필요." , "https://www.gp.go.kr"],
-  "gyeonggi-과천": ["ONBOARDING_READY", "https://www.gcart.or.kr/kr/concert/concertList.do", "official_affiliated_culture_listing", "generic_fallback_paginated", "과천시가 설립·운영하는 과천문화재단 공식 공연/전시 일정. live 목록은 공연 title, 2026 explicit 일자/기간, 장소(공연장/야외공연장 등), detail link를 같은 항목에서 제공하고 월/상태/장소 필터와 총 13건의 bounded listing을 확인. 대표 2026 과천공연예술축제는 9/18~9/20. 첫-party HTTPS이며 현재 generic HTML extraction에 필요한 self-contained core가 목록에 존재." , "https://www.gccity.go.kr"],
-  "gyeonggi-광명": ["WATCH", "https://www.gm.go.kr/pt/ns/culturalEvents/list.do", "official_culture_calendar", "source_core_missing", "광명시 공식 문화행사 달력은 2026-09 live 화면에서 월간 calendar와 행사명·행사기간·장소 열을 가진 목록 구조를 제공하지만 해당 월 목록은 ‘데이터가 존재하지 않습니다’. 별도 행사·축제 달력에는 주민회의/모집/행정 일정이 다수 혼합되어 source-wide canonical event feed의 freshness 및 detail 구조를 확정하지 못함. 특정 개별 공연/축제만으로 지속 source를 추정하지 않아 WATCH." , "https://www.gm.go.kr"],
-  "gyeonggi-광주": ["ONBOARDING_READY", "https://www.gjcity.go.kr/portal/bbs/list.do?mId=0201030100&ptIdx=24", "official_culture_event_listing", "generic_fallback_paginated", "광주시 공식 문화·행사 목록은 live 30페이지로 지속 갱신되며 광주시문화재단 공연 등 title, explicit 2026 start/end(단일일 포함), venue와 같은 목록 항목 내 상세 내용을 제공한다. 2026-10/11 공연 항목에서 full-year 날짜와 광주시문화예술의전당 장소를 확인했고 first-party detail/list structure 및 pagination이 있다. 단 문화·행사 board이므로 행사 signal을 활용하며 광주광역시(타 광역단체)가 아닌 경기도 광주시 source임을 확인." , "https://www.gjcity.go.kr"],
-  "gyeonggi-구리": ["WATCH", "https://www.guri.go.kr/www/index.do?yyyymm=202609", "official_government_event_calendar", "source_core_inconsistent", "구리시 공식 홈페이지 월간 일정과 문화행사 영역에서 2026년 행사 공지는 확인했으나 달력/feed에는 회의·교육·모집 등 행정 일정이 혼합되고 행사 title·explicit full-year 기간·venue·durable detail이 하나의 안정적 bounded listing으로 일관되지 않음. 코스모스 꽃길 버스킹 등 단일 모집/행사 공지는 지속 canonical source로 승격하지 않음." , "https://www.guri.go.kr"],
-  "gyeonggi-군포": ["WATCH", "https://www.gunpo.go.kr/tour/index.do", "official_tourism_portal", "source_core_missing", "군포시 공식 문화관광 포털의 문화예술행사 게시판은 live지만 최근 콘텐츠가 참가자·업체 모집/공고와 교육·문화소식 중심이다. 일부 detail은 행사시작/종료일 및 장소 필드를 명시하지만 관광 포털의 지속 listing에서 일반 관람 행사 core, durable event detail 및 source-wide pagination을 확정하지 못했다. 군포철쭉축제 개별 모집 공고를 canonical 일정으로 승격하지 않음." , "https://www.gunpo.go.kr"],
-  "gyeonggi-김포": ["WATCH", "https://m.gimpo.go.kr/culture/schdulList.do?key=6814&sMonth=11&sYear=2026&schdulDiv=", "official_culture_calendar", "source_core_missing", "김포시 공식 문화관광의 문화행사일정은 월별 calendar/list이며 HTTPS·담당부서 ownership은 확인했으나 live 2026-11 목록은 결과 없음. 별도 하반기 축제·행사 페이지는 title과 venue가 있는 소개형 개별 항목 모음이며 행사별 explicit full-year start/end·durable detail/pagination을 확인하지 못함. 행사 일정 calendar의 현재 freshness/core가 부족해 WATCH." , "https://www.gimpo.go.kr"],
-  "gyeonggi-남양주": ["COLLECTOR_GAP", "https://www.nyjcf.or.kr/www/19", "official_affiliated_culture_listing", "list_detail_core_followup_needed", "남양주시 공식 산하 남양주문화재단의 공연·전시 일정은 현재 갱신되며 제목·명시 2026 date와 durable first-party detail을 제공한다. 상세 페이지에서 venue(예: 북한강 야외공연장) 및 explicit 기간을 확인해야 하므로 목록만으로 self-contained core가 완성되지 않으며 기존 bounded list→detail follow-up으로 해결 가능한 유형. 일정 달력은 월별 bounded listing이고 기획/대관 유형이 구분됨." , "https://www.nyjcf.or.kr"],
-  "gyeonggi-동두천": ["WATCH", "https://www.ddc.go.kr/site/ddc/", "official_government_portal", "source_core_missing", "동두천시 HTTPS 공식 포털 및 시 산하 문화시설 정보를 확인했으나 현재 갱신되는 행사·축제 canonical listing에서 title, explicit full-year start/end, venue, durable detail 및 pagination을 함께 확인하지 못함. 과거 중기재정/업무계획의 행사 언급과 개별 시설 소개는 live event source가 아니므로 WATCH." , "https://www.ddc.go.kr"],
-  "gyeonggi-성남": ["WATCH", "https://www.seongnam.go.kr/pm010201", "official_government_event_calendar", "source_core_inconsistent", "성남시 공식 행사/강좌/공모 달력은 live 월간 목록과 2026 날짜, 일부 행사 detail 내 장소를 제공하나 공모·모집·강좌·행정행사까지 혼합되고 목록 자체 venue/full-year event core가 일관되지 않음. 성남문화관광 행사 영역 역시 지역 행사 외 가족센터·교육/예약 콘텐츠가 섞여 source-wide generic extraction을 안전하게 한정하기 어려움. 특정 콘서트 detail 하나만으로 READY 처리하지 않음." , "https://www.seongnam.go.kr"],
-  "gyeonggi-의정부": ["ONBOARDING_READY","https://ui4u.go.kr/portal/eventNoti/list.do?mId=0301170300","official_government_event_listing","generic_fallback_paginated","의정부시 공식 ‘문화, 한눈에 달력(행사·축제정보)’의 2026 연간 목록은 38페이지로 지속 갱신되며 분야·title·explicit full-year start/end·venue·담당부서를 같은 행에 제공하고 행사·축제 세부내용/캘린더 구조도 있다. 2026-10 송3 어울림 한마당·동오마을 푸드페스타 등 현재 future 항목까지 확인되어 first-party self-contained paginated source로 READY.","https://www.ui4u.go.kr"],
-  "gyeonggi-안양": ["COLLECTOR_GAP","https://ayac.or.kr/base/ayac/performance/yearList?menuLevel=2&menuNo=2&year=2026","official_affiliated_culture_listing","source_access_protection_gap","안양문화예술재단 공식 연간 공연·전시 일정은 2026 title·기간과 first-party detail을 지속 제공하고 detail에서 장소까지 명시한다. 다만 live access에서 WELLCONN/TRACER 대기·IP 차단 응답이 함께 관측되어 Worker generic fetch가 안정적으로 원문 HTML을 받을 수 있는지 보장되지 않는다. source core는 충분하므로 WATCH가 아니라 collector/access gap으로 분류하며 onboarding 전 read-only fetch probe가 필요하다.","https://www.anyang.go.kr"],
-  "gyeonggi-평택": ["ONBOARDING_READY","https://www.pccf.or.kr/pfmc/pfmcAllList.do","official_affiliated_culture_listing","generic_fallback_paginated","평택시문화재단 공식 ‘공연·전시·축제·행사’ 목록은 현재 37건과 유형/장소 필터를 제공하며 각 항목에 title·explicit 2026 start/end·venue와 first-party detail 구조가 있다. 2026-10 마티네 콘서트·국악관현악축제 등 future 항목도 확인되어 current generic self-contained source로 READY.","https://www.pyeongtaek.go.kr"],
-  "gyeonggi-안산": ["WATCH","https://www.ansanart.com/index.do","official_affiliated_culture_portal","source_canonical_listing_unverified","안산문화재단 공식 홈페이지의 현재 ‘공연/전시 전체보기’에는 2026 title·full-year 기간·venue·detail과 공연/전시/축제&행사 구분이 노출된다. 그러나 homepage는 소수 teaser이고 별도 공연안내/월간일정 canonical route는 관측 시 기본 데이터가 2025로 남아 current 2026 source-wide listing·pagination을 확정하지 못했다. 현재 core 일부만으로 READY 처리하지 않고 stable 2026 canonical list가 확인될 때까지 WATCH.","https://www.ansan.go.kr"],
-  "gyeonggi-오산": ["WATCH","https://www.osan.go.kr/arts/","official_affiliated_culture_portal","source_canonical_listing_unverified","오산시 공식 host의 오산문화재단 program detail과 공식 채널에서 2026 공연 title·full-year 일시·오산문화예술회관 venue·durable detail URL을 확인했다. 하지만 이번 live 조사에서 이를 잇는 source-wide current 공연/전시 canonical list route와 pagination을 안정적으로 확인하지 못해 개별 detail만으로 지속 source를 추정하지 않는다. list가 검증될 때까지 WATCH.","https://www.osan.go.kr"],
-  "gyeonggi-시흥": ["WATCH","https://www.siheung.go.kr/main.do","official_government_portal","source_core_missing","시흥시 공식 홈페이지·공유예약에서 개별 2026 공연/축제 안내와 날짜·장소는 확인 가능하나, 문화행사 전체를 지속적으로 묶는 canonical listing에서 title·explicit full-year start/end·venue·durable detail·bounded pagination을 함께 확인하지 못했다. 개별 예약/갯골축제 페이지를 시 전체 daily source로 확대하지 않아 WATCH.","https://www.siheung.go.kr"],
-  "gyeonggi-의왕": ["WATCH","https://www.uiwang.go.kr/reserve/","official_integrated_reservation","source_core_inconsistent","의왕시 공식 통합예약은 축제·행사/공연·전시 카테고리와 2026 개별 detail의 기간·장소·부서 정보를 제공한다. 다만 landing/list는 교육·강좌·예약 프로그램이 혼합되고 현재 접수 프로그램 없음 상태도 관측되어 시 전체 문화행사의 지속 canonical feed와 안정적 event-only pagination을 확정하지 못했다. 개별 왕림이팝아트홀 공연만으로 READY 처리하지 않아 WATCH.","https://www.uiwang.go.kr"],
-  "gyeonggi-하남": ["ONBOARDING_READY","https://www.hanam.go.kr/www/selectClturEventWebList.do?key=12376","official_culture_event_listing","generic_fallback_paginated","하남시 공식 문화행사소식은 현재 77건·13페이지로 운영되며 각 항목에 title·explicit 2026 start/end·venue·first-party detail을 제공한다. 축제·대회·공모전 등이 함께 있으므로 candidate signal은 fail-closed로 적용해야 하지만 source core와 bounded pagination이 self-contained여서 READY.","https://www.hanam.go.kr"],
-  "gyeonggi-용인": ["ONBOARDING_READY","https://www.yicf.or.kr/main/show/list.do?menuNo=010000&show_type=all&subMenuNo=010100&thirdMenuNo=&viewType=img","official_affiliated_culture_listing","generic_fallback_paginated","용인문화재단 공식 전체 일정은 2026 월/장르/공간 필터와 multi-page listing을 제공하고 title·explicit start/end·venue·first-party detail을 같은 항목에 노출한다. 2026 토요키즈클래식·전시·생활문화 행사 등 현재/미래 항목과 1~5페이지 구조를 확인해 READY.","https://www.yongin.go.kr"],
-  "gyeonggi-이천": ["ONBOARDING_READY","https://www.icheon.go.kr/portal/universal/kalendar/index.do?mid=0401030000&token=1729599644700","official_government_event_listing","generic_fallback_paginated","이천시 공식 ‘시정달력(행사/축제)’은 현재 48페이지와 상태·기간·구분(전시/공연/행사/축제 등) 필터를 제공하며 각 항목에 title·explicit full-year start/end·venue·durable detail을 노출한다. 2026 이천아트홀 서커스 페스티벌 등 future 항목도 확인되어 READY.","https://www.icheon.go.kr"],
-  "gyeonggi-안성": ["COLLECTOR_GAP","https://www.anseong.go.kr/tour/contents.do?mId=0203010000","official_tourism_multi_event_page","generic_html_card_structure_gap","안성시 공식 문화관광 ‘공연/전시/행사’ 페이지는 금광달빛축제·공도문화축제·바우덕이축제 등 다수 2026 행사의 title·explicit 날짜·venue·주관을 한 current first-party 페이지에 제공한다. 다만 source는 pagination/per-event durable list가 아니라 여러 행사가 이어진 static contents 구조라 current generic extractor가 record boundary를 안전하게 보장하는지 검증되지 않았다. source core는 충분하므로 generic HTML structure GAP으로 분류.","https://www.anseong.go.kr"],
-  "gyeonggi-양주": ["WATCH","https://www.yangju.go.kr/www/index.do","official_government_portal","source_core_inconsistent","양주시 공식 홈페이지의 현재 행사소식에는 2026 양주 천일홍 가을 페스타·양주관아 탈놀이 풍물축제 등 title·full-year 일시·장소가 지속 게시되지만 교육특강·모집·일반 시정소식과 혼합된 homepage/news feed다. 행사 전용 bounded canonical listing·pagination을 확인하지 못해 개별 공지를 daily source로 승격하지 않고 WATCH.","https://www.yangju.go.kr"],
-  "gyeonggi-포천": ["ONBOARDING_READY","https://pcfac.or.kr/sub03/sub06-1.php","official_affiliated_culture_listing","generic_fallback","포천문화관광재단 공식 문화사업 일정은 2026 월간/연간 전환과 장소·장르 필터를 제공하며 current list에 title·explicit full-year date/period·venue category·first-party detail을 self-contained로 노출한다. 공연·전시 일정과 별도 축제 일정도 같은 first-party 체계로 운영되고 2026-09~10 future 프로그램이 확인되어 READY.","https://www.pocheon.go.kr"],
-  "gyeonggi-여주": ["ONBOARDING_READY","https://www.yjcf.or.kr/reserve/board/1/M/L/menu/401","official_affiliated_culture_listing","generic_fallback_paginated","여주세종문화관광재단 공식 공연일정은 월별/목록 구조에서 title·explicit 2026 start/end·venue·first-party detail을 함께 제공한다. 2026-09 문화가 있는 날 공연 등 current/future 항목과 장르 구분이 확인되어 generic self-contained source로 READY.","https://www.yeoju.go.kr"],
-  "gyeonggi-연천": ["WATCH","https://www.yeoncheon.go.kr/tour/","official_tourism_portal","source_core_missing","연천군 공식 관광/축제 포털은 2026 연천 구석기축제처럼 explicit full-year 기간·장소·프로그램을 충실히 제공하지만 확인된 구조는 개별 대표 축제 landing 중심이다. 군 전체 문화행사를 지속적으로 묶는 canonical list·pagination과 source-wide core를 확인하지 못해 단일 축제를 확대하지 않고 WATCH.","https://www.yeoncheon.go.kr"],
-  "gyeonggi-양평": ["WATCH","https://ypcf.or.kr/","official_affiliated_culture_portal","source_canonical_listing_unverified","양평문화재단 공식 홈페이지는 2026 공연·전시/교육 콘텐츠와 현재 미디어 아카이브를 운영하지만, 행사별 title·explicit full-year date·venue·durable detail을 함께 유지하는 source-wide canonical 공연/행사 listing과 pagination을 확인하지 못했다. 사업공고/개별 콘텐츠를 daily source로 결합하지 않고 WATCH.","https://www.yp21.go.kr"],
-  "gangwon-강릉": ["WATCH","https://www.gn.go.kr/www/index.do","official_government_portal","source_canonical_listing_unverified","강릉시 공식 누리집과 통합예약/관광 영역은 current 운영 중이지만 이번 live 조사에서 시 전체 문화·축제 행사를 title·explicit full-year date·venue·durable detail·bounded pagination으로 지속 공급하는 canonical listing을 검증하지 못했다. 예약/개별 공지를 결합하지 않고 WATCH.","https://www.gn.go.kr"],
-  "gangwon-고성": ["WATCH","https://www.gwgs.go.kr/","official_government_portal","source_canonical_listing_unverified","강원 고성군 공식 홈페이지에서 2026 저도 대문어축제 등 개별 공지는 explicit 기간·장소를 제공하지만 source-wide current 행사 listing과 pagination을 확인하지 못했다. 개별 공지를 canonical daily source로 승격하지 않아 WATCH.","https://www.gwgs.go.kr"],
-  "gangwon-동해": ["WATCH","https://dh.go.kr/www/index.do","official_government_portal","source_core_inconsistent","동해시 공식 홈페이지는 2026-09 current 공연 홍보와 주간행사를 지속 갱신하지만 홈/주간일정은 행정·교육·시정행사가 혼합되고 문화행사 전용 source-wide core listing을 확인하지 못했다. 특정 공연 teaser를 확대하지 않아 WATCH.","https://dh.go.kr"],
-  "gangwon-삼척": ["WATCH","https://www.samcheok.go.kr/","official_government_portal","source_scope_too_narrow","삼척시 산하 청소년수련관은 2026 어울림마당 등 행사 title·full-year 일시·장소를 current 제공하지만 청소년시설 단일 scope이고, 시 전체 문화·축제 canonical listing은 이번 조사에서 검증하지 못했다. 시설 schedule을 시 전체 source로 승격하지 않아 WATCH.","https://www.samcheok.go.kr"],
-  "gangwon-속초": ["WATCH","https://www.sokcho.go.kr/sc/portal","official_government_portal","source_core_inconsistent","속초시 공식 누리집은 교육·문화 메뉴와 주간행사 605건/41페이지를 current 운영하지만 주간행사는 행정 일정 첨부 중심이고 문화·축제 전용 candidate core를 HTML listing에서 self-contained로 제공하지 않는다. 보도자료와 결합하지 않고 WATCH.","https://www.sokcho.go.kr"],
-  "gangwon-양구": ["WATCH","https://www.yanggu.go.kr/","official_government_portal","source_canonical_listing_unverified","양구군 공식 ownership은 확인되지만 이번 live 조사에서 군 전체 문화·축제를 지속 공급하는 current canonical listing과 title·explicit full-year date·venue·durable detail·pagination을 검증하지 못했다. 공식 SNS나 개별 홍보를 대체 source로 쓰지 않아 WATCH.","https://www.yanggu.go.kr"],
-  "gangwon-양양": ["WATCH","https://tour.yangyang.go.kr/pub/funculture.do","official_tourism_festival_detail","source_wide_listing_missing","양양관광은 2026 양양문화제처럼 explicit full-year 기간·장소·주최를 충실히 제공하지만 확인한 구조는 개별 대표축제 detail 중심이며 군 전체 행사를 지속 공급하는 canonical listing/pagination을 검증하지 못했다. 개별 축제만으로 READY 처리하지 않아 WATCH.","https://www.yangyang.go.kr"],
-  "gangwon-영월": ["WATCH","https://www.yw.go.kr/www/index.do","official_government_portal","source_canonical_listing_unverified","영월군 공식 홈페이지는 2026 정원산업박람회와 정원콘서트 등 future 행사 title·기간·venue를 메인에서 노출하지만 여러 행사를 지속 수집할 canonical event listing과 bounded pagination을 이번 조사에서 확인하지 못했다. homepage teaser를 daily source로 쓰지 않아 WATCH.","https://www.yw.go.kr"],
-  "gangwon-원주": ["ONBOARDING_READY","https://www.wonju.go.kr/www/selectCtyhllCldrListCal.do?key=213&pageIndex=1&pageUnit=10&searchCnd=all&searchLgd=7","official_government_culture_calendar","generic_fallback","원주시 공식 ‘주요 문화행사’는 2026-09 current 월간/연간 calendar와 문화행사·축제·백운아트홀 등 구분을 제공하고 각 행에 title·explicit full-year 기간·시간·venue·주최/주관을 self-contained로 노출한다. first-party current schedule로 generic extraction 후보라 READY.","https://www.wonju.go.kr"],
-  "gangwon-인제": ["WATCH","https://www.inje.go.kr/portal/adm/public/advinfo/advinfo_06","official_government_preinformation_listing","source_core_inconsistent","인제군 공식 사전정보공표는 ‘인제군 축제 현황(2026년)’을 current 게시하고 공지사항에도 2026 가을꽃축제·박인환문학축제 등을 지속 노출한다. 다만 축제현황은 정적 자료/첨부 성격이고 공지 목록은 모집·교육이 혼합돼 candidate-level date·venue·detail을 안정적으로 수집할 canonical event listing으로 검증되지 않아 WATCH.","https://www.inje.go.kr"],
-  "gangwon-정선": ["WATCH","https://www.jeongseon.go.kr/portal/","official_government_portal","source_canonical_listing_unverified","정선군 공식 홈페이지에서 행사·축제 현황과 재정공시 자료는 확인되지만 2026 current 관람 행사에 대해 title·full-year date·venue·durable detail을 함께 제공하는 지속 canonical listing을 확인하지 못했다. 결산기준 과거 행사현황은 live source가 아니므로 WATCH.","https://www.jeongseon.go.kr"],
-  "gangwon-철원": ["WATCH","https://www.cwg.go.kr/tour/","official_tourism_portal","source_canonical_listing_unverified","철원 문화관광은 2026 오대쌀축제와 역사문화공원 상설공연 detail에서 explicit 기간·venue를 제공하고 공지 listing도 current 운영한다. 그러나 공연/축제 전용 source-wide list의 stable payload와 pagination을 이번 live 조사에서 끝까지 검증하지 못해 개별 detail을 결합하지 않고 WATCH.","https://www.cwg.go.kr"],
-  "gangwon-춘천": ["WATCH","https://www.chuncheon.go.kr/tour/?Mcode=10715","official_tourism_annual_event_notice","source_not_persistent_listing","춘천 관광포털은 ‘2026 춘천시 축제 행사 일정’ 한 게시물에 다수 행사의 시기·장소를 current 제공하지만 이는 연간 편집형 공지이며 per-event durable listing/pagination이 아니다. 일부 ‘9월 예정’ 같은 비정확 날짜도 있어 canonical daily source로 승격하지 않고 WATCH.","https://www.chuncheon.go.kr"],
-  "gangwon-평창": ["WATCH","https://www.pc.go.kr/","official_government_portal","source_core_inconsistent","평창군 공식 홈페이지는 current 주간행사계획과 2026 축제·행사 관련 공지를 제공하지만 주간행사는 행정 일정이 혼합되고 문화·축제 전용 self-contained canonical listing을 확인하지 못했다. 첨부/보도 정보를 결합하지 않아 WATCH.","https://www.pc.go.kr"],
-  "gangwon-홍천": ["WATCH","https://www.hongcheon.go.kr/www/schdulCalendar.do?key=257","official_government_weekly_schedule","source_core_inconsistent","홍천군 공식 주간일정은 2026 행사·회의·교육·기타를 날짜·시간·장소와 함께 current 제공하며 산나물축제 등 문화행사도 포함하지만 행정 일정과 강하게 혼합되어 갈틈 대상 event-only source로 안전하게 한정하기 어렵다. 별도 공고와 결합하지 않아 WATCH.","https://www.hongcheon.go.kr"],
-  "gangwon-화천": ["WATCH","https://www.ihc.go.kr/photo/selectPhotoInfoWebList.do?ctgryNo=117&key=2117&pageIndex=1&pageUnit=48","official_government_event_photo_archive","source_not_future_listing","화천군 공식 사진DB ‘축제/행사’는 2026 토마토축제·붕어섬 드론 페스타·산천어축제 등을 대량으로 current 기록하고 date/location metadata를 제공하지만 개최 후 사진 아카이브라 future 행사 수집용 canonical schedule이 아니다. 회고 source를 daily feed로 쓰지 않아 WATCH.","https://www.ihc.go.kr"],
-  "gangwon-횡성": ["WATCH","https://www.hoengseong.go.kr/","official_government_portal","source_canonical_listing_unverified","횡성군 공식 홈페이지/문화관광에서 2026 지역축제·행사 정보는 확인 대상이지만 이번 live 조사에서 군 전체 문화행사를 지속 공급하는 canonical listing의 explicit full-year date·venue·detail·bounded pagination을 검증하지 못했다. 개별 축제 공지를 결합하지 않아 WATCH.","https://www.hoengseong.go.kr"],
-  "jeonbuk-고창": ["WATCH","https://www.gochang.go.kr/tour/","official_tourism_portal","source_canonical_listing_unverified","고창군 공식 문화관광에서 고창청보리밭축제·모양성제 등 2026 개별 축제 정보는 확인 대상이지만, 이번 live 조사에서 군 전체 문화행사를 title·explicit full-year date·venue·durable detail과 함께 지속 공급하는 canonical bounded listing을 확인하지 못했다. 대표축제/개별 공지를 결합하지 않고 WATCH.","https://www.gochang.go.kr"],
-  "jeonbuk-군산": ["WATCH","https://www.gunsan.go.kr/","official_government_portal","source_canonical_listing_unverified","군산시 공식 홈페이지/문화시설에서 공연·축제 정보와 개별 일정은 확인되지만, 2026 현재 시 전체 행사에 대해 title·explicit full-year start/end·venue·durable detail을 한 source-wide bounded listing으로 검증하지 못했다. 과거 공연일정 경로 또는 개별 공지를 current canonical source로 추정하지 않아 WATCH.","https://www.gunsan.go.kr"],
-  "jeonbuk-김제": ["WATCH","https://www.gimje.go.kr/index.gimje","official_government_portal","source_core_inconsistent","김제시 공식 대표 누리집은 2026 일자리박람회·외국인 근로자 문화행사 등 current 행사 title·일시·장소를 노출하지만 시정 인포존/읍면동 공지가 혼합된 구조다. 문화행사 전용 durable listing·bounded pagination을 확인하지 못해 WATCH.","https://www.gimje.go.kr"],
-  "jeonbuk-남원": ["WATCH","https://www.namwon.go.kr/","official_government_portal","source_core_inconsistent","남원시 공식 누리집에서 제96회 춘향제 등 2026 축제 추진·공고는 확인되지만 고시공고/모집 중심이고, 관람용 행사 source-wide canonical listing에서 exact full-year date·venue·durable detail을 일관되게 확인하지 못했다. 단발 공고를 승격하지 않아 WATCH.","https://www.namwon.go.kr"],
-  "jeonbuk-무주": ["WATCH","https://www.muju.go.kr/","official_government_portal","source_canonical_listing_unverified","무주군 공식 홈페이지와 문화관광에서 대표축제·개별 행사 정보는 제공되지만 이번 live 조사에서 군 전체 행사·공연의 current canonical listing과 candidate-level full-year date·venue·durable detail·pagination을 검증하지 못했다. 대표축제 단일 source를 확대하지 않아 WATCH.","https://www.muju.go.kr"],
-  "jeonbuk-부안": ["WATCH","https://www.buan.go.kr/tour/index.buan","official_tourism_festival_collection","source_wide_listing_missing","부안군 문화관광은 부안마실축제·붉은노을축제 등 2026 개별 축제 페이지에서 explicit 기간·장소·문의·주관을 충실히 제공하고 축제정보 공지도 current하다. 다만 확인한 구조는 축제별 detail collection/공지이며 군 전체 행사 candidate를 지속 공급하는 canonical bounded listing이 아니어서 WATCH.","https://www.buan.go.kr"],
-  "jeonbuk-순창": ["WATCH","https://www.sunchang.go.kr/","official_government_portal","source_canonical_listing_unverified","순창군 공식 홈페이지/문화관광의 대표축제·행사 공지는 확인 대상이지만 이번 live 조사에서 title·explicit full-year date·venue·durable detail을 함께 유지하는 current source-wide canonical listing과 pagination을 확인하지 못했다. 개별 축제 페이지를 daily source로 확대하지 않아 WATCH.","https://www.sunchang.go.kr"],
-  "jeonbuk-완주": ["COLLECTOR_GAP","https://www.wanju.go.kr/planweb/board/list.9is?boardUid=ff8080818c0aecd1018c3334822b5364&categoryUid1=ff8080818c0aecd1018c33369f44539d&contentUid=ff8080818b024d8e018b274f41642af3&page=1&state=","official_government_event_listing","list_detail_core_followup_needed","완주군 공식 ‘축제, 행사, 교육/모집, 기타’ 중 축제 목록은 42건·5페이지로 지속 갱신되며 title·explicit 행사기간·상태를 제공한다. 목록에는 venue가 self-contained하지 않고 모집성 항목도 섞여 있으므로 event signal + 기존 bounded detail follow-up으로 core를 보완해야 하는 GAP.","https://www.wanju.go.kr"],
-  "jeonbuk-익산": ["COLLECTOR_GAP","https://arts.iksan.go.kr/schedule/list.iksan?boardId=EVENT_SCHEDULE&menuCd=DOM_000000101001000000&contentsSid=9","official_culture_venue_listing","list_detail_core_followup_needed","익산예술의전당 공식 공연/전시 일정은 2026 항목과 durable first-party detail을 운영하며 detail에서 explicit 기간·venue·장르를 확인할 수 있다. 이번 조사에서 list row의 venue self-contained 여부를 확정하지 못해 existing bounded list→detail follow-up이 필요한 GAP으로 보수적으로 분류.","https://www.iksan.go.kr"],
-  "jeonbuk-임실": ["WATCH","https://www.imsil.go.kr/tour/index.imsil","official_tourism_festival_collection","source_wide_listing_missing","임실군 문화관광은 필봉마을굿축제·사선문화제 등 여러 2026 축제 detail에서 explicit 기간·장소·프로그램을 충실히 제공한다. 다만 축제별 정적 메뉴/detail collection 중심으로 source-wide candidate listing·pagination을 확인하지 못해 여러 페이지를 임의 결합하지 않고 WATCH.","https://www.imsil.go.kr"],
-  "jeonbuk-장수": ["WATCH","https://www.jangsu.go.kr/","official_government_portal","source_wide_listing_missing","장수군 공식 홈페이지에서 2026 한우랑사과랑축제 관련 행사기간·장소가 포함된 공지와 운영계획은 current하게 확인되지만 대표축제/읍면동 공지 중심이다. 군 전체 문화행사의 durable canonical listing과 pagination을 확인하지 못해 WATCH.","https://www.jangsu.go.kr"],
-  "jeonbuk-전주": ["COLLECTOR_GAP","https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=ff8080818b5bc5cf018b6588a3d91e94&contentUid=ff8080818990c349018b041a87453954&year=2026","official_government_event_calendar","list_detail_core_followup_needed","전주시 공식 공연/행사 calendar는 2026 월별로 공연·축제 title과 날짜를 current 제공하고 관광 detail에서는 explicit 기간·venue가 확인된다. calendar/list 자체에서 venue와 multi-day core가 모든 항목에 self-contained하지 않아 기존 bounded detail follow-up이 필요한 공통 GAP으로 분류.","https://www.jeonju.go.kr"],
-  "jeonbuk-정읍": ["WATCH","https://www.jeongeup.go.kr/","official_government_portal","source_canonical_listing_unverified","정읍시 공식 홈페이지/문화시설의 2026 공연·축제 공지는 확인 대상이지만 이번 live 조사에서 시 전체 행사에 대한 current canonical bounded listing과 title·explicit full-year date·venue·durable detail을 일관되게 검증하지 못했다. 단일 축제·공연 공지를 결합하지 않아 WATCH.","https://www.jeongeup.go.kr"],
-  "jeonbuk-진안": ["WATCH","https://www.jinan.go.kr/festival/page/festival01/festival01_03.jsp","official_festival_detail","source_wide_listing_missing","진안군 공식 진안홍삼축제 사이트는 2026-09-18~09-20, 마이산 북부 등 explicit 기간·장소와 프로그램을 상세 제공한다. 군 공지에도 별별소원 피크닉 페스타 등 다른 current 행사가 있으나 이를 통합한 source-wide canonical event listing·pagination을 확인하지 못해 flagship detail을 확대하지 않고 WATCH.","https://www.jinan.go.kr"],
-  "gangwon-taebaek": ["ACTIVE", "https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502", "official_event_listing", "generic_fallback", "Registry key taebaek"],
+  "jeonnam-gwangju-강진": [
+    "WATCH",
+    "https://www.gangjin.go.kr/culture/",
+    "official_tourism_festival_portal",
+    "source_canonical_listing_unverified",
+    "강진문화관광은 여러 축제/행사 메뉴와 2026 개별 축제의 explicit date·venue를 제공하지만 이번 live 확인에서 source-wide current 행사 listing·pagination을 안정적으로 확보하지 못했고 portal fetch도 timeout이 관측됐다. 개별 축제 detail만으로 daily canonical source를 추정하지 않아 WATCH.",
+    "https://www.gangjin.go.kr"
+  ],
+  "jeonnam-gwangju-고흥": [
+    "WATCH",
+    "https://www.goheung.go.kr/index.do",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "고흥군 공식 홈페이지는 고흥유자축제·드론쇼 버스킹과 주간행사를 현재 노출하고 관광 공식 영역도 연결하지만, 문화/축제 event-only canonical listing에서 title·explicit full-year start/end·venue·durable detail·bounded pagination을 source-wide로 확인하지 못했다. 단일 축제/홈 teaser를 승격하지 않아 WATCH.",
+    "https://www.goheung.go.kr"
+  ],
+  "jeonnam-gwangju-곡성": [
+    "ONBOARDING_READY",
+    "https://www.gokseong.go.kr/tour/festivity/event",
+    "official_tourism_event_listing",
+    "generic_fallback_paginated",
+    "곡성문화관광 공연/체험행사 목록은 2026 월별 문화달력과 축제/행사를 지속 제공하며 동일 list에서 title·explicit full-year period·venue를 확인할 수 있고 6페이지 pagination이 있다. 행사일정 calendar와 first-party detail 체계도 유지돼 current generic self-contained 후보로 READY.",
+    "https://www.gokseong.go.kr"
+  ],
+  "jeonnam-gwangju-광산": [
+    "WATCH",
+    "https://www.gwangsan.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "광산구청은 현재 광산구 캘린더·광산문화캘린더 메뉴와 2026 개별 문화예술제 공지에서 explicit 기간·장소를 제공하지만, 이번 조사에서 해당 문화 calendar의 source-wide stable payload·pagination·self-contained core를 끝까지 검증하지 못했다. 개별 새소식 게시물을 canonical source로 승격하지 않아 WATCH.",
+    "https://www.gwangsan.go.kr"
+  ],
+  "jeonnam-gwangju-광양": [
+    "COLLECTOR_GAP",
+    "https://gwangyang.go.kr/tour/board.es?bid=0044&mid=a31301000000",
+    "official_tourism_notice_listing",
+    "list_detail_core_followup_needed",
+    "광양시 문화관광 공지사항은 81페이지로 지속 갱신되고 2026 행사 안내 title과 durable first-party detail을 제공한다. 목록은 title·게시일 중심이지만 detail에는 explicit 행사기간·venue·주최가 있어 기존 bounded list→detail follow-up으로 core 완성이 가능한 공통 GAP이다. 관광 일반공지 혼합은 event signal로 fail-closed 처리 필요.",
+    "https://gwangyang.go.kr"
+  ],
+  "jeonnam-gwangju-구례": [
+    "WATCH",
+    "https://www.gurye.go.kr/tour/",
+    "official_tourism_portal",
+    "source_canonical_listing_unverified",
+    "구례군 공식 관광포털과 2026 산수유꽃축제 같은 공식 행사 core는 확인되지만, 이번 live 조사에서는 여러 행사를 지속적으로 묶는 current canonical event listing과 pagination을 확인하지 못했다. 개별 대표축제/관광 detail을 source-wide feed로 확대하지 않아 WATCH.",
+    "https://www.gurye.go.kr"
+  ],
+  "jeonnam-gwangju-나주": [
+    "WATCH",
+    "https://www.naju.go.kr/www/administration/scheduled/monthly",
+    "official_government_event_calendar",
+    "source_core_inconsistent",
+    "나주시 공식 시정행사일정은 월별 2026 calendar를 제공하지만 행정 일정 중심이라 갈틈 대상 문화·축제 source로 event-only core가 일관되지 않는다. 별도 문화관광 축제 메뉴는 과거 연도별 소개가 섞여 current durable all-event listing으로 검증되지 않아 WATCH.",
+    "https://www.naju.go.kr"
+  ],
+  "jeonnam-gwangju-남": [
+    "WATCH",
+    "https://www.namgu.gwangju.kr/board.es?mid=a70306000000&bid=0364",
+    "official_tourism_event_calendar",
+    "source_freshness_unverified",
+    "남구 공식 문화관광에는 전용 ‘축제행사 일정’ 2026 월간 calendar와 문화관광과 ownership이 확인되지만 2026-09 live calendar에는 실제 event candidate가 노출되지 않아 current freshness·title/date/venue/detail payload를 검증하지 못했다. 구조만으로 READY 처리하지 않고 WATCH.",
+    "https://www.namgu.gwangju.kr"
+  ],
+  "jeonnam-gwangju-담양": [
+    "WATCH",
+    "https://www.damyang.go.kr/index.damyang",
+    "official_tourism_festival_portal",
+    "source_core_inconsistent",
+    "담양군 공식 홈페이지는 담양대나무축제·고서포도축제·산타축제 등 연중 축제 목록을 노출하지만 현재 메인 목록은 ‘5월/8월/12월’ 같은 month-only 반복 시기 중심이고 행사별 explicit full-year start/end·durable detail·pagination이 self-contained하지 않다. 연도 추론 없이 WATCH.",
+    "https://www.damyang.go.kr"
+  ],
+  "jeonnam-gwangju-동": [
+    "WATCH",
+    "https://www.donggucc.kr/www/cmd.do?opencode=psche",
+    "official_affiliated_culture_venue_calendar",
+    "source_scope_too_narrow",
+    "동구 문화센터 공식 행사일정은 2026 월간 calendar를 제공하지만 실제 내용은 휴관·강좌/센터 프로그램 중심이며 동구 전체 축제·문화행사를 대표하는 canonical source가 아니다. 구 전체 event core와 durable pagination을 확인하지 못해 WATCH.",
+    "https://www.donggu.kr"
+  ],
+  "jeonnam-gwangju": [
+    "WATCH",
+    "https://www.jeonnam.go.kr/",
+    "official_tourism_listing_unverified",
+    "source_core_unverified",
+    "현재 통합특별시 공식 누리집(구 전라남도청)이 통합특별시 명칭·주소로 운영되며 관광객 메뉴에 ‘시군축제 일정’ 링크가 노출된다. 다만 live HTTP 요청은 timeout/DNS 오류로 목록 target과 지속성, 2026 full-year start/end·venue·detail URL·pagination 및 generic extraction을 확인하지 못했다. 구 전남 축제 목록과 구 광주 source를 임의 결합하거나 legacy 내용을 계승하지 않으며, 확인 가능한 광역 canonical source가 확보될 때까지 WATCH."
+  ],
+  "seoul": [
+    "ACTIVE",
+    "https://hangang.seoul.go.kr/www/eventMng/list.do?mid=538",
+    "official_event_listing",
+    "generic_fallback",
+    "한강사업본부 행사 source; 서울 전체 coverage를 뜻하지 않음"
+  ],
+  "seoul-gangnam": [
+    "ONBOARDING_READY",
+    "https://www.gangnam.go.kr/office/gfac/board/gfac_lifeculture/list.do?mid=gfac_festival06",
+    "official_culture_listing",
+    "generic_fallback_paginated",
+    "강남문화재단(강남구 산하 공식 문화기관) 축제 목록. live 목록에서 title·2026 full-year 행사기간·행사장소·first-party detail URL이 같은 항목 블록에 있고 페이지네이션도 확인되어 현재 generic collector의 self-contained extraction에 적합함. 대표 항목은 2026 강남생활문화축제(2026-10-17~2026-10-18, 일원에코파크 및 에코센터).",
+    "https://www.gangnam.go.kr"
+  ],
+  "seoul-gangdong": [
+    "WATCH",
+    "https://www.gangdong.go.kr/web/culture/contents/gdc030_040",
+    "official_culture_detail",
+    "source_core_inconsistent",
+    "강동구청 강동문화포털의 선사문화축제 일정표는 공식 소유권과 행사별 장소를 확인할 수 있으나 live 페이지가 2025 일정표 중심의 정적 프로그램 표이고, source-wide 지속 목록에서 2026 full-year 행사기간·detail URL·pagination을 일관되게 제공하지 않음. 보도자료의 2026 동 지역축제는 단발성 공지라 canonical daily source로 승격하지 않음.",
+    "https://www.gangdong.go.kr"
+  ],
+  "seoul-gangbuk": [
+    "WATCH",
+    "https://child.gangbuk.go.kr/",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "강북구 공식 포털에서 백맥축제·문화/행사 예약 항목은 확인되지만 홈페이지 혼합 콘텐츠와 개별 모집/보도 페이지가 중심이다. 행사별 title·date·venue는 일부 detail에서 확인되나 지속적으로 갱신되는 full-year canonical listing 및 안정적인 pagination을 확인하지 못했고 generic collector의 source-wide self-contained extraction을 확정할 수 없음.",
+    "https://www.gangbuk.go.kr"
+  ],
+  "seoul-gangseo": [
+    "WATCH",
+    "https://www.gangseo.seoul.kr/munhwa/mh010204",
+    "official_culture_detail",
+    "source_core_missing",
+    "강서문화관광의 겸재문화예술제 공식 detail은 title·2026-05-09 기간·겸재정선미술관/궁산근린공원 장소를 제공하지만, 확인한 canonical 페이지는 개별 행사 detail이고 source-wide 행사 listing·pagination·지속 detail index를 확인하지 못함. 단발성 행사 detail을 generic daily source로 승격하지 않음.",
+    "https://www.gangseo.seoul.kr"
+  ],
+  "seoul-gwanak": [
+    "WATCH",
+    "https://www.gwanak.go.kr/site/gwanak/main.do",
+    "official_government_portal",
+    "source_core_missing",
+    "관악구청 공식 포털의 문화관광소식·예약/교육 상세에서 개별 행사 사실은 확인되지만 홈페이지는 혼합 게시판/예약 포털이며, 행사·축제의 title·full-year date·venue를 함께 유지하는 durable canonical listing과 pagination을 확인하지 못함. 관악강감찬축제 관련 과거 전자책/보도자료는 daily source로 사용하지 않음.",
+    "https://www.gwanak.go.kr"
+  ],
+  "seoul-gwangjin": [
+    "WATCH",
+    "https://www.gwangjin.go.kr/portal/main/main.do",
+    "official_government_portal",
+    "source_core_missing",
+    "광진구청 공식 포털에서 주간행사·개별 행사/보도자료는 확인되지만 축제·문화 일정이 혼합 게시판과 개별 공지로 분산되어 있다. source-wide full-year date·venue·durable detail URL을 함께 제공하는 canonical listing과 pagination을 live 확인하지 못함.",
+    "https://www.gwangjin.go.kr"
+  ],
+  "seoul-guro": [
+    "WATCH",
+    "https://www.guro.go.kr/www/index.do",
+    "official_government_portal",
+    "source_core_missing",
+    "구로구청 공식 홈페이지와 월간 소식/예약 영역에서 행사 title·일시·장소가 개별 콘텐츠로 보이지만 행사·축제용 durable listing이 아니라 홈페이지 혼합 feed와 예약/소식 콘텐츠 구조다. source-wide full-year core와 안정적인 detail/list pagination을 확인하지 못해 generic collector source로 확정하지 않음.",
+    "https://www.guro.go.kr"
+  ],
+  "seoul-geumcheon": [
+    "WATCH",
+    "https://www.geumcheon.go.kr/shub/index.do",
+    "official_government_portal",
+    "source_core_missing",
+    "금천구 공식 소셜허브·미디어홍보에서 과학축제 등 행사 제목과 게시일은 확인되지만, 행사기간·장소·durable detail이 source-wide로 함께 유지되는 공식 일정 listing이 아니라 홍보 feed/개별 게시물 구조다. pagination과 current generic self-contained extraction을 확인하지 못함.",
+    "https://www.geumcheon.go.kr"
+  ],
+  "seoul-nowon": [
+    "WATCH",
+    "https://www.nowon.kr/www/index.do",
+    "official_government_portal",
+    "source_core_missing",
+    "노원구청 공식 홈페이지는 축제행사·문화공연 메뉴와 개별 행사 안내를 제공하지만 확인한 live 구조는 홈페이지 메뉴/공지·보도/행사 detail이 혼합되어 있다. 행사별 full-year date·venue는 일부 확인되나 source-wide durable listing·pagination과 generic collector의 일관된 self-contained extraction을 확정하지 못함.",
+    "https://www.nowon.kr"
+  ],
+  "seoul-dobong": [
+    "WATCH",
+    "https://tour.dobong.go.kr/Contents.asp?code=10003458",
+    "official_tourism_detail",
+    "source_core_inconsistent",
+    "도봉구 공식 문화관광의 축제와 문화행사 페이지는 정월대보름·도봉한글잔치·도봉옛길 문화제 등 title·장소·반복 시기/내용을 제공하지만 exact full-year start/end가 아닌 음력·기념일·월중 표현이 섞인 정적 소개 페이지다. durable event listing·pagination과 generic full-year extraction을 확인하지 못함.",
+    "https://www.dobong.go.kr"
+  ],
+  "seoul-dongdaemun": [
+    "WATCH",
+    "https://www.ddm.go.kr/www/index.do",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "동대문구청 공식 홈페이지의 문화행사 feed에서 2026 잇다마켓·청년축제 등 title/date와 개별 detail은 확인되지만 구정소식·교육·문화행사가 혼합된 homepage feed다. 행사별 venue와 source-wide full-year durable listing/pagination을 일관되게 확인하지 못해 generic self-contained source로 확정하지 않음.",
+    "https://www.ddm.go.kr"
+  ],
+  "seoul-dongjak": [
+    "COLLECTOR_GAP",
+    "https://www.dongjak.go.kr/yeyak/main/main.do",
+    "official_reservation_listing",
+    "list_detail_core_followup_needed_js_rendered",
+    "동작구청 공식 통합예약의 문화/행사 source는 공식 ownership과 행사 detail 체계를 확인할 수 있으나 live 목록이 예약 포털의 JS/API·필터 구조로 렌더링되어 현재 generic HTML collector가 self-contained candidate를 안정적으로 읽지 못함. 행사 detail에서 core 확인이 필요한 공통 list→detail/렌더링 gap 유형이며 구현은 하지 않음.",
+    "https://www.dongjak.go.kr"
+  ],
+  "seoul-mapo": [
+    "COLLECTOR_GAP",
+    "https://www.mfac.or.kr/",
+    "official_culture_listing",
+    "list_detail_core_followup_needed",
+    "마포문화재단(마포구 산하 공식 문화기관) live 공연·전시 목록은 title·2026 full-year start/end·first-party detail URL을 제공하지만 목록 블록에 venue가 없고 venue는 detail follow-up에서 확인해야 함. 현재 generic collector의 self-contained extraction 조건을 만족하지 않는 기존 list→detail core gap 유형.",
+    "https://www.mapo.go.kr"
+  ],
+  "seoul-seodaemun": [
+    "WATCH",
+    "https://sdm.go.kr/culture/index.do",
+    "official_culture_portal",
+    "source_core_missing",
+    "서대문구 공식 문화관광 포털은 벚꽃축제·어린이축제·서대문독립민주축제 등 행사 index와 개별 공지/프로그램을 제공하지만 live source-wide 목록에서 각 항목의 exact full-year start/end·venue·durable detail을 함께 유지하는 pagination listing을 확인하지 못함.",
+    "https://www.sdm.go.kr"
+  ],
+  "seoul-seocho": [
+    "COLLECTOR_GAP",
+    "https://www.seocho.go.kr/site/seocho/CinemaHeaven.do",
+    "official_culture_calendar",
+    "list_detail_core_followup_needed",
+    "서초구 공식 문화·행사달력은 2026-09 live calendar에서 행사 title과 날짜별 항목 및 first-party detail URL을 제공하지만 calendar list에는 venue와 full-year start/end가 self-contained로 없고 detail follow-up이 필요함. 마포·송파와 동일한 list→detail core gap 유형이며 구현은 하지 않음.",
+    "https://www.seocho.go.kr"
+  ],
+  "seoul-seongdong": [
+    "WATCH",
+    "https://www.sd.go.kr/tour/index.do",
+    "official_tourism_portal",
+    "source_core_missing",
+    "성동구 공식 문화관광 포털과 두모포 페스티벌 detail은 official ownership·venue·반복 시기를 확인할 수 있으나 대표 detail은 ‘매년 6월 말~7월 초’이고 포털 전체에서 행사별 exact full-year listing/pagination을 확인하지 못함. 연도 추론 없이 WATCH 유지.",
+    "https://www.sd.go.kr"
+  ],
+  "seoul-seongbuk": [
+    "WATCH",
+    "https://www.sb.go.kr/tour/index.do",
+    "official_tourism_portal",
+    "source_core_inconsistent",
+    "성북구 공식 문화관광 포털의 Festival & Event 영역과 선잠제 등 detail은 행사명·장소/소개를 제공하지만 live 페이지가 static festival landing 중심이고 exact full-year start/end·durable listing/pagination을 source-wide로 확인하지 못함.",
+    "https://www.sb.go.kr"
+  ],
+  "seoul-songpa": [
+    "COLLECTOR_GAP",
+    "https://www.songpa.go.kr/culture/index.do",
+    "official_culture_calendar",
+    "list_detail_core_followup_needed",
+    "송파구 공식 문화관광 포털은 축제/공연/전시/행사 calendar와 2026 호수벚꽃축제 등 title·full-year date·first-party detail 링크를 제공하지만 live 목록에 venue가 self-contained로 포함되지 않음. 서초·마포와 동일한 list→detail core gap 유형이며 구현은 하지 않음.",
+    "https://www.songpa.go.kr"
+  ],
+  "seoul-yangcheon": [
+    "WATCH",
+    "https://www.yangcheon.go.kr/",
+    "official_government_portal",
+    "source_core_missing",
+    "양천구 공식 홈페이지와 평생학습 포털에서 문화 프로그램·주민 행사 안내는 확인되지만 source-wide 행사·축제의 title·exact full-year date·venue·durable detail을 함께 제공하는 지속 canonical listing/pagination을 확인하지 못함. 과거 마을자료/단발성 공지는 daily source로 사용하지 않음.",
+    "https://www.yangcheon.go.kr"
+  ],
+  "seoul-yeongdeungpo": [
+    "ONBOARDING_READY",
+    "https://www.ydp.go.kr/tour/selectTnTursmSchdulListU.do?key=4016",
+    "official_tourism_listing",
+    "generic_fallback_paginated",
+    "영등포구 공식 문화관광 문화행사 일정 목록. live listing 구조에서 title·full-year start/end·venue가 같은 카드/목록 블록에 있고 first-party detail URL·기간/구분 검색 구조가 확인되어 current generic self-contained extraction에 적합함. 개별 detail은 기간·장소·주최를 제공하며 URL은 공식 ydp.go.kr host로 유지됨.",
+    "https://www.ydp.go.kr"
+  ],
+  "seoul-yongsan": [
+    "COLLECTOR_GAP",
+    "https://yongsanculture.or.kr/site/main/home",
+    "official_culture_listing",
+    "generic_html_card_structure_gap",
+    "용산구 공식 출연기관 용산문화재단의 지속 갱신 문화 listing은 협력전시 PARALLAX 등에서 title·2026 full-year start/end·venue·first-party static HTTPS detail URL을 같은 slide 항목에 제공한다. 다만 live HTML은 `slide`/`txt-wr` 카드 구조라 current generic extractor가 0 candidates로 fail-closed했다. list→detail core 부족이 아니라 기존 충남·제주와 같은 generic HTML card structure gap이다.",
+    "https://www.yongsan.go.kr"
+  ],
+  "seoul-eunpyeong": [
+    "COLLECTOR_GAP",
+    "https://www.efac.or.kr/page03/sub01.php",
+    "official_culture_listing",
+    "generic_html_card_structure_gap",
+    "은평구 산하 은평문화재단 문화사업 일정은 title·2026 full-year date·venue·주최/주관 및 first-party detail을 지속적으로 제공한다. 대표 live 항목은 제35회 전국무용제 부대행사 해외무용단 쇼케이스(2026-09-29, 은평문화예술회관 공연장)이며 목록/상세 구조가 유지된다. 현재 generic extractor read-only probe는 0 candidates여서 충남·제주·용산과 같은 generic HTML card structure gap으로 분류한다.",
+    "https://www.ep.go.kr"
+  ],
+  "seoul-jongno": [
+    "COLLECTOR_GAP",
+    "https://culture.jongno.go.kr/media/ko/index.do",
+    "official_culture_listing",
+    "generic_html_card_structure_gap",
+    "종로문화재단의 공식 종로문화플랫폼 행사/축제 listing은 윤동주문학제 등 title·2026 full-year start/end·venue·same-host durable detail URL을 같은 항목에서 제공하고 지속 갱신된다. pagination/목록 구조도 있으나 current generic extractor read-only probe가 0 candidates여서 venue follow-up이 아닌 generic HTML card structure gap으로 분류한다.",
+    "https://www.jongno.go.kr"
+  ],
+  "seoul-jung": [
+    "COLLECTOR_GAP",
+    "https://www.caci.or.kr/",
+    "official_culture_listing",
+    "generic_html_card_structure_gap",
+    "중구청이 설립·운영하는 중구문화재단(충무아트센터) 공식 문화 listing은 월요극장·뮤지컬·전시의 title·2026 full-year 기간·공연장/venue와 first-party product/detail URL을 지속 갱신한다. current generic extractor read-only probe는 main listing에서 0 candidates여서 list→detail core 부족이 아닌 generic HTML card structure gap으로 유지한다.",
+    "https://www.junggu.seoul.kr"
+  ],
+  "seoul-jungnang": [
+    "COLLECTOR_GAP",
+    "https://www.jnfac.or.kr/app/show/list",
+    "official_culture_listing",
+    "js_api_rendered_listing_gap",
+    "중랑구 출연 중랑문화재단의 공식 행사 source는 중랑열린버스킹 등 title·2026 full-year date와 first-party detail을 제공하며 구 공식 e학당에서도 재단 항목을 연계한다. 그러나 직접 canonical list는 Svelte/JS rendering shell로 반환되어 current generic static HTML extractor가 candidate를 만들 수 없다. static HTTPS list→detail follow-up으로 해결되지 않는 기존 동작과 같은 JS/API rendering gap이다.",
+    "https://www.jungnang.go.kr"
+  ],
+  "incheon-강화": [
+    "WATCH",
+    "https://www.ganghwa.go.kr/open_content/tour/around/event.jsp",
+    "official_tourism_event_listing",
+    "source_core_missing",
+    "강화군 공식 문화관광의 행사/전시일정은 HTTPS first-party이며 문화체육과 관리로 ownership 확인. 2026-09-23 live page는 게시글 없음(검색 결과 없음), title·full-year start/end·venue·durable detail·pagination candidate를 확인하지 못함. 문화행사 홈도 등록 행사가 없고 별도 2026 화개정원 축제 공지는 단발성이라 canonical daily source로 승격하지 않음. 인천 광역 ACTIVE와 중복 가능성은 있으나 하위 source 부재 판단과는 별개.",
+    "https://www.ganghwa.go.kr"
+  ],
+  "incheon-검단": [
+    "WATCH",
+    "https://www.geomdan.go.kr/main/part/culture/cultural_events.jsp",
+    "official_culture_event_page",
+    "source_core_inconsistent",
+    "2026-07-01 신설 검단구의 현재 공식 누리집 문화행사 페이지로 ownership 확인; 옛 서구 페이지는 승계하지 않음. 2026 가을 프로그램에 연극(10-07~10-10, 장소 미기재)과 전시(11-10~11-20, 검단터틀 갤러리/다목적 공간)가 있으나, 페이지는 계절별 편집 안내이며 durable per-event URL·반복 listing/pagination이 확인되지 않음. generic HTML 또는 list→detail로 완결하기 어려워 WATCH. 인천 광역 ACTIVE와 중복 가능성 기록.",
+    "https://www.geomdan.go.kr"
+  ],
+  "incheon-계양": [
+    "WATCH",
+    "https://gysiseol.or.kr/culturebuilding/main/main.php?categoryid=03&groupid=00&menuid=01",
+    "official_affiliated_culture_venue_listing",
+    "source_freshness_unverified",
+    "계양문화회관 공연일정은 계양시설관리공단 공식 시설 페이지이며 title·명시 연도 일시·공연장소·상세 링크와 3페이지 bounded listing을 확인. 다만 live 본문은 2025년~2026-01 항목 중심(검색 캐시와 직접 본문 간 갱신 시점 불일치)으로 2026-09 현재 지속 갱신·미래 일정 freshness를 확인하지 못했고, 단일 공연장 편성은 구 전체 행사 canonical source를 대표하지 않음. generic fit 보류, 인천 광역 ACTIVE와 중복 가능성 기록.",
+    "https://www.gyeyang.go.kr"
+  ],
+  "incheon-남동": [
+    "WATCH",
+    "https://www.namdongcf.or.kr/user/culture/list.php?cat=1",
+    "official_culture_foundation_listing",
+    "source_freshness_unverified",
+    "남동문화재단(남동구 공식 산하 문화기관) 행사 목록은 title·명시 연도 날짜·venue·first-party 상세 링크 및 10건 단위 페이지네이션 형태로 노출됨. 다만 2026-09-23 live read는 502로 실패했고 검색 인덱스는 2026-05 무렵 항목만 보여 현재 업데이트 여부를 검증하지 못함. stale 여부 해소 전 WATCH; collector 구조 fit은 미확정. 인천 광역 ACTIVE와 중복 가능성은 배제 사유가 아님.",
+    "https://www.namdong.go.kr"
+  ],
+  "incheon-미추홀": [
+    "WATCH",
+    "https://www.michuhol.go.kr/main/board/view.do?board_code=board_1&search=eyJib2FyZF9jb2RlIjoiYm9hcmRfMSJ9&sq=312164",
+    "official_event_notice",
+    "source_core_missing",
+    "미추홀구청 현재 공식 누리집에서 2026년 행사 공지의 title·명시 날짜·장소는 확인되나 이는 개별 단발성 공지이며, 이를 안정적으로 잇는 문화행사 목록/페이지네이션이나 source-wide durable detail index를 확인하지 못함. 공지를 canonical 지속 source로 승격하지 않고 WATCH. 인천 광역 ACTIVE 행사와 중복 가능성은 참고만 하고 이 분류의 근거로 사용하지 않음.",
+    "https://www.michuhol.go.kr"
+  ],
+  "incheon-부평": [
+    "WATCH",
+    "https://www.icbp.go.kr/tour/festival/bpf.jsp",
+    "official_tourism_festival_detail",
+    "source_core_missing",
+    "부평구청 문화관광 공식 HTTPS의 부평풍물대축제 소개와 축제 전용 외부 연계는 확인했지만, 확인한 구청 canonical page는 소개/detail이며 2026 full-year 개최 기간을 자체 제공하는 지속 목록·pagination이 아님. 단일 연례축제 페이지나 다른 단발 안내만으로 구 전체 canonical 행사 source로 확대하지 않음. 인천 광역 ACTIVE와 overlap 가능성은 기록하되 EXCLUDE 사유로 삼지 않음.",
+    "https://www.icbp.go.kr"
+  ],
+  "incheon-서해": [
+    "ONBOARDING_READY",
+    "https://www.seohae.go.kr/open_content/culture/cultureListAll.do",
+    "official_culture_event_listing",
+    "generic_fallback_paginated",
+    "2026-07-01 신설 서해구의 현재 공식 ‘서해구문화 체육·행사’ 전체행사 목록으로 현재 footer·주소·도메인에서 ownership 확인(옛 서구 source를 자동 상속한 판정 아님). live listing의 현재 서해구 문화배달(2026-07-11~07-18, 서해구 관내 곳곳) 등 title·명시 full-year start/end·venue가 각 동일 항목에 있고 같은 공식 host의 durable detail 링크 및 34페이지 bounded pagination 확인. 정적 HTML의 self-contained listing 구조로 generic collector 적합 후보. 일부 legacy ‘서구’ 명칭 기록도 섞여 있으므로 현 지자체 행사/ownership이 확인되는 개별 항목만 취급. 인천 광역 ACTIVE와 중복 가능성은 있으나 지역-specific 상세성으로 배제하지 않음; 이번 조사만으로 onboarding하지 않음.",
+    "https://www.seohae.go.kr"
+  ],
+  "incheon-연수": [
+    "WATCH",
+    "https://www.yeonsu.go.kr/tour/festival/etc.asp",
+    "official_tourism_event_listing",
+    "source_core_missing",
+    "연수구 공식 문화관광의 축제·행사 소식은 구청 문화관광과 관리지만 live 기타축제정보가 게시글 없음(1/0)으로 확인됨. 축제별 별도 소개/프로그램 페이지는 있으나 확인한 durable listing에서 현재 행사별 full-year start/end·venue·detail을 함께 제공하지 않으며 2026 행사 core를 source-wide로 확보할 수 없음. 연도 추론/별도 페이지 사실 결합 없이 WATCH. 인천 광역 ACTIVE 중복 가능성은 별도 참고.",
+    "https://www.yeonsu.go.kr"
+  ],
+  "incheon-영종": [
+    "WATCH",
+    "https://www.yeongjong.go.kr/tour/festival/list.do",
+    "official_tourism_event_listing",
+    "source_core_inconsistent",
+    "2026-07-01 신설 영종구 공식 문화관광포털의 현재 축제·공연 listing 확인; 옛 중구 source는 자동 상속하지 않음. live 목록은 1건 ‘무의도 춤축제’(2026-08-15, 무의도 하나개해수욕장 특설무대)로 명시 연도·장소 및 same-host detail이 있으나 이미 마감됐고 source-wide 단일 항목만 보여 지속적·충분한 listing과 현재 future coverage를 확인하지 못함. 날짜/장소는 관측값이며 READY 승격 근거로 과장하지 않음. 인천 광역 ACTIVE와 중복 가능성 기록.",
+    "https://www.yeongjong.go.kr"
+  ],
+  "incheon-옹진": [
+    "WATCH",
+    "https://www.ongjin.go.kr/",
+    "official_government_portal",
+    "source_unverifiable",
+    "옹진군 공식 도메인으로 식별되는 HTTPS homepage를 read-only 열기 시 400 응답으로 실제 문화·관광 행사 listing을 확인하지 못함. 군의회 등 별도 정보 및 비공식 안내를 canonical로 사용하지 않았으며, 현재 옹진군 ownership 아래 지속 listing, title·explicit full-year date·venue·detail·pagination 모두 미검증. 접근 가능한 first-party event source 확인 전 WATCH. 인천 광역 ACTIVE overlap은 별도 검토 대상.",
+    "https://www.ongjin.go.kr"
+  ],
+  "incheon-제물포": [
+    "COLLECTOR_GAP",
+    "https://cscenter.jemulpo.go.kr/cscenter/fmcs/201",
+    "official_affiliated_culture_venue_listing",
+    "list_detail_core_followup_needed",
+    "제물포구 현재 공식 홈페이지가 연결하는 제물포구문화체육센터의 HTTPS 공연·전시 목록(91건·5페이지) 및 같은 공식 host의 detail을 확인. 목록은 title·등록일만 있고 행사기간/venue는 부족하지만 detail에는 예: ‘구스타프 클림트’ 전시의 2026-08-26~10-31, 전시홀, 주최 제물포구·주관 센터가 explicit하게 명시되어 bounded list→detail follow-up으로 core 완성이 가능한 공통 gap 후보. 개별 detail facts를 목록에 미리 합치지 않으며 현행 제물포구 ownership가 명시된 항목만 취급; 옛 동구 자료 자동 승계 금지. 인천 광역 ACTIVE 중복 가능성 기록, onboarding은 하지 않음.",
+    "https://www.jemulpo.go.kr"
+  ],
+  "busan": [
+    "COLLECTOR_GAP",
+    "https://www.visitbusan.net/schedule/list.do?boardId=BBS_0000009&menuCd=DOM_000000204012000000&month=0",
+    "official_tourism_listing",
+    "list_detail_core_followup_needed",
+    "목록에 venue가 없어 bounded detail core follow-up 필요"
+  ],
+  "busan-jung": [
+    "WATCH",
+    "https://www.bsjunggu.go.kr/tour/index.junggu?menuCd=DOM_000000203003000000",
+    "official_tourism_annual_event_table",
+    "source_core_inconsistent",
+    "중구 문화관광의 2026 문화관광 행사일정은 행사명·기간·장소를 한 표에서 제공하고 현재 갱신되어 있다. 다만 일부 항목이 ‘10월 중/11월 중/12월 중’처럼 exact full-year date가 아니고 source-wide durable per-event detail/pagination도 없어 incomplete row를 다른 자료와 결합하거나 연도를 추론하지 않고 WATCH로 둔다.",
+    "https://www.bsjunggu.go.kr"
+  ],
+  "busan-서": [
+    "WATCH",
+    "https://www.bsseogu.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "서구 공식 홈페이지의 2026 축제·행사 공지와 문화관광 콘텐츠는 확인 대상이지만, 이번 live 조사에서 title·explicit full-year start/end·venue·durable detail을 함께 유지하는 지속 canonical 행사 listing과 bounded pagination을 확인하지 못했다. 단발 공지를 daily source로 승격하지 않아 WATCH.",
+    "https://www.bsseogu.go.kr"
+  ],
+  "busan-동": [
+    "ONBOARDING_READY",
+    "https://www.bsdonggu.go.kr/tour/board/list.donggu?boardId=BBS_0000336&contentsSid=1723&cpath=%2Ftour&menuCd=DOM_000000308005002000",
+    "official_tourism_culture_listing",
+    "generic_fallback_paginated",
+    "동구 문화관광 공식 공연·전시 일정은 현재 항목의 title·explicit 2026 기간·전시장소를 동일 목록에서 제공하고, 담당부서 문화체육관광국 문화관광과 ownership과 bounded list 구조가 확인된다. 현재 generic self-contained extraction 후보로 READY.",
+    "https://www.bsdonggu.go.kr"
+  ],
+  "busan-영도": [
+    "WATCH",
+    "https://www.yeongdo.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "영도구 공식 홈페이지/통합검색에서 행사일정 검색과 문화·관광 정보 영역은 확인되지만, 이번 live 조사에서 구 전체 행사·축제의 title·explicit full-year date·venue·durable detail을 함께 제공하는 current canonical listing과 pagination을 직접 검증하지 못했다. 도서관·공고성 일정은 대체 source로 쓰지 않아 WATCH.",
+    "https://www.yeongdo.go.kr"
+  ],
+  "busan-부산진": [
+    "COLLECTOR_GAP",
+    "https://www.bsjincf.or.kr/02_new/new08.asp",
+    "official_affiliated_culture_calendar",
+    "list_detail_core_followup_needed",
+    "부산진문화재단 공식 문화달력/전체 목록은 2026 공연·전시·행사 title과 explicit date/period, first-party detail을 지속 제공하고 2026-09 현재 갱신된다. 목록/달력에는 venue가 일관되게 self-contained하지 않아 기존 bounded list→detail follow-up으로 core를 보완해야 하는 공통 GAP으로 분류한다.",
+    "https://www.busanjin.go.kr"
+  ],
+  "busan-동래": [
+    "COLLECTOR_GAP",
+    "https://www.dongnae.go.kr/culture/index.dongnae?menuCd=DOM_000000602001008000&type=1",
+    "official_culture_venue_listing",
+    "list_detail_core_followup_needed",
+    "동래문화회관 공식 공연·전시 안내는 310건·62페이지의 지속 목록에서 title·explicit full-year start/end를 제공하고 각 항목에 장소보기/예매 구조가 있다. venue가 목록 텍스트에 self-contained하지 않아 현재 generic list-only contract로는 core가 완성되지 않으며 기존 bounded follow-up 적용 후보로 GAP.",
+    "https://www.dongnae.go.kr"
+  ],
+  "busan-남": [
+    "COLLECTOR_GAP",
+    "https://www.bncf.or.kr/",
+    "official_affiliated_culture_listing",
+    "list_detail_core_followup_needed",
+    "부산남구문화재단 공식 공연·전시 영역은 2026 현재/미래 항목의 title·explicit date/period와 first-party 자세히보기 링크를 지속 제공한다. 목록 카드에는 venue가 일관되게 노출되지 않아 detail follow-up으로 core 보완이 필요한 기존 공통 GAP으로 분류한다.",
+    "https://www.bsnamgu.go.kr"
+  ],
+  "busan-북": [
+    "WATCH",
+    "https://www.bsbukgu.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "북구 공식 홈페이지를 current ownership 기준으로 조사했으나 이번 live 조사에서 행사·축제의 title·explicit full-year start/end·venue·durable detail을 함께 유지하는 안정적 canonical listing과 bounded pagination을 검증하지 못했다. 개별 공지나 외부 소개를 결합하지 않고 WATCH.",
+    "https://www.bsbukgu.go.kr"
+  ],
+  "busan-해운대": [
+    "ONBOARDING_READY",
+    "https://www.haeundae.go.kr/culture/schedule/list.do?boardId=BBS_0000215&contentsSid=1842&cpath=%2Fculture&menuCd=DOM_000000901001002000",
+    "official_culture_venue_listing",
+    "generic_fallback_paginated",
+    "해운대구청 문화회관 공식 공연 프로그램은 현재 50건·5페이지이며 각 행에 title·explicit 2026 start/end·venue·first-party detail을 함께 제공한다. 담당부서 문화회관 ownership과 bounded pagination이 확인되어 current generic self-contained source로 READY.",
+    "https://www.haeundae.go.kr"
+  ],
+  "busan-사하": [
+    "WATCH",
+    "https://www.saha.go.kr/tour/main.do",
+    "official_tourism_portal",
+    "source_core_inconsistent",
+    "사하구 공식 문화관광은 행사안내와 개별 축제 페이지를 운영하지만 현재 이달의 행사는 비어 있고 대표 축제 detail도 ‘매년 7~8월 중/매년 10월’ 등 recurring 시기 중심인 경우가 있다. 개별 2026 공지와 정적 소개를 결합해 exact full-year core를 만들지 않고 source-wide canonical listing이 확인될 때까지 WATCH.",
+    "https://www.saha.go.kr"
+  ],
+  "busan-금정": [
+    "WATCH",
+    "https://www.geumjeong.go.kr/",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "금정구 공식 홈페이지에서 2026 금정산성축제 관련 공지·모집 등 current 문화행사 정보는 확인 대상이지만 행정/모집 공지와 혼합되어 있고, 구 전체 관람 행사에 대해 title·explicit full-year date·venue·durable detail을 일관되게 제공하는 canonical bounded listing을 확인하지 못했다. 단일 축제 공지를 승격하지 않아 WATCH.",
+    "https://www.geumjeong.go.kr"
+  ],
+  "busan-gangseo": [
+    "WATCH",
+    "https://www.bsgangseo.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "강서구 공식 홈페이지 ownership은 확인했으나 이번 live 조사에서 지속적으로 갱신되는 행사·축제 canonical listing과 candidate-level title·explicit full-year date·venue·durable detail·pagination을 검증하지 못했다. 비행사성 검색/계약·공고 페이지를 대체 source로 사용하지 않아 WATCH.",
+    "https://www.bsgangseo.go.kr"
+  ],
+  "busan-연제": [
+    "WATCH",
+    "https://www.yeonje.go.kr/main.do",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "연제구 공식 홈페이지에는 행사/교육 및 문화행사 메뉴와 2026 current 안내가 있으나 교육·체육 프로그램·행정성 일정이 혼합된다. 이번 조사에서 문화행사 전용 source-wide canonical listing의 exact full-year date·venue·durable detail·bounded pagination을 일관되게 검증하지 못해 WATCH.",
+    "https://www.yeonje.go.kr"
+  ],
+  "busan-수영": [
+    "WATCH",
+    "https://www.suyeong.go.kr/",
+    "official_government_event_portal",
+    "source_canonical_listing_unverified",
+    "수영구 공식 홈페이지의 행사안내는 개별 detail에서 행사일·장소·주최/기관을 명시하고 2026 광안리 해변영화관·드론라이트쇼 등 current 항목도 노출한다. 다만 이번 live 조사에서 이를 잇는 안정적인 source-wide 행사 list URL과 pagination/전체 coverage를 직접 검증하지 못해 개별 detail만으로 READY 처리하지 않고 WATCH.",
+    "https://www.suyeong.go.kr"
+  ],
+  "busan-사상": [
+    "WATCH",
+    "https://www.sasang.go.kr/tour/board/list.sasang?boardId=BBS_0000006&categoryCode1=01%2C02%2C03&categoryCode3=&menuCd=DOM_000000603004001000&month=10&startPage=1&year=2026",
+    "official_tourism_event_calendar",
+    "source_freshness_unverified",
+    "사상구 문화관광의 공식 공연/전시/행사 달력은 2026 연도·월·카테고리 필터와 담당부서 ownership을 제공하지만 live 2026 여러 월에서 달력 shell만 확인되고 candidate 행사 core가 노출되지 않았다. source payload/freshness를 검증할 수 있을 때까지 JS/API gap으로 단정하지 않고 WATCH.",
+    "https://www.sasang.go.kr"
+  ],
+  "busan-기장": [
+    "WATCH",
+    "https://www.gijang.go.kr/tour/",
+    "official_tourism_festival_collection",
+    "source_wide_listing_missing",
+    "기장군 문화관광은 기장붕장어축제·일광바다축제 등 개별 공식 페이지에서 2026 exact 기간·장소·주최를 충실히 제공한다. 그러나 확인한 구조는 축제별 정적 detail collection이고 전체 행사를 candidate 단위로 지속 공급하는 canonical list/pagination이 아니므로 여러 페이지 사실을 임의 결합하지 않고 WATCH.",
+    "https://www.gijang.go.kr"
+  ],
+  "daegu": [
+    "WATCH",
+    "https://tour.daegu.go.kr/index.do?menu_id=00002932&servletPath=%2Findex.do",
+    "official_tourism_listing",
+    "source_core_inconsistent",
+    "연도 없는 recurring date가 섞여 있음"
+  ],
+  "daegu-jung": [
+    "WATCH",
+    "https://www.jung.daegu.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "대구 중구 공식 홈페이지 기준으로 current 문화·축제 정보를 조사했으나 이번 live 조사에서 행사별 title·explicit full-year start/end·venue·durable detail을 지속 제공하는 canonical bounded listing을 검증하지 못했다. 개별 공지/대표축제 정보를 결합하지 않고 WATCH.",
+    "https://www.jung.daegu.kr"
+  ],
+  "daegu-동": [
+    "WATCH",
+    "https://www.dong.daegu.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "대구 동구 공식 홈페이지에서 2026 문화·축제 관련 공지와 사업은 확인 대상이지만, source-wide current 행사 listing의 exact full-year date·venue·durable detail·pagination을 안정적으로 검증하지 못했다. 막창축제 등 단일 사업/공고를 daily source로 승격하지 않아 WATCH.",
+    "https://www.dong.daegu.kr"
+  ],
+  "daegu-서": [
+    "ONBOARDING_READY",
+    "https://www.dgs.go.kr/music/contents.do?mid=0400000000",
+    "official_culture_venue_calendar",
+    "generic_fallback",
+    "대구 서구청 비원뮤직홀 공식 2026 공연일정은 월별 구조에 title·explicit start/end·place·time·전화 등 self-contained core를 제공한다. 서구문화회관 연간 일정도 current 2026 기간/작품을 제공하며 first-party ownership이 확인되어 READY.",
+    "https://www.dgs.go.kr"
+  ],
+  "daegu-남": [
+    "WATCH",
+    "https://nam.daegu.kr/culturalcenter/",
+    "official_culture_venue_portal",
+    "source_canonical_listing_unverified",
+    "대덕문화전당의 2026 공연·전시 운영과 공식 detail은 확인되지만 이번 live 조사에서 current 전체 공연/전시를 candidate 단위로 제공하는 안정적 canonical list·pagination을 직접 검증하지 못했다. 개별 청년예술제/detail과 대관 공고를 결합하지 않고 WATCH.",
+    "https://nam.daegu.kr"
+  ],
+  "daegu-북": [
+    "WATCH",
+    "https://www.buk.daegu.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "대구 북구가 주최하는 2026 떡볶이 페스티벌 등 current 행사 사실은 공식/공공 연계 자료에서 확인되지만, 북구 자체 source-wide 행사 listing과 pagination의 지속성을 이번 live 조사에서 검증하지 못했다. 단일 대표축제만으로 READY 처리하지 않아 WATCH.",
+    "https://www.buk.daegu.kr"
+  ],
+  "daegu-수성": [
+    "WATCH",
+    "https://www.suseong.kr/",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "수성문화재단/수성아트피아는 2026 월별 주요 공연 안내를 지속 게시하지만 확인된 재단 feed는 문화교육·관광·채용·공지와 혼합되고, 행사별 date·venue를 같은 durable canonical listing으로 일관되게 노출하는 source를 확정하지 못했다. 월별 공지를 합성하지 않고 WATCH.",
+    "https://www.suseong.kr"
+  ],
+  "daegu-달서": [
+    "WATCH",
+    "https://www.dscf.or.kr/main/",
+    "official_affiliated_culture_portal",
+    "source_core_inconsistent",
+    "달서문화재단 공식 홈페이지는 2026 행복달서 대축제와 공연·문화사업을 current하게 운영하지만 home/공지·사업 콘텐츠가 혼합되어 있고 source-wide 행사별 explicit date·venue·durable detail이 self-contained한 bounded listing을 이번 조사에서 확인하지 못했다. WATCH.",
+    "https://www.dalseo.daegu.kr"
+  ],
+  "daegu-달성": [
+    "WATCH",
+    "https://www.dalseong.daegu.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "달성군/달성문화재단 주최 2026 청년축제 등 개별 행사 core는 확인되지만 이번 live 조사에서 달성군 전체 행사·축제의 지속 canonical listing과 pagination을 검증하지 못했다. 외부 관광 detail을 군 source로 대체하거나 개별 사실을 합성하지 않아 WATCH.",
+    "https://www.dalseong.daegu.kr"
+  ],
+  "daegu-군위": [
+    "WATCH",
+    "https://www.gunwi.daegu.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "대구 군위군 공식 홈페이지 기준으로 current 문화행사 source를 조사했으나 행사별 title·explicit full-year date·venue·durable detail을 함께 제공하는 안정적 canonical listing을 이번 live 조사에서 확보하지 못했다. 단발 공지/축제 소개를 승격하지 않고 WATCH.",
+    "https://www.gunwi.daegu.kr"
+  ],
+  "incheon": [
+    "ACTIVE",
+    "https://www.incheon.go.kr/res/RE050101/",
+    "official_event_listing",
+    "generic_fallback_paginated",
+    "Registry key incheon-res"
+  ],
+  "daejeon": [
+    "ACTIVE",
+    "https://daejeon.go.kr/fvu/FvuEventList.do?menuSeq=504",
+    "official_event_listing",
+    "generic_fallback",
+    "Registry key daejeon-fvu"
+  ],
+  "ulsan": [
+    "WATCH",
+    "https://tour.ulsan.go.kr/tour/korean/unit/fstvl/list.ulsan?mId=001003001000000000&searchDvsn1=1",
+    "official_tourism_listing",
+    "source_core_inconsistent",
+    "source-wide full-year exact core 부족"
+  ],
+  "ulsan-남": [
+    "WATCH",
+    "https://www.ulsannamgu.go.kr/tour/board/tourFestival/calendar.do",
+    "official_tourism_event_calendar",
+    "source_payload_unverified",
+    "남구 문화·관광 공식 축제/행사 calendar는 2026 월별 구조와 관광과 ownership을 유지하고 2026-09에도 페이지 업데이트가 확인된다. 그러나 2026-09/10 live calendar는 날짜 grid만 노출되고 candidate title·full-year date·venue·detail payload가 확인되지 않아 current event coverage와 generic extraction을 확정할 수 없다. 별도 고래축제 정보와 임의 결합하지 않고 WATCH.",
+    "https://www.ulsannamgu.go.kr"
+  ],
+  "ulsan-동": [
+    "WATCH",
+    "https://www.donggu.ulsan.kr/tour/tourBBS/CE/list.do",
+    "official_tourism_festival_listing",
+    "source_freshness_unverified",
+    "동구 문화관광 공식 축제/행사 목록은 durable first-party list/detail 체계를 갖고 과거 울산조선해양축제의 date·venue core를 제공하지만 live 목록 최신 항목은 2025 축제까지이고 2026 축제 준비 사실은 별도 공식 자료에서만 확인된다. 현재 listing 자체의 2026 freshness가 확인될 때까지 WATCH.",
+    "https://www.donggu.ulsan.kr"
+  ],
+  "ulsan-북": [
+    "ONBOARDING_READY",
+    "https://www.bukgu.ulsan.kr/art/BBS_014List.mo",
+    "official_culture_venue_performance_listing",
+    "generic_fallback",
+    "북구청 직영 북구문화예술회관 공식 공연 목록은 2026-09/10 current·future 항목의 title·explicit full-year start/end·venue·first-party detail을 같은 카드에 self-contained로 제공한다. 별도 전시 목록도 같은 구조이며 구청 조직상 문화예술회관 ownership이 확인돼 현재 generic extraction 후보로 READY.",
+    "https://www.bukgu.ulsan.kr"
+  ],
+  "ulsan-울주": [
+    "WATCH",
+    "https://www.ulju.ulsan.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "울주군 공식 홈페이지와 문화·관광 영역에서 개별 축제·공연 및 2026 행사 정보는 확인 대상이지만 이번 live 조사에서 군 전체 문화행사를 지속 공급하는 canonical listing의 title·explicit full-year date·venue·durable detail·bounded pagination을 안정적으로 확인하지 못했다. 개별 공지/대표축제를 결합하지 않아 WATCH.",
+    "https://www.ulju.ulsan.kr"
+  ],
+  "ulsan-jung": [
+    "ONBOARDING_READY",
+    "https://www.junggu.ulsan.kr/tour/index.ulsan?menuCd=DOM_000002208005006002",
+    "official_tourism_culture_event_schedule",
+    "generic_fallback",
+    "중구 문화관광 공식 문화예술 행사일정은 2026 월별 표에서 행사명·explicit 일시·venue·내용·주최/주관을 self-contained로 제공하는 current first-party schedule이다. 단일 대표축제 소개가 아니라 월별 다수 행사 구조여서 generic extraction 후보로 READY.",
+    "https://www.junggu.ulsan.kr"
+  ],
+  "sejong": [
+    "COLLECTOR_GAP",
+    "https://www.sjcf.or.kr/hangeul/www/prfr/list.do?key=2504150023",
+    "official_culture_listing",
+    "list_detail_core_followup_needed",
+    "목록 venue 부재"
+  ],
+  "gyeonggi": [
+    "WATCH",
+    "https://ggtour.or.kr/main",
+    "official_tourism_portal",
+    "source_core_inconsistent",
+    "경기관광 메인에서 행사·축제 보도와 콘텐츠는 확인되지만, 광역 단위로 title·full-year date·venue가 함께 유지되는 canonical bounded listing을 확인하지 못함. 보도자료를 daily source로 승격하지 않음"
+  ],
+  "gangwon": [
+    "WATCH",
+    "https://m.gangwon.to/gwtour/now/festival",
+    "official_tourism_listing",
+    "source_fetch_unavailable",
+    "live HTTP probe가 repeated timeout으로 source document를 안정적으로 읽지 못함. generic extraction·pagination·candidate contract를 확인할 수 있을 때까지 ACTIVE 승격 금지"
+  ],
+  "chungbuk": [
+    "COLLECTOR_GAP",
+    "https://tour.chungbuk.go.kr/www/selectBbsNttList.do?bbsNo=10&key=80",
+    "official_tourism_listing",
+    "list_detail_core_followup_needed",
+    "충북나드리 연간축제일정에서 공식 축제 목록과 날짜는 확인되나 카드/표 변형과 일부 월·일 표기 혼재로 generic collector의 안정적 self-contained extraction을 추가 검증해야 함"
+  ],
+  "chungnam": [
+    "COLLECTOR_GAP",
+    "https://tour.chungnam.go.kr/prog/fstvl/kor/sub02_02_02/list.do",
+    "official_tourism_listing",
+    "generic_html_card_structure_gap",
+    "pageIndex=1..3 official 목록은 HTTP 200, full-year date·venue·detail 구조와 pagination을 제공하지만 현재 generic extractor는 카드 HTML에서 0 candidates로 fail-closed됨"
+  ],
+  "jeonbuk": [
+    "COLLECTOR_GAP",
+    "https://tour.jb.go.kr/index.do",
+    "official_tourism_listing",
+    "list_detail_core_followup_needed",
+    "투어전북의 현재 행사 목록과 full-year 기간은 확인되지만 대표 목록 카드에서 venue self-contained 여부가 일관되지 않아 list-detail follow-up이 필요함"
+  ],
+  "gyeongbuk": [
+    "WATCH",
+    "https://www.gb.go.kr/Main/programs/announce/announce.do?A_CYCLE=&A_ITEM=&A_LIST=&A_TIME=&DEPT_BUSEO=&LCODE=10&MCODE=&SCODE=&mnu_uid=0&pageNo=3&strkey=&word=",
+    "official_government_data_catalog",
+    "source_core_missing",
+    "경북도 행정정보공표 목록에 시군구별 지역축제·행사 데이터 항목은 있으나 현재 public bounded listing과 candidate-level durable URL을 확인하지 못함"
+  ],
+  "gyeongnam": [
+    "WATCH",
+    "https://tour.gyeongnam.go.kr/index.gyeong",
+    "official_tourism_portal",
+    "source_core_missing",
+    "경남관광 공식 포털은 확인했으나 광역 행사·축제의 full-year date·venue를 함께 제공하는 지속적 canonical listing을 확인하지 못함"
+  ],
+  "jeju": [
+    "COLLECTOR_GAP",
+    "https://www.visitjeju.net/kr/festival",
+    "official_tourism_listing",
+    "generic_html_card_structure_gap",
+    "Visit Jeju canonical festival/list endpoint는 HTTP 200과 first-party detail structure를 제공하지만 현재 generic extractor는 0 candidates. list card extraction 지원 전 ACTIVE 승격 금지"
+  ],
+  "gyeonggi-paju": [
+    "ACTIVE",
+    "https://tour.paju.go.kr/user/link/cultural/BD_index.do",
+    "official_event_listing",
+    "registered_parser",
+    "Registry key paju"
+  ],
+  "gyeonggi-suwon": [
+    "ACTIVE",
+    "https://www.swcf.or.kr/?p=29",
+    "official_event_listing",
+    "registered_parser",
+    "Registry key suwon"
+  ],
+  "gyeonggi-goyang": [
+    "ACTIVE",
+    "https://goyang.go.kr/visitgoyang/www/contents.do?key=595&searchCtgry=1674023925303",
+    "official_event_listing",
+    "registered_parser",
+    "Registry key goyang"
+  ],
+  "gyeonggi-hwaseong": [
+    "ACTIVE",
+    "https://tour.hscity.go.kr/NEW/6festival/festival5.jsp",
+    "official_event_listing",
+    "registered_parser",
+    "Registry key hwaseong"
+  ],
+  "gyeonggi-bucheon": [
+    "ACTIVE",
+    "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003",
+    "official_event_listing",
+    "registered_parser",
+    "Registry key bucheon"
+  ],
+  "gyeonggi-가평": [
+    "COLLECTOR_GAP",
+    "https://www.gp.go.kr/portal/selectBbsNttList.do?bbsNo=76&key=443&pageIndex=1",
+    "official_culture_event_listing",
+    "list_detail_core_followup_needed",
+    "가평군 공식 문화축제교육행사 게시판은 live 8페이지로 지속 갱신되고 문화체육과 행사 공지를 포함하나 목록은 제목·작성일 중심이며 venue와 explicit full-year start/end는 개별 durable detail에서 확인해야 한다. detail follow-up으로 core 완성이 가능한 정적 first-party 후보이나 현재 list만으로 self-contained 수집은 불가. 교육/행정 공지도 섞여 candidate signal은 fail-closed 필요.",
+    "https://www.gp.go.kr"
+  ],
+  "gyeonggi-과천": [
+    "ONBOARDING_READY",
+    "https://www.gcart.or.kr/kr/concert/concertList.do",
+    "official_affiliated_culture_listing",
+    "generic_fallback_paginated",
+    "과천시가 설립·운영하는 과천문화재단 공식 공연/전시 일정. live 목록은 공연 title, 2026 explicit 일자/기간, 장소(공연장/야외공연장 등), detail link를 같은 항목에서 제공하고 월/상태/장소 필터와 총 13건의 bounded listing을 확인. 대표 2026 과천공연예술축제는 9/18~9/20. 첫-party HTTPS이며 현재 generic HTML extraction에 필요한 self-contained core가 목록에 존재.",
+    "https://www.gccity.go.kr"
+  ],
+  "gyeonggi-광명": [
+    "WATCH",
+    "https://www.gm.go.kr/pt/ns/culturalEvents/list.do",
+    "official_culture_calendar",
+    "source_core_missing",
+    "광명시 공식 문화행사 달력은 2026-09 live 화면에서 월간 calendar와 행사명·행사기간·장소 열을 가진 목록 구조를 제공하지만 해당 월 목록은 ‘데이터가 존재하지 않습니다’. 별도 행사·축제 달력에는 주민회의/모집/행정 일정이 다수 혼합되어 source-wide canonical event feed의 freshness 및 detail 구조를 확정하지 못함. 특정 개별 공연/축제만으로 지속 source를 추정하지 않아 WATCH.",
+    "https://www.gm.go.kr"
+  ],
+  "gyeonggi-광주": [
+    "ONBOARDING_READY",
+    "https://www.gjcity.go.kr/portal/bbs/list.do?mId=0201030100&ptIdx=24",
+    "official_culture_event_listing",
+    "generic_fallback_paginated",
+    "광주시 공식 문화·행사 목록은 live 30페이지로 지속 갱신되며 광주시문화재단 공연 등 title, explicit 2026 start/end(단일일 포함), venue와 같은 목록 항목 내 상세 내용을 제공한다. 2026-10/11 공연 항목에서 full-year 날짜와 광주시문화예술의전당 장소를 확인했고 first-party detail/list structure 및 pagination이 있다. 단 문화·행사 board이므로 행사 signal을 활용하며 광주광역시(타 광역단체)가 아닌 경기도 광주시 source임을 확인.",
+    "https://www.gjcity.go.kr"
+  ],
+  "gyeonggi-구리": [
+    "WATCH",
+    "https://www.guri.go.kr/www/index.do?yyyymm=202609",
+    "official_government_event_calendar",
+    "source_core_inconsistent",
+    "구리시 공식 홈페이지 월간 일정과 문화행사 영역에서 2026년 행사 공지는 확인했으나 달력/feed에는 회의·교육·모집 등 행정 일정이 혼합되고 행사 title·explicit full-year 기간·venue·durable detail이 하나의 안정적 bounded listing으로 일관되지 않음. 코스모스 꽃길 버스킹 등 단일 모집/행사 공지는 지속 canonical source로 승격하지 않음.",
+    "https://www.guri.go.kr"
+  ],
+  "gyeonggi-군포": [
+    "WATCH",
+    "https://www.gunpo.go.kr/tour/index.do",
+    "official_tourism_portal",
+    "source_core_missing",
+    "군포시 공식 문화관광 포털의 문화예술행사 게시판은 live지만 최근 콘텐츠가 참가자·업체 모집/공고와 교육·문화소식 중심이다. 일부 detail은 행사시작/종료일 및 장소 필드를 명시하지만 관광 포털의 지속 listing에서 일반 관람 행사 core, durable event detail 및 source-wide pagination을 확정하지 못했다. 군포철쭉축제 개별 모집 공고를 canonical 일정으로 승격하지 않음.",
+    "https://www.gunpo.go.kr"
+  ],
+  "gyeonggi-김포": [
+    "WATCH",
+    "https://m.gimpo.go.kr/culture/schdulList.do?key=6814&sMonth=11&sYear=2026&schdulDiv=",
+    "official_culture_calendar",
+    "source_core_missing",
+    "김포시 공식 문화관광의 문화행사일정은 월별 calendar/list이며 HTTPS·담당부서 ownership은 확인했으나 live 2026-11 목록은 결과 없음. 별도 하반기 축제·행사 페이지는 title과 venue가 있는 소개형 개별 항목 모음이며 행사별 explicit full-year start/end·durable detail/pagination을 확인하지 못함. 행사 일정 calendar의 현재 freshness/core가 부족해 WATCH.",
+    "https://www.gimpo.go.kr"
+  ],
+  "gyeonggi-남양주": [
+    "COLLECTOR_GAP",
+    "https://www.nyjcf.or.kr/www/19",
+    "official_affiliated_culture_listing",
+    "list_detail_core_followup_needed",
+    "남양주시 공식 산하 남양주문화재단의 공연·전시 일정은 현재 갱신되며 제목·명시 2026 date와 durable first-party detail을 제공한다. 상세 페이지에서 venue(예: 북한강 야외공연장) 및 explicit 기간을 확인해야 하므로 목록만으로 self-contained core가 완성되지 않으며 기존 bounded list→detail follow-up으로 해결 가능한 유형. 일정 달력은 월별 bounded listing이고 기획/대관 유형이 구분됨.",
+    "https://www.nyjcf.or.kr"
+  ],
+  "gyeonggi-동두천": [
+    "WATCH",
+    "https://www.ddc.go.kr/site/ddc/",
+    "official_government_portal",
+    "source_core_missing",
+    "동두천시 HTTPS 공식 포털 및 시 산하 문화시설 정보를 확인했으나 현재 갱신되는 행사·축제 canonical listing에서 title, explicit full-year start/end, venue, durable detail 및 pagination을 함께 확인하지 못함. 과거 중기재정/업무계획의 행사 언급과 개별 시설 소개는 live event source가 아니므로 WATCH.",
+    "https://www.ddc.go.kr"
+  ],
+  "gyeonggi-성남": [
+    "WATCH",
+    "https://www.seongnam.go.kr/pm010201",
+    "official_government_event_calendar",
+    "source_core_inconsistent",
+    "성남시 공식 행사/강좌/공모 달력은 live 월간 목록과 2026 날짜, 일부 행사 detail 내 장소를 제공하나 공모·모집·강좌·행정행사까지 혼합되고 목록 자체 venue/full-year event core가 일관되지 않음. 성남문화관광 행사 영역 역시 지역 행사 외 가족센터·교육/예약 콘텐츠가 섞여 source-wide generic extraction을 안전하게 한정하기 어려움. 특정 콘서트 detail 하나만으로 READY 처리하지 않음.",
+    "https://www.seongnam.go.kr"
+  ],
+  "gyeonggi-의정부": [
+    "ONBOARDING_READY",
+    "https://ui4u.go.kr/portal/eventNoti/list.do?mId=0301170300",
+    "official_government_event_listing",
+    "generic_fallback_paginated",
+    "의정부시 공식 ‘문화, 한눈에 달력(행사·축제정보)’의 2026 연간 목록은 38페이지로 지속 갱신되며 분야·title·explicit full-year start/end·venue·담당부서를 같은 행에 제공하고 행사·축제 세부내용/캘린더 구조도 있다. 2026-10 송3 어울림 한마당·동오마을 푸드페스타 등 현재 future 항목까지 확인되어 first-party self-contained paginated source로 READY.",
+    "https://www.ui4u.go.kr"
+  ],
+  "gyeonggi-안양": [
+    "COLLECTOR_GAP",
+    "https://ayac.or.kr/base/ayac/performance/yearList?menuLevel=2&menuNo=2&year=2026",
+    "official_affiliated_culture_listing",
+    "source_access_protection_gap",
+    "안양문화예술재단 공식 연간 공연·전시 일정은 2026 title·기간과 first-party detail을 지속 제공하고 detail에서 장소까지 명시한다. 다만 live access에서 WELLCONN/TRACER 대기·IP 차단 응답이 함께 관측되어 Worker generic fetch가 안정적으로 원문 HTML을 받을 수 있는지 보장되지 않는다. source core는 충분하므로 WATCH가 아니라 collector/access gap으로 분류하며 onboarding 전 read-only fetch probe가 필요하다.",
+    "https://www.anyang.go.kr"
+  ],
+  "gyeonggi-평택": [
+    "ONBOARDING_READY",
+    "https://www.pccf.or.kr/pfmc/pfmcAllList.do",
+    "official_affiliated_culture_listing",
+    "generic_fallback_paginated",
+    "평택시문화재단 공식 ‘공연·전시·축제·행사’ 목록은 현재 37건과 유형/장소 필터를 제공하며 각 항목에 title·explicit 2026 start/end·venue와 first-party detail 구조가 있다. 2026-10 마티네 콘서트·국악관현악축제 등 future 항목도 확인되어 current generic self-contained source로 READY.",
+    "https://www.pyeongtaek.go.kr"
+  ],
+  "gyeonggi-안산": [
+    "WATCH",
+    "https://www.ansanart.com/index.do",
+    "official_affiliated_culture_portal",
+    "source_canonical_listing_unverified",
+    "안산문화재단 공식 홈페이지의 현재 ‘공연/전시 전체보기’에는 2026 title·full-year 기간·venue·detail과 공연/전시/축제&행사 구분이 노출된다. 그러나 homepage는 소수 teaser이고 별도 공연안내/월간일정 canonical route는 관측 시 기본 데이터가 2025로 남아 current 2026 source-wide listing·pagination을 확정하지 못했다. 현재 core 일부만으로 READY 처리하지 않고 stable 2026 canonical list가 확인될 때까지 WATCH.",
+    "https://www.ansan.go.kr"
+  ],
+  "gyeonggi-오산": [
+    "WATCH",
+    "https://www.osan.go.kr/arts/",
+    "official_affiliated_culture_portal",
+    "source_canonical_listing_unverified",
+    "오산시 공식 host의 오산문화재단 program detail과 공식 채널에서 2026 공연 title·full-year 일시·오산문화예술회관 venue·durable detail URL을 확인했다. 하지만 이번 live 조사에서 이를 잇는 source-wide current 공연/전시 canonical list route와 pagination을 안정적으로 확인하지 못해 개별 detail만으로 지속 source를 추정하지 않는다. list가 검증될 때까지 WATCH.",
+    "https://www.osan.go.kr"
+  ],
+  "gyeonggi-시흥": [
+    "WATCH",
+    "https://www.siheung.go.kr/main.do",
+    "official_government_portal",
+    "source_core_missing",
+    "시흥시 공식 홈페이지·공유예약에서 개별 2026 공연/축제 안내와 날짜·장소는 확인 가능하나, 문화행사 전체를 지속적으로 묶는 canonical listing에서 title·explicit full-year start/end·venue·durable detail·bounded pagination을 함께 확인하지 못했다. 개별 예약/갯골축제 페이지를 시 전체 daily source로 확대하지 않아 WATCH.",
+    "https://www.siheung.go.kr"
+  ],
+  "gyeonggi-의왕": [
+    "WATCH",
+    "https://www.uiwang.go.kr/reserve/",
+    "official_integrated_reservation",
+    "source_core_inconsistent",
+    "의왕시 공식 통합예약은 축제·행사/공연·전시 카테고리와 2026 개별 detail의 기간·장소·부서 정보를 제공한다. 다만 landing/list는 교육·강좌·예약 프로그램이 혼합되고 현재 접수 프로그램 없음 상태도 관측되어 시 전체 문화행사의 지속 canonical feed와 안정적 event-only pagination을 확정하지 못했다. 개별 왕림이팝아트홀 공연만으로 READY 처리하지 않아 WATCH.",
+    "https://www.uiwang.go.kr"
+  ],
+  "gyeonggi-하남": [
+    "ONBOARDING_READY",
+    "https://www.hanam.go.kr/www/selectClturEventWebList.do?key=12376",
+    "official_culture_event_listing",
+    "generic_fallback_paginated",
+    "하남시 공식 문화행사소식은 현재 77건·13페이지로 운영되며 각 항목에 title·explicit 2026 start/end·venue·first-party detail을 제공한다. 축제·대회·공모전 등이 함께 있으므로 candidate signal은 fail-closed로 적용해야 하지만 source core와 bounded pagination이 self-contained여서 READY.",
+    "https://www.hanam.go.kr"
+  ],
+  "gyeonggi-용인": [
+    "ONBOARDING_READY",
+    "https://www.yicf.or.kr/main/show/list.do?menuNo=010000&show_type=all&subMenuNo=010100&thirdMenuNo=&viewType=img",
+    "official_affiliated_culture_listing",
+    "generic_fallback_paginated",
+    "용인문화재단 공식 전체 일정은 2026 월/장르/공간 필터와 multi-page listing을 제공하고 title·explicit start/end·venue·first-party detail을 같은 항목에 노출한다. 2026 토요키즈클래식·전시·생활문화 행사 등 현재/미래 항목과 1~5페이지 구조를 확인해 READY.",
+    "https://www.yongin.go.kr"
+  ],
+  "gyeonggi-이천": [
+    "ONBOARDING_READY",
+    "https://www.icheon.go.kr/portal/universal/kalendar/index.do?mid=0401030000&token=1729599644700",
+    "official_government_event_listing",
+    "generic_fallback_paginated",
+    "이천시 공식 ‘시정달력(행사/축제)’은 현재 48페이지와 상태·기간·구분(전시/공연/행사/축제 등) 필터를 제공하며 각 항목에 title·explicit full-year start/end·venue·durable detail을 노출한다. 2026 이천아트홀 서커스 페스티벌 등 future 항목도 확인되어 READY.",
+    "https://www.icheon.go.kr"
+  ],
+  "gyeonggi-안성": [
+    "COLLECTOR_GAP",
+    "https://www.anseong.go.kr/tour/contents.do?mId=0203010000",
+    "official_tourism_multi_event_page",
+    "generic_html_card_structure_gap",
+    "안성시 공식 문화관광 ‘공연/전시/행사’ 페이지는 금광달빛축제·공도문화축제·바우덕이축제 등 다수 2026 행사의 title·explicit 날짜·venue·주관을 한 current first-party 페이지에 제공한다. 다만 source는 pagination/per-event durable list가 아니라 여러 행사가 이어진 static contents 구조라 current generic extractor가 record boundary를 안전하게 보장하는지 검증되지 않았다. source core는 충분하므로 generic HTML structure GAP으로 분류.",
+    "https://www.anseong.go.kr"
+  ],
+  "gyeonggi-양주": [
+    "WATCH",
+    "https://www.yangju.go.kr/www/index.do",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "양주시 공식 홈페이지의 현재 행사소식에는 2026 양주 천일홍 가을 페스타·양주관아 탈놀이 풍물축제 등 title·full-year 일시·장소가 지속 게시되지만 교육특강·모집·일반 시정소식과 혼합된 homepage/news feed다. 행사 전용 bounded canonical listing·pagination을 확인하지 못해 개별 공지를 daily source로 승격하지 않고 WATCH.",
+    "https://www.yangju.go.kr"
+  ],
+  "gyeonggi-포천": [
+    "ONBOARDING_READY",
+    "https://pcfac.or.kr/sub03/sub06-1.php",
+    "official_affiliated_culture_listing",
+    "generic_fallback",
+    "포천문화관광재단 공식 문화사업 일정은 2026 월간/연간 전환과 장소·장르 필터를 제공하며 current list에 title·explicit full-year date/period·venue category·first-party detail을 self-contained로 노출한다. 공연·전시 일정과 별도 축제 일정도 같은 first-party 체계로 운영되고 2026-09~10 future 프로그램이 확인되어 READY.",
+    "https://www.pocheon.go.kr"
+  ],
+  "gyeonggi-여주": [
+    "ONBOARDING_READY",
+    "https://www.yjcf.or.kr/reserve/board/1/M/L/menu/401",
+    "official_affiliated_culture_listing",
+    "generic_fallback_paginated",
+    "여주세종문화관광재단 공식 공연일정은 월별/목록 구조에서 title·explicit 2026 start/end·venue·first-party detail을 함께 제공한다. 2026-09 문화가 있는 날 공연 등 current/future 항목과 장르 구분이 확인되어 generic self-contained source로 READY.",
+    "https://www.yeoju.go.kr"
+  ],
+  "gyeonggi-연천": [
+    "WATCH",
+    "https://www.yeoncheon.go.kr/tour/",
+    "official_tourism_portal",
+    "source_core_missing",
+    "연천군 공식 관광/축제 포털은 2026 연천 구석기축제처럼 explicit full-year 기간·장소·프로그램을 충실히 제공하지만 확인된 구조는 개별 대표 축제 landing 중심이다. 군 전체 문화행사를 지속적으로 묶는 canonical list·pagination과 source-wide core를 확인하지 못해 단일 축제를 확대하지 않고 WATCH.",
+    "https://www.yeoncheon.go.kr"
+  ],
+  "gyeonggi-양평": [
+    "WATCH",
+    "https://ypcf.or.kr/",
+    "official_affiliated_culture_portal",
+    "source_canonical_listing_unverified",
+    "양평문화재단 공식 홈페이지는 2026 공연·전시/교육 콘텐츠와 현재 미디어 아카이브를 운영하지만, 행사별 title·explicit full-year date·venue·durable detail을 함께 유지하는 source-wide canonical 공연/행사 listing과 pagination을 확인하지 못했다. 사업공고/개별 콘텐츠를 daily source로 결합하지 않고 WATCH.",
+    "https://www.yp21.go.kr"
+  ],
+  "gangwon-강릉": [
+    "WATCH",
+    "https://www.gn.go.kr/www/index.do",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "강릉시 공식 누리집과 통합예약/관광 영역은 current 운영 중이지만 이번 live 조사에서 시 전체 문화·축제 행사를 title·explicit full-year date·venue·durable detail·bounded pagination으로 지속 공급하는 canonical listing을 검증하지 못했다. 예약/개별 공지를 결합하지 않고 WATCH.",
+    "https://www.gn.go.kr"
+  ],
+  "gangwon-고성": [
+    "WATCH",
+    "https://www.gwgs.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "강원 고성군 공식 홈페이지에서 2026 저도 대문어축제 등 개별 공지는 explicit 기간·장소를 제공하지만 source-wide current 행사 listing과 pagination을 확인하지 못했다. 개별 공지를 canonical daily source로 승격하지 않아 WATCH.",
+    "https://www.gwgs.go.kr"
+  ],
+  "gangwon-동해": [
+    "WATCH",
+    "https://dh.go.kr/www/index.do",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "동해시 공식 홈페이지는 2026-09 current 공연 홍보와 주간행사를 지속 갱신하지만 홈/주간일정은 행정·교육·시정행사가 혼합되고 문화행사 전용 source-wide core listing을 확인하지 못했다. 특정 공연 teaser를 확대하지 않아 WATCH.",
+    "https://dh.go.kr"
+  ],
+  "gangwon-삼척": [
+    "WATCH",
+    "https://www.samcheok.go.kr/",
+    "official_government_portal",
+    "source_scope_too_narrow",
+    "삼척시 산하 청소년수련관은 2026 어울림마당 등 행사 title·full-year 일시·장소를 current 제공하지만 청소년시설 단일 scope이고, 시 전체 문화·축제 canonical listing은 이번 조사에서 검증하지 못했다. 시설 schedule을 시 전체 source로 승격하지 않아 WATCH.",
+    "https://www.samcheok.go.kr"
+  ],
+  "gangwon-속초": [
+    "WATCH",
+    "https://www.sokcho.go.kr/sc/portal",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "속초시 공식 누리집은 교육·문화 메뉴와 주간행사 605건/41페이지를 current 운영하지만 주간행사는 행정 일정 첨부 중심이고 문화·축제 전용 candidate core를 HTML listing에서 self-contained로 제공하지 않는다. 보도자료와 결합하지 않고 WATCH.",
+    "https://www.sokcho.go.kr"
+  ],
+  "gangwon-양구": [
+    "WATCH",
+    "https://www.yanggu.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "양구군 공식 ownership은 확인되지만 이번 live 조사에서 군 전체 문화·축제를 지속 공급하는 current canonical listing과 title·explicit full-year date·venue·durable detail·pagination을 검증하지 못했다. 공식 SNS나 개별 홍보를 대체 source로 쓰지 않아 WATCH.",
+    "https://www.yanggu.go.kr"
+  ],
+  "gangwon-양양": [
+    "WATCH",
+    "https://tour.yangyang.go.kr/pub/funculture.do",
+    "official_tourism_festival_detail",
+    "source_wide_listing_missing",
+    "양양관광은 2026 양양문화제처럼 explicit full-year 기간·장소·주최를 충실히 제공하지만 확인한 구조는 개별 대표축제 detail 중심이며 군 전체 행사를 지속 공급하는 canonical listing/pagination을 검증하지 못했다. 개별 축제만으로 READY 처리하지 않아 WATCH.",
+    "https://www.yangyang.go.kr"
+  ],
+  "gangwon-영월": [
+    "WATCH",
+    "https://www.yw.go.kr/www/index.do",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "영월군 공식 홈페이지는 2026 정원산업박람회와 정원콘서트 등 future 행사 title·기간·venue를 메인에서 노출하지만 여러 행사를 지속 수집할 canonical event listing과 bounded pagination을 이번 조사에서 확인하지 못했다. homepage teaser를 daily source로 쓰지 않아 WATCH.",
+    "https://www.yw.go.kr"
+  ],
+  "gangwon-원주": [
+    "ONBOARDING_READY",
+    "https://www.wonju.go.kr/www/selectCtyhllCldrListCal.do?key=213&pageIndex=1&pageUnit=10&searchCnd=all&searchLgd=7",
+    "official_government_culture_calendar",
+    "generic_fallback",
+    "원주시 공식 ‘주요 문화행사’는 2026-09 current 월간/연간 calendar와 문화행사·축제·백운아트홀 등 구분을 제공하고 각 행에 title·explicit full-year 기간·시간·venue·주최/주관을 self-contained로 노출한다. first-party current schedule로 generic extraction 후보라 READY.",
+    "https://www.wonju.go.kr"
+  ],
+  "gangwon-인제": [
+    "WATCH",
+    "https://www.inje.go.kr/portal/adm/public/advinfo/advinfo_06",
+    "official_government_preinformation_listing",
+    "source_core_inconsistent",
+    "인제군 공식 사전정보공표는 ‘인제군 축제 현황(2026년)’을 current 게시하고 공지사항에도 2026 가을꽃축제·박인환문학축제 등을 지속 노출한다. 다만 축제현황은 정적 자료/첨부 성격이고 공지 목록은 모집·교육이 혼합돼 candidate-level date·venue·detail을 안정적으로 수집할 canonical event listing으로 검증되지 않아 WATCH.",
+    "https://www.inje.go.kr"
+  ],
+  "gangwon-정선": [
+    "WATCH",
+    "https://www.jeongseon.go.kr/portal/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "정선군 공식 홈페이지에서 행사·축제 현황과 재정공시 자료는 확인되지만 2026 current 관람 행사에 대해 title·full-year date·venue·durable detail을 함께 제공하는 지속 canonical listing을 확인하지 못했다. 결산기준 과거 행사현황은 live source가 아니므로 WATCH.",
+    "https://www.jeongseon.go.kr"
+  ],
+  "gangwon-철원": [
+    "WATCH",
+    "https://www.cwg.go.kr/tour/",
+    "official_tourism_portal",
+    "source_canonical_listing_unverified",
+    "철원 문화관광은 2026 오대쌀축제와 역사문화공원 상설공연 detail에서 explicit 기간·venue를 제공하고 공지 listing도 current 운영한다. 그러나 공연/축제 전용 source-wide list의 stable payload와 pagination을 이번 live 조사에서 끝까지 검증하지 못해 개별 detail을 결합하지 않고 WATCH.",
+    "https://www.cwg.go.kr"
+  ],
+  "gangwon-춘천": [
+    "WATCH",
+    "https://www.chuncheon.go.kr/tour/?Mcode=10715",
+    "official_tourism_annual_event_notice",
+    "source_not_persistent_listing",
+    "춘천 관광포털은 ‘2026 춘천시 축제 행사 일정’ 한 게시물에 다수 행사의 시기·장소를 current 제공하지만 이는 연간 편집형 공지이며 per-event durable listing/pagination이 아니다. 일부 ‘9월 예정’ 같은 비정확 날짜도 있어 canonical daily source로 승격하지 않고 WATCH.",
+    "https://www.chuncheon.go.kr"
+  ],
+  "gangwon-평창": [
+    "WATCH",
+    "https://www.pc.go.kr/",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "평창군 공식 홈페이지는 current 주간행사계획과 2026 축제·행사 관련 공지를 제공하지만 주간행사는 행정 일정이 혼합되고 문화·축제 전용 self-contained canonical listing을 확인하지 못했다. 첨부/보도 정보를 결합하지 않아 WATCH.",
+    "https://www.pc.go.kr"
+  ],
+  "gangwon-홍천": [
+    "WATCH",
+    "https://www.hongcheon.go.kr/www/schdulCalendar.do?key=257",
+    "official_government_weekly_schedule",
+    "source_core_inconsistent",
+    "홍천군 공식 주간일정은 2026 행사·회의·교육·기타를 날짜·시간·장소와 함께 current 제공하며 산나물축제 등 문화행사도 포함하지만 행정 일정과 강하게 혼합되어 갈틈 대상 event-only source로 안전하게 한정하기 어렵다. 별도 공고와 결합하지 않아 WATCH.",
+    "https://www.hongcheon.go.kr"
+  ],
+  "gangwon-화천": [
+    "WATCH",
+    "https://www.ihc.go.kr/photo/selectPhotoInfoWebList.do?ctgryNo=117&key=2117&pageIndex=1&pageUnit=48",
+    "official_government_event_photo_archive",
+    "source_not_future_listing",
+    "화천군 공식 사진DB ‘축제/행사’는 2026 토마토축제·붕어섬 드론 페스타·산천어축제 등을 대량으로 current 기록하고 date/location metadata를 제공하지만 개최 후 사진 아카이브라 future 행사 수집용 canonical schedule이 아니다. 회고 source를 daily feed로 쓰지 않아 WATCH.",
+    "https://www.ihc.go.kr"
+  ],
+  "gangwon-횡성": [
+    "WATCH",
+    "https://www.hoengseong.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "횡성군 공식 홈페이지/문화관광에서 2026 지역축제·행사 정보는 확인 대상이지만 이번 live 조사에서 군 전체 문화행사를 지속 공급하는 canonical listing의 explicit full-year date·venue·detail·bounded pagination을 검증하지 못했다. 개별 축제 공지를 결합하지 않아 WATCH.",
+    "https://www.hoengseong.go.kr"
+  ],
+  "jeonbuk-고창": [
+    "WATCH",
+    "https://www.gochang.go.kr/tour/",
+    "official_tourism_portal",
+    "source_canonical_listing_unverified",
+    "고창군 공식 문화관광에서 고창청보리밭축제·모양성제 등 2026 개별 축제 정보는 확인 대상이지만, 이번 live 조사에서 군 전체 문화행사를 title·explicit full-year date·venue·durable detail과 함께 지속 공급하는 canonical bounded listing을 확인하지 못했다. 대표축제/개별 공지를 결합하지 않고 WATCH.",
+    "https://www.gochang.go.kr"
+  ],
+  "jeonbuk-군산": [
+    "WATCH",
+    "https://www.gunsan.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "군산시 공식 홈페이지/문화시설에서 공연·축제 정보와 개별 일정은 확인되지만, 2026 현재 시 전체 행사에 대해 title·explicit full-year start/end·venue·durable detail을 한 source-wide bounded listing으로 검증하지 못했다. 과거 공연일정 경로 또는 개별 공지를 current canonical source로 추정하지 않아 WATCH.",
+    "https://www.gunsan.go.kr"
+  ],
+  "jeonbuk-김제": [
+    "WATCH",
+    "https://www.gimje.go.kr/index.gimje",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "김제시 공식 대표 누리집은 2026 일자리박람회·외국인 근로자 문화행사 등 current 행사 title·일시·장소를 노출하지만 시정 인포존/읍면동 공지가 혼합된 구조다. 문화행사 전용 durable listing·bounded pagination을 확인하지 못해 WATCH.",
+    "https://www.gimje.go.kr"
+  ],
+  "jeonbuk-남원": [
+    "WATCH",
+    "https://www.namwon.go.kr/",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "남원시 공식 누리집에서 제96회 춘향제 등 2026 축제 추진·공고는 확인되지만 고시공고/모집 중심이고, 관람용 행사 source-wide canonical listing에서 exact full-year date·venue·durable detail을 일관되게 확인하지 못했다. 단발 공고를 승격하지 않아 WATCH.",
+    "https://www.namwon.go.kr"
+  ],
+  "jeonbuk-무주": [
+    "WATCH",
+    "https://www.muju.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "무주군 공식 홈페이지와 문화관광에서 대표축제·개별 행사 정보는 제공되지만 이번 live 조사에서 군 전체 행사·공연의 current canonical listing과 candidate-level full-year date·venue·durable detail·pagination을 검증하지 못했다. 대표축제 단일 source를 확대하지 않아 WATCH.",
+    "https://www.muju.go.kr"
+  ],
+  "jeonbuk-부안": [
+    "WATCH",
+    "https://www.buan.go.kr/tour/index.buan",
+    "official_tourism_festival_collection",
+    "source_wide_listing_missing",
+    "부안군 문화관광은 부안마실축제·붉은노을축제 등 2026 개별 축제 페이지에서 explicit 기간·장소·문의·주관을 충실히 제공하고 축제정보 공지도 current하다. 다만 확인한 구조는 축제별 detail collection/공지이며 군 전체 행사 candidate를 지속 공급하는 canonical bounded listing이 아니어서 WATCH.",
+    "https://www.buan.go.kr"
+  ],
+  "jeonbuk-순창": [
+    "WATCH",
+    "https://www.sunchang.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "순창군 공식 홈페이지/문화관광의 대표축제·행사 공지는 확인 대상이지만 이번 live 조사에서 title·explicit full-year date·venue·durable detail을 함께 유지하는 current source-wide canonical listing과 pagination을 확인하지 못했다. 개별 축제 페이지를 daily source로 확대하지 않아 WATCH.",
+    "https://www.sunchang.go.kr"
+  ],
+  "jeonbuk-완주": [
+    "COLLECTOR_GAP",
+    "https://www.wanju.go.kr/planweb/board/list.9is?boardUid=ff8080818c0aecd1018c3334822b5364&categoryUid1=ff8080818c0aecd1018c33369f44539d&contentUid=ff8080818b024d8e018b274f41642af3&page=1&state=",
+    "official_government_event_listing",
+    "list_detail_core_followup_needed",
+    "완주군 공식 ‘축제, 행사, 교육/모집, 기타’ 중 축제 목록은 42건·5페이지로 지속 갱신되며 title·explicit 행사기간·상태를 제공한다. 목록에는 venue가 self-contained하지 않고 모집성 항목도 섞여 있으므로 event signal + 기존 bounded detail follow-up으로 core를 보완해야 하는 GAP.",
+    "https://www.wanju.go.kr"
+  ],
+  "jeonbuk-익산": [
+    "COLLECTOR_GAP",
+    "https://arts.iksan.go.kr/schedule/list.iksan?boardId=EVENT_SCHEDULE&menuCd=DOM_000000101001000000&contentsSid=9",
+    "official_culture_venue_listing",
+    "list_detail_core_followup_needed",
+    "익산예술의전당 공식 공연/전시 일정은 2026 항목과 durable first-party detail을 운영하며 detail에서 explicit 기간·venue·장르를 확인할 수 있다. 이번 조사에서 list row의 venue self-contained 여부를 확정하지 못해 existing bounded list→detail follow-up이 필요한 GAP으로 보수적으로 분류.",
+    "https://www.iksan.go.kr"
+  ],
+  "jeonbuk-임실": [
+    "WATCH",
+    "https://www.imsil.go.kr/tour/index.imsil",
+    "official_tourism_festival_collection",
+    "source_wide_listing_missing",
+    "임실군 문화관광은 필봉마을굿축제·사선문화제 등 여러 2026 축제 detail에서 explicit 기간·장소·프로그램을 충실히 제공한다. 다만 축제별 정적 메뉴/detail collection 중심으로 source-wide candidate listing·pagination을 확인하지 못해 여러 페이지를 임의 결합하지 않고 WATCH.",
+    "https://www.imsil.go.kr"
+  ],
+  "jeonbuk-장수": [
+    "WATCH",
+    "https://www.jangsu.go.kr/",
+    "official_government_portal",
+    "source_wide_listing_missing",
+    "장수군 공식 홈페이지에서 2026 한우랑사과랑축제 관련 행사기간·장소가 포함된 공지와 운영계획은 current하게 확인되지만 대표축제/읍면동 공지 중심이다. 군 전체 문화행사의 durable canonical listing과 pagination을 확인하지 못해 WATCH.",
+    "https://www.jangsu.go.kr"
+  ],
+  "jeonbuk-전주": [
+    "COLLECTOR_GAP",
+    "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=ff8080818b5bc5cf018b6588a3d91e94&contentUid=ff8080818990c349018b041a87453954&year=2026",
+    "official_government_event_calendar",
+    "list_detail_core_followup_needed",
+    "전주시 공식 공연/행사 calendar는 2026 월별로 공연·축제 title과 날짜를 current 제공하고 관광 detail에서는 explicit 기간·venue가 확인된다. calendar/list 자체에서 venue와 multi-day core가 모든 항목에 self-contained하지 않아 기존 bounded detail follow-up이 필요한 공통 GAP으로 분류.",
+    "https://www.jeonju.go.kr"
+  ],
+  "jeonbuk-정읍": [
+    "WATCH",
+    "https://www.jeongeup.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "정읍시 공식 홈페이지/문화시설의 2026 공연·축제 공지는 확인 대상이지만 이번 live 조사에서 시 전체 행사에 대한 current canonical bounded listing과 title·explicit full-year date·venue·durable detail을 일관되게 검증하지 못했다. 단일 축제·공연 공지를 결합하지 않아 WATCH.",
+    "https://www.jeongeup.go.kr"
+  ],
+  "jeonbuk-진안": [
+    "WATCH",
+    "https://www.jinan.go.kr/festival/page/festival01/festival01_03.jsp",
+    "official_festival_detail",
+    "source_wide_listing_missing",
+    "진안군 공식 진안홍삼축제 사이트는 2026-09-18~09-20, 마이산 북부 등 explicit 기간·장소와 프로그램을 상세 제공한다. 군 공지에도 별별소원 피크닉 페스타 등 다른 current 행사가 있으나 이를 통합한 source-wide canonical event listing·pagination을 확인하지 못해 flagship detail을 확대하지 않고 WATCH.",
+    "https://www.jinan.go.kr"
+  ],
+  "gangwon-taebaek": [
+    "ACTIVE",
+    "https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502",
+    "official_event_listing",
+    "generic_fallback",
+    "Registry key taebaek"
+  ],
+  "jeonnam-gwangju-목포": [
+    "ONBOARDING_READY",
+    "https://www.mokpo.go.kr/art/performance/art_schedule",
+    "official_city_arts_schedule",
+    "generic_fallback_paginated",
+    "목포시 공식 문예시설 공연·행사일정은 2026 월별 일정에서 공연/행사 건수를 유지하고, 목록/홈 카드에 title·explicit full-year 기간·venue·first-party detail을 self-contained로 제공한다. 시 직영 문예시설 범위라는 scope를 명시하되 현재 source 구조는 generic extraction 후보로 충분해 READY.",
+    "https://www.mokpo.go.kr"
+  ],
+  "jeonnam-gwangju-무안": [
+    "WATCH",
+    "https://www.muan.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "무안군 공식 홈페이지와 문화관광/축제 공지에서 2026 개별 행사·축제 정보는 확인 대상이지만, 이번 live 조사에서 군 전체 문화행사를 지속적으로 묶는 canonical listing의 title·explicit full-year start/end·venue·durable detail·bounded pagination을 안정적으로 확인하지 못했다. 단발 공지와 대표축제를 결합하지 않아 WATCH.",
+    "https://www.muan.go.kr"
+  ],
+  "jeonnam-gwangju-보성": [
+    "WATCH",
+    "https://www.boseong.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "보성군 공식 홈페이지/문화관광에는 보성다향대축제 등 2026 대표 축제 정보가 있으나 이번 조사에서 군 전체 행사를 candidate 단위로 지속 공급하는 current canonical listing과 pagination을 확인하지 못했다. 개별 축제 detail을 source-wide feed로 확대하지 않아 WATCH.",
+    "https://www.boseong.go.kr"
+  ],
+  "jeonnam-gwangju-북": [
+    "WATCH",
+    "https://bukgu.gwangju.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "북구 공식 홈페이지의 문화행사·공연 공지와 2026 개별 프로그램은 확인 대상이지만, source-wide event-only canonical listing에서 title·explicit full-year date·venue·durable detail·bounded pagination을 일관되게 검증하지 못했다. 행정/모집 공지와 개별 콘텐츠를 합치지 않고 WATCH.",
+    "https://bukgu.gwangju.kr"
+  ],
+  "jeonnam-gwangju-서": [
+    "WATCH",
+    "https://www.seogu.gwangju.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "서구 공식 홈페이지에서 지역 축제·문화행사와 공연 관련 정보는 확인되지만, 이번 live 조사에서 current 행사 전용 canonical listing의 exact full-year date·venue·durable detail·pagination을 source-wide로 검증하지 못했다. 과거 사업자료나 개별 마을행사를 daily source로 승격하지 않아 WATCH.",
+    "https://www.seogu.gwangju.kr"
+  ],
+  "jeonnam-gwangju-순천": [
+    "WATCH",
+    "https://www.suncheon.go.kr/kr/news/0007/0003/",
+    "official_government_schedule_listing",
+    "source_scope_inconsistent",
+    "순천시 공식 시정업무일정은 2026 주간주요행사를 지속 게시하고 시청 내 ‘행사/공연’ 메뉴도 존재하지만, 확인 가능한 listing은 행정 일정과 문화행사가 혼합되고 현재 event-only source-wide title·explicit full-year date·venue·durable detail 구조를 안정적으로 검증하지 못했다. 카드뉴스/개별 공지를 결합하지 않고 WATCH.",
+    "https://www.suncheon.go.kr"
+  ],
+  "jeonnam-gwangju-신안": [
+    "WATCH",
+    "https://www.shinan.go.kr/",
+    "official_government_tourism_portal",
+    "source_core_inconsistent",
+    "신안군 공식 홈페이지는 신안축제 메뉴와 2026년 꽃축제 일정 안내를 제공하지만 확인된 연간 자료는 PDF/정적 안내 중심이고, 모든 행사에 대해 durable detail URL·pagination·self-contained full-year core를 지속 제공하는 canonical listing은 확인하지 못했다. 정적 로드맵을 daily source로 승격하지 않아 WATCH.",
+    "https://www.shinan.go.kr"
+  ],
+  "jeonnam-gwangju-여수": [
+    "COLLECTOR_GAP",
+    "https://www.yeosu.go.kr/tour/culture_festa/month_event",
+    "official_tourism_culture_calendar",
+    "list_detail_core_followup_needed",
+    "여수관광문화 공식 ‘월별 문화행사’는 2026 현재/미래 공연·전시·축제를 월별로 지속 제공하고 title·venue·first-party detail을 노출한다. detail에는 explicit full-year start/end와 장소가 명시되지만 월간 grid만으로는 multi-day 기간 core가 항상 self-contained하지 않아 기존 bounded list→detail follow-up 적용이 필요한 공통 GAP.",
+    "https://www.yeosu.go.kr"
+  ],
+  "jeonnam-gwangju-영광": [
+    "WATCH",
+    "https://www.yeonggwang.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "영광군 공식 홈페이지/문화관광에서 2026 대표 축제와 개별 행사 공지는 확인 대상이지만, 군 전체 문화행사의 title·explicit full-year 기간·venue·durable detail을 함께 유지하는 지속 canonical listing과 bounded pagination을 이번 조사에서 검증하지 못했다. 개별 축제 안내를 확대하지 않아 WATCH.",
+    "https://www.yeonggwang.go.kr"
+  ],
+  "jeonnam-gwangju-영암": [
+    "WATCH",
+    "https://www.yeongam.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "영암군 공식 홈페이지/문화관광에는 왕인문화축제 등 2026 대표 행사 정보가 있으나, 이번 live 조사에서 군 전체 행사에 대한 current canonical listing·pagination과 source-wide self-contained core를 확인하지 못했다. 대표축제 detail을 daily all-event source로 간주하지 않아 WATCH.",
+    "https://www.yeongam.go.kr"
+  ],
+  "jeonnam-gwangju-완도": [
+    "WATCH",
+    "https://www.wando.go.kr/tour/",
+    "official_tourism_event_calendar",
+    "source_payload_unverified",
+    "완도문화관광 메인에는 2026 월별 ‘완도군 주요행사일정’ calendar와 전체보기 구조가 있고 개별 대표축제는 explicit 기간·장소를 제공한다. 다만 이번 live 확인에서 calendar candidate의 title/date/venue/detail payload가 직접 노출되지 않아 source-wide generic extraction과 current 행사 coverage를 확정하지 못했다. 개별 축제 detail과 calendar를 임의 결합하지 않아 WATCH.",
+    "https://www.wando.go.kr"
+  ],
+  "jeonnam-gwangju-장성": [
+    "COLLECTOR_GAP",
+    "https://www.jangseong.go.kr/home/visit/bbs/board.php?bo_table=events",
+    "official_tourism_festival_listing",
+    "list_detail_core_followup_needed",
+    "장성군 공식 여행/문화관광의 2026 축제 목록은 current year 항목과 explicit full-year 기간을 지속 제공하고 durable first-party detail로 연결된다. 목록에는 venue가 self-contained하지 않지만 detail에서 황룡강변 등 venue/address를 확인할 수 있어 기존 bounded list→detail follow-up으로 core 완성이 가능한 GAP.",
+    "https://www.jangseong.go.kr"
+  ],
+  "jeonnam-gwangju-장흥": [
+    "WATCH",
+    "https://www.jangheung.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "장흥군 공식 홈페이지/문화관광에서 물축제 등 2026 대표축제와 개별 행사 정보는 확인 대상이지만, 이번 live 조사에서 군 전체 행사를 지속 공급하는 canonical event listing의 title·explicit full-year date·venue·durable detail·bounded pagination을 안정적으로 검증하지 못했다. 대표축제 detail을 source-wide feed로 확대하지 않아 WATCH.",
+    "https://www.jangheung.go.kr"
+  ],
+  "jeonnam-gwangju-진도": [
+    "COLLECTOR_GAP",
+    "https://www.jindo.go.kr/home/board/B0016.cs?categoryId=2&m=22",
+    "official_government_culture_event_news",
+    "list_detail_core_followup_needed",
+    "진도군 공식 군정소식의 ‘문화/행사’ 카테고리는 1천 건 이상 누적된 durable pagination과 2026 현재 문화행사 title·first-party detail을 지속 제공한다. 목록 snippet에는 일부 기간/장소가 보이지만 행사·모집·프로그램이 혼합되고 core가 일관되게 self-contained하지 않아 detail follow-up + event signal이 필요한 기존 공통 GAP.",
+    "https://www.jindo.go.kr"
+  ],
+  "jeonnam-gwangju-함평": [
+    "COLLECTOR_GAP",
+    "https://www.hampyeong.go.kr/tour/main.do",
+    "official_tourism_festival_listing",
+    "list_detail_core_followup_needed",
+    "함평군 공식 문화관광 메인은 2026 현재/미래 대표축제의 title과 explicit 기간(꽃무릇축제 9/16~9/20, 국향대전 10/23~11/8 등)을 지속 노출하고 각 축제 안내로 연결한다. 메인 list에는 venue가 self-contained하지 않으므로 first-party detail follow-up으로 장소/core를 보완해야 하는 공통 GAP으로 분류한다.",
+    "https://www.hampyeong.go.kr"
+  ],
+  "jeonnam-gwangju-해남": [
+    "WATCH",
+    "https://www.haenam.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "해남군 공식 홈페이지/문화관광에는 2026 축제·문화행사와 개별 공지가 존재하지만 이번 live 조사에서 군 전체 행사를 title·explicit full-year date·venue·durable detail과 함께 지속 제공하는 canonical bounded listing을 확인하지 못했다. 개별 축제/보도자료를 결합하지 않고 WATCH.",
+    "https://www.haenam.go.kr"
+  ],
+  "jeonnam-gwangju-화순": [
+    "WATCH",
+    "https://www.hwasun.go.kr/board.do?M=010502010000&S=S05&b_code=0000000310",
+    "official_tourism_notice_listing",
+    "source_scope_too_narrow",
+    "화순군 문화관광 공지사항은 2026 현재 갱신되고 pagination도 있으나 live 목록의 대부분이 꽃강길 음악분수 운영·취소 안내이며 군 전체 문화·축제 행사를 대표하는 event source가 아니다. 봄꽃축제 같은 개별 공지를 별도 사실과 결합하지 않고 source scope 부족으로 WATCH.",
+    "https://www.hwasun.go.kr"
+  ],
+  "daejeon-대덕": [
+    "WATCH",
+    "https://www.daedeok.go.kr/dpt/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "대덕구 공식 누리집은 구정소식에 ‘행사소식’ 메뉴를 두고 2026 대덕물빛축제·동춘당문화제·대덕거리 페스티벌 등 개별 행사/보도·공고를 현재 제공한다. 다만 이번 live 조사에서 문화·축제만을 지속 공급하는 canonical listing의 title·explicit full-year start/end·venue·durable detail·bounded pagination을 source-wide로 검증하지 못했다. 보도/공고를 결합해 daily source로 승격하지 않아 WATCH.",
+    "https://www.daedeok.go.kr"
+  ],
+  "daejeon-동": [
+    "COLLECTOR_GAP",
+    "https://www.donggu.go.kr/yeyak/www/index.do",
+    "official_integrated_reservation_event_listing",
+    "list_detail_core_followup_needed",
+    "동구 공식 통합예약의 ‘축제/행사’ 목록은 2026 동구동락 축제 등 current/future title과 explicit full-year 기간, durable first-party detail을 지속 제공한다. detail에는 장소·운영기관·기간이 명시되지만 목록에는 venue가 self-contained하지 않고 건강/체험성 프로그램도 섞여 있어 기존 bounded list→detail follow-up과 event signal이 필요한 공통 GAP.",
+    "https://www.donggu.go.kr"
+  ],
+  "daejeon-서": [
+    "WATCH",
+    "https://www.seogu.go.kr/kor/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "대전 서구 공식 누리집에서 2026 행사 관련 공고·입찰과 개별 문화행사 정보는 확인되지만, 이번 live 조사에서 관람 대상 문화·축제를 지속적으로 묶는 canonical event listing의 full-year date·venue·detail·bounded pagination을 검증하지 못했다. 행정 공고/입찰 목록을 행사 source로 대체하지 않아 WATCH.",
+    "https://www.seogu.go.kr"
+  ],
+  "daejeon-유성": [
+    "WATCH",
+    "https://www.yuseong.go.kr/prog/cultprfr/tour/sub04_04/list.do",
+    "official_tourism_culture_performance_listing",
+    "source_freshness_unverified",
+    "유성구 공식 문화관광 ‘문화공연’은 title·explicit full-year 기간·시간·venue를 self-contained로 제공하지만 2026-09-23 live 목록은 총 1건이며 해당 ‘한 여름밤의 유성 뮤직페스타’는 2026-08-07~08-09로 이미 종료됐다. 별도 2026 마을축제 일정 공지는 존재하지만 이를 자동 결합하지 않고, current/future 지속 갱신이 확인될 때까지 WATCH.",
+    "https://www.yuseong.go.kr"
+  ],
+  "daejeon-jung": [
+    "WATCH",
+    "https://www.djjunggu.go.kr/tour/sub02_01.do",
+    "official_tourism_festival_detail",
+    "source_wide_listing_missing",
+    "중구 문화관광은 효문화뿌리축제의 2026-10-02~10-04 기간·뿌리공원 venue 등 core를 충실히 제공하고 마을축제/이달의 공연 메뉴도 운영한다. 그러나 대표축제는 개별 detail이고 마을축제 표는 일부 날짜가 비어 있거나 과거 venue 표기가 남아 source-wide exact full-year canonical listing으로 쓰기 어렵다. 개별 페이지 사실을 결합하지 않고 WATCH.",
+    "https://www.djjunggu.go.kr"
+  ],
+  "chungbuk-괴산": [
+    "WATCH",
+    "https://www.goesan.go.kr/www/selectBbsNttList.do?bbsNo=213&integrDeptCode=&key=136",
+    "official_government_news_listing",
+    "source_not_event_canonical",
+    "괴산군 공식 ‘오늘의 뉴스’는 2026 괴산고추축제·별별락장 등 행사 일시/장소를 current 보도로 제공하지만 전체 보도자료 listing이며 event-only canonical schedule이 아니다. 보도기사에서 candidate를 조합하지 않고 WATCH.",
+    "https://www.goesan.go.kr"
+  ],
+  "chungbuk-단양": [
+    "WATCH",
+    "https://danyang.go.kr/dy21/779",
+    "official_government_weekly_schedule",
+    "source_core_inconsistent",
+    "단양군 공식 주간행사는 2026 월별로 다수 일정을 제공하지만 회의·행정·단체행사와 관광행사가 혼합되고 행사별 venue/detail core가 일관되지 않다. 문화·축제 전용 source를 확인하지 못해 WATCH.",
+    "https://danyang.go.kr"
+  ],
+  "chungbuk-보은": [
+    "WATCH",
+    "https://www.boeun.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "보은군은 2026 대추축제·속리산축제 등 current 행사 계획과 주간행사를 공식 자료로 제공하지만, 문화·축제의 title·explicit full-year date·venue·durable detail을 함께 유지하는 canonical listing/pagination을 검증하지 못했다. 업무보고/주간첨부를 source로 승격하지 않아 WATCH.",
+    "https://www.boeun.go.kr"
+  ],
+  "chungbuk-영동": [
+    "COLLECTOR_GAP",
+    "https://www.yd21.go.kr/ydft",
+    "official_affiliated_festival_schedule",
+    "list_detail_core_followup_needed",
+    "영동군 문화관광재단 공식 홈페이지는 2026 곶감·와인·포도·난계국악축제의 title과 explicit full-year 기간을 current 일정표로 제공한다. 목록 일정표에는 venue가 self-contained하지 않아 행사 detail/축제 페이지 follow-up으로 core 보완이 필요한 기존 GAP.",
+    "https://www.yd21.go.kr"
+  ],
+  "chungbuk-옥천": [
+    "ONBOARDING_READY",
+    "https://oc.go.kr/tour/selectTnTursmResrceListU.do?key=2529&rcpp=9&sa1=%EC%B6%95%EC%A0%9C%EC%B2%B4%ED%97%98&so1=ORDR",
+    "official_tourism_festival_listing",
+    "generic_fallback_paginated",
+    "옥천 문화관광 ‘축제/체험’은 12건·2페이지 listing에서 옥천묘목축제·청산생선국수축제·지용제·포도복숭아축제 등 2026 항목의 title·explicit 기간·venue·연락처를 self-contained로 제공한다. 과거/연도 없는 항목은 fail-closed 제외하면 current 2026 후보를 안전하게 추출할 수 있어 READY.",
+    "https://www.oc.go.kr"
+  ],
+  "chungbuk-음성": [
+    "WATCH",
+    "https://www.eumseong.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "음성군 공식 홈페이지/문화관광에서 2026 지역축제와 문화행사 정보는 확인 대상이나 이번 live 조사에서 군 전체 행사를 지속 공급하는 current canonical listing의 full-year date·venue·detail·bounded pagination을 검증하지 못했다. 개별 공지를 결합하지 않아 WATCH.",
+    "https://www.eumseong.go.kr"
+  ],
+  "chungbuk-제천": [
+    "WATCH",
+    "https://www.jecheon.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "제천시 공식 홈페이지/문화관광은 지역 축제·공연 정보를 제공하지만 이번 조사에서 current 행사 전체의 title·explicit full-year start/end·venue·durable detail을 self-contained로 유지하는 canonical bounded listing을 검증하지 못했다. 대표축제/개별 공지를 확대하지 않아 WATCH.",
+    "https://www.jecheon.go.kr"
+  ],
+  "chungbuk-증평": [
+    "WATCH",
+    "https://www.jp.go.kr/kor/cop/bbs/BBSMSTR_000000000135/selectBoardArticle.do?nttId=B00000057359xw3jW1bm",
+    "official_government_festival_notice",
+    "source_not_persistent_listing",
+    "증평군 공식 공지는 2026 들노래축제·인삼골축제의 확정 일정을 명시하지만 하나의 편집형 뉴스/공고이고 행사별 durable listing/pagination이 아니다. 대표축제 일정 공지를 daily canonical source로 승격하지 않아 WATCH.",
+    "https://www.jp.go.kr"
+  ],
+  "chungbuk-진천": [
+    "WATCH",
+    "https://www.jincheon.go.kr/home/sub.do?menukey=2908",
+    "official_government_notice_listing",
+    "source_core_inconsistent",
+    "진천군 공식 공지와 SNS는 2026 생거진천 문화축제의 explicit 기간·장소를 current 제공하지만 공지 listing은 모집·행정정보가 혼합되고 문화행사 전용 source-wide core가 없다. SNS/개별 공지를 canonical feed로 쓰지 않아 WATCH.",
+    "https://www.jincheon.go.kr"
+  ],
+  "chungbuk-청주": [
+    "WATCH",
+    "https://www.cheongju.go.kr/www/index.do",
+    "official_government_culture_notice",
+    "source_document_schedule",
+    "청주시 공식 홈페이지는 2026-09 현재 매월 ‘공연·행사일정표’를 연속 게시하고 다음달 10월 일정표까지 제공해 freshness는 확인된다. 다만 현재 노출은 월별 일정표 게시물/문서 중심으로 candidate-level durable HTML list·detail·pagination을 검증하지 못해 WATCH로 보류한다.",
+    "https://www.cheongju.go.kr"
+  ],
+  "chungbuk-충주": [
+    "WATCH",
+    "https://www.chungju.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "충주시 공식 홈페이지/문화관광의 2026 행사·축제 정보는 존재하지만 이번 live 조사에서 관람 행사 전체를 지속 공급하는 canonical listing과 title·explicit full-year date·venue·detail·bounded pagination을 검증하지 못했다. 개별 보도/축제 페이지를 결합하지 않아 WATCH.",
+    "https://www.chungju.go.kr"
+  ],
+  "chungnam-계룡": [
+    "WATCH",
+    "https://www.gyeryong.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "계룡시·계룡문화관광재단은 2026 군문화축제 및 연계행사 계획을 공식적으로 운영하지만 이번 조사에서 시 전체 문화행사를 candidate 단위로 지속 공급하는 canonical listing과 pagination을 확인하지 못했다. 채용/민원 답변 등 보조 근거를 event feed로 쓰지 않아 WATCH.",
+    "https://www.gyeryong.go.kr"
+  ],
+  "chungnam-공주": [
+    "WATCH",
+    "https://www.gongju.go.kr/",
+    "official_government_portal",
+    "source_not_event_canonical",
+    "공주시 공식 홈페이지는 2026 유구섬유축제 등 행사 일정·장소를 개별 공고/기업소식으로 제공하지만 지속 event-only canonical listing을 확인하지 못했다. 모집 공고를 daily source로 승격하지 않아 WATCH.",
+    "https://www.gongju.go.kr"
+  ],
+  "chungnam-금산": [
+    "WATCH",
+    "https://www.geumsan.go.kr/",
+    "official_government_portal",
+    "source_core_inconsistent",
+    "금산군 공식 홈페이지는 주간행사 및 2026 축제 준비 공지를 current 제공하지만 행정·회의·문화행사가 혼합되고 문화축제 전용 self-contained listing을 검증하지 못했다. 개별 보도와 결합하지 않아 WATCH.",
+    "https://www.geumsan.go.kr"
+  ],
+  "chungnam-논산": [
+    "COLLECTOR_GAP",
+    "https://www.nonsan.go.kr/site/cntf/",
+    "official_affiliated_culture_listing",
+    "list_detail_core_followup_needed",
+    "논산문화관광재단 공식 홈페이지는 2026 current/future 공연·문화행사의 title·explicit date/period·durable detail을 지속 제공하지만 목록에서 venue가 일관되게 self-contained하지 않아 detail follow-up이 필요한 공통 GAP.",
+    "https://www.nonsan.go.kr"
+  ],
+  "chungnam-당진": [
+    "COLLECTOR_GAP",
+    "https://www.dangjin.go.kr/prog/fstvlSchedule/tour/sub04_01/list.do",
+    "official_tourism_festival_schedule",
+    "list_detail_core_followup_needed",
+    "당진시 문화관광 공식 축제일정은 2026 current/future 축제 title과 explicit date range를 지속 제공하고 first-party detail로 연결되나 list에서 venue가 self-contained하지 않아 bounded detail follow-up이 필요한 GAP.",
+    "https://www.dangjin.go.kr"
+  ],
+  "chungnam-보령": [
+    "WATCH",
+    "https://www.boryeong.go.kr/",
+    "official_government_tourism_portal",
+    "source_canonical_listing_unverified",
+    "보령시 공식 홈페이지/문화관광은 머드축제 등 2026 대표행사 정보를 제공하지만 이번 조사에서 시 전체 문화행사의 exact full-year date·venue·durable detail을 지속 공급하는 canonical bounded listing을 안정적으로 검증하지 못했다. 대표축제 detail을 확대하지 않아 WATCH.",
+    "https://www.boryeong.go.kr"
+  ],
+  "chungnam-부여": [
+    "WATCH",
+    "https://www.buyeo.go.kr/html/kr/",
+    "official_government_portal",
+    "source_not_persistent_listing",
+    "부여군 공식 홈페이지는 제72회 백제문화제 2026-10-03~10-11, 부여 시가지 일원 등 current 핵심 행사를 메인 ISSUE로 명시하지만 이는 homepage/editorial 노출이며 군 전체 행사의 durable canonical listing/pagination이 아니다. WATCH.",
+    "https://www.buyeo.go.kr"
+  ],
+  "chungnam-서산": [
+    "WATCH",
+    "https://www.seosan.go.kr/tour/",
+    "official_tourism_portal",
+    "source_wide_listing_missing",
+    "서산 문화관광은 류방택별축제 등 개별 행사 프로그램과 장소를 상세히 제공하지만 확인한 구조는 축제별 detail이고 2026 전체 행사를 지속 공급하는 canonical list/pagination을 검증하지 못했다. WATCH.",
+    "https://www.seosan.go.kr"
+  ],
+  "chungnam-서천": [
+    "WATCH",
+    "https://www.seocheon.go.kr/cop/smt/1/SCH5/public/sub03_01/monthList.do",
+    "official_government_event_calendar",
+    "source_freshness_unverified",
+    "서천군 공식 주요행사안내는 2026 월별 calendar와 행사명·행사일자·행사장소 컬럼을 갖지만 확인한 2026-11 화면은 후보가 비어 있어 current 지속성/freshness를 검증하지 못했다. 구조만으로 READY 처리하지 않아 WATCH.",
+    "https://www.seocheon.go.kr"
+  ],
+  "chungnam-아산": [
+    "WATCH",
+    "https://www.asan.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "아산시는 2026 문화유산 활용 축제와 개별 공연·행사를 공식 자료로 제공하지만 확인한 자료는 중장기계획/PDF·소식지 중심이며 candidate-level current canonical HTML listing을 검증하지 못했다. WATCH.",
+    "https://www.asan.go.kr"
+  ],
+  "chungnam-예산": [
+    "WATCH",
+    "https://www.yesan.go.kr/",
+    "official_government_portal",
+    "source_not_persistent_listing",
+    "예산군은 2026 가을 지역축제들의 날짜·장소를 공식 보도자료로 current 안내하지만 하나의 편집형 보도자료이며 행사별 지속 listing/pagination이 아니다. 보도자료를 canonical daily source로 승격하지 않아 WATCH.",
+    "https://www.yesan.go.kr"
+  ],
+  "chungnam-천안": [
+    "WATCH",
+    "https://www.cnac.or.kr/",
+    "official_affiliated_arts_center_listing",
+    "source_freshness_unverified",
+    "천안예술의전당은 연간/월간 공연 목록에서 title·기간·공연장·detail을 self-contained로 제공하는 좋은 구조지만 검색/라이브 확인 결과 최신 노출이 2025 일정 중심이라 2026-09 current freshness를 검증하지 못했다. 구조만으로 READY 처리하지 않고 WATCH.",
+    "https://www.cheonan.go.kr"
+  ],
+  "chungnam-청양": [
+    "WATCH",
+    "https://www.cheongyang.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "청양군 공식 홈페이지/관광 영역에서 2026 축제·문화행사 정보는 확인 대상이나 군 전체 행사를 지속 공급하는 current canonical listing의 full-year date·venue·detail·bounded pagination을 검증하지 못했다. WATCH.",
+    "https://www.cheongyang.go.kr"
+  ],
+  "chungnam-태안": [
+    "WATCH",
+    "https://www.taean.go.kr/prog/artCulture/tour/sub04_02/list.do",
+    "official_tourism_performance_calendar",
+    "source_payload_unverified",
+    "태안 문화관광 공식 공연안내는 2026 월별/연간 calendar 구조를 제공하지만 live 검색 결과에서 candidate 행사 title·venue·detail payload가 확인되지 않아 current coverage와 generic extraction을 확정하지 못했다. WATCH.",
+    "https://www.taean.go.kr"
+  ],
+  "chungnam-홍성": [
+    "WATCH",
+    "https://www.hongseong.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "홍성군 공식 홈페이지/문화관광에서 2026 지역축제·행사 정보는 확인 대상이나 이번 조사에서 행사 전체를 title·explicit full-year date·venue·durable detail과 함께 공급하는 canonical bounded listing을 검증하지 못했다. WATCH.",
+    "https://www.hongseong.go.kr"
+  ]
 };
 
 const roman = {
