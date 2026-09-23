@@ -14,14 +14,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 19 |
+| ONBOARDING_READY | 20 |
 | COLLECTOR_GAP | 29 |
-| WATCH | 89 |
+| WATCH | 105 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 99 |
+| UNREVIEWED | 82 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `gangwon-강릉` · 2. `gangwon-고성` · 3. `gangwon-동해` · 4. `gangwon-삼척` · 5. `gangwon-속초` · 6. `gangwon-양구` · 7. `gangwon-양양` · 8. `gangwon-영월` · 9. `gangwon-원주` · 10. `gangwon-인제` · 11. `gangwon-정선` · 12. `gangwon-철원` · 13. `gangwon-춘천` · 14. `gangwon-평창` · 15. `gangwon-홍천` · 16. `gangwon-화천` · 17. `gangwon-횡성` · 18. `chungbuk-괴산` · 19. `chungbuk-단양` · 20. `chungbuk-보은`
+First 20 queue entries: 1. `chungbuk-괴산` · 2. `chungbuk-단양` · 3. `chungbuk-보은` · 4. `chungbuk-영동` · 5. `chungbuk-옥천` · 6. `chungbuk-음성` · 7. `chungbuk-제천` · 8. `chungbuk-증평` · 9. `chungbuk-진천` · 10. `chungbuk-청주` · 11. `chungbuk-충주` · 12. `chungnam-계룡` · 13. `chungnam-공주` · 14. `chungnam-금산` · 15. `chungnam-논산` · 16. `chungnam-당진` · 17. `chungnam-보령` · 18. `chungnam-부여` · 19. `chungnam-서산` · 20. `chungnam-서천`

@@ -706,3 +706,11 @@ UI 기준:
 - 이번 변화: READY +2 / GAP +0 / WATCH +3 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 19 / GAP 29 / WATCH 89 / EXCLUDE 0 / UNREVIEWED 99**.
 - 다음 deterministic queue는 **`gangwon-강릉`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-23 Phase 6B — 강원 하위 source 조사 완료
+
+- 태백은 기존 ACTIVE이므로 제외하고 나머지 강원 17개 시·군을 current official source 기준으로 조사해 하위 UNREVIEWED를 0으로 만들었다.
+- **ONBOARDING_READY 1**: `gangwon-원주` — 원주시 ‘주요 문화행사’ 2026-09 current calendar가 행사명·explicit 기간·시간·venue·주최/주관을 self-contained로 제공.
+- **WATCH 16**: 강릉·고성·동해·삼척·속초·양구·양양·영월·인제·정선·철원·춘천·평창·홍천·화천·횡성. 주요 이유는 source-wide canonical listing 미확인, 행정/문화 혼합 주간일정, 개별 대표축제 detail, 연간 편집형 공지, 또는 개최 후 photo archive 등이다.
+- 이번 변화: READY +1 / GAP +0 / WATCH +16 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 20 / GAP 29 / WATCH 105 / EXCLUDE 0 / UNREVIEWED 82**.
+- 다음 deterministic queue는 **`chungbuk-괴산`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+
