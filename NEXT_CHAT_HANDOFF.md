@@ -612,3 +612,19 @@ UI 기준:
 - 이번 batch 변화: `ONBOARDING_READY +1`, `COLLECTOR_GAP +1`, `WATCH +9`, `EXCLUDE +0`. 누적 READY는 **3개**(`seoul-gangnam`, `seoul-yeongdeungpo`, `incheon-서해`)이며, 별도 Phase 6E 후보로만 보존하고 이번에는 onboarding하지 않았다. 신규 반복 GAP 패턴(동일 인천 batch 2개 이상)은 없고, 제물포 1건은 기존 `list_detail_core_followup_needed` 계열이다.
 - inventory: 총 245; ACTIVE 9 / READY 3 / GAP 16 / WATCH 30 / EXCLUDE 0 / UNREVIEWED 187. 인천 하위 11개는 모두 survey queue에서 제거됐고 옛 중구·동구·서구 key는 생성되지 않았다. 다음 deterministic queue는 **`gyeonggi-가평`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C **2026-09-24 10:00 KST** 기존 ACTIVE 9 read-only Cron 검증 → D **2026-09-24 11:00 KST** TourAPI watchdog read-only 검증 순서를 유지한다.
+
+## 2026-09-23 Phase 6B — 경기도 하위 첫 10개 source 조사
+
+- `gyeonggi-가평`: **COLLECTOR_GAP** — 공식 문화축제교육행사 게시판은 8페이지로 갱신되지만 목록은 제목/작성일 중심이며 행사 core는 first-party detail follow-up이 필요하다.
+- `gyeonggi-과천`: **ONBOARDING_READY** — 과천문화재단 공연·전시 일정에서 title·명시 2026 날짜/기간·venue·detail이 동일 항목에 있고 필터/bounded listing을 확인했다.
+- `gyeonggi-광명`: **WATCH** — 공식 문화행사 달력의 2026-09 목록은 비어 있고 별도 행사 feed는 행정·모집 콘텐츠가 혼합되어 지속 source core를 확정하지 못했다.
+- `gyeonggi-광주`: **ONBOARDING_READY** — 경기도 광주시 공식 문화·행사 목록은 30페이지로 갱신되며 항목에서 title·명시 2026 일자/기간·venue·상세 정보를 확인했다.
+- `gyeonggi-구리`: **WATCH** — 월간 시청 일정은 행정/교육/모집 일정과 혼합되고 source-wide event core가 일관되지 않다.
+- `gyeonggi-군포`: **WATCH** — 공식 문화예술행사 영역은 live지만 최근 목록이 모집/공고 중심이며 지속적인 관람 행사 core listing을 확인하지 못했다.
+- `gyeonggi-김포`: **WATCH** — 공식 문화관광 월간 일정은 현재 조회 월에 결과가 없고, 별도 축제 페이지는 소개형 항목이라 지속 full-year listing을 확정하지 못했다.
+- `gyeonggi-남양주`: **COLLECTOR_GAP** — 공식 남양주문화재단 일정은 title/date/list를 제공하지만 venue와 full-year 기간은 durable detail에서 보완해야 해 기존 bounded list→detail follow-up gap이다.
+- `gyeonggi-동두천`: **WATCH** — 시청/산하 문화시설의 현재 지속 행사 listing에서 필수 core와 pagination을 확인하지 못했다.
+- `gyeonggi-성남`: **WATCH** — 공식 월간 행사/강좌/공모 및 관광 콘텐츠에 교육·모집·행정 일정이 혼합되어 source-wide core가 일관되지 않다.
+- 이번 변화: `ONBOARDING_READY +2`, `COLLECTOR_GAP +2`, `WATCH +6`, `EXCLUDE +0`. 누적 READY **5개**: `seoul-gangnam`, `seoul-yeongdeungpo`, `incheon-서해`, `gyeonggi-과천`, `gyeonggi-광주`. Phase 6E 후보 충족; 이 batch에서는 onboarding하지 않는다.
+- 반복 GAP: **list_detail_core_followup_needed 2개** — `gyeonggi-가평`, `gyeonggi-남양주`. 구현된 공통 bounded follow-up 적용 후보로 기록했으며 이번에는 Registry/collector를 변경하지 않았다.
+- inventory 총 245: ACTIVE 9 / READY 5 / GAP 18 / WATCH 36 / EXCLUDE 0 / UNREVIEWED 177. 다음 deterministic queue는 **`gyeonggi-시흥`부터**다. C **2026-09-24 10:00 KST** → D **2026-09-24 11:00 KST** checkpoint 순서는 유지한다.
