@@ -768,3 +768,18 @@ UI 기준:
 - 이번 전국 survey는 Registry·collector·production·D1·Cron/manual ingestion을 변경하지 않았다. 2026-09-24 **10:00 KST C 정규 Cron read-only 검증 → 11:00 KST D TourAPI watchdog read-only 검증** 이후 Phase 6E에서 READY source를 3~5개 단위로 onboarding한다.
 - 조사 단계 종료 후 운영 우선순위: C → D → Phase 6E READY onboarding → 공통 GAP 해소 순이다.
 
+## 2026-09-24 00:12 KST — 새 채팅 전환용 최종 스냅샷
+
+- 현재 `origin/main`: **`8914f9901dd4b2329985449c503b3ceb5e952915`** — `docs: complete nationwide municipal source survey`.
+- 해당 commit의 GitHub **Project checks는 success**. CI에는 `npm run check` + `npm run municipal:inventory:check`가 포함되어 inventory/generator 불일치를 자동 차단한다.
+- 전국 municipal/source survey는 **이미 완료**됐다. 새 채팅에서 부산/대구/경기 등 survey를 다시 시작하지 않는다.
+- 최종 inventory: **총 245 / ACTIVE 9 / ONBOARDING_READY 29 / COLLECTOR_GAP 39 / WATCH 168 / EXCLUDE 0 / UNREVIEWED 0**. deterministic survey queue length **0**.
+- survey 작업은 Registry·collector·production·D1·Cron/manual ingestion을 변경하지 않았다. 따라서 2026-09-24 10:00 KST 정규 수집과 직접 충돌하지 않는다.
+- 사용자는 routine municipal 작업에 대해 중간 승인 없이 진행하도록 위임했다. 단, destructive D1, secret/resource 변경, 신규 비용, outage-risk 등 고위험 작업만 확인을 받는다.
+- **다음 실제 작업 순서**:
+  1. 2026-09-24 **10:00 KST C checkpoint** — 기존 production ACTIVE 9 정규 Cron 결과를 read-only 검증. manual ingestion/수정 금지.
+  2. 2026-09-24 **11:00 KST D checkpoint** — TourAPI watchdog 결과를 read-only 검증. 기존 snapshot(219 / success 123 / failed 18 / never_processed 78) 대비 recovery 확인.
+  3. C/D 이상 없으면 **Phase 6E READY onboarding**. READY 29개를 한꺼번에 넣지 말고 **3~5개 bounded batch**로 Registry opt-in → targeted test/probe → deploy → production verify 순으로 진행.
+  4. 그 다음 공통 COLLECTOR_GAP 해소를 반복 빈도/해결 효율 기준으로 묶어 처리.
+- 새 채팅 시작 시 규칙대로 `AGENTS.md → PROJECT_CONTEXT.md → NEXT_CHAT_HANDOFF.md → docs/WORKING_RULES.md`를 읽고, 최신 `origin/main`/working tree를 확인한 뒤 **C/D 또는 그 시각 이후 남은 다음 단계부터** 이어간다.
+

@@ -632,3 +632,15 @@ UI benchmark:
 - 다음 scheduled watchdog은 **2026-09-24 11:00 KST (02:00 UTC)**. 이 실행 결과 전에는 recovery 판단을 확정하지 않는다.
 - 그 전까지 TourAPI detail 코드는 변경하지 않고 manual detail run도 하지 않는다. 공식 상세 enrichment 품질 강화도 보류한다.
 - 현재 개발 작업은 **전국 municipal/source coverage 확대**로 이동한다. TourAPI detail과 독립된 source onboarding만 진행한다.
+
+## 23. 2026-09-24 — 전국 municipal/source survey 완료 상태
+
+- 전국 research unit **245개 전부 source 조사/분류 완료**, `UNREVIEWED 0`.
+- 최종 분포: **ACTIVE 9 / ONBOARDING_READY 29 / COLLECTOR_GAP 39 / WATCH 168 / EXCLUDE 0**.
+- deterministic survey queue는 비었다. Phase 6의 “전국 source 발굴/분류” 부분은 완료로 간주한다.
+- 이후 Phase 6은 **운영 검증 후 실제 onboarding 및 공통 collector gap 해소** 단계다.
+- production은 survey 동안 변경하지 않았으며, 기존 10:00 KST base Cron / 11:00 KST TourAPI watchdog 일정은 그대로 유지한다.
+- latest survey completion main: **`8914f9901dd4b2329985449c503b3ceb5e952915`**. 해당 commit Project checks success.
+- 다음 우선순위는 **C 10:00 read-only 검증 → D 11:00 read-only 검증 → READY 3~5개 단위 Phase 6E onboarding → 공통 GAP 해소**다.
+- 사용자 승인 정책: routine bounded municipal 조사/문서/검증/commit/push는 중간 승인 없이 진행. destructive D1, secret/resource/비용/장애 위험 작업만 별도 승인.
+
