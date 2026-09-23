@@ -2476,6 +2476,122 @@ body {
   color: #59636b;
 }
 
+/* Final home hierarchy: a warm canvas with lighter-touch controls. */
+.quick-discovery {
+  margin-top: 16px;
+  gap: 18px;
+}
+
+.quick-discovery-heading h2 {
+  color: #171a1d;
+  font-weight: 750;
+}
+
+.quick-category {
+  min-height: 42px;
+  border-color: #ddd5ca;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.quick-category-symbol {
+  background: #f4ede4;
+}
+
+.discovery {
+  margin-top: 14px;
+  padding: 13px 0 15px;
+  border-top-color: #dcd4ca;
+  border-bottom-color: #dcd4ca;
+}
+
+.date-picker {
+  margin-top: 10px;
+  padding: 10px 12px 12px;
+  border-color: #ddd4c8;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 8px 22px rgba(67, 42, 29, 0.045);
+}
+
+.periods {
+  gap: 6px;
+}
+
+.period,
+.region-select,
+.location-button,
+.search,
+.advanced-filters {
+  border-color: #ddd5ca;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.period {
+  padding: 6px 10px;
+}
+
+.advanced-filters {
+  margin-top: 7px;
+}
+
+.advanced-filters > summary {
+  min-height: 32px;
+  color: #4a535c;
+}
+
+.results {
+  margin-top: 20px;
+}
+
+.result-heading {
+  margin-bottom: 22px;
+}
+
+.section-kicker,
+.subsection-heading span {
+  color: #7d4a38;
+}
+
+.subsection-heading {
+  margin-bottom: 17px;
+}
+
+.subsection-heading h3 {
+  color: #171a1d;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -1.05px;
+}
+
+.subsection-heading p {
+  color: #59636b;
+}
+
+.all-events-section {
+  padding-top: 28px;
+  border-top-color: rgba(23, 26, 29, 0.16);
+}
+
+.card-content h3 {
+  color: #171a1d;
+  line-height: 1.32;
+}
+
+.event-date {
+  color: #2b343b;
+}
+
+.venue,
+.card-meta {
+  color: #4e5962;
+}
+
+.card-info-graphic {
+  outline: 1px solid rgba(23, 26, 29, 0.08);
+  outline-offset: -1px;
+}
+
 @media (max-width: 980px) {
   .detail-shell {
     background: #f7f4ee;
@@ -2487,8 +2603,29 @@ body {
 }
 
 @media (max-width: 760px) {
+  .quick-discovery {
+    margin-top: 14px;
+  }
+
+  .quick-category {
+    min-height: 58px;
+  }
+
+  .discovery {
+    margin-top: 12px;
+    padding: 12px 0 14px;
+  }
+
+  .date-picker {
+    padding: 9px 10px 11px;
+  }
+
+  .subsection-heading h3 {
+    font-size: 22px;
+  }
+
   .all-events-section {
-    padding-top: 22px;
+    padding-top: 24px;
   }
 
   .event-grid,
