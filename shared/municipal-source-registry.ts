@@ -92,6 +92,17 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     ingestion: "generic_fallback",
     genericAllowedCategories: ["축제", "문화예술", "공연"],
   },
+  {
+    key: "daejeon-fvu",
+    region: "대전",
+    locality: "대전",
+    url: "https://daejeon.go.kr/fvu/FvuEventList.do?menuSeq=504",
+    allowedHosts: ["daejeon.go.kr", "www.daejeon.go.kr"],
+    healthMarkers: ["board_table_list"],
+    expectedSignals: ["html_table"],
+    ingestion: "generic_fallback",
+    genericAllowedCategories: ["공연", "전시", "축제/이벤트/행사", "체육"],
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

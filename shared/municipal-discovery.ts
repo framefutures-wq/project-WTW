@@ -118,6 +118,11 @@ const explicitDateRange = (value: string) => {
     : null;
 };
 
+const singleExplicitDate = (value: string) => {
+  const dates = explicitDateRange(value);
+  return dates && dates.start_date === dates.end_date ? dates.start_date : null;
+};
+
 const titleFromBlock = (html: string, text: string) =>
   htmlAttribute(html, "data-title") ??
   classValue(html, "(?:title|tit|subject|name)") ??
@@ -156,7 +161,8 @@ const officialUrlFromBlock = (
   source: MunicipalSourceDefinition,
   html: string,
 ) => {
-  const href = /<a\b[^>]*href=["']([^"']+)["']/i.exec(html)?.[1];
+  const rawHref = /<a\b[^>]*href=["']([^"']+)["']/i.exec(html)?.[1];
+  const href = rawHref ? clean(rawHref) : null;
   if (!href) return source.url;
   if (/^(?:javascript:|#)/i.test(href.trim())) return source.url;
   const resolved = absolute(source.url, href);
@@ -217,21 +223,57 @@ const tableRows = (source: MunicipalSourceDefinition, html: string) => {
       labels.findIndex((label) => pattern.test(label));
     const titleIndex = indexFor(/행사명|축제명|공연명|제목/);
     const dateIndex = indexFor(/행사기간|기간|일시|행사일|날짜/);
+    const startDateIndex = indexFor(/행사?시작일자?|시작일자?/);
+    const endDateIndex = indexFor(/행사?종료일자?|종료일자?/);
     const venueIndex = indexFor(/행사장|장소|위치/);
+    const categoryIndex = indexFor(/테마|행사종류|행사유형|분류|카테고리/);
     if (titleIndex < 0 || dateIndex < 0 || venueIndex < 0)
-      return verticalCandidate ? [verticalCandidate] : [];
+      if (
+        titleIndex < 0 ||
+        venueIndex < 0 ||
+        (dateIndex < 0 && (startDateIndex < 0 || endDateIndex < 0))
+      )
+        return verticalCandidate ? [verticalCandidate] : [];
     const horizontalCandidates = rows.flatMap<MunicipalCandidate>((row) => {
       if (!/<td\b/i.test(row)) return [];
       const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(
         (cell) => cell[1],
       );
-      if (!cells[titleIndex] || !cells[dateIndex] || !cells[venueIndex])
+      if (
+        !cells[titleIndex] ||
+        !cells[venueIndex] ||
+        (dateIndex < 0 && (!cells[startDateIndex] || !cells[endDateIndex])) ||
+        (dateIndex >= 0 && !cells[dateIndex])
+      )
         return [];
       const title = clean(cells[titleIndex]);
-      const dates = explicitDateRange(blockText(cells[dateIndex]));
+      const dates =
+        dateIndex >= 0
+          ? explicitDateRange(blockText(cells[dateIndex]))
+          : (() => {
+              const start = singleExplicitDate(
+                blockText(cells[startDateIndex]),
+              );
+              const end = singleExplicitDate(blockText(cells[endDateIndex]));
+              return start && end && validRange(start, end)
+                ? { start_date: start, end_date: end }
+                : null;
+            })();
       const venue = clean(cells[venueIndex]) || null;
       const official_url = officialUrlFromBlock(source, cells[titleIndex]);
-      if (!title || !dates || !venue || !official_url) return [];
+      const category = categoryIndex >= 0 ? clean(cells[categoryIndex]) : null;
+      if (
+        !title ||
+        !dates ||
+        !venue ||
+        !official_url ||
+        (source.genericAllowedCategories &&
+          (!category ||
+            !source.genericAllowedCategories.some((allowed) =>
+              category.includes(allowed),
+            )))
+      )
+        return [];
       const rawIdentity = `${official_url}|${title}|${dates.start_date}|${dates.end_date}|${venue}`;
       return [
         {
@@ -246,7 +288,7 @@ const tableRows = (source: MunicipalSourceDefinition, html: string) => {
           locality: source.locality,
           venue,
           official_url,
-          category: "공식 HTML 행사",
+          category: category ?? "공식 HTML 행사",
           snippet: null,
           image_candidate: null,
         },

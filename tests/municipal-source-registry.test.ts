@@ -34,6 +34,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "bucheon",
       "taebaek",
       "seoul-hangang",
+      "daejeon-fvu",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -44,6 +45,30 @@ test("registry keeps existing parser-backed sources explicit", () => {
     assert.equal(new URL(source.url).protocol, "https:");
     assert(source.allowedHosts.includes(new URL(source.url).hostname));
   }
+});
+
+test("Daejeon FVU is a generic table source without a dedicated parser", () => {
+  const source = municipalSourceByKey("daejeon-fvu");
+  assert(source);
+  assert.equal(source.ingestion, "generic_fallback");
+  assert.equal(MUNICIPAL_PARSERS[source.key], undefined);
+  assert.deepEqual(source.genericAllowedCategories, [
+    "공연",
+    "전시",
+    "축제/이벤트/행사",
+    "체육",
+  ]);
+  assert.equal(
+    municipalSourceAllowsUrl(
+      source,
+      "https://daejeon.go.kr/fvu/FvuEventView.do?eventSeq=1",
+    ),
+    true,
+  );
+  assert.equal(
+    municipalSourceAllowsUrl(source, "https://example.com/event"),
+    false,
+  );
 });
 
 test("generic registry sources enter JSON-LD fallback without a dedicated parser", () => {

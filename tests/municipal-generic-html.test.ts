@@ -53,6 +53,71 @@ test("generic HTML extractor reads explicit core from one table row", () => {
   );
 });
 
+test("generic HTML extractor reads split start and end date columns", () => {
+  const split = {
+    ...source,
+    genericAllowedCategories: ["공연", "전시", "축제/이벤트/행사", "체육"],
+  } satisfies MunicipalSourceDefinition;
+  const result = extractMunicipalCandidates(
+    split,
+    `공식 행사 일정
+      <table><tr><th>행사명</th><th>테마</th><th>장소</th><th>시작일</th><th>종료일</th></tr>
+      <tr><td><a href="/events/split?eventSeq=1&amp;menuSeq=504">가상구 공연</a></td><td>공연</td><td>가상문화회관</td><td>2026-10-24</td><td>2026-10-26</td></tr></table>`,
+  );
+  assert.equal(result.mode, "generic_html");
+  assert.deepEqual(
+    result.candidates.map(
+      ({ title, category, start_date, end_date, venue }) => [
+        title,
+        category,
+        start_date,
+        end_date,
+        venue,
+      ],
+    ),
+    [["가상구 공연", "공연", "2026-10-24", "2026-10-26", "가상문화회관"]],
+  );
+  assert.equal(
+    result.candidates[0].official_url,
+    "https://events.example.go.kr/events/split?eventSeq=1&menuSeq=504",
+  );
+});
+
+test("generic split table applies category allowlist within each row", () => {
+  const split = {
+    ...source,
+    genericAllowedCategories: ["공연", "전시", "축제/이벤트/행사", "체육"],
+  } satisfies MunicipalSourceDefinition;
+  const result = extractMunicipalCandidates(
+    split,
+    `공식 행사 일정
+      <table><tr><th>행사명</th><th>테마</th><th>장소</th><th>시작일</th><th>종료일</th></tr>
+      <tr><td><a href="/events/show">허용 공연</a></td><td>공연</td><td>공연장</td><td>2026-10-24</td><td>2026-10-24</td></tr>
+      <tr><td><a href="/events/other">제외 기타</a></td><td>기타</td><td>회의실</td><td>2026-10-25</td><td>2026-10-25</td></tr></table>`,
+  );
+  assert.deepEqual(
+    result.candidates.map(({ title, category }) => [title, category]),
+    [["허용 공연", "공연"]],
+  );
+});
+
+test("generic split table rejects incomplete or non-full-year dates", () => {
+  const split = {
+    ...source,
+    genericAllowedCategories: ["공연"],
+  } satisfies MunicipalSourceDefinition;
+  const missingEnd = extractMunicipalCandidates(
+    split,
+    `공식 행사 일정<table><tr><th>행사명</th><th>테마</th><th>장소</th><th>시작일</th><th>종료일</th></tr><tr><td>누락</td><td>공연</td><td>공연장</td><td>2026-10-24</td><td></td></tr></table>`,
+  );
+  const inferredYear = extractMunicipalCandidates(
+    split,
+    `공식 행사 일정<table><tr><th>행사명</th><th>테마</th><th>장소</th><th>시작일</th><th>종료일</th></tr><tr><td>연도 없음</td><td>공연</td><td>공연장</td><td>10월 24일</td><td>10월 25일</td></tr></table>`,
+  );
+  assert.deepEqual(missingEnd.candidates, []);
+  assert.deepEqual(inferredYear.candidates, []);
+});
+
 test("generic HTML extractor reads explicit core from a list item", () => {
   const result = extracted(`
     <ul><li><a class="title" href="/events/list">가상구 야외영화제</a><span class="date">2026-10-24</span><span class="venue">가상호수공원</span></li></ul>
