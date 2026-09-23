@@ -581,3 +581,10 @@ UI 기준:
 - 공식 현행 기준(2026-07-01 이후)으로 인천 하위 행정구역을 옛 2군 8구에서 **2군 9구** 11개로 바로잡았다. 광역 인천 ACTIVE source 및 Registry `incheon-res`는 유지했다.
 - 다음 deterministic queue는 새 행정구역 기준 **`incheon-강화`부터** 시작한다. 다음 task는 현행 인천 11개 하위단체 source 조사다.
 - inventory validation 후 집계: 총 246; ACTIVE 9 / READY 2 / GAP 15 / WATCH 22 / EXCLUDE 0 / UNREVIEWED 198. production/D1/Cron은 변경하지 않았다.
+
+## 2026-09-23 Phase 6B — 전국 행정구역 baseline 현행화
+
+- 2026-09-23 기준 전국 광역단체와 하위 행정단위 baseline을 행정안전부 최신 월간 행정기관 자료 및 현행 법령/지자체 자료와 대조했다. 인천은 현행 2군 9구, 11개 하위단체가 이미 맞아 재수정하지 않았다.
+- 2026-07-01 시행 전남광주통합특별시 설치 특별법에 따라 구 광주광역시·전라남도 root 두 개를 제거하고 `jeonnam-gwangju` UNREVIEWED root 하나로 통합했다. 기존 5개 자치구와 22개 시·군의 UNREVIEWED 상태를 유지하고 새 root에 WATCH를 상속하지 않았다. 종전 Gwangju/Jeonnam root의 WATCH 판단은 당시 조사 기록으로만 보존한다.
+- 광역 root 16개, 연구 단위 총 245개. ACTIVE 9 / READY 2 / GAP 15 / WATCH 20 / EXCLUDE 0 / UNREVIEWED 199. 인천 child 11개, 통합특별시 child 27개. 제주 행정시 2개는 기존 research-unit 정책대로 포함한다.
+- 갱신된 전체 deterministic queue는 **`jeonnam-gwangju` root부터**이며, 그 다음 하위 조사 대상은 **`incheon-강화`**다. 이번 작업은 baseline/data/docs만 변경했으며 Registry, collector, production, D1, Cron/manual ingestion에는 영향이 없다.
