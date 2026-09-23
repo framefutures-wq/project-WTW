@@ -376,3 +376,43 @@ UI 기준:
 6. 최신 `origin/main`, 최근 commit, working tree, 미커밋 변경 확인
 
 실제 code/production > PROJECT_CONTEXT > NEXT_CHAT_HANDOFF > 세부 규칙 문서 순으로 우선한다.
+
+
+## 2026-09-23 작업순서 보정 — 인천 collector gap 해결 후 복귀 지점
+
+현재 큰 로드맵은 변경하지 않는다. 현재 작업은 여전히 **6. 전국 municipal/source coverage 확대**다.
+
+다만 source 실패 원인을 앞으로 다음처럼 구분한다.
+
+- ACTIVE: 현재 공통 파이프라인으로 안전하게 읽고 실제 행사 등록/갱신까지 가능한 공식 source.
+- WATCH: 공식 source이지만 source 자체의 현재 구조/정보가 자동 등록 조건을 만족하지 못함. 매일 재검증 대상으로 설계한다.
+- COLLECTOR GAP: source 데이터는 충분히 좋은데 현재 갈틈 공통 extractor/pagination/selection이 못 읽는 경우. 기다리지 않고 공통 수집기 개선 대상으로 처리한다.
+- EXCLUDE: 비공식, 정책상 부적합, 또는 반복 관찰 가치가 없는 source.
+
+### 현재 분류
+
+- 인천 온라인통합예약: **COLLECTOR GAP**
+  - 공식 데이터 자체는 행사명/장소/full-year 기간/운영기관/문의/포스터 등 품질이 충분하다.
+  - 현재 부족한 것은 갈틈 측의 generic list extractor, bounded pagination, 문화행사 selection, literal `<...>` title preservation이다.
+  - 따라서 단순 WATCH로 기다리지 않고 공통 기능으로 해결한 뒤 ACTIVE onboarding을 목표로 한다.
+- 울산모아: **WATCH 후보**
+  - raw 날짜가 2자리 연도, 외부 detail host, sessionized link, featured-only 구조라 source-side 제약이 크다.
+  - 별도 canonical full-year source가 발견되지 않으면 WATCH/보류로 유지한다.
+
+### 현재 문제 해결 순서
+
+한 프롬프트에 몰아넣지 않고 bounded task로 나눈다.
+
+1. 인천 generic extractor의 self-contained `<dt>일자</dt>` full-year 기간 파싱 + literal angle-bracket title 보존을 공통 방식으로 해결하고 targeted regression 검증.
+2. registry-level bounded pagination을 별도 task로 설계/구현. source당 fetch/candidate cap, 가까운 행사 우선, 기존 MAX_PER_SOURCE=25 circuit breaker와 충돌하지 않게 한다.
+3. 일반 대중 대상 뮤지컬/콘서트/연주회/전시를 갈틈 정책에 맞게 처리하면서 기념식/성과공유회/교육/포럼/행정성 행사는 제외하도록 selection gate를 별도 bounded task로 검증한다.
+4. 위 조건을 통과하면 인천 source를 ACTIVE onboarding하고 live read-only dry-run → targeted tests/typecheck → 기존 Worker deploy → production smoke로 닫는다.
+5. 인천 해결 후에는 **Phase 6 전국 municipal/source coverage 확대의 다음 공식 source 조사로 즉시 복귀**한다. 인천 때문에 UI/SEO/수익화로 이동하지 않는다.
+
+### 고정 시간 작업
+
+- TourAPI detail Phase 4는 **2026-09-24 11:00 KST scheduled watchdog 결과가 나온 직후 read-only D1 snapshot으로 한 번 확인**한다.
+- 이 체크는 현재 Phase 6 개발을 폐기하는 전환이 아니라 운영 checkpoint다.
+- watchdog 전에는 TourAPI detail 코드 수정/manual run 금지.
+- checkpoint 후 Phase 4 상태만 갱신하고, 별도 장애/고위험 문제가 없으면 현재 진행 중인 municipal coverage 작업으로 복귀한다.
+- Phase 5 공식 상세 enrichment는 Phase 4 결과가 확인된 뒤 별도 우선순위로 다시 결정한다.
