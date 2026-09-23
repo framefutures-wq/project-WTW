@@ -1661,6 +1661,182 @@ const known = {
     "source_canonical_listing_unverified",
     "홍성군 공식 홈페이지/문화관광에서 2026 지역축제·행사 정보는 확인 대상이나 이번 조사에서 행사 전체를 title·explicit full-year date·venue·durable detail과 함께 공급하는 canonical bounded listing을 검증하지 못했다. WATCH.",
     "https://www.hongseong.go.kr"
+  ],
+  "gyeongbuk-경산": [
+    "ONBOARDING_READY",
+    "https://gsctf.or.kr/user/performance/all/gal?pageNum=1",
+    "official_affiliated_culture_listing",
+    "generic_fallback_paginated",
+    "경산문화관광재단 공식 전체일정은 현재 46건의 공연·전시·문화행사를 제공하며 각 항목에 title·explicit 2026 start/end·venue·detail이 self-contained다. 월간/연간 및 분야 필터와 다페이지 구조가 확인되어 current generic collector onboarding 후보로 READY.",
+    "https://www.gbgs.go.kr"
+  ],
+  "gyeongbuk-경주": [
+    "ONBOARDING_READY",
+    "https://www.gyeongju.go.kr/tour/page.do?mnu_uid=4608",
+    "official_tourism_event_listing",
+    "generic_fallback",
+    "경주시 공식 문화관광 ‘이달의 축제 및 행사’는 2026 월별로 축제·행사·전시·공연을 지속 제공하고 각 항목에 title·explicit full-year 기간·venue·detail/homepage를 self-contained로 노출한다. list/thumbnail/calendar 뷰가 있어 READY.",
+    "https://www.gyeongju.go.kr"
+  ],
+  "gyeongbuk-고령": [
+    "WATCH",
+    "https://www.goryeong.go.kr/",
+    "official_government_portal",
+    "source_wide_listing_missing",
+    "고령군 공식 홈페이지/문화관광에서 대가야축제 등 current 개별 축제 정보는 확인되지만 군 전체 행사에 대해 title·explicit full-year date·venue·durable detail을 지속 공급하는 canonical bounded listing을 확인하지 못했다. 대표축제 detail을 확대하지 않아 WATCH.",
+    "https://www.goryeong.go.kr"
+  ],
+  "gyeongbuk-구미": [
+    "COLLECTOR_GAP",
+    "https://www.gumi.go.kr/tour/board/post/view.do?bcIdx=397&idx=840403&mid=0301000000",
+    "official_tourism_culture_listing",
+    "list_detail_core_followup_needed",
+    "구미시 문화관광의 문화예술행사/통합일정은 2026 current 항목과 durable detail을 제공하고 detail에서 venue를 확인할 수 있다. 목록 항목의 venue/full-year core가 모든 candidate에 self-contained하지 않고 반복·월 표현 항목도 있어 기존 bounded list→detail follow-up과 exact-date gate가 필요한 GAP.",
+    "https://www.gumi.go.kr"
+  ],
+  "gyeongbuk-김천": [
+    "WATCH",
+    "https://www.gc.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "김천시 공식 홈페이지·문화관광의 개별 공연/축제 정보는 확인 대상이나 이번 조사에서 시 전체 문화행사의 current canonical bounded listing과 source-wide full-year date·venue·durable detail 구조를 검증하지 못했다. 개별 공지를 결합하지 않고 WATCH.",
+    "https://www.gc.go.kr"
+  ],
+  "gyeongbuk-문경": [
+    "WATCH",
+    "https://www.gbmg.go.kr/tour/newsEvent/calendar.do?mId=0404000000",
+    "official_tourism_event_calendar",
+    "source_payload_unavailable",
+    "문경시 문화관광은 2026 찻사발·오미자·사과·약돌한우 등 주요축제 detail에 explicit 기간·장소를 current 제공한다. 그러나 canonical ‘이달의 행사·축제’ calendar는 조사 시 candidate payload 오류가 반복되어 source-wide daily ingestion을 검증하지 못했다. 개별 대표축제 페이지를 합치지 않고 WATCH.",
+    "https://www.gbmg.go.kr"
+  ],
+  "gyeongbuk-봉화": [
+    "WATCH",
+    "https://www.bonghwa.go.kr/tour/contents.do?mid=0202000000",
+    "official_tourism_festival_detail",
+    "source_wide_listing_missing",
+    "봉화군 공식 문화관광은 2026 봉화송이축제·은어축제 등 flagship detail에서 explicit 기간·장소를 최신 갱신하고 있으나 군 전체 문화행사를 지속 공급하는 canonical bounded listing은 확인하지 못했다. 대표축제 collection을 daily all-event source로 확대하지 않아 WATCH.",
+    "https://www.bonghwa.go.kr"
+  ],
+  "gyeongbuk-상주": [
+    "ONBOARDING_READY",
+    "https://www.sangju.go.kr/life/page/10452/10182.tc",
+    "official_government_festival_listing",
+    "generic_fallback_paginated",
+    "상주시 공식 축제정보는 13건·2페이지와 월/진행상태 필터를 제공하며 2026 current/future 항목의 title·explicit start/end·venue를 동일 항목에서 self-contained로 노출한다. READY.",
+    "https://www.sangju.go.kr"
+  ],
+  "gyeongbuk-성주": [
+    "WATCH",
+    null,
+    "official_government_festival_information",
+    "source_wide_listing_missing",
+    "성주군 공식 채널에서 2026 대표축제·문화행사 정보는 확인되지만 군 전체 행사를 candidate 단위로 지속 제공하는 canonical listing의 exact full-year date·venue·durable detail·pagination을 이번 조사에서 확정하지 못했다. WATCH.",
+    null
+  ],
+  "gyeongbuk-안동": [
+    "ONBOARDING_READY",
+    "https://andongculture.com/index.do?menuId=00000235&ordBy=2&progStat=&realmDcd=&searchDiv=&searchTxt=&ym=",
+    "official_affiliated_culture_listing",
+    "generic_fallback_paginated",
+    "안동축제관광재단이 운영하는 문화도시 안동 문화행사 calendar/list는 2026 행사·공연·전시 등을 지속 제공하고 candidate마다 title·explicit full-year start/end·venue·detail을 노출하며 다페이지 목록이 확인된다. READY.",
+    "https://www.andong.go.kr"
+  ],
+  "gyeongbuk-영덕": [
+    "WATCH",
+    "https://www.yd.go.kr/",
+    "official_government_portal",
+    "source_wide_listing_missing",
+    "영덕군 공식 홈페이지에는 2026 축제·문화행사 관련 current 보도와 자료가 있으나 행사별 title·explicit full-year date·venue·durable detail을 한 canonical bounded listing으로 지속 제공하는 source를 확인하지 못했다. WATCH.",
+    "https://www.yd.go.kr"
+  ],
+  "gyeongbuk-영양": [
+    "WATCH",
+    null,
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "영양군 current 공식 문화·관광 정보에서 개별 축제/행사 사실은 확인 대상이지만 이번 조사에서 source-wide canonical event listing과 안정적인 full-year core/pagination을 검증하지 못했다. 추론 없이 WATCH.",
+    null
+  ],
+  "gyeongbuk-영주": [
+    "ONBOARDING_READY",
+    "https://www.yeongju.go.kr/open_content/main/page.do?mnu_uid=10617",
+    "official_government_culture_calendar",
+    "generic_fallback",
+    "영주시 공식 문화달력은 2026 연/월 전환과 달력·리스트·앨범 뷰를 제공하며 각 일정에 category·title·venue·explicit start/end·detail을 self-contained로 노출한다. READY.",
+    "https://www.yeongju.go.kr"
+  ],
+  "gyeongbuk-영천": [
+    "WATCH",
+    "https://www.yc.go.kr/",
+    "official_government_portal",
+    "source_canonical_listing_unverified",
+    "영천시 공식 홈페이지/문화관광의 개별 공연·축제 정보는 확인되지만 시 전체 행사에 대한 current canonical listing과 candidate-level full-year core·pagination을 검증하지 못했다. WATCH.",
+    "https://www.yc.go.kr"
+  ],
+  "gyeongbuk-예천": [
+    "WATCH",
+    "https://www.ycg.kr/",
+    "official_government_portal",
+    "source_format_unsuitable_for_daily_listing",
+    "예천군은 2026 월별 문화행사 일정과 개별 축제 안내를 current 홍보자료/공지로 제공하지만 image·편집형 공지 중심이고 행사별 durable canonical detail·pagination을 갖춘 daily listing으로 확인되지 않았다. WATCH.",
+    "https://www.ycg.kr"
+  ],
+  "gyeongbuk-울릉": [
+    "WATCH",
+    null,
+    "official_government_tourism_portal",
+    "source_canonical_listing_unverified",
+    "울릉군 공식 관광/군정 source에서 개별 축제·행사 정보는 확인 대상이나 이번 조사에서 current source-wide canonical event listing과 explicit full-year core·bounded pagination을 검증하지 못했다. WATCH.",
+    null
+  ],
+  "gyeongbuk-울진": [
+    "WATCH",
+    "https://www.uljin.go.kr/culture/board/list.uljin?boardId=BBS_NOTICE_UJ&contentsSid=2315&cpath=%2Fculture&menuCd=DOM_000001401003000000",
+    "official_culture_notice_listing",
+    "source_core_inconsistent",
+    "울진군 공식 문화시설 행사안내는 2026 오케스트라 페스티벌·콘서트·전시 등 current 공지를 지속 제공하지만 목록은 제목·작성일 중심이고 candidate별 explicit 기간·venue는 detail 보완이 필요하다. 현재 source-wide list→detail contract를 안정적으로 검증하지 못해 WATCH로 보수 분류.",
+    "https://www.uljin.go.kr"
+  ],
+  "gyeongbuk-의성": [
+    "WATCH",
+    "https://www.usc.go.kr/tour/main.tc",
+    "official_tourism_event_calendar",
+    "source_freshness_unverified",
+    "의성군 공식 문화관광에는 행사·공연 calendar와 연/월 navigation이 있으나 조사한 2026 월의 candidate payload가 비거나 current source-wide event core를 충분히 확인하지 못했다. source 구조만으로 READY/GAP을 추정하지 않고 WATCH.",
+    "https://www.usc.go.kr"
+  ],
+  "gyeongbuk-청도": [
+    "WATCH",
+    null,
+    "official_government_tourism_portal",
+    "source_canonical_listing_unverified",
+    "청도군 공식 문화관광의 대표축제·개별 행사 정보는 확인되지만 군 전체 문화행사의 current canonical bounded listing과 candidate-level full-year date·venue·durable detail을 검증하지 못했다. WATCH.",
+    null
+  ],
+  "gyeongbuk-청송": [
+    "WATCH",
+    null,
+    "official_government_tourism_portal",
+    "source_wide_listing_missing",
+    "청송사과축제 등 대표 행사 official detail은 확인되지만 청송군 전체 문화행사를 지속 공급하는 source-wide canonical listing·pagination을 검증하지 못했다. flagship detail을 확장하지 않고 WATCH.",
+    null
+  ],
+  "gyeongbuk-칠곡": [
+    "WATCH",
+    null,
+    "official_government_portal",
+    "source_format_unsuitable_for_daily_listing",
+    "칠곡군의 2026 대표 축제 일정·개별 행사 정보는 official 홍보자료에서 확인되지만 candidate 단위의 durable event listing과 source-wide pagination을 검증하지 못했다. 편집형 일정표를 daily source로 승격하지 않아 WATCH.",
+    null
+  ],
+  "gyeongbuk-포항": [
+    "ONBOARDING_READY",
+    "https://www.phcf.or.kr/phcf/culture_performance/view.do",
+    "official_affiliated_culture_listing",
+    "generic_fallback",
+    "포항문화재단 문화포털은 공연·전시·행사·교육·축제 필터와 2026 current/future 문화정보를 지속 제공하며 항목에 title·explicit date/period·venue를 self-contained로 노출한다. 별도 대표축제 목록도 연도·상태·장소를 제공해 READY.",
+    "https://www.pohang.go.kr"
   ]
 };
 

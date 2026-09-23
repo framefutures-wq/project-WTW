@@ -3035,12 +3035,12 @@
       "region": "경상북도",
       "locality": "포항시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.pohang.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://www.phcf.or.kr/phcf/culture_performance/view.do",
+      "source_type": "official_affiliated_culture_listing",
+      "collector_fit": "generic_fallback",
+      "notes": "포항문화재단 문화포털은 공연·전시·행사·교육·축제 필터와 2026 current/future 문화정보를 지속 제공하며 항목에 title·explicit date/period·venue를 self-contained로 노출한다. 별도 대표축제 목록도 연도·상태·장소를 제공해 READY.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3050,12 +3050,12 @@
       "region": "경상북도",
       "locality": "경주시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.gyeongju.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://www.gyeongju.go.kr/tour/page.do?mnu_uid=4608",
+      "source_type": "official_tourism_event_listing",
+      "collector_fit": "generic_fallback",
+      "notes": "경주시 공식 문화관광 ‘이달의 축제 및 행사’는 2026 월별로 축제·행사·전시·공연을 지속 제공하고 각 항목에 title·explicit full-year 기간·venue·detail/homepage를 self-contained로 노출한다. list/thumbnail/calendar 뷰가 있어 READY.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3065,12 +3065,12 @@
       "region": "경상북도",
       "locality": "김천시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.gc.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.gc.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "김천시 공식 홈페이지·문화관광의 개별 공연/축제 정보는 확인 대상이나 이번 조사에서 시 전체 문화행사의 current canonical bounded listing과 source-wide full-year date·venue·durable detail 구조를 검증하지 못했다. 개별 공지를 결합하지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3080,12 +3080,12 @@
       "region": "경상북도",
       "locality": "안동시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.andong.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://andongculture.com/index.do?menuId=00000235&ordBy=2&progStat=&realmDcd=&searchDiv=&searchTxt=&ym=",
+      "source_type": "official_affiliated_culture_listing",
+      "collector_fit": "generic_fallback_paginated",
+      "notes": "안동축제관광재단이 운영하는 문화도시 안동 문화행사 calendar/list는 2026 행사·공연·전시 등을 지속 제공하고 candidate마다 title·explicit full-year start/end·venue·detail을 노출하며 다페이지 목록이 확인된다. READY.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3095,12 +3095,12 @@
       "region": "경상북도",
       "locality": "구미시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.gumi.go.kr",
+      "source_status": "COLLECTOR_GAP",
+      "source_url": "https://www.gumi.go.kr/tour/board/post/view.do?bcIdx=397&idx=840403&mid=0301000000",
+      "source_type": "official_tourism_culture_listing",
+      "collector_fit": "list_detail_core_followup_needed",
+      "notes": "구미시 문화관광의 문화예술행사/통합일정은 2026 current 항목과 durable detail을 제공하고 detail에서 venue를 확인할 수 있다. 목록 항목의 venue/full-year core가 모든 candidate에 self-contained하지 않고 반복·월 표현 항목도 있어 기존 bounded list→detail follow-up과 exact-date gate가 필요한 GAP.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3110,12 +3110,12 @@
       "region": "경상북도",
       "locality": "영주시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.yeongju.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://www.yeongju.go.kr/open_content/main/page.do?mnu_uid=10617",
+      "source_type": "official_government_culture_calendar",
+      "collector_fit": "generic_fallback",
+      "notes": "영주시 공식 문화달력은 2026 연/월 전환과 달력·리스트·앨범 뷰를 제공하며 각 일정에 category·title·venue·explicit start/end·detail을 self-contained로 노출한다. READY.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3125,12 +3125,12 @@
       "region": "경상북도",
       "locality": "영천시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.yc.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.yc.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "영천시 공식 홈페이지/문화관광의 개별 공연·축제 정보는 확인되지만 시 전체 행사에 대한 current canonical listing과 candidate-level full-year core·pagination을 검증하지 못했다. WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3140,12 +3140,12 @@
       "region": "경상북도",
       "locality": "상주시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.sangju.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://www.sangju.go.kr/life/page/10452/10182.tc",
+      "source_type": "official_government_festival_listing",
+      "collector_fit": "generic_fallback_paginated",
+      "notes": "상주시 공식 축제정보는 13건·2페이지와 월/진행상태 필터를 제공하며 2026 current/future 항목의 title·explicit start/end·venue를 동일 항목에서 self-contained로 노출한다. READY.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3155,12 +3155,12 @@
       "region": "경상북도",
       "locality": "문경시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.gbmg.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.gbmg.go.kr/tour/newsEvent/calendar.do?mId=0404000000",
+      "source_type": "official_tourism_event_calendar",
+      "collector_fit": "source_payload_unavailable",
+      "notes": "문경시 문화관광은 2026 찻사발·오미자·사과·약돌한우 등 주요축제 detail에 explicit 기간·장소를 current 제공한다. 그러나 canonical ‘이달의 행사·축제’ calendar는 조사 시 candidate payload 오류가 반복되어 source-wide daily ingestion을 검증하지 못했다. 개별 대표축제 페이지를 합치지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3170,12 +3170,12 @@
       "region": "경상북도",
       "locality": "경산시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.gbgs.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://gsctf.or.kr/user/performance/all/gal?pageNum=1",
+      "source_type": "official_affiliated_culture_listing",
+      "collector_fit": "generic_fallback_paginated",
+      "notes": "경산문화관광재단 공식 전체일정은 현재 46건의 공연·전시·문화행사를 제공하며 각 항목에 title·explicit 2026 start/end·venue·detail이 self-contained다. 월간/연간 및 분야 필터와 다페이지 구조가 확인되어 current generic collector onboarding 후보로 READY.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3185,12 +3185,12 @@
       "region": "경상북도",
       "locality": "의성군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.usc.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.usc.go.kr/tour/main.tc",
+      "source_type": "official_tourism_event_calendar",
+      "collector_fit": "source_freshness_unverified",
+      "notes": "의성군 공식 문화관광에는 행사·공연 calendar와 연/월 navigation이 있으나 조사한 2026 월의 candidate payload가 비거나 current source-wide event core를 충분히 확인하지 못했다. source 구조만으로 READY/GAP을 추정하지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3201,11 +3201,11 @@
       "locality": "청송군",
       "government_level": "county",
       "official_homepage": null,
-      "source_status": "UNREVIEWED",
+      "source_status": "WATCH",
       "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "source_type": "official_government_tourism_portal",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "청송사과축제 등 대표 행사 official detail은 확인되지만 청송군 전체 문화행사를 지속 공급하는 source-wide canonical listing·pagination을 검증하지 못했다. flagship detail을 확장하지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3216,11 +3216,11 @@
       "locality": "영양군",
       "government_level": "county",
       "official_homepage": null,
-      "source_status": "UNREVIEWED",
+      "source_status": "WATCH",
       "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "영양군 current 공식 문화·관광 정보에서 개별 축제/행사 사실은 확인 대상이지만 이번 조사에서 source-wide canonical event listing과 안정적인 full-year core/pagination을 검증하지 못했다. 추론 없이 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3230,12 +3230,12 @@
       "region": "경상북도",
       "locality": "영덕군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.yd.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.yd.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "영덕군 공식 홈페이지에는 2026 축제·문화행사 관련 current 보도와 자료가 있으나 행사별 title·explicit full-year date·venue·durable detail을 한 canonical bounded listing으로 지속 제공하는 source를 확인하지 못했다. WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3246,11 +3246,11 @@
       "locality": "청도군",
       "government_level": "county",
       "official_homepage": null,
-      "source_status": "UNREVIEWED",
+      "source_status": "WATCH",
       "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "source_type": "official_government_tourism_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "청도군 공식 문화관광의 대표축제·개별 행사 정보는 확인되지만 군 전체 문화행사의 current canonical bounded listing과 candidate-level full-year date·venue·durable detail을 검증하지 못했다. WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3260,12 +3260,12 @@
       "region": "경상북도",
       "locality": "고령군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.goryeong.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.goryeong.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "고령군 공식 홈페이지/문화관광에서 대가야축제 등 current 개별 축제 정보는 확인되지만 군 전체 행사에 대해 title·explicit full-year date·venue·durable detail을 지속 공급하는 canonical bounded listing을 확인하지 못했다. 대표축제 detail을 확대하지 않아 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3276,11 +3276,11 @@
       "locality": "성주군",
       "government_level": "county",
       "official_homepage": null,
-      "source_status": "UNREVIEWED",
+      "source_status": "WATCH",
       "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "source_type": "official_government_festival_information",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "성주군 공식 채널에서 2026 대표축제·문화행사 정보는 확인되지만 군 전체 행사를 candidate 단위로 지속 제공하는 canonical listing의 exact full-year date·venue·durable detail·pagination을 이번 조사에서 확정하지 못했다. WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3291,11 +3291,11 @@
       "locality": "칠곡군",
       "government_level": "county",
       "official_homepage": null,
-      "source_status": "UNREVIEWED",
+      "source_status": "WATCH",
       "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_format_unsuitable_for_daily_listing",
+      "notes": "칠곡군의 2026 대표 축제 일정·개별 행사 정보는 official 홍보자료에서 확인되지만 candidate 단위의 durable event listing과 source-wide pagination을 검증하지 못했다. 편집형 일정표를 daily source로 승격하지 않아 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3305,12 +3305,12 @@
       "region": "경상북도",
       "locality": "예천군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.ycg.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.ycg.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_format_unsuitable_for_daily_listing",
+      "notes": "예천군은 2026 월별 문화행사 일정과 개별 축제 안내를 current 홍보자료/공지로 제공하지만 image·편집형 공지 중심이고 행사별 durable canonical detail·pagination을 갖춘 daily listing으로 확인되지 않았다. WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3320,12 +3320,12 @@
       "region": "경상북도",
       "locality": "봉화군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.bonghwa.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.bonghwa.go.kr/tour/contents.do?mid=0202000000",
+      "source_type": "official_tourism_festival_detail",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "봉화군 공식 문화관광은 2026 봉화송이축제·은어축제 등 flagship detail에서 explicit 기간·장소를 최신 갱신하고 있으나 군 전체 문화행사를 지속 공급하는 canonical bounded listing은 확인하지 못했다. 대표축제 collection을 daily all-event source로 확대하지 않아 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3335,12 +3335,12 @@
       "region": "경상북도",
       "locality": "울진군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.uljin.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.uljin.go.kr/culture/board/list.uljin?boardId=BBS_NOTICE_UJ&contentsSid=2315&cpath=%2Fculture&menuCd=DOM_000001401003000000",
+      "source_type": "official_culture_notice_listing",
+      "collector_fit": "source_core_inconsistent",
+      "notes": "울진군 공식 문화시설 행사안내는 2026 오케스트라 페스티벌·콘서트·전시 등 current 공지를 지속 제공하지만 목록은 제목·작성일 중심이고 candidate별 explicit 기간·venue는 detail 보완이 필요하다. 현재 source-wide list→detail contract를 안정적으로 검증하지 못해 WATCH로 보수 분류.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3351,11 +3351,11 @@
       "locality": "울릉군",
       "government_level": "county",
       "official_homepage": null,
-      "source_status": "UNREVIEWED",
+      "source_status": "WATCH",
       "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "source_type": "official_government_tourism_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "울릉군 공식 관광/군정 source에서 개별 축제·행사 정보는 확인 대상이나 이번 조사에서 current source-wide canonical event listing과 explicit full-year core·bounded pagination을 검증하지 못했다. WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 13
     },
@@ -3693,179 +3693,91 @@
   "survey_queue": [
     {
       "rank": 1,
-      "municipality_key": "gyeongbuk-경산"
-    },
-    {
-      "rank": 2,
-      "municipality_key": "gyeongbuk-경주"
-    },
-    {
-      "rank": 3,
-      "municipality_key": "gyeongbuk-고령"
-    },
-    {
-      "rank": 4,
-      "municipality_key": "gyeongbuk-구미"
-    },
-    {
-      "rank": 5,
-      "municipality_key": "gyeongbuk-김천"
-    },
-    {
-      "rank": 6,
-      "municipality_key": "gyeongbuk-문경"
-    },
-    {
-      "rank": 7,
-      "municipality_key": "gyeongbuk-봉화"
-    },
-    {
-      "rank": 8,
-      "municipality_key": "gyeongbuk-상주"
-    },
-    {
-      "rank": 9,
-      "municipality_key": "gyeongbuk-성주"
-    },
-    {
-      "rank": 10,
-      "municipality_key": "gyeongbuk-안동"
-    },
-    {
-      "rank": 11,
-      "municipality_key": "gyeongbuk-영덕"
-    },
-    {
-      "rank": 12,
-      "municipality_key": "gyeongbuk-영양"
-    },
-    {
-      "rank": 13,
-      "municipality_key": "gyeongbuk-영주"
-    },
-    {
-      "rank": 14,
-      "municipality_key": "gyeongbuk-영천"
-    },
-    {
-      "rank": 15,
-      "municipality_key": "gyeongbuk-예천"
-    },
-    {
-      "rank": 16,
-      "municipality_key": "gyeongbuk-울릉"
-    },
-    {
-      "rank": 17,
-      "municipality_key": "gyeongbuk-울진"
-    },
-    {
-      "rank": 18,
-      "municipality_key": "gyeongbuk-의성"
-    },
-    {
-      "rank": 19,
-      "municipality_key": "gyeongbuk-청도"
-    },
-    {
-      "rank": 20,
-      "municipality_key": "gyeongbuk-청송"
-    },
-    {
-      "rank": 21,
-      "municipality_key": "gyeongbuk-칠곡"
-    },
-    {
-      "rank": 22,
-      "municipality_key": "gyeongbuk-포항"
-    },
-    {
-      "rank": 23,
       "municipality_key": "gyeongnam-거제"
     },
     {
-      "rank": 24,
+      "rank": 2,
       "municipality_key": "gyeongnam-거창"
     },
     {
-      "rank": 25,
+      "rank": 3,
       "municipality_key": "gyeongnam-고성"
     },
     {
-      "rank": 26,
+      "rank": 4,
       "municipality_key": "gyeongnam-김해"
     },
     {
-      "rank": 27,
+      "rank": 5,
       "municipality_key": "gyeongnam-남해"
     },
     {
-      "rank": 28,
+      "rank": 6,
       "municipality_key": "gyeongnam-밀양"
     },
     {
-      "rank": 29,
+      "rank": 7,
       "municipality_key": "gyeongnam-사천"
     },
     {
-      "rank": 30,
+      "rank": 8,
       "municipality_key": "gyeongnam-산청"
     },
     {
-      "rank": 31,
+      "rank": 9,
       "municipality_key": "gyeongnam-양산"
     },
     {
-      "rank": 32,
+      "rank": 10,
       "municipality_key": "gyeongnam-의령"
     },
     {
-      "rank": 33,
+      "rank": 11,
       "municipality_key": "gyeongnam-진주"
     },
     {
-      "rank": 34,
+      "rank": 12,
       "municipality_key": "gyeongnam-창녕"
     },
     {
-      "rank": 35,
+      "rank": 13,
       "municipality_key": "gyeongnam-창원"
     },
     {
-      "rank": 36,
+      "rank": 14,
       "municipality_key": "gyeongnam-통영"
     },
     {
-      "rank": 37,
+      "rank": 15,
       "municipality_key": "gyeongnam-하동"
     },
     {
-      "rank": 38,
+      "rank": 16,
       "municipality_key": "gyeongnam-함안"
     },
     {
-      "rank": 39,
+      "rank": 17,
       "municipality_key": "gyeongnam-함양"
     },
     {
-      "rank": 40,
+      "rank": 18,
       "municipality_key": "gyeongnam-합천"
     },
     {
-      "rank": 41,
+      "rank": 19,
       "municipality_key": "jeju-서귀포"
     },
     {
-      "rank": 42,
+      "rank": 20,
       "municipality_key": "jeju-제주"
     }
   ],
   "summary": {
     "ACTIVE": 9,
-    "ONBOARDING_READY": 21,
-    "COLLECTOR_GAP": 35,
-    "WATCH": 138,
+    "ONBOARDING_READY": 27,
+    "COLLECTOR_GAP": 36,
+    "WATCH": 153,
     "EXCLUDE": 0,
-    "UNREVIEWED": 42
+    "UNREVIEWED": 20
   }
 }

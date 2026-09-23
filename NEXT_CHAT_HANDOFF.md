@@ -740,3 +740,13 @@ UI 기준:
 - 전북 하위 UNREVIEWED는 0. 다음 deterministic queue는 **`gyeongbuk-경산`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙 유지.
 
+## 2026-09-24 Phase 6B — 경북 하위 22개 source 조사 완료
+
+- 경북 하위 22개 시·군을 current official source 기준으로 조사해 모두 UNREVIEWED에서 제거했다.
+- **ONBOARDING_READY 6**: `gyeongbuk-경산`, `gyeongbuk-경주`, `gyeongbuk-상주`, `gyeongbuk-안동`, `gyeongbuk-영주`, `gyeongbuk-포항`. current/future 2026 일정에서 title·explicit full-year date/period·venue가 self-contained인 official 또는 official-affiliated 지속 listing을 확인했다.
+- **COLLECTOR_GAP 1**: `gyeongbuk-구미` — official 문화예술행사/통합일정은 durable하지만 일부 candidate의 venue/full-year core가 detail follow-up이 필요해 기존 `list_detail_core_followup_needed`로 분류했다.
+- **WATCH 15**: 고령·김천·문경·봉화·성주·영덕·영양·영천·예천·울릉·울진·의성·청도·청송·칠곡. 대표 사유는 flagship/개별 공지 중심, source-wide canonical listing 미확인, current payload/freshness 미검증, 편집형 일정표 또는 calendar payload 오류다.
+- 이번 변화: READY +6 / GAP +1 / WATCH +15 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 27 / GAP 36 / WATCH 153 / EXCLUDE 0 / UNREVIEWED 20**.
+- 경북 하위 UNREVIEWED는 0. 다음 deterministic queue는 **`gyeongnam-거제`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙 유지.
+
