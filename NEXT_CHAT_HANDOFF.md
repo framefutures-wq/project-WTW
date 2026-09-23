@@ -628,3 +628,12 @@ UI 기준:
 - 이번 변화: `ONBOARDING_READY +2`, `COLLECTOR_GAP +2`, `WATCH +6`, `EXCLUDE +0`. 누적 READY **5개**: `seoul-gangnam`, `seoul-yeongdeungpo`, `incheon-서해`, `gyeonggi-과천`, `gyeonggi-광주`. Phase 6E 후보 충족; 이 batch에서는 onboarding하지 않는다.
 - 반복 GAP: **list_detail_core_followup_needed 2개** — `gyeonggi-가평`, `gyeonggi-남양주`. 구현된 공통 bounded follow-up 적용 후보로 기록했으며 이번에는 Registry/collector를 변경하지 않았다.
 - inventory 총 245: ACTIVE 9 / READY 5 / GAP 18 / WATCH 36 / EXCLUDE 0 / UNREVIEWED 177. 다음 deterministic queue는 **`gyeonggi-시흥`부터**다. C **2026-09-24 10:00 KST** → D **2026-09-24 11:00 KST** checkpoint 순서는 유지한다.
+
+## 2026-09-23 Phase 6B — 경기도 하위 지자체 조사 완료
+
+- 경기도 하위 31개 시·군의 source survey를 완료했다. 기존 ACTIVE 5개(수원·고양·화성·부천·파주), 앞선 조사 10개에 이어 마지막 UNREVIEWED 16개를 live read-only 확인해 경기 하위 queue를 닫았다.
+- 마지막 16개 분류: **ONBOARDING_READY 7**(`gyeonggi-의정부`, `gyeonggi-평택`, `gyeonggi-하남`, `gyeonggi-용인`, `gyeonggi-이천`, `gyeonggi-포천`, `gyeonggi-여주`), **COLLECTOR_GAP 2**(`gyeonggi-안양` access-protection, `gyeonggi-안성` generic HTML static multi-event structure), **WATCH 7**(`gyeonggi-안산`, `gyeonggi-오산`, `gyeonggi-시흥`, `gyeonggi-의왕`, `gyeonggi-양주`, `gyeonggi-연천`, `gyeonggi-양평`). EXCLUDE는 없다.
+- READY 누계는 **12개**다: 기존 `seoul-gangnam`, `seoul-yeongdeungpo`, `incheon-서해`, `gyeonggi-과천`, `gyeonggi-광주` + 이번 7개. C/D checkpoint 전에는 Registry onboarding을 하지 않으며, 이후 Phase 6E에서 3~5개 단위 bounded onboarding batch로 처리한다.
+- inventory: 총 245; ACTIVE 9 / READY 12 / GAP 20 / WATCH 43 / EXCLUDE 0 / UNREVIEWED 161. 경기도 하위 UNREVIEWED는 0이며 다음 deterministic survey queue는 **`busan-gangseo`**부터다.
+- 이번 작업은 source research + inventory/docs만 변경했다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C **2026-09-24 10:00 KST** 기존 ACTIVE 9 read-only Cron 검증 → D **2026-09-24 11:00 KST** TourAPI watchdog read-only 검증 순서를 유지한다.
+

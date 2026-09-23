@@ -14,14 +14,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 5 |
-| COLLECTOR_GAP | 18 |
-| WATCH | 36 |
+| ONBOARDING_READY | 12 |
+| COLLECTOR_GAP | 20 |
+| WATCH | 43 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 177 |
+| UNREVIEWED | 161 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `gyeonggi-시흥` · 2. `gyeonggi-안산` · 3. `gyeonggi-안성` · 4. `gyeonggi-안양` · 5. `gyeonggi-양주` · 6. `gyeonggi-양평` · 7. `gyeonggi-여주` · 8. `gyeonggi-연천` · 9. `gyeonggi-오산` · 10. `gyeonggi-용인` · 11. `gyeonggi-의왕` · 12. `gyeonggi-의정부` · 13. `gyeonggi-이천` · 14. `gyeonggi-평택` · 15. `gyeonggi-포천` · 16. `gyeonggi-하남` · 17. `busan-gangseo` · 18. `busan-금정` · 19. `busan-기장` · 20. `busan-남`
+First 20 queue entries: 1. `busan-gangseo` · 2. `busan-금정` · 3. `busan-기장` · 4. `busan-남` · 5. `busan-동` · 6. `busan-동래` · 7. `busan-부산진` · 8. `busan-북` · 9. `busan-사상` · 10. `busan-사하` · 11. `busan-서` · 12. `busan-수영` · 13. `busan-연제` · 14. `busan-영도` · 15. `busan-jung` · 16. `busan-해운대` · 17. `daegu-군위` · 18. `daegu-남` · 19. `daegu-달서` · 20. `daegu-달성`
