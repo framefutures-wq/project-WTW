@@ -4,6 +4,7 @@ import { fetchMunicipalSourcePages } from "../../shared/municipal-pagination";
 import { confirmRepeatedImageVisionCandidate, extractMunicipalDocumentCandidates, type MunicipalDocumentMode } from "../../shared/municipal-document-fallback";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
+import { isMunicipalPublicationMutation, municipalPublishSlotAvailable } from "../../shared/municipal-publication";
 import { municipalDocumentAI, type Env } from "../env";
 import { alertDedupeKey, alertId, scheduleChanged } from "../../shared/alert-engine";
 
@@ -97,6 +98,7 @@ async function publish(env: Env, candidate: MunicipalCandidate, id: string, summ
 
 export async function runMunicipalAutonomous(env: Env) {
   const summary = emptySummary(), now = new Date().toISOString(), koreaToday = today(), processed = new Set<string>();
+  let publishMutations = 0;
   for (const source of SOURCES) {
     try {
       const sourceCandidates = await collectSourceCandidates(
@@ -160,12 +162,25 @@ export async function runMunicipalAutonomous(env: Env) {
         // A changed core payload needs two identical daily observations before it replaces last-known-good.
         const coreConflict = changedExisting && previous?.last_payload_hash !== payloadHash;
         let decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(effectiveCandidate, koreaToday), trusted: true, coreValid: Boolean(effectiveCandidate.title && effectiveCandidate.start_date && effectiveCandidate.end_date && effectiveCandidate.venue && effectiveCandidate.official_url), parserError: Boolean(effectiveCandidate.parse_error), detailError, coreConflict: coreConflict || detailCoreConflict });
-        if (decision.state === "AUTO_PUBLISH" && summary.inserted + summary.updated >= MAX_PUBLISH)
+        const publicationMutation = isMunicipalPublicationMutation({
+          existing,
+          previousPayloadHash: previous?.last_payload_hash,
+          payloadHash,
+        });
+        if (
+          decision.state === "AUTO_PUBLISH" &&
+          !municipalPublishSlotAvailable({
+            publishMutations,
+            isMutation: publicationMutation,
+            maxPublish: MAX_PUBLISH,
+          })
+        )
           decision = { state: "AUTO_RETRY", reason: "daily_publish_circuit_breaker" };
         summary[decision.state] += 1;
         if (decision.state === "AUTO_PUBLISH") {
           const write = await publish(env, effectiveCandidate, id, enrichment?.summary ?? effectiveCandidate.snippet, now, existing ?? null);
           summary.inserted += write.inserted; summary.updated += write.updated; summary.rows_written += write.rows;
+          if (publicationMutation) publishMutations += 1;
         }
         const saved = await saveState(env, effectiveCandidate, id, decision, payloadHash, now, previous); summary.rows_written += saved.meta.changes ?? 0;
       }
@@ -233,11 +248,26 @@ export async function runMunicipalAutonomous(env: Env) {
         retryExtractionMode === "image_vision"
           ? { summary: effectiveCandidate.snippet, operating_hours: null, programs: [] }
           : createEnrichmentCandidate(effectiveCandidate, detail);
-      const decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(effectiveCandidate, koreaToday), trusted: true, coreValid: Boolean(effectiveCandidate.title && effectiveCandidate.start_date && effectiveCandidate.end_date && effectiveCandidate.venue && effectiveCandidate.official_url), parserError: Boolean(effectiveCandidate.parse_error), detailError: Boolean(enrichment.parse_error), coreConflict: effectiveCandidate.official_url !== source.url && retryExtractionMode !== "structured_event" && retryExtractionMode !== "pdf_text" && retryExtractionMode !== "image_vision" && hasMunicipalDetailCoreConflict(effectiveCandidate, detail) });
-      summary[decision.state] += 1;
       const existing = await env.DB.prepare("SELECT id,start_date,end_date,status FROM events WHERE id=? LIMIT 1").bind(row.candidate_id).first<{ id: string; start_date: string; end_date: string; status: string }>();
-      if (decision.state === "AUTO_PUBLISH" && summary.inserted + summary.updated < MAX_PUBLISH) {
+      let decision = decideAutonomousMunicipal({ gate: gate.gate, duplicate: duplicateResult.decision, temporal: temporal(effectiveCandidate, koreaToday), trusted: true, coreValid: Boolean(effectiveCandidate.title && effectiveCandidate.start_date && effectiveCandidate.end_date && effectiveCandidate.venue && effectiveCandidate.official_url), parserError: Boolean(effectiveCandidate.parse_error), detailError: Boolean(enrichment.parse_error), coreConflict: effectiveCandidate.official_url !== source.url && retryExtractionMode !== "structured_event" && retryExtractionMode !== "pdf_text" && retryExtractionMode !== "image_vision" && hasMunicipalDetailCoreConflict(effectiveCandidate, detail) });
+      const publicationMutation = isMunicipalPublicationMutation({
+        existing,
+        previousPayloadHash: row.last_payload_hash,
+        payloadHash,
+      });
+      if (
+        decision.state === "AUTO_PUBLISH" &&
+        !municipalPublishSlotAvailable({
+          publishMutations,
+          isMutation: publicationMutation,
+          maxPublish: MAX_PUBLISH,
+        })
+      )
+        decision = { state: "AUTO_RETRY", reason: "daily_publish_circuit_breaker" };
+      summary[decision.state] += 1;
+      if (decision.state === "AUTO_PUBLISH") {
         const write = await publish(env, effectiveCandidate, row.candidate_id, enrichment.summary, now, existing); summary.inserted += write.inserted; summary.updated += write.updated; summary.rows_written += write.rows;
+        if (publicationMutation) publishMutations += 1;
       }
       const saved = await saveState(env, effectiveCandidate, row.candidate_id, decision, payloadHash, now, row); summary.rows_written += saved.meta.changes ?? 0;
       processed.add(row.candidate_id);

@@ -324,6 +324,7 @@ UI 기준:
 - 기념식·성과공유회·교육·세미나·기관 업무 등 행정/교육 신호는 문화 키워드보다 먼저 EXCLUDE한다. `성과공유회 기념 콘서트` 회귀도 EXCLUDE다.
 - raw HTML의 literal `<광화문연가>` 같은 제목 손실은 공통 cleaner 보강으로 해결했다. 아직 registry 등록/production deploy는 하지 않았다.
 - registry-level bounded pagination 공통 기능도 완료했다. `curPage` 1~3 live dry-run은 각 10건, `generic_html` healthy, 총 30 unique/core-complete, parse error 0이었다. page 순서 대신 가까운 미래 시작일 우선으로 병합했으며, 중복 identity는 없었다.
+- municipal daily publish cap starvation도 해결했다. `MAX_PUBLISH=10`은 유지하되 신규·payload 변경·state 없는 기존 candidate만 mutation slot을 소비한다. 동일 payload의 verified revalidation은 slot을 소비하지 않아 뒤쪽 신규 candidate를 막지 않으며, retry canonical refresh도 같은 기준을 사용한다.
 - 인천은 아직 **ACTIVE 전 단계**다. collector/pagination/selection gap은 해소됐으며, 다음은 registry ACTIVE onboarding과 기존 Worker deploy다.
 
 ### 울산 source 조사 — 보류
@@ -397,6 +398,7 @@ UI 기준:
   - live dry-run은 `generic_html`, 10 candidates, 10 core-complete, parse error 0이며 `뮤지컬 <광화문연가>`도 보존됐다.
   - bounded pagination은 완료했다. `curPage` 1~3을 bounded fetch해 각 10건, 총 30 unique/core-complete를 `generic_html`로 추출했고 parse error는 없었다. candidate는 현재/가까운 미래 우선으로 deterministic merge된다.
   - 문화행사 selection도 완료했다. 명시적 일반 대중 문화행사는 MAIN, 단순 공연/음악회/합창은 NEARBY_ONLY, 행정·교육 신호는 EXCLUDE로 우선 처리한다. 직전 30건 live snapshot의 최종 deterministic 분포는 MAIN 21 / NEARBY_ONLY 2 / REVIEW 7 / EXCLUDE 0이다. 남은 REVIEW는 장르 신호가 없는 서정적 제목, 동문전·기념전 등으로 보수적으로 유지했다. 최종 키워드 추가 뒤 공식 host fetch가 연결 단계에서 실패했으나, 해당 `회원작품전` 한 건의 REVIEW→MAIN 전환은 targeted regression으로 고정했다.
+  - daily publish cap은 신규/변경 mutation만 세므로 앞쪽 동일 payload 재검증이 인천 신규 MAIN 후보를 starvation시키지 않는다.
   - registry 등록은 남아 있어 ACTIVE onboarding 전 단계다.
 - 울산모아: **WATCH 후보**
   - raw 날짜가 2자리 연도, 외부 detail host, sessionized link, featured-only 구조라 source-side 제약이 크다.
@@ -409,8 +411,9 @@ UI 기준:
 1. ✅ 인천 generic extractor의 self-contained `<dt>일자</dt>` full-year 기간 파싱 + literal angle-bracket title 보존을 공통 방식으로 해결하고 targeted regression 검증.
 2. ✅ registry-level bounded pagination을 공통으로 구현. source당 1~3 page hard cap, candidate identity dedupe, 현재/가까운 미래 우선, pagination source의 retry canonical refresh 재발견을 검증했다. non-pagination source의 기존 MAX_PER_SOURCE=25 circuit breaker 의미는 유지된다.
 3. ✅ 일반 대중 대상 뮤지컬/콘서트/연주회/전시류의 명시적 signal을 MAIN으로 보강하고, 기념식/성과공유회/교육/포럼/행정성 신호는 우선 EXCLUDE하도록 문화행사 selection gate를 검증했다.
-4. **다음: 인천 source를 ACTIVE onboarding하고 live read-only dry-run → targeted tests/typecheck → 기존 Worker deploy → production smoke로 닫는다.**
-5. 인천 해결 후에는 **Phase 6 전국 municipal/source coverage 확대의 다음 공식 source 조사로 즉시 복귀**한다. 인천 때문에 UI/SEO/수익화로 이동하지 않는다.
+4. ✅ daily publish cap은 신규/변경 mutation만 소비하도록 보강해 앞쪽 동일 payload revalidation의 starvation을 막았다.
+5. **다음: 인천 source를 ACTIVE onboarding하고 live read-only dry-run → targeted tests/typecheck → 기존 Worker deploy → production smoke로 닫는다.**
+6. 인천 해결 후에는 **Phase 6 전국 municipal/source coverage 확대의 다음 공식 source 조사로 즉시 복귀**한다. 인천 때문에 UI/SEO/수익화로 이동하지 않는다.
 
 ### 고정 시간 작업
 
