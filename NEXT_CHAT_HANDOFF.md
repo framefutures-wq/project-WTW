@@ -663,3 +663,12 @@ UI 기준:
 - 이번 변화: READY +1 / GAP +0 / WATCH +8 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 15 / GAP 23 / WATCH 62 / EXCLUDE 0 / UNREVIEWED 136**.
 - 다음 deterministic queue는 **`jeonnam-gwangju-강진`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-23 Phase 6B — 전남광주통합특별시 하위 batch 1/3
+
+- deterministic queue의 첫 10개(`강진`, `고흥`, `곡성`, `광산`, `광양`, `구례`, `나주`, `남구`, `담양`, `동구`)를 current official source 기준으로 live read-only 조사했다.
+- **ONBOARDING_READY 1**: `jeonnam-gwangju-곡성` — 공식 공연/체험행사 목록에 title·explicit full-year 기간·venue와 6페이지 pagination이 self-contained.
+- **COLLECTOR_GAP 1**: `jeonnam-gwangju-광양` — 공식 관광 공지 목록은 title/게시일 중심이고 detail에 full-year 기간·venue가 있어 기존 `list_detail_core_followup_needed`로 해결 가능.
+- **WATCH 8**: `강진`, `고흥`, `광산`, `구례`, `나주`, `남구`, `담양`, `동구`. 대표 사유는 canonical source-wide listing 미확인, current freshness 미검증, month-only 반복시기, 행정/시설 일정 혼합, 단일 venue scope 등이다.
+- 이번 batch 변화: READY +1 / GAP +1 / WATCH +8 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 16 / GAP 24 / WATCH 70 / EXCLUDE 0 / UNREVIEWED 126**.
+- 다음 queue는 **`jeonnam-gwangju-목포`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙 유지.
+

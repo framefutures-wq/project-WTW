@@ -14,14 +14,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 15 |
-| COLLECTOR_GAP | 23 |
-| WATCH | 62 |
+| ONBOARDING_READY | 16 |
+| COLLECTOR_GAP | 24 |
+| WATCH | 70 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 136 |
+| UNREVIEWED | 126 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `jeonnam-gwangju-강진` · 2. `jeonnam-gwangju-고흥` · 3. `jeonnam-gwangju-곡성` · 4. `jeonnam-gwangju-광산` · 5. `jeonnam-gwangju-광양` · 6. `jeonnam-gwangju-구례` · 7. `jeonnam-gwangju-나주` · 8. `jeonnam-gwangju-남` · 9. `jeonnam-gwangju-담양` · 10. `jeonnam-gwangju-동` · 11. `jeonnam-gwangju-목포` · 12. `jeonnam-gwangju-무안` · 13. `jeonnam-gwangju-보성` · 14. `jeonnam-gwangju-북` · 15. `jeonnam-gwangju-서` · 16. `jeonnam-gwangju-순천` · 17. `jeonnam-gwangju-신안` · 18. `jeonnam-gwangju-여수` · 19. `jeonnam-gwangju-영광` · 20. `jeonnam-gwangju-영암`
+First 20 queue entries: 1. `jeonnam-gwangju-목포` · 2. `jeonnam-gwangju-무안` · 3. `jeonnam-gwangju-보성` · 4. `jeonnam-gwangju-북` · 5. `jeonnam-gwangju-서` · 6. `jeonnam-gwangju-순천` · 7. `jeonnam-gwangju-신안` · 8. `jeonnam-gwangju-여수` · 9. `jeonnam-gwangju-영광` · 10. `jeonnam-gwangju-영암` · 11. `jeonnam-gwangju-완도` · 12. `jeonnam-gwangju-장성` · 13. `jeonnam-gwangju-장흥` · 14. `jeonnam-gwangju-진도` · 15. `jeonnam-gwangju-함평` · 16. `jeonnam-gwangju-해남` · 17. `jeonnam-gwangju-화순` · 18. `daejeon-대덕` · 19. `daejeon-동` · 20. `daejeon-서`
