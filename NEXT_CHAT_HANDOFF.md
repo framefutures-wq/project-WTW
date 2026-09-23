@@ -681,3 +681,12 @@ UI 기준:
 - 이번 변화: READY +1 / GAP +1 / WATCH +8 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 17 / GAP 25 / WATCH 78 / EXCLUDE 0 / UNREVIEWED 116**.
 - 다음 queue는 **`jeonnam-gwangju-완도`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-23 Phase 6B — 전남광주통합특별시 하위 batch 3/3 완료
+
+- 마지막 7개(`완도`, `장성`, `장흥`, `진도`, `함평`, `해남`, `화순`)를 current official source 기준으로 live read-only 조사해 통합특별시 하위 27개 survey를 모두 완료했다.
+- **COLLECTOR_GAP 3**: `jeonnam-gwangju-장성`, `jeonnam-gwangju-진도`, `jeonnam-gwangju-함평`. current/durable official listing은 있으나 venue/core가 list에 일관되게 self-contained하지 않아 기존 `list_detail_core_followup_needed`로 묶었다.
+- **WATCH 4**: `완도`, `장흥`, `해남`, `화순`. calendar payload 미검증, source-wide canonical listing 미확인, 또는 특정 음악분수 공지처럼 scope가 좁아 fail-closed했다.
+- 이번 변화: READY +0 / GAP +3 / WATCH +4 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 17 / GAP 28 / WATCH 82 / EXCLUDE 0 / UNREVIEWED 109**.
+- 전남광주통합특별시 하위 UNREVIEWED는 0. 다음 deterministic survey queue는 **`daejeon-대덕`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙을 유지한다.
+
