@@ -97,6 +97,10 @@ test("rendered contain/detail layers use the same source and cover cards omit th
   );
   assert.equal((cover.match(/<img/g) ?? []).length, 1);
   assert.doesNotMatch(cover, /scene-image-backdrop/);
+  assert.match(
+    app,
+    /className="scene-image scene-image-backdrop"[\s\S]*onError=\{onImageError\}/,
+  );
 });
 
 test("detail without an image uses an event-data graphic while cards retain their fallback", () => {

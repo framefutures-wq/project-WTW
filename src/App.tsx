@@ -319,6 +319,7 @@ export function EventImageLayers({
           alt=""
           aria-hidden="true"
           loading={loading}
+          onError={onImageError}
         />
       )}
       <img
