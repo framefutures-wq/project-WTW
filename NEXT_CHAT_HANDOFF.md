@@ -262,5 +262,5 @@ UI 기준:
 
 - candidate priority, retry schedule, failure reason observability를 보완했다. parser/enrichment 규칙, 처리량(25 events / 75 requests), endpoint 수는 변경하지 않았다.
 - transient network/timeout detail endpoint만 500ms 후 1회 재시도하며, run 전체 retry budget은 25회로 제한한다. logical requested(최대 75)는 유지하고 실제 호출량은 `attempts`로 별도 관측한다.
-- detail run message에 `retry_attempted`, `retry_recovered`, `retry_exhausted`, `failure_endpoints` sanitized 집계를 남긴다.
-- 다음 작업은 production detail collection 1회를 실행해 inline retry 복구율과 잔여 failure 원인을 감사하는 것이다.
+- detail run message에 `retry_attempted`, `retry_recovered`, `retry_exhausted`, `failure_endpoints`, `network_failure_subtypes`, `failure_latency` sanitized 집계를 남긴다.
+- 2026-09-23 production 관측에서 network 최종 실패 8건은 `unknown_network`·`under_1s`였고 inline retry 복구는 0건이었다. 다음 작업은 이 runtime subtype이 왜 원문 없이 unknown으로 분류되는지 안전하게 진단하는 bounded audit이다.
