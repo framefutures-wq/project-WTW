@@ -226,10 +226,15 @@ export async function runDetailScheduled(
           base_run: base ?? null,
           candidates: 0,
           requested: 0,
+          attempts: 0,
+          retry_attempted: 0,
+          retry_recovered: 0,
+          retry_exhausted: 0,
           enriched: 0,
           empty: 0,
           failed: 0,
           failure_reasons: {},
+          failure_endpoints: {},
         }),
       )
       .run();

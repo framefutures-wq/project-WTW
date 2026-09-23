@@ -44,10 +44,15 @@ function dependencies(
   detail = {
     candidates: 1,
     requested: 3,
+    attempts: 3,
+    retry_attempted: 0,
+    retry_recovered: 0,
+    retry_exhausted: 0,
     enriched: 1,
     empty: 0,
     failed: 0,
     failure_reasons: {},
+    failure_endpoints: {},
   },
 ): ScheduledDependencies {
   return {

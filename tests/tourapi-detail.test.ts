@@ -99,10 +99,15 @@ test("TourAPI detail maps only official summary, venue, whole-event hours, fee, 
     assert.deepEqual(result, {
       candidates: 1,
       requested: 3,
+      attempts: 3,
+      retry_attempted: 0,
+      retry_recovered: 0,
+      retry_exhausted: 0,
       enriched: 1,
       empty: 0,
       failed: 0,
       failure_reasons: {},
+      failure_endpoints: {},
     });
     assert.deepEqual(
       await DB.prepare(
@@ -176,9 +181,13 @@ test("higher-priority enrichment is preserved and detail failure retains the bas
     const failed = await enrichTourApiDetails(
       env as never,
       new Date("2026-10-01T00:00:00Z"),
+      { sleep: async () => {} },
     );
     assert.equal(failed.failed, 1);
     assert.deepEqual(failed.failure_reasons, { network_or_timeout: 1 });
+    assert.equal(failed.retry_attempted, 1);
+    assert.equal(failed.retry_exhausted, 1);
+    assert.deepEqual(failed.failure_endpoints, { detailCommon2: 1 });
     assert.equal(
       (
         await DB.prepare(
@@ -284,4 +293,91 @@ test("detail failures are classified without persisting raw error messages", () 
     "response_bound",
   );
   assert.equal(classifyDetailFailure(new Error("unexpected")), "other");
+});
+
+test("a transient detail endpoint failure retries once and recovers", async () => {
+  const { mf, DB, env } = await setup();
+  const original = globalThis.fetch;
+  let commonAttempts = 0;
+  globalThis.fetch = (async (input: string | URL) => {
+    const endpoint = new URL(String(input)).pathname.split("/").pop();
+    if (endpoint === "detailCommon2" && commonAttempts++ === 0) throw new Error("network");
+    const item = endpoint === "detailCommon2"
+      ? { contentid: "1", contenttypeid: "15", overview: "소개" }
+      : endpoint === "detailIntro2"
+        ? { contentid: "1", contenttypeid: "15" }
+        : { contentid: "1", contenttypeid: "15" };
+    return Response.json(payload(item));
+  }) as typeof fetch;
+  try {
+    const result = await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"), { sleep: async () => {} });
+    assert.equal(result.failed, 0);
+    assert.equal(result.attempts, 4);
+    assert.equal(result.retry_attempted, 1);
+    assert.equal(result.retry_recovered, 1);
+    assert.equal(result.retry_exhausted, 0);
+  } finally {
+    globalThis.fetch = original;
+    await mf.dispose();
+  }
+});
+
+test("a transient detail endpoint failure retries exactly once then records the endpoint", async () => {
+  const { mf, env } = await setup();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => { throw new Error("network"); }) as typeof fetch;
+  try {
+    const result = await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"), { sleep: async () => {} });
+    assert.equal(result.attempts, 2);
+    assert.equal(result.retry_attempted, 1);
+    assert.equal(result.retry_exhausted, 1);
+    assert.deepEqual(result.failure_reasons, { network_or_timeout: 1 });
+    assert.deepEqual(result.failure_endpoints, { detailCommon2: 1 });
+  } finally {
+    globalThis.fetch = original;
+    await mf.dispose();
+  }
+});
+
+test("429 and provider errors do not retry", async () => {
+  for (const mode of ["429", "provider"] as const) {
+    const { mf, env } = await setup();
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () => mode === "429"
+      ? new Response(null, { status: 429 })
+      : Response.json({ response: { header: { resultCode: "22" }, body: { totalCount: 0, items: "" } } })) as typeof fetch;
+    try {
+      const result = await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"), { sleep: async () => {} });
+      assert.equal(result.attempts, 1);
+      assert.equal(result.retry_attempted, 0);
+      assert.equal(result.retry_exhausted, 0);
+    } finally {
+      globalThis.fetch = original;
+      await mf.dispose();
+    }
+  }
+});
+
+test("a run never exceeds the 25-detail retry budget", async () => {
+  const { mf, DB, env } = await setup();
+  const now = new Date("2026-09-21T00:00:00Z").toISOString();
+  for (let n = 2; n <= 26; n++) {
+    const id = `tourapi-${n}`;
+    await DB.batch([
+      DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES(?,'tourapi',3,'TourAPI','https://api.visitkorea.or.kr',?)").bind(`${id}-source`, now),
+      DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,status,verification,is_sample,primary_source_id,checked_at) VALUES(?,?, '설명','서울','주소','주소','2026-09-21','2026-10-10','unknown','unknown','verified',0,?,?)").bind(id, id, `${id}-source`, now),
+    ]);
+  }
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => { throw new Error("network"); }) as typeof fetch;
+  try {
+    const result = await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"), { sleep: async () => {} });
+    assert.equal(result.candidates, 25);
+    assert.equal(result.retry_attempted, 25);
+    assert.equal(result.attempts, 50);
+    assert.equal(result.retry_exhausted, 25);
+  } finally {
+    globalThis.fetch = original;
+    await mf.dispose();
+  }
 });
