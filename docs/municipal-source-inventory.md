@@ -14,14 +14,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 20 |
-| COLLECTOR_GAP | 29 |
-| WATCH | 105 |
+| ONBOARDING_READY | 21 |
+| COLLECTOR_GAP | 30 |
+| WATCH | 114 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 82 |
+| UNREVIEWED | 71 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `chungbuk-괴산` · 2. `chungbuk-단양` · 3. `chungbuk-보은` · 4. `chungbuk-영동` · 5. `chungbuk-옥천` · 6. `chungbuk-음성` · 7. `chungbuk-제천` · 8. `chungbuk-증평` · 9. `chungbuk-진천` · 10. `chungbuk-청주` · 11. `chungbuk-충주` · 12. `chungnam-계룡` · 13. `chungnam-공주` · 14. `chungnam-금산` · 15. `chungnam-논산` · 16. `chungnam-당진` · 17. `chungnam-보령` · 18. `chungnam-부여` · 19. `chungnam-서산` · 20. `chungnam-서천`
+First 20 queue entries: 1. `chungnam-계룡` · 2. `chungnam-공주` · 3. `chungnam-금산` · 4. `chungnam-논산` · 5. `chungnam-당진` · 6. `chungnam-보령` · 7. `chungnam-부여` · 8. `chungnam-서산` · 9. `chungnam-서천` · 10. `chungnam-아산` · 11. `chungnam-예산` · 12. `chungnam-천안` · 13. `chungnam-청양` · 14. `chungnam-태안` · 15. `chungnam-홍성` · 16. `jeonbuk-고창` · 17. `jeonbuk-군산` · 18. `jeonbuk-김제` · 19. `jeonbuk-남원` · 20. `jeonbuk-무주`

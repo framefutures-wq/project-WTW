@@ -714,3 +714,12 @@ UI 기준:
 - 이번 변화: READY +1 / GAP +0 / WATCH +16 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 20 / GAP 29 / WATCH 105 / EXCLUDE 0 / UNREVIEWED 82**.
 - 다음 deterministic queue는 **`chungbuk-괴산`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-23 Phase 6B — 충북 하위 11개 source 조사 완료
+
+- 충북 하위 11개 시·군을 current official source 기준으로 조사해 UNREVIEWED에서 제거했다.
+- **ONBOARDING_READY 1**: `chungbuk-옥천` — 공식 문화관광 축제/체험 12건·2페이지 목록이 2026 항목의 title·기간·venue를 self-contained로 제공.
+- **COLLECTOR_GAP 1**: `chungbuk-영동` — 영동군 문화관광재단 2026 축제 일정표는 title·기간을 current 제공하지만 venue가 list에 없어 `list_detail_core_followup_needed`.
+- **WATCH 9**: 괴산·단양·보은·음성·제천·증평·진천·청주·충주. 보도/주간행사 혼합, 편집형 단일 공지, 월별 문서 일정표, canonical listing 미검증 등의 사유다.
+- inventory 총 245: **ACTIVE 9 / READY 21 / GAP 30 / WATCH 114 / EXCLUDE 0 / UNREVIEWED 71**. 다음 queue는 **`chungnam-계룡`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+
