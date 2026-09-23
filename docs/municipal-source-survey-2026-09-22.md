@@ -12,10 +12,17 @@ full-year date, and venue fields.
 | ------------- | --------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Taebaek       | `https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502` | self-contained vertical HTML tables under `#scheduler` | Full-year title/date/venue core only; administrative schedules, meetings, and education are retained as candidates solely to pass through the existing `EXCLUDE` gate. |
 | Seoul Hangang | `https://hangang.seoul.go.kr/www/eventMng/list.do?mid=538`            | self-contained `li.list-item` event cards              | Full-year title/date/venue and an explicit first-party `축제`, `문화예술`, or `공연` category are required. Other categories fail closed.                              |
+| Daejeon      | `https://daejeon.go.kr/fvu/FvuEventList.do?menuSeq=504`               | self-contained `board_table_list` rows with split start/end columns | Full-year title/start/end/venue and a row-local theme in `공연`, `전시`, `축제/이벤트/행사`, or `체육` are required; `기타` fails closed. |
 
-Neither source receives a dedicated parser. Detail links expressed as JavaScript
+These sources receive no dedicated parser. Detail links expressed as JavaScript
 are retained as the canonical official listing URL; external, malformed, or
 otherwise non-allowlisted URLs are rejected by the common fallback.
+
+The Daejeon source returned HTTP 200 and passed the live read-only dry-run as
+`generic_html`: 10 candidates, all with title/full-year start and end dates,
+venue, and allowlisted official URL, with no parse errors. The generic table
+extractor now supports explicit split start/end columns and row-local category
+allowlists without inferring years or joining facts across rows.
 
 ## Not added
 
@@ -25,6 +32,6 @@ otherwise non-allowlisted URLs are rejected by the common fallback.
 | Cheongju     | `https://schedule.cheongju.go.kr/xwcms/userScheduleCalendar.do?yyyymm=202609` | Excluded after generic HTML recheck | The official schedule is a potential table source, but the canonical endpoint did not complete within the bounded official fetch window during recheck. It is not registered until its runtime availability and durable current-calendar URL are verified. |
 | Gangneung    | `https://www.gangneung.go.kr/tour/prog/festival/sub01_01_01/list.do`          | Excluded                            | The listed HTTPS hostname did not present a certificate valid for `www.gangneung.go.kr` during the check. It cannot be placed on an HTTPS allowlist until the official endpoint is verified.                                                               |
 
-No new source was registered from this survey. This preserves the rule that a
-generic source must have a durable canonical list with a verified generic signal;
-otherwise it would generate retry noise without safe candidate extraction.
+Sources are registered only when the durable canonical list has a verified
+generic signal and safe candidate extraction; otherwise they remain unregistered
+to avoid retry noise.

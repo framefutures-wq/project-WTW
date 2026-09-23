@@ -270,9 +270,9 @@ UI 기준:
 
 ### 실제 최신 기준
 
-- 상태 저장 직전 main: `fcc6e4a` — `docs: close detail ui v2 release`
+- municipal onboarding implementation main: `b8ea6f0` — `feat: support split-date municipal tables`
 - 상세 UI production 기준 main: `eaa56db` — `fix: preserve secondary detail poster`
-- 현재 production Worker version: `b7ad1cae-cf68-4f3b-aac6-0ac8e4c2c13e`
+- 현재 production Worker version: `ec68fe6b-62bc-40da-b4af-aa92c1137ba5`
 - `c496d96`은 adaptive layout에 맞춘 production smoke test-only commit이며 Worker 재배포는 하지 않았다.
 - public: `https://galteum.com`
 - production health 정상.
@@ -308,6 +308,14 @@ UI 기준:
 
 홈 UI와 상세 UI는 새로운 회귀가 없는 한 다시 열지 않는다.
 
+### Municipal/source coverage — 대전 onboarding 완료
+
+- `daejeon-fvu`를 `generic_fallback`으로 등록했다.
+- `https://daejeon.go.kr/fvu/FvuEventList.do?menuSeq=504` 공식 source를 사용하며 전용 parser는 없다.
+- generic table extractor가 명시적 시작일/종료일 분리 컬럼과 행별 테마 allowlist를 지원한다. `공연`, `전시`, `축제/이벤트/행사`, `체육`만 허용하고 `기타`는 제외한다.
+- live read-only dry-run은 `generic_html`, 10 candidates, 10 complete, parse error 0으로 통과했다. 기존 Worker에 배포했고 production 기본 smoke는 desktop/mobile 모두 통과했다.
+- municipal cron 수동 실행과 D1 write는 하지 않았다. 다음 위치는 다른 공식 municipal 행사 목록 source 1개를 같은 read-only survey로 조사하는 것이다.
+
 ### TourAPI detail 안정화 상태 — 관찰 대기
 
 - candidate priority: retry-due failed → never-processed → 7-day TTL.
@@ -329,13 +337,13 @@ UI 기준:
 3. ✅ **상세페이지 UI v2 production 마감**
 4. ⏸️ **TourAPI detail backlog 소진 / recovery 확인 — 2026-09-24 11:00 KST scheduled watchdog 관찰 대기**
 5. ⏳ **공식 상세 enrichment 품질 강화 — 4번 확인 전 보류**
-6. 🟡 **전국 municipal/source coverage 확대 — 현재 위치**
+6. 🟡 **전국 municipal/source coverage 확대 — 다음 공식 source 조사**
 7. ⏳ SEO / Search Console / 검색 유입 점검
 8. ⏳ 모바일 최종 polish
 9. ⏳ 수익화 준비
 10. ⏳ Zero-Human 운영 자동화 최종 점검
 
-현재는 6번을 진행한다. 4번은 다음 scheduled watchdog 완료 후 동일한 read-only D1 측정으로만 재개하며, 그 전에는 TourAPI detail 계통을 건드리지 않는다.
+현재는 6번의 다음 공식 source 조사를 진행한다. 4번은 다음 scheduled watchdog 완료 후 동일한 read-only D1 측정으로만 재개하며, 그 전에는 TourAPI detail 계통을 건드리지 않는다.
 
 ### 새 채팅 시작 시 고정 순서
 
