@@ -575,3 +575,9 @@ UI 기준:
 - 이번 batch 변화: `ONBOARDING_READY +0`, `COLLECTOR_GAP +5`, `WATCH +0`, `EXCLUDE +0`. 누적 READY는 2개다. inventory는 ACTIVE 9 / READY 2 / GAP 15 / WATCH 22 / EXCLUDE 0 / UNREVIEWED 197 (총 245).
 - Registry·collector·D1·production·Cron/manual ingestion은 변경하지 않았다. C **2026-09-24 10:00 KST** read-only Cron 검증과 D **2026-09-24 11:00 KST** TourAPI watchdog 순서는 유지한다.
 - 다음 deterministic survey queue는 **`incheon-강화`부터**다. C/D checkpoint 뒤 검증된 부산 list→detail source onboarding batch를 별도 bounded task로 수행한다.
+
+## 2026-09-23 Phase 6B — 인천 행정구역 master inventory 기준 정정
+
+- 공식 현행 기준(2026-07-01 이후)으로 인천 하위 행정구역을 옛 2군 8구에서 **2군 9구** 11개로 바로잡았다. 광역 인천 ACTIVE source 및 Registry `incheon-res`는 유지했다.
+- 다음 deterministic queue는 새 행정구역 기준 **`incheon-강화`부터** 시작한다. 다음 task는 현행 인천 11개 하위단체 source 조사다.
+- inventory validation 후 집계: 총 246; ACTIVE 9 / READY 2 / GAP 15 / WATCH 22 / EXCLUDE 0 / UNREVIEWED 198. production/D1/Cron은 변경하지 않았다.

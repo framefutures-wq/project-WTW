@@ -818,10 +818,40 @@
       "region_order": 3
     },
     {
-      "key": "incheon-jung",
+      "key": "incheon-강화",
       "region_key": "incheon",
       "region": "인천광역시",
-      "locality": "중구",
+      "locality": "강화군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-옹진",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "옹진군",
+      "government_level": "county",
+      "official_homepage": null,
+      "source_status": "UNREVIEWED",
+      "source_url": null,
+      "source_type": null,
+      "collector_fit": "unreviewed",
+      "notes": "공식 행사 source 미조사",
+      "checked_at": "2026-09-23",
+      "region_order": 3
+    },
+    {
+      "key": "incheon-제물포",
+      "region_key": "incheon",
+      "region": "인천광역시",
+      "locality": "제물포구",
       "government_level": "district",
       "official_homepage": null,
       "source_status": "UNREVIEWED",
@@ -833,10 +863,10 @@
       "region_order": 3
     },
     {
-      "key": "incheon-동",
+      "key": "incheon-영종",
       "region_key": "incheon",
       "region": "인천광역시",
-      "locality": "동구",
+      "locality": "영종구",
       "government_level": "district",
       "official_homepage": null,
       "source_status": "UNREVIEWED",
@@ -923,10 +953,10 @@
       "region_order": 3
     },
     {
-      "key": "incheon-서",
+      "key": "incheon-서해",
       "region_key": "incheon",
       "region": "인천광역시",
-      "locality": "서구",
+      "locality": "서해구",
       "government_level": "district",
       "official_homepage": null,
       "source_status": "UNREVIEWED",
@@ -938,26 +968,11 @@
       "region_order": 3
     },
     {
-      "key": "incheon-강화",
+      "key": "incheon-검단",
       "region_key": "incheon",
       "region": "인천광역시",
-      "locality": "강화군",
-      "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
-      "region_order": 3
-    },
-    {
-      "key": "incheon-옹진",
-      "region_key": "incheon",
-      "region": "인천광역시",
-      "locality": "옹진군",
-      "government_level": "county",
+      "locality": "검단구",
+      "government_level": "district",
       "official_homepage": null,
       "source_status": "UNREVIEWED",
       "source_url": null,
@@ -3690,15 +3705,15 @@
     },
     {
       "rank": 2,
-      "municipality_key": "incheon-계양"
+      "municipality_key": "incheon-검단"
     },
     {
       "rank": 3,
-      "municipality_key": "incheon-남동"
+      "municipality_key": "incheon-계양"
     },
     {
       "rank": 4,
-      "municipality_key": "incheon-동"
+      "municipality_key": "incheon-남동"
     },
     {
       "rank": 5,
@@ -3710,7 +3725,7 @@
     },
     {
       "rank": 7,
-      "municipality_key": "incheon-서"
+      "municipality_key": "incheon-서해"
     },
     {
       "rank": 8,
@@ -3718,758 +3733,762 @@
     },
     {
       "rank": 9,
-      "municipality_key": "incheon-옹진"
+      "municipality_key": "incheon-영종"
     },
     {
       "rank": 10,
-      "municipality_key": "incheon-jung"
+      "municipality_key": "incheon-옹진"
     },
     {
       "rank": 11,
-      "municipality_key": "gyeonggi-가평"
+      "municipality_key": "incheon-제물포"
     },
     {
       "rank": 12,
-      "municipality_key": "gyeonggi-과천"
+      "municipality_key": "gyeonggi-가평"
     },
     {
       "rank": 13,
-      "municipality_key": "gyeonggi-광명"
+      "municipality_key": "gyeonggi-과천"
     },
     {
       "rank": 14,
-      "municipality_key": "gyeonggi-광주"
+      "municipality_key": "gyeonggi-광명"
     },
     {
       "rank": 15,
-      "municipality_key": "gyeonggi-구리"
+      "municipality_key": "gyeonggi-광주"
     },
     {
       "rank": 16,
-      "municipality_key": "gyeonggi-군포"
+      "municipality_key": "gyeonggi-구리"
     },
     {
       "rank": 17,
-      "municipality_key": "gyeonggi-김포"
+      "municipality_key": "gyeonggi-군포"
     },
     {
       "rank": 18,
-      "municipality_key": "gyeonggi-남양주"
+      "municipality_key": "gyeonggi-김포"
     },
     {
       "rank": 19,
-      "municipality_key": "gyeonggi-동두천"
+      "municipality_key": "gyeonggi-남양주"
     },
     {
       "rank": 20,
-      "municipality_key": "gyeonggi-성남"
+      "municipality_key": "gyeonggi-동두천"
     },
     {
       "rank": 21,
-      "municipality_key": "gyeonggi-시흥"
+      "municipality_key": "gyeonggi-성남"
     },
     {
       "rank": 22,
-      "municipality_key": "gyeonggi-안산"
+      "municipality_key": "gyeonggi-시흥"
     },
     {
       "rank": 23,
-      "municipality_key": "gyeonggi-안성"
+      "municipality_key": "gyeonggi-안산"
     },
     {
       "rank": 24,
-      "municipality_key": "gyeonggi-안양"
+      "municipality_key": "gyeonggi-안성"
     },
     {
       "rank": 25,
-      "municipality_key": "gyeonggi-양주"
+      "municipality_key": "gyeonggi-안양"
     },
     {
       "rank": 26,
-      "municipality_key": "gyeonggi-양평"
+      "municipality_key": "gyeonggi-양주"
     },
     {
       "rank": 27,
-      "municipality_key": "gyeonggi-여주"
+      "municipality_key": "gyeonggi-양평"
     },
     {
       "rank": 28,
-      "municipality_key": "gyeonggi-연천"
+      "municipality_key": "gyeonggi-여주"
     },
     {
       "rank": 29,
-      "municipality_key": "gyeonggi-오산"
+      "municipality_key": "gyeonggi-연천"
     },
     {
       "rank": 30,
-      "municipality_key": "gyeonggi-용인"
+      "municipality_key": "gyeonggi-오산"
     },
     {
       "rank": 31,
-      "municipality_key": "gyeonggi-의왕"
+      "municipality_key": "gyeonggi-용인"
     },
     {
       "rank": 32,
-      "municipality_key": "gyeonggi-의정부"
+      "municipality_key": "gyeonggi-의왕"
     },
     {
       "rank": 33,
-      "municipality_key": "gyeonggi-이천"
+      "municipality_key": "gyeonggi-의정부"
     },
     {
       "rank": 34,
-      "municipality_key": "gyeonggi-평택"
+      "municipality_key": "gyeonggi-이천"
     },
     {
       "rank": 35,
-      "municipality_key": "gyeonggi-포천"
+      "municipality_key": "gyeonggi-평택"
     },
     {
       "rank": 36,
-      "municipality_key": "gyeonggi-하남"
+      "municipality_key": "gyeonggi-포천"
     },
     {
       "rank": 37,
-      "municipality_key": "busan-gangseo"
+      "municipality_key": "gyeonggi-하남"
     },
     {
       "rank": 38,
-      "municipality_key": "busan-금정"
+      "municipality_key": "busan-gangseo"
     },
     {
       "rank": 39,
-      "municipality_key": "busan-기장"
+      "municipality_key": "busan-금정"
     },
     {
       "rank": 40,
-      "municipality_key": "busan-남"
+      "municipality_key": "busan-기장"
     },
     {
       "rank": 41,
-      "municipality_key": "busan-동"
+      "municipality_key": "busan-남"
     },
     {
       "rank": 42,
-      "municipality_key": "busan-동래"
+      "municipality_key": "busan-동"
     },
     {
       "rank": 43,
-      "municipality_key": "busan-부산진"
+      "municipality_key": "busan-동래"
     },
     {
       "rank": 44,
-      "municipality_key": "busan-북"
+      "municipality_key": "busan-부산진"
     },
     {
       "rank": 45,
-      "municipality_key": "busan-사상"
+      "municipality_key": "busan-북"
     },
     {
       "rank": 46,
-      "municipality_key": "busan-사하"
+      "municipality_key": "busan-사상"
     },
     {
       "rank": 47,
-      "municipality_key": "busan-서"
+      "municipality_key": "busan-사하"
     },
     {
       "rank": 48,
-      "municipality_key": "busan-수영"
+      "municipality_key": "busan-서"
     },
     {
       "rank": 49,
-      "municipality_key": "busan-연제"
+      "municipality_key": "busan-수영"
     },
     {
       "rank": 50,
-      "municipality_key": "busan-영도"
+      "municipality_key": "busan-연제"
     },
     {
       "rank": 51,
-      "municipality_key": "busan-jung"
+      "municipality_key": "busan-영도"
     },
     {
       "rank": 52,
-      "municipality_key": "busan-해운대"
+      "municipality_key": "busan-jung"
     },
     {
       "rank": 53,
-      "municipality_key": "daegu-군위"
+      "municipality_key": "busan-해운대"
     },
     {
       "rank": 54,
-      "municipality_key": "daegu-남"
+      "municipality_key": "daegu-군위"
     },
     {
       "rank": 55,
-      "municipality_key": "daegu-달서"
+      "municipality_key": "daegu-남"
     },
     {
       "rank": 56,
-      "municipality_key": "daegu-달성"
+      "municipality_key": "daegu-달서"
     },
     {
       "rank": 57,
-      "municipality_key": "daegu-동"
+      "municipality_key": "daegu-달성"
     },
     {
       "rank": 58,
-      "municipality_key": "daegu-북"
+      "municipality_key": "daegu-동"
     },
     {
       "rank": 59,
-      "municipality_key": "daegu-서"
+      "municipality_key": "daegu-북"
     },
     {
       "rank": 60,
-      "municipality_key": "daegu-수성"
+      "municipality_key": "daegu-서"
     },
     {
       "rank": 61,
-      "municipality_key": "daegu-jung"
+      "municipality_key": "daegu-수성"
     },
     {
       "rank": 62,
-      "municipality_key": "gwangju-광산"
+      "municipality_key": "daegu-jung"
     },
     {
       "rank": 63,
-      "municipality_key": "gwangju-남"
+      "municipality_key": "gwangju-광산"
     },
     {
       "rank": 64,
-      "municipality_key": "gwangju-동"
+      "municipality_key": "gwangju-남"
     },
     {
       "rank": 65,
-      "municipality_key": "gwangju-북"
+      "municipality_key": "gwangju-동"
     },
     {
       "rank": 66,
-      "municipality_key": "gwangju-서"
+      "municipality_key": "gwangju-북"
     },
     {
       "rank": 67,
-      "municipality_key": "daejeon-대덕"
+      "municipality_key": "gwangju-서"
     },
     {
       "rank": 68,
-      "municipality_key": "daejeon-동"
+      "municipality_key": "daejeon-대덕"
     },
     {
       "rank": 69,
-      "municipality_key": "daejeon-서"
+      "municipality_key": "daejeon-동"
     },
     {
       "rank": 70,
-      "municipality_key": "daejeon-유성"
+      "municipality_key": "daejeon-서"
     },
     {
       "rank": 71,
-      "municipality_key": "daejeon-jung"
+      "municipality_key": "daejeon-유성"
     },
     {
       "rank": 72,
-      "municipality_key": "ulsan-남"
+      "municipality_key": "daejeon-jung"
     },
     {
       "rank": 73,
-      "municipality_key": "ulsan-동"
+      "municipality_key": "ulsan-남"
     },
     {
       "rank": 74,
-      "municipality_key": "ulsan-북"
+      "municipality_key": "ulsan-동"
     },
     {
       "rank": 75,
-      "municipality_key": "ulsan-울주"
+      "municipality_key": "ulsan-북"
     },
     {
       "rank": 76,
-      "municipality_key": "ulsan-jung"
+      "municipality_key": "ulsan-울주"
     },
     {
       "rank": 77,
-      "municipality_key": "gangwon-강릉"
+      "municipality_key": "ulsan-jung"
     },
     {
       "rank": 78,
-      "municipality_key": "gangwon-고성"
+      "municipality_key": "gangwon-강릉"
     },
     {
       "rank": 79,
-      "municipality_key": "gangwon-동해"
+      "municipality_key": "gangwon-고성"
     },
     {
       "rank": 80,
-      "municipality_key": "gangwon-삼척"
+      "municipality_key": "gangwon-동해"
     },
     {
       "rank": 81,
-      "municipality_key": "gangwon-속초"
+      "municipality_key": "gangwon-삼척"
     },
     {
       "rank": 82,
-      "municipality_key": "gangwon-양구"
+      "municipality_key": "gangwon-속초"
     },
     {
       "rank": 83,
-      "municipality_key": "gangwon-양양"
+      "municipality_key": "gangwon-양구"
     },
     {
       "rank": 84,
-      "municipality_key": "gangwon-영월"
+      "municipality_key": "gangwon-양양"
     },
     {
       "rank": 85,
-      "municipality_key": "gangwon-원주"
+      "municipality_key": "gangwon-영월"
     },
     {
       "rank": 86,
-      "municipality_key": "gangwon-인제"
+      "municipality_key": "gangwon-원주"
     },
     {
       "rank": 87,
-      "municipality_key": "gangwon-정선"
+      "municipality_key": "gangwon-인제"
     },
     {
       "rank": 88,
-      "municipality_key": "gangwon-철원"
+      "municipality_key": "gangwon-정선"
     },
     {
       "rank": 89,
-      "municipality_key": "gangwon-춘천"
+      "municipality_key": "gangwon-철원"
     },
     {
       "rank": 90,
-      "municipality_key": "gangwon-평창"
+      "municipality_key": "gangwon-춘천"
     },
     {
       "rank": 91,
-      "municipality_key": "gangwon-홍천"
+      "municipality_key": "gangwon-평창"
     },
     {
       "rank": 92,
-      "municipality_key": "gangwon-화천"
+      "municipality_key": "gangwon-홍천"
     },
     {
       "rank": 93,
-      "municipality_key": "gangwon-횡성"
+      "municipality_key": "gangwon-화천"
     },
     {
       "rank": 94,
-      "municipality_key": "chungbuk-괴산"
+      "municipality_key": "gangwon-횡성"
     },
     {
       "rank": 95,
-      "municipality_key": "chungbuk-단양"
+      "municipality_key": "chungbuk-괴산"
     },
     {
       "rank": 96,
-      "municipality_key": "chungbuk-보은"
+      "municipality_key": "chungbuk-단양"
     },
     {
       "rank": 97,
-      "municipality_key": "chungbuk-영동"
+      "municipality_key": "chungbuk-보은"
     },
     {
       "rank": 98,
-      "municipality_key": "chungbuk-옥천"
+      "municipality_key": "chungbuk-영동"
     },
     {
       "rank": 99,
-      "municipality_key": "chungbuk-음성"
+      "municipality_key": "chungbuk-옥천"
     },
     {
       "rank": 100,
-      "municipality_key": "chungbuk-제천"
+      "municipality_key": "chungbuk-음성"
     },
     {
       "rank": 101,
-      "municipality_key": "chungbuk-증평"
+      "municipality_key": "chungbuk-제천"
     },
     {
       "rank": 102,
-      "municipality_key": "chungbuk-진천"
+      "municipality_key": "chungbuk-증평"
     },
     {
       "rank": 103,
-      "municipality_key": "chungbuk-청주"
+      "municipality_key": "chungbuk-진천"
     },
     {
       "rank": 104,
-      "municipality_key": "chungbuk-충주"
+      "municipality_key": "chungbuk-청주"
     },
     {
       "rank": 105,
-      "municipality_key": "chungnam-계룡"
+      "municipality_key": "chungbuk-충주"
     },
     {
       "rank": 106,
-      "municipality_key": "chungnam-공주"
+      "municipality_key": "chungnam-계룡"
     },
     {
       "rank": 107,
-      "municipality_key": "chungnam-금산"
+      "municipality_key": "chungnam-공주"
     },
     {
       "rank": 108,
-      "municipality_key": "chungnam-논산"
+      "municipality_key": "chungnam-금산"
     },
     {
       "rank": 109,
-      "municipality_key": "chungnam-당진"
+      "municipality_key": "chungnam-논산"
     },
     {
       "rank": 110,
-      "municipality_key": "chungnam-보령"
+      "municipality_key": "chungnam-당진"
     },
     {
       "rank": 111,
-      "municipality_key": "chungnam-부여"
+      "municipality_key": "chungnam-보령"
     },
     {
       "rank": 112,
-      "municipality_key": "chungnam-서산"
+      "municipality_key": "chungnam-부여"
     },
     {
       "rank": 113,
-      "municipality_key": "chungnam-서천"
+      "municipality_key": "chungnam-서산"
     },
     {
       "rank": 114,
-      "municipality_key": "chungnam-아산"
+      "municipality_key": "chungnam-서천"
     },
     {
       "rank": 115,
-      "municipality_key": "chungnam-예산"
+      "municipality_key": "chungnam-아산"
     },
     {
       "rank": 116,
-      "municipality_key": "chungnam-천안"
+      "municipality_key": "chungnam-예산"
     },
     {
       "rank": 117,
-      "municipality_key": "chungnam-청양"
+      "municipality_key": "chungnam-천안"
     },
     {
       "rank": 118,
-      "municipality_key": "chungnam-태안"
+      "municipality_key": "chungnam-청양"
     },
     {
       "rank": 119,
-      "municipality_key": "chungnam-홍성"
+      "municipality_key": "chungnam-태안"
     },
     {
       "rank": 120,
-      "municipality_key": "jeonbuk-고창"
+      "municipality_key": "chungnam-홍성"
     },
     {
       "rank": 121,
-      "municipality_key": "jeonbuk-군산"
+      "municipality_key": "jeonbuk-고창"
     },
     {
       "rank": 122,
-      "municipality_key": "jeonbuk-김제"
+      "municipality_key": "jeonbuk-군산"
     },
     {
       "rank": 123,
-      "municipality_key": "jeonbuk-남원"
+      "municipality_key": "jeonbuk-김제"
     },
     {
       "rank": 124,
-      "municipality_key": "jeonbuk-무주"
+      "municipality_key": "jeonbuk-남원"
     },
     {
       "rank": 125,
-      "municipality_key": "jeonbuk-부안"
+      "municipality_key": "jeonbuk-무주"
     },
     {
       "rank": 126,
-      "municipality_key": "jeonbuk-순창"
+      "municipality_key": "jeonbuk-부안"
     },
     {
       "rank": 127,
-      "municipality_key": "jeonbuk-완주"
+      "municipality_key": "jeonbuk-순창"
     },
     {
       "rank": 128,
-      "municipality_key": "jeonbuk-익산"
+      "municipality_key": "jeonbuk-완주"
     },
     {
       "rank": 129,
-      "municipality_key": "jeonbuk-임실"
+      "municipality_key": "jeonbuk-익산"
     },
     {
       "rank": 130,
-      "municipality_key": "jeonbuk-장수"
+      "municipality_key": "jeonbuk-임실"
     },
     {
       "rank": 131,
-      "municipality_key": "jeonbuk-전주"
+      "municipality_key": "jeonbuk-장수"
     },
     {
       "rank": 132,
-      "municipality_key": "jeonbuk-정읍"
+      "municipality_key": "jeonbuk-전주"
     },
     {
       "rank": 133,
-      "municipality_key": "jeonbuk-진안"
+      "municipality_key": "jeonbuk-정읍"
     },
     {
       "rank": 134,
-      "municipality_key": "jeonnam-강진"
+      "municipality_key": "jeonbuk-진안"
     },
     {
       "rank": 135,
-      "municipality_key": "jeonnam-고흥"
+      "municipality_key": "jeonnam-강진"
     },
     {
       "rank": 136,
-      "municipality_key": "jeonnam-곡성"
+      "municipality_key": "jeonnam-고흥"
     },
     {
       "rank": 137,
-      "municipality_key": "jeonnam-광양"
+      "municipality_key": "jeonnam-곡성"
     },
     {
       "rank": 138,
-      "municipality_key": "jeonnam-구례"
+      "municipality_key": "jeonnam-광양"
     },
     {
       "rank": 139,
-      "municipality_key": "jeonnam-나주"
+      "municipality_key": "jeonnam-구례"
     },
     {
       "rank": 140,
-      "municipality_key": "jeonnam-담양"
+      "municipality_key": "jeonnam-나주"
     },
     {
       "rank": 141,
-      "municipality_key": "jeonnam-목포"
+      "municipality_key": "jeonnam-담양"
     },
     {
       "rank": 142,
-      "municipality_key": "jeonnam-무안"
+      "municipality_key": "jeonnam-목포"
     },
     {
       "rank": 143,
-      "municipality_key": "jeonnam-보성"
+      "municipality_key": "jeonnam-무안"
     },
     {
       "rank": 144,
-      "municipality_key": "jeonnam-순천"
+      "municipality_key": "jeonnam-보성"
     },
     {
       "rank": 145,
-      "municipality_key": "jeonnam-신안"
+      "municipality_key": "jeonnam-순천"
     },
     {
       "rank": 146,
-      "municipality_key": "jeonnam-여수"
+      "municipality_key": "jeonnam-신안"
     },
     {
       "rank": 147,
-      "municipality_key": "jeonnam-영광"
+      "municipality_key": "jeonnam-여수"
     },
     {
       "rank": 148,
-      "municipality_key": "jeonnam-영암"
+      "municipality_key": "jeonnam-영광"
     },
     {
       "rank": 149,
-      "municipality_key": "jeonnam-완도"
+      "municipality_key": "jeonnam-영암"
     },
     {
       "rank": 150,
-      "municipality_key": "jeonnam-장성"
+      "municipality_key": "jeonnam-완도"
     },
     {
       "rank": 151,
-      "municipality_key": "jeonnam-장흥"
+      "municipality_key": "jeonnam-장성"
     },
     {
       "rank": 152,
-      "municipality_key": "jeonnam-진도"
+      "municipality_key": "jeonnam-장흥"
     },
     {
       "rank": 153,
-      "municipality_key": "jeonnam-함평"
+      "municipality_key": "jeonnam-진도"
     },
     {
       "rank": 154,
-      "municipality_key": "jeonnam-해남"
+      "municipality_key": "jeonnam-함평"
     },
     {
       "rank": 155,
-      "municipality_key": "jeonnam-화순"
+      "municipality_key": "jeonnam-해남"
     },
     {
       "rank": 156,
-      "municipality_key": "gyeongbuk-경산"
+      "municipality_key": "jeonnam-화순"
     },
     {
       "rank": 157,
-      "municipality_key": "gyeongbuk-경주"
+      "municipality_key": "gyeongbuk-경산"
     },
     {
       "rank": 158,
-      "municipality_key": "gyeongbuk-고령"
+      "municipality_key": "gyeongbuk-경주"
     },
     {
       "rank": 159,
-      "municipality_key": "gyeongbuk-구미"
+      "municipality_key": "gyeongbuk-고령"
     },
     {
       "rank": 160,
-      "municipality_key": "gyeongbuk-김천"
+      "municipality_key": "gyeongbuk-구미"
     },
     {
       "rank": 161,
-      "municipality_key": "gyeongbuk-문경"
+      "municipality_key": "gyeongbuk-김천"
     },
     {
       "rank": 162,
-      "municipality_key": "gyeongbuk-봉화"
+      "municipality_key": "gyeongbuk-문경"
     },
     {
       "rank": 163,
-      "municipality_key": "gyeongbuk-상주"
+      "municipality_key": "gyeongbuk-봉화"
     },
     {
       "rank": 164,
-      "municipality_key": "gyeongbuk-성주"
+      "municipality_key": "gyeongbuk-상주"
     },
     {
       "rank": 165,
-      "municipality_key": "gyeongbuk-안동"
+      "municipality_key": "gyeongbuk-성주"
     },
     {
       "rank": 166,
-      "municipality_key": "gyeongbuk-영덕"
+      "municipality_key": "gyeongbuk-안동"
     },
     {
       "rank": 167,
-      "municipality_key": "gyeongbuk-영양"
+      "municipality_key": "gyeongbuk-영덕"
     },
     {
       "rank": 168,
-      "municipality_key": "gyeongbuk-영주"
+      "municipality_key": "gyeongbuk-영양"
     },
     {
       "rank": 169,
-      "municipality_key": "gyeongbuk-영천"
+      "municipality_key": "gyeongbuk-영주"
     },
     {
       "rank": 170,
-      "municipality_key": "gyeongbuk-예천"
+      "municipality_key": "gyeongbuk-영천"
     },
     {
       "rank": 171,
-      "municipality_key": "gyeongbuk-울릉"
+      "municipality_key": "gyeongbuk-예천"
     },
     {
       "rank": 172,
-      "municipality_key": "gyeongbuk-울진"
+      "municipality_key": "gyeongbuk-울릉"
     },
     {
       "rank": 173,
-      "municipality_key": "gyeongbuk-의성"
+      "municipality_key": "gyeongbuk-울진"
     },
     {
       "rank": 174,
-      "municipality_key": "gyeongbuk-청도"
+      "municipality_key": "gyeongbuk-의성"
     },
     {
       "rank": 175,
-      "municipality_key": "gyeongbuk-청송"
+      "municipality_key": "gyeongbuk-청도"
     },
     {
       "rank": 176,
-      "municipality_key": "gyeongbuk-칠곡"
+      "municipality_key": "gyeongbuk-청송"
     },
     {
       "rank": 177,
-      "municipality_key": "gyeongbuk-포항"
+      "municipality_key": "gyeongbuk-칠곡"
     },
     {
       "rank": 178,
-      "municipality_key": "gyeongnam-거제"
+      "municipality_key": "gyeongbuk-포항"
     },
     {
       "rank": 179,
-      "municipality_key": "gyeongnam-거창"
+      "municipality_key": "gyeongnam-거제"
     },
     {
       "rank": 180,
-      "municipality_key": "gyeongnam-고성"
+      "municipality_key": "gyeongnam-거창"
     },
     {
       "rank": 181,
-      "municipality_key": "gyeongnam-김해"
+      "municipality_key": "gyeongnam-고성"
     },
     {
       "rank": 182,
-      "municipality_key": "gyeongnam-남해"
+      "municipality_key": "gyeongnam-김해"
     },
     {
       "rank": 183,
-      "municipality_key": "gyeongnam-밀양"
+      "municipality_key": "gyeongnam-남해"
     },
     {
       "rank": 184,
-      "municipality_key": "gyeongnam-사천"
+      "municipality_key": "gyeongnam-밀양"
     },
     {
       "rank": 185,
-      "municipality_key": "gyeongnam-산청"
+      "municipality_key": "gyeongnam-사천"
     },
     {
       "rank": 186,
-      "municipality_key": "gyeongnam-양산"
+      "municipality_key": "gyeongnam-산청"
     },
     {
       "rank": 187,
-      "municipality_key": "gyeongnam-의령"
+      "municipality_key": "gyeongnam-양산"
     },
     {
       "rank": 188,
-      "municipality_key": "gyeongnam-진주"
+      "municipality_key": "gyeongnam-의령"
     },
     {
       "rank": 189,
-      "municipality_key": "gyeongnam-창녕"
+      "municipality_key": "gyeongnam-진주"
     },
     {
       "rank": 190,
-      "municipality_key": "gyeongnam-창원"
+      "municipality_key": "gyeongnam-창녕"
     },
     {
       "rank": 191,
-      "municipality_key": "gyeongnam-통영"
+      "municipality_key": "gyeongnam-창원"
     },
     {
       "rank": 192,
-      "municipality_key": "gyeongnam-하동"
+      "municipality_key": "gyeongnam-통영"
     },
     {
       "rank": 193,
-      "municipality_key": "gyeongnam-함안"
+      "municipality_key": "gyeongnam-하동"
     },
     {
       "rank": 194,
-      "municipality_key": "gyeongnam-함양"
+      "municipality_key": "gyeongnam-함안"
     },
     {
       "rank": 195,
-      "municipality_key": "gyeongnam-합천"
+      "municipality_key": "gyeongnam-함양"
     },
     {
       "rank": 196,
-      "municipality_key": "jeju-서귀포"
+      "municipality_key": "gyeongnam-합천"
     },
     {
       "rank": 197,
+      "municipality_key": "jeju-서귀포"
+    },
+    {
+      "rank": 198,
       "municipality_key": "jeju-제주"
     }
   ],
@@ -4479,6 +4498,6 @@
     "COLLECTOR_GAP": 15,
     "WATCH": 22,
     "EXCLUDE": 0,
-    "UNREVIEWED": 197
+    "UNREVIEWED": 198
   }
 }
