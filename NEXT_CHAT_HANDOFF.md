@@ -562,3 +562,16 @@ UI 기준:
   - `sejong`: partial 3, attempted 3, complete 0; navigation-like links의 `detail_missing_core`로 fail-closed했다. actual event-list block recognition은 후속 onboarding 검증이 필요하다.
 - 여전히 별도 범위: `seoul-dongjak` JS/API rendered, `chungnam`·`jeju` generic HTML card structure. dedicated parser, Registry onboarding, D1 write, Cron/manual ingestion, production deploy는 하지 않았다.
 - 다음 순서: **C 2026-09-24 10:00 KST 기존 ACTIVE 9 read-only Cron 검증 → D 2026-09-24 11:00 KST TourAPI watchdog read-only 검증 → 검증된 list→detail source (우선 부산) batch onboarding**. 이후 조사 queue는 `seoul-yongsan`부터 재개한다.
+
+## 2026-09-23 Phase 6B — 서울 하위 지자체 마지막 5개 조사 완료
+
+- 서울 25개 자치구의 deterministic 조사 batch를 모두 완료했다. 마지막 범위 `seoul-yongsan`, `seoul-eunpyeong`, `seoul-jongno`, `seoul-jung`, `seoul-jungnang`은 모두 공식 HTTPS source를 live read-only 확인했다.
+- `seoul-yongsan`: **COLLECTOR_GAP** — 용산문화재단 listing은 title·2026 full-year 기간·venue·static detail을 한 항목에 제공하나 `slide` card HTML로 generic extractor 0건.
+- `seoul-eunpyeong`: **COLLECTOR_GAP** — 은평문화재단 문화사업 일정은 title·full-year date·venue·detail이 있으나 current generic extractor 0건.
+- `seoul-jongno`: **COLLECTOR_GAP** — 종로문화플랫폼 행사/축제 listing은 self-contained core와 same-host detail/pagination이 있으나 current generic extractor 0건.
+- `seoul-jung`: **COLLECTOR_GAP** — 중구문화재단/충무아트센터 문화 listing은 current title·full-year 기간·venue·detail을 제공하나 main card 구조에서 generic extractor 0건.
+- 위 4개는 새 list→detail follow-up으로 unlock되는 유형이 아니라 **기존 충남·제주와 같은 generic HTML card structure gap**이다.
+- `seoul-jungnang`: **COLLECTOR_GAP** — 중랑문화재단 canonical list는 Svelte/JS rendering shell이어서 static HTML generic collector 및 list→detail follow-up 대상이 아니다. `seoul-dongjak`과 같은 JS/API rendering gap이다.
+- 이번 batch 변화: `ONBOARDING_READY +0`, `COLLECTOR_GAP +5`, `WATCH +0`, `EXCLUDE +0`. 누적 READY는 2개다. inventory는 ACTIVE 9 / READY 2 / GAP 15 / WATCH 22 / EXCLUDE 0 / UNREVIEWED 197 (총 245).
+- Registry·collector·D1·production·Cron/manual ingestion은 변경하지 않았다. C **2026-09-24 10:00 KST** read-only Cron 검증과 D **2026-09-24 11:00 KST** TourAPI watchdog 순서는 유지한다.
+- 다음 deterministic survey queue는 **`incheon-강화`부터**다. C/D checkpoint 뒤 검증된 부산 list→detail source onboarding batch를 별도 bounded task로 수행한다.
