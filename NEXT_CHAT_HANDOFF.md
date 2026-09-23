@@ -322,9 +322,9 @@ UI 기준:
 - 12페이지 × 페이지당 10건이며 시작일 내림차순이다. page 1은 가장 먼 미래 행사라 현재 worker의 단일-page fetch와 맞지 않는다.
 - page 1~3 잠정 gate는 MAIN 1 / NEARBY_ONLY 5 / REVIEW 23 / EXCLUDE 1 수준으로, 현재 등록하면 selection 불확실성 때문에 AUTO_RETRY noise가 과도하다.
 - 일반 공연/전시를 갈틈 MAIN으로 승격하는 제품정책 변경은 이번 source 하나를 위해 하지 않는다.
-- raw HTML의 literal `<광화문연가>` 같은 제목이 현재 generic cleaner에서 손실되는 문제도 확인됐다.
+- raw HTML의 literal `<광화문연가>` 같은 제목 손실은 공통 cleaner 보강으로 해결했다. 아직 registry 등록/production deploy는 하지 않았다.
 - 인천은 **보류 source**로 남기고, 당장은 더 단순하고 갈틈 MAIN 비중이 높은 공식 municipal source를 우선 조사한다.
-- bounded pagination / 문화공연 selection 정책 / literal-angle-title 보존은 실제 재사용 근거가 추가될 때 각각 별도 bounded task로 검토한다.
+- bounded pagination / 문화공연 selection 정책은 별도 bounded task로 남아 있다.
 
 ### 울산 source 조사 — 보류
 
@@ -393,8 +393,9 @@ UI 기준:
 
 - 인천 온라인통합예약: **COLLECTOR GAP**
   - 공식 데이터 자체는 행사명/장소/full-year 기간/운영기관/문의/포스터 등 품질이 충분하다.
-  - 현재 부족한 것은 갈틈 측의 generic list extractor, bounded pagination, 문화행사 selection, literal `<...>` title preservation이다.
-  - 따라서 단순 WATCH로 기다리지 않고 공통 기능으로 해결한 뒤 ACTIVE onboarding을 목표로 한다.
+  - generic list extractor의 `<dt>일자</dt>` full-year 기간 파싱과 literal `<...>` title preservation 1단계를 완료했다.
+  - live dry-run은 `generic_html`, 10 candidates, 10 core-complete, parse error 0이며 `뮤지컬 <광화문연가>`도 보존됐다.
+  - 아직 bounded pagination, 문화행사 selection, registry 등록은 남아 있어 ACTIVE onboarding 전 단계다.
 - 울산모아: **WATCH 후보**
   - raw 날짜가 2자리 연도, 외부 detail host, sessionized link, featured-only 구조라 source-side 제약이 크다.
   - 별도 canonical full-year source가 발견되지 않으면 WATCH/보류로 유지한다.
@@ -403,8 +404,8 @@ UI 기준:
 
 한 프롬프트에 몰아넣지 않고 bounded task로 나눈다.
 
-1. 인천 generic extractor의 self-contained `<dt>일자</dt>` full-year 기간 파싱 + literal angle-bracket title 보존을 공통 방식으로 해결하고 targeted regression 검증.
-2. registry-level bounded pagination을 별도 task로 설계/구현. source당 fetch/candidate cap, 가까운 행사 우선, 기존 MAX_PER_SOURCE=25 circuit breaker와 충돌하지 않게 한다.
+1. ✅ 인천 generic extractor의 self-contained `<dt>일자</dt>` full-year 기간 파싱 + literal angle-bracket title 보존을 공통 방식으로 해결하고 targeted regression 검증.
+2. **다음: registry-level bounded pagination**을 별도 task로 설계/구현. source당 fetch/candidate cap, 가까운 행사 우선, 기존 MAX_PER_SOURCE=25 circuit breaker와 충돌하지 않게 한다.
 3. 일반 대중 대상 뮤지컬/콘서트/연주회/전시를 갈틈 정책에 맞게 처리하면서 기념식/성과공유회/교육/포럼/행정성 행사는 제외하도록 selection gate를 별도 bounded task로 검증한다.
 4. 위 조건을 통과하면 인천 source를 ACTIVE onboarding하고 live read-only dry-run → targeted tests/typecheck → 기존 Worker deploy → production smoke로 닫는다.
 5. 인천 해결 후에는 **Phase 6 전국 municipal/source coverage 확대의 다음 공식 source 조사로 즉시 복귀**한다. 인천 때문에 UI/SEO/수익화로 이동하지 않는다.

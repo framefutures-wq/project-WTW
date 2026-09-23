@@ -26,7 +26,9 @@ const clean = (value: string) =>
   value
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
+    // HTML element names are ASCII; preserve literal Korean angle-bracket text
+    // such as `뮤지컬 <광화문연가>` while still removing real markup.
+    .replace(/<\/?[A-Za-z][^>]*>/g, " ")
     .replace(/&(?:nbsp|#160);/gi, " ")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
@@ -125,7 +127,7 @@ const singleExplicitDate = (value: string) => {
 
 const titleFromBlock = (html: string, text: string) =>
   htmlAttribute(html, "data-title") ??
-  classValue(html, "(?:title|tit|subject|name)") ??
+  classValue(html, "(?:reservation-name|title|titl?\\b|subject|name\\b)") ??
   definitionValue(html, ["행사명", "축제명", "공연명", "제목"]) ??
   labeledValue(text, ["행사명", "축제명", "공연명", "제목"]);
 
@@ -145,10 +147,19 @@ const dateFromBlock = (html: string, text: string) => {
       "기간",
       "일시",
       "행사일",
+      "일자",
       "날짜",
       "date",
     ]) ??
-    labeledValue(text, ["행사기간", "기간", "일시", "행사일", "날짜", "date"]);
+    labeledValue(text, [
+      "행사기간",
+      "기간",
+      "일시",
+      "행사일",
+      "일자",
+      "날짜",
+      "date",
+    ]);
   return explicit ? explicitDateRange(explicit) : null;
 };
 

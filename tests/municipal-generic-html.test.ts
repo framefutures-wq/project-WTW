@@ -150,6 +150,33 @@ test("generic HTML extractor reads explicit core from a card block", () => {
   );
 });
 
+test("generic HTML extractor reads definition-list 일자 dates", () => {
+  const result = extracted(`
+    <ul><li><a class="title" href="/events/definition-date">가상구 공연</a>
+      <dl><dt>일자</dt><dd>공연/전시 2026-12-19 ~ 2026-12-20</dd></dl>
+      <span class="venue">가상문화회관</span></li></ul>
+  `);
+  assert.equal(result.mode, "generic_html");
+  assert.deepEqual(
+    [
+      result.candidates[0].start_date,
+      result.candidates[0].end_date,
+      result.candidates[0].venue,
+    ],
+    ["2026-12-19", "2026-12-20", "가상문화회관"],
+  );
+});
+
+test("generic HTML extractor preserves literal angle-bracket title text", () => {
+  const result = extracted(`
+    <ul><li><span class="institution pink">인천문화예술회관</span>
+      <a class="reservation-name" href="/events/literal-title"><strong>뮤지컬</strong> &lt;광화문연가&gt;</a>
+      <span class="date">2026-12-19</span><span class="venue">가상문화회관</span></li></ul>
+  `);
+  assert.equal(result.candidates[0].title, "뮤지컬 <광화문연가>");
+  assert.equal(result.candidates[0].title.includes("<strong>"), false);
+});
+
 test("generic HTML extraction fails closed for missing date or venue", () => {
   const missingDate = extracted(
     '<ul><li><a class="title" href="/events/no-date">가상구 축제</a><span class="venue">가상공원</span></li></ul>',
