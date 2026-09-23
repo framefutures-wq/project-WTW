@@ -316,6 +316,16 @@ UI 기준:
 - live read-only dry-run은 `generic_html`, 10 candidates, 10 complete, parse error 0으로 통과했다. 기존 Worker에 배포했고 production 기본 smoke는 desktop/mobile 모두 통과했다.
 - municipal cron 수동 실행과 D1 write는 하지 않았다. 다음 위치는 다른 공식 municipal 행사 목록 source 1개를 같은 read-only survey로 조사하는 것이다.
 
+### 인천 source 조사 — 보류
+
+- 공식 canonical: `https://www.incheon.go.kr/res/RE050101/`.
+- 12페이지 × 페이지당 10건이며 시작일 내림차순이다. page 1은 가장 먼 미래 행사라 현재 worker의 단일-page fetch와 맞지 않는다.
+- page 1~3 잠정 gate는 MAIN 1 / NEARBY_ONLY 5 / REVIEW 23 / EXCLUDE 1 수준으로, 현재 등록하면 selection 불확실성 때문에 AUTO_RETRY noise가 과도하다.
+- 일반 공연/전시를 갈틈 MAIN으로 승격하는 제품정책 변경은 이번 source 하나를 위해 하지 않는다.
+- raw HTML의 literal `<광화문연가>` 같은 제목이 현재 generic cleaner에서 손실되는 문제도 확인됐다.
+- 인천은 **보류 source**로 남기고, 당장은 더 단순하고 갈틈 MAIN 비중이 높은 공식 municipal source를 우선 조사한다.
+- bounded pagination / 문화공연 selection 정책 / literal-angle-title 보존은 실제 재사용 근거가 추가될 때 각각 별도 bounded task로 검토한다.
+
 ### TourAPI detail 안정화 상태 — 관찰 대기
 
 - candidate priority: retry-due failed → never-processed → 7-day TTL.
@@ -337,7 +347,7 @@ UI 기준:
 3. ✅ **상세페이지 UI v2 production 마감**
 4. ⏸️ **TourAPI detail backlog 소진 / recovery 확인 — 2026-09-24 11:00 KST scheduled watchdog 관찰 대기**
 5. ⏳ **공식 상세 enrichment 품질 강화 — 4번 확인 전 보류**
-6. 🟡 **전국 municipal/source coverage 확대 — 다음 공식 source 조사**
+6. 🟡 **전국 municipal/source coverage 확대 — 인천 보류, 다음 공식 source 조사**
 7. ⏳ SEO / Search Console / 검색 유입 점검
 8. ⏳ 모바일 최종 polish
 9. ⏳ 수익화 준비
