@@ -326,6 +326,15 @@ UI 기준:
 - 인천은 **보류 source**로 남기고, 당장은 더 단순하고 갈틈 MAIN 비중이 높은 공식 municipal source를 우선 조사한다.
 - bounded pagination / 문화공연 selection 정책 / literal-angle-title 보존은 실제 재사용 근거가 추가될 때 각각 별도 bounded task로 검토한다.
 
+### 울산 source 조사 — 보류
+
+- 조사 source: `https://ulsan.go.kr/y/yes/main.do`.
+- session 없는 main URL은 HTTP 200이지만 내부 링크 다수가 `;jsessionid=...`로 재작성되고, 축제 detail은 `ulsanculture.kr` 외부 host를 사용한다.
+- featured 영역은 `div.swiper-slide[role=listitem]` 기반이며 raw 날짜도 `26.10.15` 같은 2자리 연도뿐이라 현재 full-year fail-closed 정책으로 candidate를 만들 수 없다.
+- 고정 featured 8건 수준이며 구·군 탭 중복도 있어 durable canonical 전체 목록으로 보기 어렵다.
+- 현재 source는 **보류**. 울산 안에서 full-year 날짜 + session 없는 공식 detail URL을 제공하는 별도 canonical 목록을 read-only로 1개만 추가 조사한다.
+- 그런 source가 없으면 울산모아는 onboarding 대상에서 제외하고 다음 지역으로 이동한다.
+
 ### TourAPI detail 안정화 상태 — 관찰 대기
 
 - candidate priority: retry-due failed → never-processed → 7-day TTL.
@@ -347,7 +356,7 @@ UI 기준:
 3. ✅ **상세페이지 UI v2 production 마감**
 4. ⏸️ **TourAPI detail backlog 소진 / recovery 확인 — 2026-09-24 11:00 KST scheduled watchdog 관찰 대기**
 5. ⏳ **공식 상세 enrichment 품질 강화 — 4번 확인 전 보류**
-6. 🟡 **전국 municipal/source coverage 확대 — 인천 보류, 다음 공식 source 조사**
+6. 🟡 **전국 municipal/source coverage 확대 — 인천·울산모아 보류, 울산 canonical source 1회 추가 조사**
 7. ⏳ SEO / Search Console / 검색 유입 점검
 8. ⏳ 모바일 최종 polish
 9. ⏳ 수익화 준비
