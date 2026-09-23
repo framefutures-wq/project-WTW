@@ -731,3 +731,12 @@ UI 기준:
 - inventory 총 245: **ACTIVE 9 / READY 21 / GAP 32 / WATCH 127 / EXCLUDE 0 / UNREVIEWED 56**. 다음 queue는 **`jeonbuk-고창`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-24 Phase 6B — 전북 하위 14개 source 조사 완료
+
+- 전북특별자치도 하위 14개 시·군을 current official source 기준으로 live read-only 조사해 모두 UNREVIEWED에서 제거했다.
+- **COLLECTOR_GAP 3**: `jeonbuk-완주`(공식 축제 목록 title/date는 충분하지만 venue detail 필요), `jeonbuk-익산`(익산예술의전당 공연·전시 일정 detail에서 venue/core 보완), `jeonbuk-전주`(공식 공연/행사 calendar의 venue/multi-day detail 보완). 모두 기존 `list_detail_core_followup_needed` 계열이다.
+- **WATCH 11**: 고창·군산·김제·남원·무주·부안·순창·임실·장수·정읍·진안. 대표 사유는 flagship 축제/개별 공지 중심, source-wide canonical bounded listing 미확인, 또는 행정/홍보 feed 혼합이다. 명시되지 않은 연도·장소를 다른 페이지에서 임의 결합하지 않았다.
+- 이번 변화: READY +0 / GAP +3 / WATCH +11 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 21 / GAP 35 / WATCH 138 / EXCLUDE 0 / UNREVIEWED 42**.
+- 전북 하위 UNREVIEWED는 0. 다음 deterministic queue는 **`gyeongbuk-경산`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙 유지.
+

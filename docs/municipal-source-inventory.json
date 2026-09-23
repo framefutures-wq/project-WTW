@@ -2810,13 +2810,13 @@
       "region": "전북특별자치도",
       "locality": "전주시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.jeonju.go.kr",
+      "source_status": "COLLECTOR_GAP",
+      "source_url": "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=ff8080818b5bc5cf018b6588a3d91e94&contentUid=ff8080818990c349018b041a87453954&year=2026",
+      "source_type": "official_government_event_calendar",
+      "collector_fit": "list_detail_core_followup_needed",
+      "notes": "전주시 공식 공연/행사 calendar는 2026 월별로 공연·축제 title과 날짜를 current 제공하고 관광 detail에서는 explicit 기간·venue가 확인된다. calendar/list 자체에서 venue와 multi-day core가 모든 항목에 self-contained하지 않아 기존 bounded detail follow-up이 필요한 공통 GAP으로 분류.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2825,13 +2825,13 @@
       "region": "전북특별자치도",
       "locality": "군산시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.gunsan.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.gunsan.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "군산시 공식 홈페이지/문화시설에서 공연·축제 정보와 개별 일정은 확인되지만, 2026 현재 시 전체 행사에 대해 title·explicit full-year start/end·venue·durable detail을 한 source-wide bounded listing으로 검증하지 못했다. 과거 공연일정 경로 또는 개별 공지를 current canonical source로 추정하지 않아 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2840,13 +2840,13 @@
       "region": "전북특별자치도",
       "locality": "익산시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.iksan.go.kr",
+      "source_status": "COLLECTOR_GAP",
+      "source_url": "https://arts.iksan.go.kr/schedule/list.iksan?boardId=EVENT_SCHEDULE&menuCd=DOM_000000101001000000&contentsSid=9",
+      "source_type": "official_culture_venue_listing",
+      "collector_fit": "list_detail_core_followup_needed",
+      "notes": "익산예술의전당 공식 공연/전시 일정은 2026 항목과 durable first-party detail을 운영하며 detail에서 explicit 기간·venue·장르를 확인할 수 있다. 이번 조사에서 list row의 venue self-contained 여부를 확정하지 못해 existing bounded list→detail follow-up이 필요한 GAP으로 보수적으로 분류.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2855,13 +2855,13 @@
       "region": "전북특별자치도",
       "locality": "정읍시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.jeongeup.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.jeongeup.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "정읍시 공식 홈페이지/문화시설의 2026 공연·축제 공지는 확인 대상이지만 이번 live 조사에서 시 전체 행사에 대한 current canonical bounded listing과 title·explicit full-year date·venue·durable detail을 일관되게 검증하지 못했다. 단일 축제·공연 공지를 결합하지 않아 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2870,13 +2870,13 @@
       "region": "전북특별자치도",
       "locality": "남원시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.namwon.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.namwon.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_core_inconsistent",
+      "notes": "남원시 공식 누리집에서 제96회 춘향제 등 2026 축제 추진·공고는 확인되지만 고시공고/모집 중심이고, 관람용 행사 source-wide canonical listing에서 exact full-year date·venue·durable detail을 일관되게 확인하지 못했다. 단발 공고를 승격하지 않아 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2885,13 +2885,13 @@
       "region": "전북특별자치도",
       "locality": "김제시",
       "government_level": "city",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.gimje.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.gimje.go.kr/index.gimje",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_core_inconsistent",
+      "notes": "김제시 공식 대표 누리집은 2026 일자리박람회·외국인 근로자 문화행사 등 current 행사 title·일시·장소를 노출하지만 시정 인포존/읍면동 공지가 혼합된 구조다. 문화행사 전용 durable listing·bounded pagination을 확인하지 못해 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2900,13 +2900,13 @@
       "region": "전북특별자치도",
       "locality": "완주군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.wanju.go.kr",
+      "source_status": "COLLECTOR_GAP",
+      "source_url": "https://www.wanju.go.kr/planweb/board/list.9is?boardUid=ff8080818c0aecd1018c3334822b5364&categoryUid1=ff8080818c0aecd1018c33369f44539d&contentUid=ff8080818b024d8e018b274f41642af3&page=1&state=",
+      "source_type": "official_government_event_listing",
+      "collector_fit": "list_detail_core_followup_needed",
+      "notes": "완주군 공식 ‘축제, 행사, 교육/모집, 기타’ 중 축제 목록은 42건·5페이지로 지속 갱신되며 title·explicit 행사기간·상태를 제공한다. 목록에는 venue가 self-contained하지 않고 모집성 항목도 섞여 있으므로 event signal + 기존 bounded detail follow-up으로 core를 보완해야 하는 GAP.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2915,13 +2915,13 @@
       "region": "전북특별자치도",
       "locality": "진안군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.jinan.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.jinan.go.kr/festival/page/festival01/festival01_03.jsp",
+      "source_type": "official_festival_detail",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "진안군 공식 진안홍삼축제 사이트는 2026-09-18~09-20, 마이산 북부 등 explicit 기간·장소와 프로그램을 상세 제공한다. 군 공지에도 별별소원 피크닉 페스타 등 다른 current 행사가 있으나 이를 통합한 source-wide canonical event listing·pagination을 확인하지 못해 flagship detail을 확대하지 않고 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2930,13 +2930,13 @@
       "region": "전북특별자치도",
       "locality": "무주군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.muju.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.muju.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "무주군 공식 홈페이지와 문화관광에서 대표축제·개별 행사 정보는 제공되지만 이번 live 조사에서 군 전체 행사·공연의 current canonical listing과 candidate-level full-year date·venue·durable detail·pagination을 검증하지 못했다. 대표축제 단일 source를 확대하지 않아 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2945,13 +2945,13 @@
       "region": "전북특별자치도",
       "locality": "장수군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.jangsu.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.jangsu.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "장수군 공식 홈페이지에서 2026 한우랑사과랑축제 관련 행사기간·장소가 포함된 공지와 운영계획은 current하게 확인되지만 대표축제/읍면동 공지 중심이다. 군 전체 문화행사의 durable canonical listing과 pagination을 확인하지 못해 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2960,13 +2960,13 @@
       "region": "전북특별자치도",
       "locality": "임실군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.imsil.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.imsil.go.kr/tour/index.imsil",
+      "source_type": "official_tourism_festival_collection",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "임실군 문화관광은 필봉마을굿축제·사선문화제 등 여러 2026 축제 detail에서 explicit 기간·장소·프로그램을 충실히 제공한다. 다만 축제별 정적 메뉴/detail collection 중심으로 source-wide candidate listing·pagination을 확인하지 못해 여러 페이지를 임의 결합하지 않고 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2975,13 +2975,13 @@
       "region": "전북특별자치도",
       "locality": "순창군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.sunchang.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.sunchang.go.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "순창군 공식 홈페이지/문화관광의 대표축제·행사 공지는 확인 대상이지만 이번 live 조사에서 title·explicit full-year date·venue·durable detail을 함께 유지하는 current source-wide canonical listing과 pagination을 확인하지 못했다. 개별 축제 페이지를 daily source로 확대하지 않아 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -2990,13 +2990,13 @@
       "region": "전북특별자치도",
       "locality": "고창군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.gochang.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.gochang.go.kr/tour/",
+      "source_type": "official_tourism_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "고창군 공식 문화관광에서 고창청보리밭축제·모양성제 등 2026 개별 축제 정보는 확인 대상이지만, 이번 live 조사에서 군 전체 문화행사를 title·explicit full-year date·venue·durable detail과 함께 지속 공급하는 canonical bounded listing을 확인하지 못했다. 대표축제/개별 공지를 결합하지 않고 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -3005,13 +3005,13 @@
       "region": "전북특별자치도",
       "locality": "부안군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
-      "checked_at": "2026-09-23",
+      "official_homepage": "https://www.buan.go.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.buan.go.kr/tour/index.buan",
+      "source_type": "official_tourism_festival_collection",
+      "collector_fit": "source_wide_listing_missing",
+      "notes": "부안군 문화관광은 부안마실축제·붉은노을축제 등 2026 개별 축제 페이지에서 explicit 기간·장소·문의·주관을 충실히 제공하고 축제정보 공지도 current하다. 다만 확인한 구조는 축제별 detail collection/공지이며 군 전체 행사 candidate를 지속 공급하는 canonical bounded listing이 아니어서 WATCH.",
+      "checked_at": "2026-09-24",
       "region_order": 12
     },
     {
@@ -3693,235 +3693,179 @@
   "survey_queue": [
     {
       "rank": 1,
-      "municipality_key": "jeonbuk-고창"
-    },
-    {
-      "rank": 2,
-      "municipality_key": "jeonbuk-군산"
-    },
-    {
-      "rank": 3,
-      "municipality_key": "jeonbuk-김제"
-    },
-    {
-      "rank": 4,
-      "municipality_key": "jeonbuk-남원"
-    },
-    {
-      "rank": 5,
-      "municipality_key": "jeonbuk-무주"
-    },
-    {
-      "rank": 6,
-      "municipality_key": "jeonbuk-부안"
-    },
-    {
-      "rank": 7,
-      "municipality_key": "jeonbuk-순창"
-    },
-    {
-      "rank": 8,
-      "municipality_key": "jeonbuk-완주"
-    },
-    {
-      "rank": 9,
-      "municipality_key": "jeonbuk-익산"
-    },
-    {
-      "rank": 10,
-      "municipality_key": "jeonbuk-임실"
-    },
-    {
-      "rank": 11,
-      "municipality_key": "jeonbuk-장수"
-    },
-    {
-      "rank": 12,
-      "municipality_key": "jeonbuk-전주"
-    },
-    {
-      "rank": 13,
-      "municipality_key": "jeonbuk-정읍"
-    },
-    {
-      "rank": 14,
-      "municipality_key": "jeonbuk-진안"
-    },
-    {
-      "rank": 15,
       "municipality_key": "gyeongbuk-경산"
     },
     {
-      "rank": 16,
+      "rank": 2,
       "municipality_key": "gyeongbuk-경주"
     },
     {
-      "rank": 17,
+      "rank": 3,
       "municipality_key": "gyeongbuk-고령"
     },
     {
-      "rank": 18,
+      "rank": 4,
       "municipality_key": "gyeongbuk-구미"
     },
     {
-      "rank": 19,
+      "rank": 5,
       "municipality_key": "gyeongbuk-김천"
     },
     {
-      "rank": 20,
+      "rank": 6,
       "municipality_key": "gyeongbuk-문경"
     },
     {
-      "rank": 21,
+      "rank": 7,
       "municipality_key": "gyeongbuk-봉화"
     },
     {
-      "rank": 22,
+      "rank": 8,
       "municipality_key": "gyeongbuk-상주"
     },
     {
-      "rank": 23,
+      "rank": 9,
       "municipality_key": "gyeongbuk-성주"
     },
     {
-      "rank": 24,
+      "rank": 10,
       "municipality_key": "gyeongbuk-안동"
     },
     {
-      "rank": 25,
+      "rank": 11,
       "municipality_key": "gyeongbuk-영덕"
     },
     {
-      "rank": 26,
+      "rank": 12,
       "municipality_key": "gyeongbuk-영양"
     },
     {
-      "rank": 27,
+      "rank": 13,
       "municipality_key": "gyeongbuk-영주"
     },
     {
-      "rank": 28,
+      "rank": 14,
       "municipality_key": "gyeongbuk-영천"
     },
     {
-      "rank": 29,
+      "rank": 15,
       "municipality_key": "gyeongbuk-예천"
     },
     {
-      "rank": 30,
+      "rank": 16,
       "municipality_key": "gyeongbuk-울릉"
     },
     {
-      "rank": 31,
+      "rank": 17,
       "municipality_key": "gyeongbuk-울진"
     },
     {
-      "rank": 32,
+      "rank": 18,
       "municipality_key": "gyeongbuk-의성"
     },
     {
-      "rank": 33,
+      "rank": 19,
       "municipality_key": "gyeongbuk-청도"
     },
     {
-      "rank": 34,
+      "rank": 20,
       "municipality_key": "gyeongbuk-청송"
     },
     {
-      "rank": 35,
+      "rank": 21,
       "municipality_key": "gyeongbuk-칠곡"
     },
     {
-      "rank": 36,
+      "rank": 22,
       "municipality_key": "gyeongbuk-포항"
     },
     {
-      "rank": 37,
+      "rank": 23,
       "municipality_key": "gyeongnam-거제"
     },
     {
-      "rank": 38,
+      "rank": 24,
       "municipality_key": "gyeongnam-거창"
     },
     {
-      "rank": 39,
+      "rank": 25,
       "municipality_key": "gyeongnam-고성"
     },
     {
-      "rank": 40,
+      "rank": 26,
       "municipality_key": "gyeongnam-김해"
     },
     {
-      "rank": 41,
+      "rank": 27,
       "municipality_key": "gyeongnam-남해"
     },
     {
-      "rank": 42,
+      "rank": 28,
       "municipality_key": "gyeongnam-밀양"
     },
     {
-      "rank": 43,
+      "rank": 29,
       "municipality_key": "gyeongnam-사천"
     },
     {
-      "rank": 44,
+      "rank": 30,
       "municipality_key": "gyeongnam-산청"
     },
     {
-      "rank": 45,
+      "rank": 31,
       "municipality_key": "gyeongnam-양산"
     },
     {
-      "rank": 46,
+      "rank": 32,
       "municipality_key": "gyeongnam-의령"
     },
     {
-      "rank": 47,
+      "rank": 33,
       "municipality_key": "gyeongnam-진주"
     },
     {
-      "rank": 48,
+      "rank": 34,
       "municipality_key": "gyeongnam-창녕"
     },
     {
-      "rank": 49,
+      "rank": 35,
       "municipality_key": "gyeongnam-창원"
     },
     {
-      "rank": 50,
+      "rank": 36,
       "municipality_key": "gyeongnam-통영"
     },
     {
-      "rank": 51,
+      "rank": 37,
       "municipality_key": "gyeongnam-하동"
     },
     {
-      "rank": 52,
+      "rank": 38,
       "municipality_key": "gyeongnam-함안"
     },
     {
-      "rank": 53,
+      "rank": 39,
       "municipality_key": "gyeongnam-함양"
     },
     {
-      "rank": 54,
+      "rank": 40,
       "municipality_key": "gyeongnam-합천"
     },
     {
-      "rank": 55,
+      "rank": 41,
       "municipality_key": "jeju-서귀포"
     },
     {
-      "rank": 56,
+      "rank": 42,
       "municipality_key": "jeju-제주"
     }
   ],
   "summary": {
     "ACTIVE": 9,
     "ONBOARDING_READY": 21,
-    "COLLECTOR_GAP": 32,
-    "WATCH": 127,
+    "COLLECTOR_GAP": 35,
+    "WATCH": 138,
     "EXCLUDE": 0,
-    "UNREVIEWED": 56
+    "UNREVIEWED": 42
   }
 }
