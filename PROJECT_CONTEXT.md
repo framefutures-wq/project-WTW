@@ -465,7 +465,6 @@ Production 주의:
 - 2026-09-22 사용자 요청으로 기존 `weekend-mwohae` Worker에 AI binding과 flag=true를 배포했다. 코드 commit `ef7f76c11c9657088c481627ea18f376d0fbfe5b`, Cloudflare Version ID `2df9c820-c6a8-492f-bb4f-401fe8960611`.
 - 배포 로그에서 `env.AI`와 `MUNICIPAL_DOCUMENT_AI_ENABLED ("true")`를 확인했다. production smoke와 desktop/mobile UI 2/2가 통과했다. D1 데이터 삽입이나 Cron 강제 실행은 하지 않았다.
 
-
 ## 20. UI / 상세 v2 제품 결정 (2026-09-23)
 
 > 세부 고정 설계 계약: `docs/UI_V2_DIRECTION.md` — UI 작업 전 반드시 읽고, 새 세션에서도 대화 기억보다 이 문서를 우선한다.
@@ -494,6 +493,7 @@ Production 주의:
 - 현재처럼 초록/보라/베이지/검정이 혼재해 브랜드 색이 불명확한 상태를 정리한다.
 
 UI benchmark:
+
 - **Klook**: 탐색 효율 / 검색·필터 / 카드 밀도
 - **Fever**: 이미지 존재감 / 감성적 비주얼 톤
 - **GetYourGuide**: 상세 정보 위계 / 핵심 CTA 구조
@@ -540,6 +540,7 @@ UI benchmark:
 갈틈은 갤러리 칸을 채우기 위해 **AI로 실제 행사 현장·장소·프로그램 모습을 상상 생성하지 않는다.**
 
 미디어 우선순위:
+
 1. 행사/주최기관의 공식 대표 이미지.
 2. 사용 권한과 공식 출처를 확인할 수 있는 공식 추가 이미지.
 3. 이미지가 적으면 갤러리 수를 줄이고 **레이아웃 자체를 이미지 수에 맞게 변경**한다.
@@ -547,9 +548,17 @@ UI benchmark:
 5. 실제 행사 사진으로 오인될 수 있는 AI 생성 현장 이미지, 임의 장소 이미지, 출처/권리 불명 이미지는 fallback으로 사용하지 않는다.
 
 예:
+
 - 4~5장: 풍성한 gallery
 - 2장: main 1 + secondary 1
 - 1장: 한 장을 크게 사용하는 완성형 layout
 - 0장: 날짜/지역/카테고리/공식정보 중심의 갈틈 브랜드 graphic + 정보 중심 상세
 
 이미지가 부족한 경우 빈 썸네일 슬롯을 만들지 않는다. 사진 대신 timeline, 지도, 공식 fact, 프로그램 카드, 주변행사 등 **검증된 정보의 시각화**로 밀도를 만든다.
+
+### UI v2 production closure (2026-09-23)
+
+- 상세 UI v2(1장/0장 fallback, 주변·비슷한 행사, 공식 추가 이미지 API, 2장 adaptive media)를 production에 반영했다.
+- production D1 migration `0021_event_additional_images.sql`을 additive로 적용하고, 기존 `sources.raw_payload.firstimage2`만으로 TourAPI secondary image 263건을 backfill했다. 기존 `event_images`는 263 rows / `ok` 263으로 전후 동일하다.
+- Worker `weekend-mwohae` production version `b0cc4224-a334-466d-bf4f-4775ee41dc7f`에 main `096ea81`을 배포했고, `galteum.com` API 및 desktop/mobile 2장 상세를 검증했다.
+- 다음 우선순위는 공식 상세 enrichment 품질과 source coverage 확대다. 4~5장 gallery는 공식 이미지 3장 이상이 실제로 확보될 때만 확장한다.

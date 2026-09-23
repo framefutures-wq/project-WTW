@@ -69,11 +69,13 @@
 사용자가 "좋아~ 해결잘됐다"라고 확인했다.
 
 그 다음 상세 UI에서 문제 발생:
+
 - 좁은 화면에서 이미지가 지나치게 세로로 길고 좁게 보임
 - 출처 영역이 버튼에 눌림
 - responsive 상세 수정 후에도 대표 이미지 프레임이 부자연스러움
 
 최신 코드 수정:
+
 - commit `367dedd6`
 - 제목: `UI: stabilize detail image frame`
 - Actions run `35704201196` success
@@ -84,6 +86,7 @@
   - 이미지 프레임 회귀테스트 추가
 
 **production 반영 완료:** 2026-09-22에 상세 이미지 수정이 실제 `galteum.com`에 배포됐다.
+
 - 배포 기준 HEAD: `4b8bc6631ff99243407ef67eed6632567b80303d`
 - Cloudflare Version ID: `5e2d5068-a88d-49f0-b059-3a89ef3f880c`
 - production smoke 통과
@@ -94,12 +97,14 @@
 ## 데이터 coverage
 
 기존 municipal:
+
 - 파주
 - 수원
 - 고양
 - 화성
 
 추가:
+
 - 부천 `bucheon`
 - 공식 목록:
   `https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=145007003`
@@ -107,6 +112,7 @@
 - 기존 Zero-Human gate / duplicate / retry / last-known-good 유지
 
 부천 상세보강 사전조사를 시작했다.
+
 - 부천 관광의 시민어울림한마당 전용 페이지는 2026-10-09, 문의 032-625-3113 등 기본현황을 제공하며 canonical list와 일정이 일치한다.
 - 복사골청소년예술제는 canonical 가을 목록/최근 안전관리 보도자료가 2026-10-10을 가리키지만 별도 관광 페이지는 2026-10-11로 표기되어 공식 소스 간 충돌이 있다. 날짜를 임의 덮어쓰지 않는다.
 - 생생부천의 2026 부천페스타 가을 안내에는 제13회 부천시민 자전거대축제 2026-10-24 13:00~16:00이 명시되어 있다.
@@ -131,15 +137,15 @@
 ## 대화 톤
 
 사용자에게 길게 사전설명하기보다:
+
 - "확인했다"
 - "원인은 이것"
 - "이렇게 수정했다"
 - "검증 결과"
 - "다음 작업"
-순서로 짧게 보고한다.
+  순서로 짧게 보고한다.
 
 사용자가 이미 지적한 문제를 다시 사용자에게 확인시키지 않는다.
-
 
 ## 2026-09-22 새 운영 결정: Municipal Zero-Human v2
 
@@ -169,7 +175,6 @@
 5. 새 Cloudflare Queue 등 신규 production resource가 필요하면 현재 설정·비용·마이그레이션 영향을 먼저 검증하고 사용자 승인 후 생성한다.
 6. 부천은 이 공통 구조의 첫 검증 source로 사용하고, 개별 맞춤 코드를 무한히 늘리지 않는다.
 
-
 ## 2026-09-22 최신 구현 상태 — Zero-Human v2
 
 - main 코드에서 10시 base 성공 직후 bounded detail을 즉시 handoff한다.
@@ -196,7 +201,6 @@
 4. 그 뒤 Registry 기반 전국 지자체 coverage 확대.
 5. Queue는 실제 실행시간/규모 한계 근거가 생길 때만 검토하고 생성 전 사용자 승인.
 
-
 ## 2026-09-22 Workers AI 비용 가드
 
 - PR #24 merge: bbd6167c4aa58a7daf165c02e930d957251f6f28
@@ -206,16 +210,17 @@
 - 현재 production에는 AI binding을 추가하지 않았고 AI 사용도 활성화하지 않았다.
 - 다음 production AI 단계는 사용자 승인 후 `ai.binding=AI` 추가 + flag true 전환 + bounded 실검증이다.
 
-
 ## 2026-09-23 확정: 다음 작업 순서와 UI/상세 v2
 
 작업 순서:
+
 1. ✅ 태백시 / 서울 한강 municipal generic onboarding 완료 — commit `8af623e`, Registry 7개 source, 관련 테스트/typecheck/build 통과, production deploy는 하지 않음.
 2. **현재: 전국 coverage 확대를 잠시 멈추고 UI / 브랜드 시스템 v2를 먼저 완성한다.**
 3. UI 작업에는 **상세 정보구조 v2 + 갈틈 파생정보 레이어 + adaptive media fallback**을 포함한다.
 4. UI/상세 v2가 안정되면 공식 상세 enrichment 품질을 확대하고, 이후 전국 municipal coverage를 재개한다.
 
 UI 기준:
+
 - Klook 탐색 효율 + Fever 비주얼 감성 + GetYourGuide 상세 정보 위계 + 갈틈 공식정보 신뢰성.
 - 웜 아이보리 `#F7F4EE` = canvas.
 - 차콜 `#171A1D`, 서브 `#343A40` = 구조/타이포.
@@ -224,6 +229,7 @@ UI 기준:
 - 홈/카드/상세/모바일을 한 디자인 시스템으로 정리하고 “맹하고 평평한 느낌” 제거가 목표다.
 
 상세 기준 샘플:
+
 - `서울 왕궁수문장 교대의식`
 - 상세 순서: 대표사진 → 제목 → 언제/어디서 → 공식 CTA → 볼거리 → 시간표 → 프로그램 → 소개 → 지도/주변행사 → 출처.
 - 일정은 timeline, 프로그램은 card.
@@ -233,6 +239,7 @@ UI 기준:
 - 주차/요금/프로그램 내용 등 새로운 사실은 공식 근거가 없으면 생성 금지.
 
 미디어 fallback:
+
 - 공식 대표 이미지 → 권리/출처 확인 가능한 공식 추가 이미지 → 이미지 수에 맞춘 adaptive gallery.
 - 1장이면 한 장을 크게 쓰고 빈 썸네일을 만들지 않는다.
 - 0장이면 실제 행사처럼 보이는 AI 이미지를 만들지 않고, 갈틈 컬러/타이포/도형/카테고리 아이콘 기반의 **명백한 정보형 브랜드 그래픽**을 사용할 수 있다.
@@ -240,10 +247,11 @@ UI 기준:
 - 이미지가 적은 상세는 timeline/지도/공식 fact/프로그램/주변행사 등 검증 정보의 시각화로 밀도를 만든다.
 
 현재 UI v2 진행 상태:
+
 - ✅ 홈/행사카드 브랜드 시각체계 v2 — `b5d4f13`
 - ✅ 상세 정보 위계 v2 — `95ed3ab`
 - ✅ 상세 파생정보 1차(D-day/기간/요일/진행중/오늘 프로그램) — `6de3bbd`
 - ✅ 상세 1장/0장 media fallback — `f5dd796`
-- 다음 bounded task: 주변 행사 / 비슷한 행사 등 상세 탐색 보강.
-- 이후 공식 추가 이미지 데이터 구조/API/enrichment 최소 확장 → 실제 확보 가능한 이미지 수를 기준으로 2장 / 4~5장 adaptive gallery UI.
-- UI v2 큰 파트 마지막에만 통합 browser/build/deploy/production verify를 1회 수행한다.
+- ✅ 주변 행사 / 비슷한 행사, 공식 추가 이미지 API, 2장 adaptive media까지 완료.
+- ✅ UI v2 큰 파트 production release 완료: D1 `0021` additive migration, TourAPI `firstimage2` secondary 263건 backfill, Worker version `b0cc4224-a334-466d-bf4f-4775ee41dc7f`.
+- 다음 작업 위치: 공식 상세 enrichment 품질 확대 후 municipal/source coverage를 재개한다. 4~5장 gallery는 공식 이미지 3장 이상 실데이터 근거가 생길 때만 별도 bounded task로 진행한다.

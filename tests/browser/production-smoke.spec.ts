@@ -24,7 +24,9 @@ test("production discovery shell and public endpoints are healthy", async ({
   expect(health.ok()).toBe(true);
   expect((await health.json()).database).toBeTruthy();
   expect(robots.ok()).toBe(true);
-  expect(await robots.text()).toContain("Sitemap: https://galteum.com/sitemap.xml");
+  expect(await robots.text()).toContain(
+    "Sitemap: https://galteum.com/sitemap.xml",
+  );
   expect(sitemap.ok()).toBe(true);
   expect(await sitemap.text()).toContain("<urlset");
 
@@ -67,11 +69,26 @@ test("production discovery shell and public endpoints are healthy", async ({
   }
 
   if (eventId) {
+    const eventResponse = await request.get(
+      `/api/events/${encodeURIComponent(eventId)}`,
+    );
+    expect(eventResponse.ok()).toBe(true);
+    const eventTitle = (await eventResponse.json()).event.title;
     const detail = await page.goto(`/events/${encodeURIComponent(eventId)}`);
     expect(detail?.ok()).toBe(true);
     await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(
+      page.getByRole("dialog").getByRole("heading", { name: eventTitle }),
+    ).toBeVisible();
 
-    const scene = page.locator(".detail-dialog .scene-detail");
+    const pairedMedia = page.locator(
+      ".detail-dialog .detail-media-pair button",
+    );
+    const scene = (await pairedMedia.count())
+      ? pairedMedia.first()
+      : page
+          .locator(".detail-dialog .detail-media, .detail-dialog .scene-detail")
+          .first();
     await expect(scene).toBeVisible();
     const sceneBox = await scene.boundingBox();
     expect(sceneBox).not.toBeNull();
