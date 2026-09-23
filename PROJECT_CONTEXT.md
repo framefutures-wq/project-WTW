@@ -564,3 +564,61 @@ UI benchmark:
 - production D1 migration `0021_event_additional_images.sql`을 additive로 적용하고, 기존 `sources.raw_payload.firstimage2`만으로 TourAPI secondary image 263건을 backfill했다. 기존 `event_images`는 263 rows / `ok` 263으로 전후 동일하다.
 - Worker `weekend-mwohae` production version `b0cc4224-a334-466d-bf4f-4775ee41dc7f`에 main `096ea81`을 배포했고, `galteum.com` API 및 desktop/mobile 2장 상세를 검증했다.
 - 다음 우선순위는 공식 상세 enrichment 품질과 source coverage 확대다. 4~5장 gallery는 공식 이미지 3장 이상이 실제로 확보될 때만 확장한다.
+
+
+## 21. 2026-09-23 최신 현재 위치 — 홈 UI v2 종료 / 상세 UI production 마감
+
+### 홈 UI v2 최종 상태
+
+홈 UI는 production 실제 화면 확인까지 완료했다.
+
+- `458824e` — 카드 image load 실패 시 broken image를 남기지 않고 fallback 전환.
+- `e5bc9fd` — 이미지 0장/실패 fallback을 반복 산 일러스트에서 **행사별 날짜·기간·지역 기반 정보형 그래픽**으로 교체.
+- `75802ac` — warm ivory canvas, filter hierarchy, section divider, card typography/metadata 대비를 최종 보정.
+- 최신 main: `75802ac`
+- production Worker: `0a813e04-8287-4d95-806f-8d9dc595dd1b`
+- PC 4열 / mobile 2열 유지.
+- production broken image 0.
+- 공식 이미지가 없는 행사는 AI로 실제 행사 장면을 생성하지 않고, 확인된 행사 사실만 사용하는 deterministic 정보형 그래픽을 보여준다.
+
+홈 UI는 회귀가 없는 한 완료로 간주하고 추가 미세조정 반복을 피한다.
+
+### 현재 우선순위
+
+현재 큰 파트는 **상세페이지 UI v2의 실제 production 마감**이다.
+
+검수 범위:
+
+- 2-image 상세의 secondary 세로 포스터 crop.
+- 1-image 상세의 완성형 single layout.
+- 0-image 상세의 정보형 브랜드 graphic.
+- 정보가 풍부한 상세의 정보 위계/흐름.
+- 정보가 적은 상세의 과도한 공백/밀도 문제.
+
+known issue:
+`src/redesign.css`의 2-image secondary foreground는 `object-fit: cover`가 적용되어 포스터형 이미지가 과도하게 잘릴 수 있다. 이미지 비율/fit 로직을 사용해 해결하되 전체 media 구조를 다시 설계하지 않는다.
+
+### TourAPI detail 운영 상태
+
+- retry-due failed → never-processed → TTL refresh 우선순위 적용.
+- 실패 state retry는 +30m → +2h → +4h → +8h → +16h → 최대 +24h.
+- network/timeout만 500ms 후 endpoint당 1회 inline retry.
+- inline retry production 실측 복구 0건이었으나 시간이 지난 state retry에서는 실패 행사가 다수 정상 success로 복구됐다.
+- 마지막 측정 never_processed: **78**.
+- `tourapi-1230074` 춘천막국수닭갈비축제는 마지막 측정 후보 순위 **18위**, 아직 never-processed.
+- 외부 network 실패 자체를 0으로 만드는 것보다 자동 retry로 결국 상세가 채워지는 운영 안정성을 목표로 한다.
+
+### 최신 로드맵
+
+1. ✅ Cloudflare 운영 기반 / 기본 서비스
+2. ✅ 홈 UI v2
+3. 🟡 상세페이지 UI v2 production 마감
+4. 🟡 TourAPI detail backlog 소진 / recovery 확인
+5. ⏳ 공식 상세 enrichment 품질 강화
+6. ⏳ 전국 municipal/source coverage 확대
+7. ⏳ SEO / Search Console / 검색 유입 점검
+8. ⏳ 모바일 최종 polish
+9. ⏳ 수익화 준비
+10. ⏳ Zero-Human 운영 자동화 최종 점검
+
+다음 세션은 상세 UI 실제 production 검수부터 시작한다. 홈 UI와 TourAPI network 원인 탐색으로 되돌아가지 않는다. 새로운 회귀 또는 새로운 실패 유형이 있을 때만 해당 파트를 다시 연다.
