@@ -655,3 +655,11 @@ UI 기준:
 - 부산 하위 UNREVIEWED는 0. 다음 deterministic survey queue는 **`daegu-군위`**부터다.
 - Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C 2026-09-24 10:00 KST → D 11:00 KST checkpoint 전 production onboarding 금지 원칙을 유지한다.
 
+## 2026-09-23 Phase 6B — 대구 하위 9개 source 조사 완료
+
+- 대구 하위 9개 구·군을 current official source 기준으로 조사해 모두 UNREVIEWED에서 제거했다.
+- **ONBOARDING_READY 1**: `daegu-서` — 서구청 비원뮤직홀 2026 월별 공연일정에서 title·full-year date·place·time이 self-contained로 제공된다.
+- **WATCH 8**: `daegu-jung`, `daegu-동`, `daegu-남`, `daegu-북`, `daegu-수성`, `daegu-달서`, `daegu-달성`, `daegu-군위`. 개별 축제/공연·월별 공지는 확인되지만 source-wide canonical bounded listing 또는 일관된 event core를 확정하지 못해 fail-closed했다.
+- 이번 변화: READY +1 / GAP +0 / WATCH +8 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 15 / GAP 23 / WATCH 62 / EXCLUDE 0 / UNREVIEWED 136**.
+- 다음 deterministic queue는 **`jeonnam-gwangju-강진`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+

@@ -680,12 +680,12 @@
       "region": "대구광역시",
       "locality": "중구",
       "government_level": "district",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.jung.daegu.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.jung.daegu.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "대구 중구 공식 홈페이지 기준으로 current 문화·축제 정보를 조사했으나 이번 live 조사에서 행사별 title·explicit full-year start/end·venue·durable detail을 지속 제공하는 canonical bounded listing을 검증하지 못했다. 개별 공지/대표축제 정보를 결합하지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -695,12 +695,12 @@
       "region": "대구광역시",
       "locality": "동구",
       "government_level": "district",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.dong.daegu.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.dong.daegu.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "대구 동구 공식 홈페이지에서 2026 문화·축제 관련 공지와 사업은 확인 대상이지만, source-wide current 행사 listing의 exact full-year date·venue·durable detail·pagination을 안정적으로 검증하지 못했다. 막창축제 등 단일 사업/공고를 daily source로 승격하지 않아 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -710,12 +710,12 @@
       "region": "대구광역시",
       "locality": "서구",
       "government_level": "district",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.dgs.go.kr",
+      "source_status": "ONBOARDING_READY",
+      "source_url": "https://www.dgs.go.kr/music/contents.do?mid=0400000000",
+      "source_type": "official_culture_venue_calendar",
+      "collector_fit": "generic_fallback",
+      "notes": "대구 서구청 비원뮤직홀 공식 2026 공연일정은 월별 구조에 title·explicit start/end·place·time·전화 등 self-contained core를 제공한다. 서구문화회관 연간 일정도 current 2026 기간/작품을 제공하며 first-party ownership이 확인되어 READY.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -725,12 +725,12 @@
       "region": "대구광역시",
       "locality": "남구",
       "government_level": "district",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://nam.daegu.kr",
+      "source_status": "WATCH",
+      "source_url": "https://nam.daegu.kr/culturalcenter/",
+      "source_type": "official_culture_venue_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "대덕문화전당의 2026 공연·전시 운영과 공식 detail은 확인되지만 이번 live 조사에서 current 전체 공연/전시를 candidate 단위로 제공하는 안정적 canonical list·pagination을 직접 검증하지 못했다. 개별 청년예술제/detail과 대관 공고를 결합하지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -740,12 +740,12 @@
       "region": "대구광역시",
       "locality": "북구",
       "government_level": "district",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.buk.daegu.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.buk.daegu.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "대구 북구가 주최하는 2026 떡볶이 페스티벌 등 current 행사 사실은 공식/공공 연계 자료에서 확인되지만, 북구 자체 source-wide 행사 listing과 pagination의 지속성을 이번 live 조사에서 검증하지 못했다. 단일 대표축제만으로 READY 처리하지 않아 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -755,12 +755,12 @@
       "region": "대구광역시",
       "locality": "수성구",
       "government_level": "district",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.suseong.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.suseong.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_core_inconsistent",
+      "notes": "수성문화재단/수성아트피아는 2026 월별 주요 공연 안내를 지속 게시하지만 확인된 재단 feed는 문화교육·관광·채용·공지와 혼합되고, 행사별 date·venue를 같은 durable canonical listing으로 일관되게 노출하는 source를 확정하지 못했다. 월별 공지를 합성하지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -770,12 +770,12 @@
       "region": "대구광역시",
       "locality": "달서구",
       "government_level": "district",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.dalseo.daegu.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.dscf.or.kr/main/",
+      "source_type": "official_affiliated_culture_portal",
+      "collector_fit": "source_core_inconsistent",
+      "notes": "달서문화재단 공식 홈페이지는 2026 행복달서 대축제와 공연·문화사업을 current하게 운영하지만 home/공지·사업 콘텐츠가 혼합되어 있고 source-wide 행사별 explicit date·venue·durable detail이 self-contained한 bounded listing을 이번 조사에서 확인하지 못했다. WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -785,12 +785,12 @@
       "region": "대구광역시",
       "locality": "달성군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.dalseong.daegu.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.dalseong.daegu.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "달성군/달성문화재단 주최 2026 청년축제 등 개별 행사 core는 확인되지만 이번 live 조사에서 달성군 전체 행사·축제의 지속 canonical listing과 pagination을 검증하지 못했다. 외부 관광 detail을 군 source로 대체하거나 개별 사실을 합성하지 않아 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -800,12 +800,12 @@
       "region": "대구광역시",
       "locality": "군위군",
       "government_level": "county",
-      "official_homepage": null,
-      "source_status": "UNREVIEWED",
-      "source_url": null,
-      "source_type": null,
-      "collector_fit": "unreviewed",
-      "notes": "공식 행사 source 미조사",
+      "official_homepage": "https://www.gunwi.daegu.kr",
+      "source_status": "WATCH",
+      "source_url": "https://www.gunwi.daegu.kr/",
+      "source_type": "official_government_portal",
+      "collector_fit": "source_canonical_listing_unverified",
+      "notes": "대구 군위군 공식 홈페이지 기준으로 current 문화행사 source를 조사했으나 행사별 title·explicit full-year date·venue·durable detail을 함께 제공하는 안정적 canonical listing을 이번 live 조사에서 확보하지 못했다. 단발 공지/축제 소개를 승격하지 않고 WATCH.",
       "checked_at": "2026-09-23",
       "region_order": 2
     },
@@ -3693,591 +3693,555 @@
   "survey_queue": [
     {
       "rank": 1,
-      "municipality_key": "daegu-군위"
-    },
-    {
-      "rank": 2,
-      "municipality_key": "daegu-남"
-    },
-    {
-      "rank": 3,
-      "municipality_key": "daegu-달서"
-    },
-    {
-      "rank": 4,
-      "municipality_key": "daegu-달성"
-    },
-    {
-      "rank": 5,
-      "municipality_key": "daegu-동"
-    },
-    {
-      "rank": 6,
-      "municipality_key": "daegu-북"
-    },
-    {
-      "rank": 7,
-      "municipality_key": "daegu-서"
-    },
-    {
-      "rank": 8,
-      "municipality_key": "daegu-수성"
-    },
-    {
-      "rank": 9,
-      "municipality_key": "daegu-jung"
-    },
-    {
-      "rank": 10,
       "municipality_key": "jeonnam-gwangju-강진"
     },
     {
-      "rank": 11,
+      "rank": 2,
       "municipality_key": "jeonnam-gwangju-고흥"
     },
     {
-      "rank": 12,
+      "rank": 3,
       "municipality_key": "jeonnam-gwangju-곡성"
     },
     {
-      "rank": 13,
+      "rank": 4,
       "municipality_key": "jeonnam-gwangju-광산"
     },
     {
-      "rank": 14,
+      "rank": 5,
       "municipality_key": "jeonnam-gwangju-광양"
     },
     {
-      "rank": 15,
+      "rank": 6,
       "municipality_key": "jeonnam-gwangju-구례"
     },
     {
-      "rank": 16,
+      "rank": 7,
       "municipality_key": "jeonnam-gwangju-나주"
     },
     {
-      "rank": 17,
+      "rank": 8,
       "municipality_key": "jeonnam-gwangju-남"
     },
     {
-      "rank": 18,
+      "rank": 9,
       "municipality_key": "jeonnam-gwangju-담양"
     },
     {
-      "rank": 19,
+      "rank": 10,
       "municipality_key": "jeonnam-gwangju-동"
     },
     {
-      "rank": 20,
+      "rank": 11,
       "municipality_key": "jeonnam-gwangju-목포"
     },
     {
-      "rank": 21,
+      "rank": 12,
       "municipality_key": "jeonnam-gwangju-무안"
     },
     {
-      "rank": 22,
+      "rank": 13,
       "municipality_key": "jeonnam-gwangju-보성"
     },
     {
-      "rank": 23,
+      "rank": 14,
       "municipality_key": "jeonnam-gwangju-북"
     },
     {
-      "rank": 24,
+      "rank": 15,
       "municipality_key": "jeonnam-gwangju-서"
     },
     {
-      "rank": 25,
+      "rank": 16,
       "municipality_key": "jeonnam-gwangju-순천"
     },
     {
-      "rank": 26,
+      "rank": 17,
       "municipality_key": "jeonnam-gwangju-신안"
     },
     {
-      "rank": 27,
+      "rank": 18,
       "municipality_key": "jeonnam-gwangju-여수"
     },
     {
-      "rank": 28,
+      "rank": 19,
       "municipality_key": "jeonnam-gwangju-영광"
     },
     {
-      "rank": 29,
+      "rank": 20,
       "municipality_key": "jeonnam-gwangju-영암"
     },
     {
-      "rank": 30,
+      "rank": 21,
       "municipality_key": "jeonnam-gwangju-완도"
     },
     {
-      "rank": 31,
+      "rank": 22,
       "municipality_key": "jeonnam-gwangju-장성"
     },
     {
-      "rank": 32,
+      "rank": 23,
       "municipality_key": "jeonnam-gwangju-장흥"
     },
     {
-      "rank": 33,
+      "rank": 24,
       "municipality_key": "jeonnam-gwangju-진도"
     },
     {
-      "rank": 34,
+      "rank": 25,
       "municipality_key": "jeonnam-gwangju-함평"
     },
     {
-      "rank": 35,
+      "rank": 26,
       "municipality_key": "jeonnam-gwangju-해남"
     },
     {
-      "rank": 36,
+      "rank": 27,
       "municipality_key": "jeonnam-gwangju-화순"
     },
     {
-      "rank": 37,
+      "rank": 28,
       "municipality_key": "daejeon-대덕"
     },
     {
-      "rank": 38,
+      "rank": 29,
       "municipality_key": "daejeon-동"
     },
     {
-      "rank": 39,
+      "rank": 30,
       "municipality_key": "daejeon-서"
     },
     {
-      "rank": 40,
+      "rank": 31,
       "municipality_key": "daejeon-유성"
     },
     {
-      "rank": 41,
+      "rank": 32,
       "municipality_key": "daejeon-jung"
     },
     {
-      "rank": 42,
+      "rank": 33,
       "municipality_key": "ulsan-남"
     },
     {
-      "rank": 43,
+      "rank": 34,
       "municipality_key": "ulsan-동"
     },
     {
-      "rank": 44,
+      "rank": 35,
       "municipality_key": "ulsan-북"
     },
     {
-      "rank": 45,
+      "rank": 36,
       "municipality_key": "ulsan-울주"
     },
     {
-      "rank": 46,
+      "rank": 37,
       "municipality_key": "ulsan-jung"
     },
     {
-      "rank": 47,
+      "rank": 38,
       "municipality_key": "gangwon-강릉"
     },
     {
-      "rank": 48,
+      "rank": 39,
       "municipality_key": "gangwon-고성"
     },
     {
-      "rank": 49,
+      "rank": 40,
       "municipality_key": "gangwon-동해"
     },
     {
-      "rank": 50,
+      "rank": 41,
       "municipality_key": "gangwon-삼척"
     },
     {
-      "rank": 51,
+      "rank": 42,
       "municipality_key": "gangwon-속초"
     },
     {
-      "rank": 52,
+      "rank": 43,
       "municipality_key": "gangwon-양구"
     },
     {
-      "rank": 53,
+      "rank": 44,
       "municipality_key": "gangwon-양양"
     },
     {
-      "rank": 54,
+      "rank": 45,
       "municipality_key": "gangwon-영월"
     },
     {
-      "rank": 55,
+      "rank": 46,
       "municipality_key": "gangwon-원주"
     },
     {
-      "rank": 56,
+      "rank": 47,
       "municipality_key": "gangwon-인제"
     },
     {
-      "rank": 57,
+      "rank": 48,
       "municipality_key": "gangwon-정선"
     },
     {
-      "rank": 58,
+      "rank": 49,
       "municipality_key": "gangwon-철원"
     },
     {
-      "rank": 59,
+      "rank": 50,
       "municipality_key": "gangwon-춘천"
     },
     {
-      "rank": 60,
+      "rank": 51,
       "municipality_key": "gangwon-평창"
     },
     {
-      "rank": 61,
+      "rank": 52,
       "municipality_key": "gangwon-홍천"
     },
     {
-      "rank": 62,
+      "rank": 53,
       "municipality_key": "gangwon-화천"
     },
     {
-      "rank": 63,
+      "rank": 54,
       "municipality_key": "gangwon-횡성"
     },
     {
-      "rank": 64,
+      "rank": 55,
       "municipality_key": "chungbuk-괴산"
     },
     {
-      "rank": 65,
+      "rank": 56,
       "municipality_key": "chungbuk-단양"
     },
     {
-      "rank": 66,
+      "rank": 57,
       "municipality_key": "chungbuk-보은"
     },
     {
-      "rank": 67,
+      "rank": 58,
       "municipality_key": "chungbuk-영동"
     },
     {
-      "rank": 68,
+      "rank": 59,
       "municipality_key": "chungbuk-옥천"
     },
     {
-      "rank": 69,
+      "rank": 60,
       "municipality_key": "chungbuk-음성"
     },
     {
-      "rank": 70,
+      "rank": 61,
       "municipality_key": "chungbuk-제천"
     },
     {
-      "rank": 71,
+      "rank": 62,
       "municipality_key": "chungbuk-증평"
     },
     {
-      "rank": 72,
+      "rank": 63,
       "municipality_key": "chungbuk-진천"
     },
     {
-      "rank": 73,
+      "rank": 64,
       "municipality_key": "chungbuk-청주"
     },
     {
-      "rank": 74,
+      "rank": 65,
       "municipality_key": "chungbuk-충주"
     },
     {
-      "rank": 75,
+      "rank": 66,
       "municipality_key": "chungnam-계룡"
     },
     {
-      "rank": 76,
+      "rank": 67,
       "municipality_key": "chungnam-공주"
     },
     {
-      "rank": 77,
+      "rank": 68,
       "municipality_key": "chungnam-금산"
     },
     {
-      "rank": 78,
+      "rank": 69,
       "municipality_key": "chungnam-논산"
     },
     {
-      "rank": 79,
+      "rank": 70,
       "municipality_key": "chungnam-당진"
     },
     {
-      "rank": 80,
+      "rank": 71,
       "municipality_key": "chungnam-보령"
     },
     {
-      "rank": 81,
+      "rank": 72,
       "municipality_key": "chungnam-부여"
     },
     {
-      "rank": 82,
+      "rank": 73,
       "municipality_key": "chungnam-서산"
     },
     {
-      "rank": 83,
+      "rank": 74,
       "municipality_key": "chungnam-서천"
     },
     {
-      "rank": 84,
+      "rank": 75,
       "municipality_key": "chungnam-아산"
     },
     {
-      "rank": 85,
+      "rank": 76,
       "municipality_key": "chungnam-예산"
     },
     {
-      "rank": 86,
+      "rank": 77,
       "municipality_key": "chungnam-천안"
     },
     {
-      "rank": 87,
+      "rank": 78,
       "municipality_key": "chungnam-청양"
     },
     {
-      "rank": 88,
+      "rank": 79,
       "municipality_key": "chungnam-태안"
     },
     {
-      "rank": 89,
+      "rank": 80,
       "municipality_key": "chungnam-홍성"
     },
     {
-      "rank": 90,
+      "rank": 81,
       "municipality_key": "jeonbuk-고창"
     },
     {
-      "rank": 91,
+      "rank": 82,
       "municipality_key": "jeonbuk-군산"
     },
     {
-      "rank": 92,
+      "rank": 83,
       "municipality_key": "jeonbuk-김제"
     },
     {
-      "rank": 93,
+      "rank": 84,
       "municipality_key": "jeonbuk-남원"
     },
     {
-      "rank": 94,
+      "rank": 85,
       "municipality_key": "jeonbuk-무주"
     },
     {
-      "rank": 95,
+      "rank": 86,
       "municipality_key": "jeonbuk-부안"
     },
     {
-      "rank": 96,
+      "rank": 87,
       "municipality_key": "jeonbuk-순창"
     },
     {
-      "rank": 97,
+      "rank": 88,
       "municipality_key": "jeonbuk-완주"
     },
     {
-      "rank": 98,
+      "rank": 89,
       "municipality_key": "jeonbuk-익산"
     },
     {
-      "rank": 99,
+      "rank": 90,
       "municipality_key": "jeonbuk-임실"
     },
     {
-      "rank": 100,
+      "rank": 91,
       "municipality_key": "jeonbuk-장수"
     },
     {
-      "rank": 101,
+      "rank": 92,
       "municipality_key": "jeonbuk-전주"
     },
     {
-      "rank": 102,
+      "rank": 93,
       "municipality_key": "jeonbuk-정읍"
     },
     {
-      "rank": 103,
+      "rank": 94,
       "municipality_key": "jeonbuk-진안"
     },
     {
-      "rank": 104,
+      "rank": 95,
       "municipality_key": "gyeongbuk-경산"
     },
     {
-      "rank": 105,
+      "rank": 96,
       "municipality_key": "gyeongbuk-경주"
     },
     {
-      "rank": 106,
+      "rank": 97,
       "municipality_key": "gyeongbuk-고령"
     },
     {
-      "rank": 107,
+      "rank": 98,
       "municipality_key": "gyeongbuk-구미"
     },
     {
-      "rank": 108,
+      "rank": 99,
       "municipality_key": "gyeongbuk-김천"
     },
     {
-      "rank": 109,
+      "rank": 100,
       "municipality_key": "gyeongbuk-문경"
     },
     {
-      "rank": 110,
+      "rank": 101,
       "municipality_key": "gyeongbuk-봉화"
     },
     {
-      "rank": 111,
+      "rank": 102,
       "municipality_key": "gyeongbuk-상주"
     },
     {
-      "rank": 112,
+      "rank": 103,
       "municipality_key": "gyeongbuk-성주"
     },
     {
-      "rank": 113,
+      "rank": 104,
       "municipality_key": "gyeongbuk-안동"
     },
     {
-      "rank": 114,
+      "rank": 105,
       "municipality_key": "gyeongbuk-영덕"
     },
     {
-      "rank": 115,
+      "rank": 106,
       "municipality_key": "gyeongbuk-영양"
     },
     {
-      "rank": 116,
+      "rank": 107,
       "municipality_key": "gyeongbuk-영주"
     },
     {
-      "rank": 117,
+      "rank": 108,
       "municipality_key": "gyeongbuk-영천"
     },
     {
-      "rank": 118,
+      "rank": 109,
       "municipality_key": "gyeongbuk-예천"
     },
     {
-      "rank": 119,
+      "rank": 110,
       "municipality_key": "gyeongbuk-울릉"
     },
     {
-      "rank": 120,
+      "rank": 111,
       "municipality_key": "gyeongbuk-울진"
     },
     {
-      "rank": 121,
+      "rank": 112,
       "municipality_key": "gyeongbuk-의성"
     },
     {
-      "rank": 122,
+      "rank": 113,
       "municipality_key": "gyeongbuk-청도"
     },
     {
-      "rank": 123,
+      "rank": 114,
       "municipality_key": "gyeongbuk-청송"
     },
     {
-      "rank": 124,
+      "rank": 115,
       "municipality_key": "gyeongbuk-칠곡"
     },
     {
-      "rank": 125,
+      "rank": 116,
       "municipality_key": "gyeongbuk-포항"
     },
     {
-      "rank": 126,
+      "rank": 117,
       "municipality_key": "gyeongnam-거제"
     },
     {
-      "rank": 127,
+      "rank": 118,
       "municipality_key": "gyeongnam-거창"
     },
     {
-      "rank": 128,
+      "rank": 119,
       "municipality_key": "gyeongnam-고성"
     },
     {
-      "rank": 129,
+      "rank": 120,
       "municipality_key": "gyeongnam-김해"
     },
     {
-      "rank": 130,
+      "rank": 121,
       "municipality_key": "gyeongnam-남해"
     },
     {
-      "rank": 131,
+      "rank": 122,
       "municipality_key": "gyeongnam-밀양"
     },
     {
-      "rank": 132,
+      "rank": 123,
       "municipality_key": "gyeongnam-사천"
     },
     {
-      "rank": 133,
+      "rank": 124,
       "municipality_key": "gyeongnam-산청"
     },
     {
-      "rank": 134,
+      "rank": 125,
       "municipality_key": "gyeongnam-양산"
     },
     {
-      "rank": 135,
+      "rank": 126,
       "municipality_key": "gyeongnam-의령"
     },
     {
-      "rank": 136,
+      "rank": 127,
       "municipality_key": "gyeongnam-진주"
     },
     {
-      "rank": 137,
+      "rank": 128,
       "municipality_key": "gyeongnam-창녕"
     },
     {
-      "rank": 138,
+      "rank": 129,
       "municipality_key": "gyeongnam-창원"
     },
     {
-      "rank": 139,
+      "rank": 130,
       "municipality_key": "gyeongnam-통영"
     },
     {
-      "rank": 140,
+      "rank": 131,
       "municipality_key": "gyeongnam-하동"
     },
     {
-      "rank": 141,
+      "rank": 132,
       "municipality_key": "gyeongnam-함안"
     },
     {
-      "rank": 142,
+      "rank": 133,
       "municipality_key": "gyeongnam-함양"
     },
     {
-      "rank": 143,
+      "rank": 134,
       "municipality_key": "gyeongnam-합천"
     },
     {
-      "rank": 144,
+      "rank": 135,
       "municipality_key": "jeju-서귀포"
     },
     {
-      "rank": 145,
+      "rank": 136,
       "municipality_key": "jeju-제주"
     }
   ],
   "summary": {
     "ACTIVE": 9,
-    "ONBOARDING_READY": 14,
+    "ONBOARDING_READY": 15,
     "COLLECTOR_GAP": 23,
-    "WATCH": 54,
+    "WATCH": 62,
     "EXCLUDE": 0,
-    "UNREVIEWED": 145
+    "UNREVIEWED": 136
   }
 }
