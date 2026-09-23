@@ -23,6 +23,7 @@
     "verify:deployment": "node scripts/verify-deployment.mjs",
     "tourapi:sync": "node scripts/tourapi-sync.mjs",
     "tourapi:detail:once": "node scripts/run-tourapi-detail-once.mjs",
+    "municipal:once": "node scripts/run-municipal-once.mjs",
     "discover:everland": "node --import tsx scripts/discover-everland.mjs",
     "source-registry:candidates": "node --import tsx scripts/source-registry-candidates.mjs",
     "audit:everland:readiness": "node --import tsx scripts/audit-everland-readiness.mjs",

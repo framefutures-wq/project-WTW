@@ -258,6 +258,13 @@ UI 기준:
 - ✅ UI v2 큰 파트 production release 완료: D1 `0021` additive migration, TourAPI `firstimage2` secondary 263건 backfill, Worker version `b0cc4224-a334-466d-bf4f-4775ee41dc7f`.
 - 다음 작업 위치: 공식 상세 enrichment 품질 확대 후 municipal/source coverage를 재개한다. 4~5장 gallery는 공식 이미지 3장 이상 실데이터 근거가 생길 때만 별도 bounded task로 진행한다.
 
+## 2026-09-23 Phase 6A — municipal production one-shot 검증
+
+- reusable runner `npm run municipal:once`를 추가했다. preview alias/version만 upload하고 live Worker route/Cron은 바꾸지 않으며 nonce POST는 `runMunicipalAutonomous(env)`만 호출한다. production D1과 기존 AI binding/vars를 임시 config에 전달하고 TourAPI는 명시적으로 false로 둔다.
+- production D1 one-shot은 **정확히 1회** 실행됐다(2026-09-23T11:26:07.554Z 관측). 9개 registry 중 7개가 관측됐고, 71 candidates: AUTO_PUBLISH 20 / AUTO_RETRY 26 / AUTO_EXCLUDE 11 / POLICY_SKIP 5 / EXPIRED 9였다. source_errors는 2건이다.
+- 수원은 공식 목록 31건으로 source당 25건 circuit breaker에 걸렸고, 태백은 공식 endpoint fetch timeout으로 누락됐다. 재실행하지 않았다. 인천 포함 나머지 7개 source는 event 20건을 publish/revalidate했다.
+- 다음 순서는 **B → E → 내일 C → D**. A의 수원 pagination/circuit-breaker 및 태백 timeout 원인만 해당 bounded task에서 처리하고, A one-shot을 반복하지 않는다.
+
 ## 2026-09-23 TourAPI detail orchestration 보완
 
 - candidate priority, retry schedule, failure reason observability를 보완했다. parser/enrichment 규칙, 처리량(25 events / 75 requests), endpoint 수는 변경하지 않았다.
