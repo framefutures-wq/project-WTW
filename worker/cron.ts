@@ -222,6 +222,7 @@ export async function runDetailScheduled(
           enriched: 0,
           empty: 0,
           failed: 0,
+          failure_reasons: {},
         }),
       )
       .run();

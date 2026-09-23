@@ -159,7 +159,9 @@ SEO sitemap 배포 뒤 사용자가 Search Console에 `sitemap.xml`을 제출한
 - 1회 최대 25 events
 - 1회 최대 75 TourAPI detail requests
 - 성공 detail refresh TTL 7일
-- 실패 시 bounded exponential retry
+- 실패 시 bounded exponential retry (첫 실패 30분, 이후 2/4/8/16시간, 최대 24시간)
+- 후보 우선순위: retry-due failed → never-processed → TTL refresh. 각 그룹 안에서는 진행중·시작일·id 순서를 유지한다.
+- `sync_runs.message`에는 민감 원문 없이 `failure_reasons` category 집계가 남는다.
 - detail subsystem 실패가 TourAPI base ingestion / municipal / private / push 전체를 막지 않도록 격리
 - 공식 organizer/municipal 등 더 높은 priority enrichment가 있으면 TourAPI detail이 덮어쓰지 않음
 - TourAPI list sync가 detail에서 확인된 venue/price를 다음 base sync에서 되돌리지 않도록 보호

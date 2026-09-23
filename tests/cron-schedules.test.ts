@@ -41,7 +41,14 @@ async function setup() {
 }
 function dependencies(
   calls: string[],
-  detail = { candidates: 1, requested: 3, enriched: 1, empty: 0, failed: 0 },
+  detail = {
+    candidates: 1,
+    requested: 3,
+    enriched: 1,
+    empty: 0,
+    failed: 0,
+    failure_reasons: {},
+  },
 ): ScheduledDependencies {
   return {
     syncTourApi: async () => {

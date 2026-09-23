@@ -36,6 +36,8 @@
   - 10:00 base가 끝날 때까지 11시를 기다리지 않는다.
   - base 수집에서 새 행사/변경 행사가 확인되는 즉시 상세보강 단계로 자동 handoff한다.
   - 11:00 Cron은 주 작업이 아니라 watchdog/recovery 역할로 남겨 미완료·실패·재시도 대상만 처리한다.
+  - TourAPI detail 후보는 retry-due failed → never-processed → 7일 TTL refresh 순이며, 첫 실패는 30분 뒤 watchdog 재시도가 가능하다. 이후 retry는 2/4/8/16시간, 최대 24시간이다.
+  - detail run message의 `failure_reasons`는 원문 오류·URL·key 없이 category 집계만 남긴다.
 - 공식 사실 우선순위:
   organizer official → municipality → TourAPI → public data → other official
 - optional 정보가 없으면 추측하지 말고 UI에서 숨긴다.
@@ -255,3 +257,8 @@ UI 기준:
 - ✅ 주변 행사 / 비슷한 행사, 공식 추가 이미지 API, 2장 adaptive media까지 완료.
 - ✅ UI v2 큰 파트 production release 완료: D1 `0021` additive migration, TourAPI `firstimage2` secondary 263건 backfill, Worker version `b0cc4224-a334-466d-bf4f-4775ee41dc7f`.
 - 다음 작업 위치: 공식 상세 enrichment 품질 확대 후 municipal/source coverage를 재개한다. 4~5장 gallery는 공식 이미지 3장 이상 실데이터 근거가 생길 때만 별도 bounded task로 진행한다.
+
+## 2026-09-23 TourAPI detail orchestration 보완
+
+- candidate priority, retry schedule, failure reason observability를 보완했다. parser/enrichment 규칙, 처리량(25 events / 75 requests), endpoint 수는 변경하지 않았다.
+- 다음 작업은 production detail collection을 한 번 수동 실행한 뒤 `failure_reasons`와 춘천막국수닭갈비축제 같은 never-processed 행사 처리 결과를 감사하는 것이다.
