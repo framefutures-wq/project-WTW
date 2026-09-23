@@ -402,9 +402,11 @@ UI 기준:
   - 문화행사 selection도 완료했다. 명시적 일반 대중 문화행사는 MAIN, 단순 공연/음악회/합창은 NEARBY_ONLY, 행정·교육 신호는 EXCLUDE로 우선 처리한다. 직전 30건 live snapshot의 최종 deterministic 분포는 MAIN 21 / NEARBY_ONLY 2 / REVIEW 7 / EXCLUDE 0이다. 남은 REVIEW는 장르 신호가 없는 서정적 제목, 동문전·기념전 등으로 보수적으로 유지했다. 최종 키워드 추가 뒤 공식 host fetch가 연결 단계에서 실패했으나, 해당 `회원작품전` 한 건의 REVIEW→MAIN 전환은 targeted regression으로 고정했다.
   - daily publish cap은 신규/변경 mutation만 세므로 앞쪽 동일 payload 재검증이 인천 신규 MAIN 후보를 starvation시키지 않는다.
   - `incheon-res` registry onboarding과 Worker production deploy를 완료했다. Worker Version은 `a9714493-3e39-4fa6-8621-96265d5cc355`이며, 첫 실제 scheduled ingestion은 2026-09-24 10:00 KST base cron 이후에만 read-only로 확인한다.
-- 울산모아: **WATCH 후보**
-  - raw 날짜가 2자리 연도, 외부 detail host, sessionized link, featured-only 구조라 source-side 제약이 크다.
-  - 별도 canonical full-year source가 발견되지 않으면 WATCH/보류로 유지한다.
+- 울산: **WATCH 확정**
+  - 기존 울산모아는 raw 날짜가 2자리 연도, 외부 detail host, sessionized link, featured-only 구조라 source-side 제약이 크다.
+  - alternate official canonical인 `https://tour.ulsan.go.kr/tour/korean/unit/fstvl/list.ulsan?mId=001003001000000000&searchDvsn1=1`도 최종 조사했다. 공식 울산관광 월별축제 15건 목록이지만 list core는 월/제목/주소 중심이고 full-year 행사기간이 없다.
+  - 일부 detail은 2026 full-year 기간을 제공하지만, 울산고래축제처럼 2026 행사 설명은 있어도 행사기간 필드가 `~`로 비어 있는 항목이 공존한다. source 자체가 전체 항목에 exact core를 일관되게 제공하지 않으므로 현재 Zero-Human ACTIVE source로 등록하지 않는다.
+  - 따라서 울산은 COLLECTOR GAP으로 공통 수집기를 더 복잡하게 만들기보다 WATCH로 유지하고 다음 지역 조사로 이동한다.
 
 ### 현재 문제 해결 순서
 
