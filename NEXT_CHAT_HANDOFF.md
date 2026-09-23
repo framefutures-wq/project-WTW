@@ -698,3 +698,11 @@ UI 기준:
 - 이번 변화: READY +0 / GAP +1 / WATCH +4 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 17 / GAP 29 / WATCH 86 / EXCLUDE 0 / UNREVIEWED 104**.
 - 다음 deterministic queue는 **`ulsan-남`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
 
+## 2026-09-23 Phase 6B — 울산 하위 5개 source 조사 완료
+
+- 울산 하위 5개 구·군을 current official source 기준으로 live read-only 조사해 모두 UNREVIEWED에서 제거했다.
+- **ONBOARDING_READY 2**: `ulsan-북` — 북구문화예술회관 공연 목록이 current/future title·full-year 기간·venue·detail을 self-contained로 제공. `ulsan-jung` — 중구 문화관광 월별 문화예술 행사일정이 행사명·일시·venue·주최를 표 단위로 제공.
+- **WATCH 3**: `ulsan-남`은 calendar shell은 current지만 candidate payload 미검증, `ulsan-동`은 공식 축제 list 최신 항목이 2025라 2026 freshness 미확정, `ulsan-울주`는 source-wide canonical 행사 listing을 확인하지 못했다.
+- 이번 변화: READY +2 / GAP +0 / WATCH +3 / EXCLUDE +0. inventory 총 245: **ACTIVE 9 / READY 19 / GAP 29 / WATCH 89 / EXCLUDE 0 / UNREVIEWED 99**.
+- 다음 deterministic queue는 **`gangwon-강릉`**부터다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다.
+
