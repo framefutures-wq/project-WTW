@@ -264,3 +264,94 @@ UI 기준:
 - transient network/timeout detail endpoint만 500ms 후 1회 재시도하며, run 전체 retry budget은 25회로 제한한다. logical requested(최대 75)는 유지하고 실제 호출량은 `attempts`로 별도 관측한다.
 - detail run message에 `retry_attempted`, `retry_recovered`, `retry_exhausted`, `failure_endpoints`, `network_failure_subtypes`, `failure_latency` sanitized 집계를 남긴다.
 - 2026-09-23 production 관측에서 network 최종 실패 8건은 `unknown_network`·`under_1s`였고 inline retry 복구는 0건이었다. 다음 작업은 이 runtime subtype이 왜 원문 없이 unknown으로 분류되는지 안전하게 진단하는 bounded audit이다.
+
+
+## 2026-09-23 최신 인수인계 — 홈 UI 종료, 상세 UI 실제 검수로 이동
+
+### 실제 최신 기준
+
+- 최신 main: `75802ac` — `style: strengthen home visual hierarchy`
+- 현재 production Worker version: `0a813e04-8287-4d95-806f-8d9dc595dd1b`
+- public: `https://galteum.com`
+- production health 정상.
+- Cron unchanged:
+  - 10:00 KST base sync: `0 1 * * *`
+  - 11:00 KST TourAPI detail watchdog/recovery: `0 2 * * *`
+
+### 홈 UI v2 — 완료
+
+홈은 production 실제 화면까지 확인했고 이 상태를 완료로 본다. 회귀가 없는 한 다시 미세 CSS 조정을 반복하지 않는다.
+
+최근 핵심 commit:
+
+- `458824e` — broken card image가 남지 않고 기존 fallback으로 전환되도록 보강.
+- `e5bc9fd` — 이미지 0장/로드 실패 홈 카드를 동일 산 일러스트가 아니라 **행사별 날짜·기간·지역 기반 정보형 그래픽**으로 교체.
+- `75802ac` — warm ivory canvas, filter hierarchy, section divider, card metadata 대비 등 홈 visual hierarchy 최종 마감.
+
+홈 미디어 원칙:
+
+- 공식 이미지가 있으면 공식 이미지를 사용한다.
+- 공식 이미지가 0장이거나 load 실패면 실제 행사 장면을 AI로 상상 생성하지 않는다.
+- 대신 DB에 확인된 날짜/기간/지역 등 사실만 사용한 deterministic 갈틈 정보형 그래픽을 사용한다.
+- 현재 PC 4열 / mobile 2열 유지, broken image 0.
+
+### 현재 다음 작업 — 상세페이지 UI v2 실제 production 검수
+
+다음 큰 파트는 **상세페이지 UI v2 production 마감**이다.
+
+새 채팅에서 바로 확인할 대표 상태:
+
+1. 공식 이미지 2장 상세
+   - secondary가 세로 포스터일 때 현재 `cover`로 과도하게 잘리는지 확인.
+2. 공식 이미지 1장 상세
+   - 한 장을 억지로 gallery처럼 보이지 않고 완성형으로 쓰는지 확인.
+3. 공식 이미지 0장 상세
+   - 정보형 브랜드 그래픽이 실제 행사 사진처럼 오인되지 않고 정보 중심 상세와 자연스럽게 이어지는지 확인.
+4. 정보가 풍부한 상세
+   - 날짜/장소 → 공식 CTA → 볼거리/일정/프로그램 → 소개 → 주변행사 → 출처 흐름 확인.
+5. 정보가 적은 상세
+   - optional 사실을 추측하지 않으면서도 화면이 과도하게 휑하지 않은지 확인.
+
+우선 known issue:
+- 2-image media의 secondary foreground가 세로 포스터여도 `cover`를 사용해 crop이 과할 수 있다.
+- sparse detail은 enrichment 부족 때문에 비어 보일 수 있으므로 UI 문제와 데이터 부족을 구분한다.
+
+홈 UI는 이 상세 검수 중 함께 다시 설계하지 않는다.
+
+### TourAPI detail 안정화 상태
+
+- candidate priority: retry-due failed → never-processed → 7-day TTL.
+- state retry: 첫 실패 +30m, 이후 +2h/+4h/+8h/+16h, max +24h.
+- detail endpoint의 network/timeout만 500ms 후 1회 inline retry, run 전체 retry budget 25.
+- 관측 필드: attempts, retry_attempted/recovered/exhausted, failure_endpoints, network_failure_subtypes, failure_latency.
+- production 관측상 inline 500ms retry는 복구 효과가 없었지만, 시간이 지난 state retry에서는 다수 정상 복구됐다.
+- 마지막 측정 never_processed: **78**.
+- 춘천막국수닭갈비축제 `tourapi-1230074`: 마지막 측정 기준 never-processed, 후보 순위 **18위**.
+- 이 상태에서는 network 오류 0%를 만들려고 계속 파지 않는다. 정상 state retry로 결국 success가 되는지 보며 backlog를 소진한다.
+- UI 상세 마감 후 backlog 소진/상세 품질 점검으로 돌아간다.
+
+### 현재 로드맵
+
+1. ✅ Cloudflare 운영 기반 / 기본 서비스
+2. ✅ 홈 UI v2
+3. 🟡 **상세페이지 UI v2 production 마감 — 현재 위치**
+4. 🟡 TourAPI detail backlog 소진 및 복구 운영 확인
+5. ⏳ 공식 상세 enrichment 품질 강화
+6. ⏳ 전국 municipal/source coverage 확대
+7. ⏳ SEO / Search Console / 무료 검색 유입 점검
+8. ⏳ 모바일 최종 polish
+9. ⏳ 수익화 준비
+10. ⏳ Zero-Human 운영 자동화 최종 점검
+
+### 새 채팅 시작 시 고정 순서
+
+사용자가 `갈틈작업이어하자`라고 하면 답변/작업 전에 반드시:
+
+1. `AGENTS.md`
+2. `PROJECT_CONTEXT.md`
+3. `NEXT_CHAT_HANDOFF.md`
+4. `docs/WORKING_RULES.md`
+5. UI/상세 작업이면 `docs/UI_V2_DIRECTION.md`
+6. 최신 `origin/main`, 최근 commit, working tree, 미커밋 변경 확인
+
+실제 code/production > PROJECT_CONTEXT > NEXT_CHAT_HANDOFF > 세부 규칙 문서 순으로 우선한다.
