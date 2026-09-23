@@ -27,6 +27,9 @@ allowlists without inferring years or joining facts across rows.
 
 ## Not added
 
+| Busan        | `https://www.visitbusan.net/schedule/list.do?boardId=BBS_0000009&menuCd=DOM_000000204012000000&month=0` | COLLECTOR GAP | Visit Busan is an official Busan Metropolitan City tourism channel. The 2026 festival/event list exposes durable titles and full-year periods, while first-party detail pages commonly expose full-year period, venue, address, and images. However list cards do not expose venue, and the current generic collector requires title/date/venue in one self-contained list/card/table block. A future bounded list→detail core follow-up could unlock this source; distributed events with no single venue must remain candidate-level fail-closed. |
+
+
 | Municipality | Official source checked                                                       | Result                              | Reason                                                                                                                                                                                                                                                     |
 | ------------ | ----------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Seocho-gu    | `https://www.seocho.go.kr/site/seocho/ex/bbs/List.do?cbIdx=59`                | Excluded after generic HTML recheck | The canonical table has title and publication-date columns, but no event period or venue columns. Generic extraction returned zero candidates rather than joining facts from detail posts.                                                                 |
