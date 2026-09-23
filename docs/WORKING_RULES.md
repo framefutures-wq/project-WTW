@@ -168,3 +168,13 @@ Codex/작업 프롬프트에는 가능하면 맨 위에 권장 모델을 명시�
 그 다음 최신 origin/main, working tree, 중단된 변경을 확인하고 처음부터 재작업하지 말고 중단 지점부터 이어간다.
 
 이 운영 규칙을 변경하려면 사용자의 최신 명시적 결정을 우선한다.
+## 10. Deterministic 전국 municipal survey 자동 진행 권한
+
+- 사용자는 전국 municipal/source coverage survey에 대해 **지자체별·batch별 중간 승인 없이 deterministic queue 순서대로 계속 진행**하도록 명시적으로 위임했다.
+- 각 batch는 여전히 하나의 bounded task로 유지한다. 한 task가 끝나면 필요한 최소 검증 → docs/data 갱신 → commit/push까지 닫고, 다음 survey batch는 별도 bounded task로 이어간다.
+- routine read-only source 조사, inventory 상태 분류, docs/data 갱신, 검증, commit/push는 다시 허락을 묻지 않는다.
+- 조사 중 READY가 누적돼도 production/Registry onboarding은 기존 운영 순서와 checkpoint를 따른다. C/D checkpoint 전 production onboarding 금지 원칙은 유지한다.
+- D1 destructive change, resource recreate, secret 변경, 신규 Cloudflare resource/비용 영향, outage-risk 변경, 예상하지 못한 구조 변경처럼 고위험 작업만 멈추고 사용자 확인을 받는다.
+- source가 불명확하거나 접근 실패인 경우 임의 추론하지 않고 WATCH/GAP 등 fail-closed로 분류한 뒤 다음 queue로 진행한다.
+- 사용자에게는 매 batch마다 승인 요청하지 않고, 큰 지역 또는 큰 Phase가 닫힐 때만 요약 보고한다.
+

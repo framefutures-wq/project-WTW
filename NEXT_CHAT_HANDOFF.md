@@ -636,4 +636,11 @@ UI 기준:
 - READY 누계는 **12개**다: 기존 `seoul-gangnam`, `seoul-yeongdeungpo`, `incheon-서해`, `gyeonggi-과천`, `gyeonggi-광주` + 이번 7개. C/D checkpoint 전에는 Registry onboarding을 하지 않으며, 이후 Phase 6E에서 3~5개 단위 bounded onboarding batch로 처리한다.
 - inventory: 총 245; ACTIVE 9 / READY 12 / GAP 20 / WATCH 43 / EXCLUDE 0 / UNREVIEWED 161. 경기도 하위 UNREVIEWED는 0이며 다음 deterministic survey queue는 **`busan-gangseo`**부터다.
 - 이번 작업은 source research + inventory/docs만 변경했다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C **2026-09-24 10:00 KST** 기존 ACTIVE 9 read-only Cron 검증 → D **2026-09-24 11:00 KST** TourAPI watchdog read-only 검증 순서를 유지한다.
+## 2026-09-23 운영 위임 — 전국 municipal survey 무중단 진행
+
+- 사용자가 전국 municipal/source coverage 조사에 대해 **지자체별·batch별 확인을 받지 말고 deterministic queue 순서대로 끝까지 진행**하도록 위임했다.
+- routine 조사 → inventory/docs 갱신 → validation → commit/push는 각 bounded task 안에서 자동 진행하고, 다음 batch 승인 요청은 하지 않는다.
+- 현재 queue는 부산 하위 16개부터 시작하며 이후 대구 → 전남광주통합특별시 하위 → 대전 → 울산 → 강원 → 충북 → 충남 → 전북 → 경북 → 경남 → 제주 순으로 계속한다.
+- C 2026-09-24 10:00 KST / D 11:00 KST 운영 checkpoint는 우선순위를 유지하며, 그 전 production/Registry onboarding은 하지 않는다.
+- destructive D1, secret/resource/비용/아웃리지 위험 작업만 사용자 확인 대상으로 남긴다.
 
