@@ -424,3 +424,12 @@ UI 기준:
 - watchdog 전에는 TourAPI detail 코드 수정/manual run 금지.
 - checkpoint 후 Phase 4 상태만 갱신하고, 별도 장애/고위험 문제가 없으면 현재 진행 중인 municipal coverage 작업으로 복귀한다.
 - Phase 5 공식 상세 enrichment는 Phase 4 결과가 확인된 뒤 별도 우선순위로 다시 결정한다.
+
+
+## 2026-09-23 10시 전 작업 운영
+
+- 인천은 ACTIVE/production 배포 완료이며 첫 실제 scheduled ingestion은 2026-09-24 10:00 KST 이후 read-only로 확인한다.
+- 10시까지 개발을 멈추지 않는다. 그 전에는 production/D1을 건드리지 않는 **municipal source 조사·분류·read-only dry-run**을 진행한다.
+- 우선순위는 **울산 alternate canonical 최종 조사 → 부산/대구/광주/세종 등 다음 광역지역 공식 source 조사 → ACTIVE-ready / WATCH / COLLECTOR GAP / EXCLUDE 분류 → 바로 온보딩 가능한 후보 3~5개 대기열 확보**다.
+- 10시 인천 scheduled ingestion과 11시 TourAPI watchdog이 정상임을 확인하면, ACTIVE-ready 후보를 지역마다 하루씩 기다리지 않고 bounded task로 등록하고 **3~5개 단위 batch deploy/다음 정규 Cron 검증**을 기본 운영 방식으로 삼는다.
+- 공통 collector 자체를 크게 수정하는 새 유형이 발견된 경우에만 별도 운영 검증을 둔다. 단순 Registry onboarding마다 24시간 대기하지 않는다.
