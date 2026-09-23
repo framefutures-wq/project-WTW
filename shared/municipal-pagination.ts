@@ -6,6 +6,8 @@ import {
 
 /** A registry value can never turn one source into an unbounded crawler. */
 export const MAX_MUNICIPAL_PAGINATION_PAGES = 3;
+/** A single canonical list may exceed the downstream budget, but not become unbounded. */
+export const MAX_MUNICIPAL_SINGLE_LIST_CANDIDATES = 100;
 
 const validPagination = (
   pagination: MunicipalSourceDefinition["pagination"],
@@ -46,6 +48,49 @@ const priority = (candidate: MunicipalCandidate, current: string) => {
   }
   return 2;
 };
+
+const stableCandidateIdentity = (candidate: MunicipalCandidate) =>
+  candidate.source_candidate_id || candidate.official_url;
+
+const compareCandidatePriority = (
+  left: MunicipalCandidate,
+  right: MunicipalCandidate,
+  current: string,
+) => {
+  const leftPriority = priority(left, current);
+  const rightPriority = priority(right, current);
+  if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+  const leftDate =
+    leftPriority === 0 ? left.end_date ?? "" : left.start_date ?? left.end_date ?? "";
+  const rightDate =
+    rightPriority === 0 ? right.end_date ?? "" : right.start_date ?? right.end_date ?? "";
+  const date = leftDate.localeCompare(rightDate);
+  if (date) return date;
+  return stableCandidateIdentity(left).localeCompare(stableCandidateIdentity(right));
+};
+
+/**
+ * Applies the downstream source budget to a healthy single canonical list.
+ * Lists at or below the budget retain parser order; overflow lists are
+ * identity-deduped and prioritized deterministically.
+ */
+export function selectBoundedMunicipalCandidates<
+  T extends { candidate: MunicipalCandidate },
+>(items: readonly T[], current: string, limit: number): T[] {
+  if (items.length > MAX_MUNICIPAL_SINGLE_LIST_CANDIDATES)
+    throw new Error("source_candidate_circuit_breaker");
+  if (items.length <= limit) return [...items];
+  const unique = new Map<string, T>();
+  for (const item of items) {
+    const identity = stableCandidateIdentity(item.candidate);
+    if (!unique.has(identity)) unique.set(identity, item);
+  }
+  return [...unique.values()]
+    .sort((left, right) =>
+      compareCandidatePriority(left.candidate, right.candidate, current),
+    )
+    .slice(0, limit);
+}
 
 /**
  * Keeps the first page observation for duplicate identities, then makes the

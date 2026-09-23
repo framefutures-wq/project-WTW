@@ -3,7 +3,9 @@ import test from "node:test";
 import {
   fetchMunicipalSourcePages,
   MAX_MUNICIPAL_PAGINATION_PAGES,
+  MAX_MUNICIPAL_SINGLE_LIST_CANDIDATES,
   municipalSourcePageUrls,
+  selectBoundedMunicipalCandidates,
 } from "../shared/municipal-pagination";
 import type { MunicipalCandidate } from "../shared/municipal-discovery";
 import type { MunicipalSourceDefinition } from "../shared/municipal-source-registry";
@@ -57,6 +59,44 @@ test("non-paginated source keeps its single canonical URL and parsed order", asy
   assert.deepEqual(
     result.map((item) => item.candidate.source_candidate_id),
     ["second", "first"],
+  );
+});
+
+test("single-list overflow identity-dedupes and deterministically selects active then nearest future candidates", () => {
+  const items = [
+    candidate("ended", "2026-09-01"),
+    candidate("active-later", "2026-09-20", "2026-09-27"),
+    candidate("far", "2026-12-20"),
+    candidate("near-b", "2026-09-24"),
+    candidate("near-a", "2026-09-24"),
+    candidate("active-sooner", "2026-09-21", "2026-09-24"),
+    candidate("near-a", "2026-09-24"),
+    ...Array.from({ length: 25 }, (_, index) =>
+      candidate(`future-${String(index).padStart(2, "0")}`, `2026-10-${String((index % 20) + 1).padStart(2, "0")}`),
+    ),
+  ].map((candidate) => ({ candidate }));
+  const first = selectBoundedMunicipalCandidates(items, "2026-09-23", 25);
+  const second = selectBoundedMunicipalCandidates(items, "2026-09-23", 25);
+  assert.equal(first.length, 25);
+  assert.deepEqual(
+    first.map((item) => item.candidate.source_candidate_id),
+    second.map((item) => item.candidate.source_candidate_id),
+  );
+  assert.deepEqual(
+    first.slice(0, 5).map((item) => item.candidate.source_candidate_id),
+    ["active-sooner", "active-later", "near-a", "near-b", "future-00"],
+  );
+  assert.equal(first.some((item) => item.candidate.source_candidate_id === "ended"), false);
+});
+
+test("single-list overflow circuit breaker still rejects malformed candidate explosions", () => {
+  const items = Array.from(
+    { length: MAX_MUNICIPAL_SINGLE_LIST_CANDIDATES + 1 },
+    (_, index) => ({ candidate: candidate(String(index), "2026-10-01") }),
+  );
+  assert.throws(
+    () => selectBoundedMunicipalCandidates(items, "2026-09-23", 25),
+    /source_candidate_circuit_breaker/,
   );
 });
 

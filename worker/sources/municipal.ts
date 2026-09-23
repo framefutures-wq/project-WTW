@@ -1,6 +1,6 @@
 import { createEnrichmentCandidate, extractMunicipalCandidates, hasMunicipalDetailCoreConflict, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
 import { municipalSourceAllowsUrl, MUNICIPAL_SOURCE_REGISTRY } from "../../shared/municipal-source-registry";
-import { fetchMunicipalSourcePages } from "../../shared/municipal-pagination";
+import { fetchMunicipalSourcePages, selectBoundedMunicipalCandidates } from "../../shared/municipal-pagination";
 import { confirmRepeatedImageVisionCandidate, extractMunicipalDocumentCandidates, type MunicipalDocumentMode } from "../../shared/municipal-document-fallback";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
@@ -106,10 +106,10 @@ export async function runMunicipalAutonomous(env: Env) {
         source,
         koreaToday,
       );
-      const candidates = sourceCandidates.slice(0, MAX_PER_SOURCE);
+      const candidates = source.pagination
+        ? sourceCandidates.slice(0, MAX_PER_SOURCE)
+        : selectBoundedMunicipalCandidates(sourceCandidates, koreaToday, MAX_PER_SOURCE);
       if (!candidates.length) throw new Error("source_parse_zero_candidates");
-      if (!source.pagination && candidates.length >= MAX_PER_SOURCE)
-        throw new Error("source_candidate_circuit_breaker");
       for (const sourceCandidate of candidates) {
         const { candidate, mode: candidateMode, pageHtml } = sourceCandidate;
         summary.discovered += 1;

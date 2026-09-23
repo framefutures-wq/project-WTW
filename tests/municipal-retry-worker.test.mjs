@@ -23,6 +23,12 @@ function pajuList(id = "940", title = "2026 문산거리축제", url = `https://
 function suwonList(id = "3049", title = "제1회 수원거리축제", url = `https://www.swcf.or.kr/?p=29_view&idx=${id}`) {
   return `<table><tr><td>축제</td><td>2026-10-03 ~ 2026-10-04</td><td><a href="${url}">${title}</a></td><td>수원화성</td></tr></table>`;
 }
+function suwonListRows(count) {
+  return `<table>${Array.from({ length: count }, (_, index) => {
+    const id = String(4000 + index);
+    return `<tr><td>축제</td><td>2026-10-${String((index % 20) + 1).padStart(2, "0")} ~ 2026-10-31</td><td><a href="https://www.swcf.or.kr/?p=29_view&idx=${id}">수원 행사 ${id}</a></td><td>수원화성</td></tr>`;
+  }).join("")}</table>`;
+}
 function hwaseongList(rows) {
   return `<h1>2026년 화성시 주요 축제</h1><table class="listBoard"><tbody>${rows.map((row, index) => `<tr><td>${index + 1}</td><td>${row.date ?? "10. 3.~10. 4."}</td><td>${row.title}</td><td>문화과</td><td>${row.venue ?? "동탄호수공원"}</td><td>화성시</td></tr>`).join("")}</tbody></table>`;
 }
@@ -226,4 +232,21 @@ test("zero-candidate trusted source trips its breaker while another source conti
   assert.equal(result.source_errors >= 1, true);
   assert.equal(result.AUTO_PUBLISH, 1);
   assert.equal(mock.batches.length, 1);
+});
+
+test("Suwon healthy 31-row canonical list selects a deterministic downstream 25 without a source breaker", async () => {
+  const mock = createMockDb();
+  const result = await withFetch((url) => {
+    if (url === sourceUrls.suwon) return suwonListRows(31);
+    if (url.startsWith("https://www.swcf.or.kr/?p=29_view&idx="))
+      return "수원 공식 행사 상세";
+    return emptySourcePage(url);
+  }, () => runMunicipalAutonomous(productionEnv(mock.db)));
+  const suwonStates = mock.saves.filter((args) => args[1] === "suwon");
+  assert.equal(result.discovered, 25);
+  assert.equal(suwonStates.length, 25);
+  assert.deepEqual(
+    suwonStates.map((args) => args[8]),
+    ["4000", "4020", "4001", "4021", "4002", "4022", "4003", "4023", "4004", "4024", "4005", "4025", "4006", "4026", "4007", "4027", "4008", "4028", "4009", "4029", "4010", "4030", "4011", "4012", "4013"],
+  );
 });

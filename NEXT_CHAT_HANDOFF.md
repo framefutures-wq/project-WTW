@@ -265,6 +265,13 @@ UI 기준:
 - 수원은 공식 목록 31건으로 source당 25건 circuit breaker에 걸렸고, 태백은 공식 endpoint fetch timeout으로 누락됐다. 재실행하지 않았다. 인천 포함 나머지 7개 source는 event 20건을 publish/revalidate했다.
 - 다음 순서는 **B → E → 내일 C → D**. A의 수원 pagination/circuit-breaker 및 태백 timeout 원인만 해당 bounded task에서 처리하고, A one-shot을 반복하지 않는다.
 
+### Phase 6A follow-up — 수원 25건 bounded selection
+
+- 수원처럼 정상적인 non-pagination canonical list가 25건을 넘으면 source 전체를 실패시키지 않는다. identity dedupe 후 진행중 → 가까운 미래 → 이후 미래 → 종료 순으로 deterministic 정렬하고 최대 25건만 downstream 처리한다. 같은 날짜는 stable candidate identity로 tie-break한다.
+- `MAX_PER_SOURCE=25`은 유지한다. single-list input은 100건 hard cap을 넘어가면 기존 circuit breaker로 fail-closed하며, pagination source의 기존 merge/selection은 바꾸지 않는다.
+- 수원 31-row fixture는 source breaker 없이 25건을 선택하는 targeted test로 고정했다. live 공식 URL 재확인은 2026-09-23 연결 timeout으로 완료하지 못했으며, production municipal one-shot/수동 Cron은 재실행하지 않는다.
+- 다음 순서는 **B 전국 inventory → E ACTIVE-ready batch → 내일 C 10시 → D 11시**. source self-healing(공식 source URL/platform 변경 감지 후 대체 공식 source를 안전하게 재탐색·검증·전환하는 No-Human 복구 계층)은 Phase 6 후반 과제로만 기록하며 이번에는 구현하지 않는다.
+
 ## 2026-09-23 TourAPI detail orchestration 보완
 
 - candidate priority, retry schedule, failure reason observability를 보완했다. parser/enrichment 규칙, 처리량(25 events / 75 requests), endpoint 수는 변경하지 않았다.
