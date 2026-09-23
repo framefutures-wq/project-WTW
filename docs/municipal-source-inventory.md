@@ -10,14 +10,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 1 |
-| COLLECTOR_GAP | 6 |
-| WATCH | 17 |
+| ONBOARDING_READY | 2 |
+| COLLECTOR_GAP | 10 |
+| WATCH | 22 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 212 |
+| UNREVIEWED | 202 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `seoul-dongdaemun` · 2. `seoul-dongjak` · 3. `seoul-mapo` · 4. `seoul-seodaemun` · 5. `seoul-seocho` · 6. `seoul-seongdong` · 7. `seoul-seongbuk` · 8. `seoul-songpa` · 9. `seoul-yangcheon` · 10. `seoul-yeongdeungpo` · 11. `seoul-yongsan` · 12. `seoul-eunpyeong` · 13. `seoul-jongno` · 14. `seoul-jung` · 15. `seoul-jungnang` · 16. `incheon-강화` · 17. `incheon-계양` · 18. `incheon-남동` · 19. `incheon-동` · 20. `incheon-미추홀`
+First 20 queue entries: 1. `seoul-yongsan` · 2. `seoul-eunpyeong` · 3. `seoul-jongno` · 4. `seoul-jung` · 5. `seoul-jungnang` · 6. `incheon-강화` · 7. `incheon-계양` · 8. `incheon-남동` · 9. `incheon-동` · 10. `incheon-미추홀` · 11. `incheon-부평` · 12. `incheon-서` · 13. `incheon-연수` · 14. `incheon-옹진` · 15. `incheon-jung` · 16. `gyeonggi-가평` · 17. `gyeonggi-과천` · 18. `gyeonggi-광명` · 19. `gyeonggi-광주` · 20. `gyeonggi-구리`

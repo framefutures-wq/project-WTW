@@ -537,3 +537,20 @@ UI 기준:
 - `seoul-dobong`: **WATCH** — 공식 문화관광 페이지가 장소와 반복 시기를 제공하지만 음력·기념일·월중 표현이 섞여 exact full-year extraction이 불가함.
 - 이번 batch의 신규 변화: `ONBOARDING_READY +1`, `COLLECTOR_GAP +0`, `WATCH +9`, `EXCLUDE +0`. 새 collector gap 반복 패턴은 확인하지 않았고, 기존 list→detail/HTML 구조 gap 계열은 구현하지 않았다.
 - 조사 후 inventory: ACTIVE 9 / ONBOARDING_READY 1 / COLLECTOR_GAP 6 / WATCH 17 / EXCLUDE 0 / UNREVIEWED 212, 총 245. 다음 queue는 **`seoul-dongdaemun`부터** 시작한다.
+
+## 2026-09-23 Phase 6B — 서울 하위 지자체 두 번째 조사 batch
+
+- 조사 범위: `seoul-dongdaemun` → `seoul-yeongdeungpo` 10개. 모두 HTTPS first-party 공식 구청 또는 산하 문화·관광기관 source를 live read-only 확인했다. Registry·collector·D1·deploy·Cron/manual ingestion은 변경하지 않았다.
+- `seoul-dongdaemun`: **WATCH** — 공식 문화행사 feed에 2026 행사와 detail은 있으나 구정소식·교육·문화가 혼합된 homepage feed이며 source-wide venue/full-year durable listing을 확정하지 못함.
+- `seoul-dongjak`: **COLLECTOR_GAP** — 공식 통합예약 문화/행사 source는 있으나 JS/API·필터 렌더링과 detail follow-up이 필요해 current generic HTML collector가 self-contained candidate를 안정적으로 읽지 못함.
+- `seoul-mapo`: **COLLECTOR_GAP** — 마포문화재단 목록에 title·2026 full-year date·detail은 있으나 venue가 목록에 없어 detail follow-up이 필요함.
+- `seoul-seodaemun`: **WATCH** — 공식 문화관광 포털의 축제 index와 공지는 확인되나 source-wide exact full-year date·venue·durable listing을 확인하지 못함.
+- `seoul-seocho`: **COLLECTOR_GAP** — 공식 2026 문화·행사달력에 title/date/detail은 있으나 venue와 full-year core가 list에 self-contained로 없음.
+- `seoul-seongdong`: **WATCH** — 공식 두모포 페스티벌 detail은 venue와 ‘매년 6월 말~7월 초’를 제공하지만 exact full-year canonical listing을 확인하지 못함.
+- `seoul-seongbuk`: **WATCH** — 공식 Festival & Event 영역과 detail은 있으나 static landing 중심으로 exact full-year listing/pagination이 없음.
+- `seoul-songpa`: **COLLECTOR_GAP** — 공식 문화관광 calendar에 title/date/detail은 있으나 venue가 목록에 없어 detail follow-up이 필요함.
+- `seoul-yangcheon`: **WATCH** — 공식 홈페이지·평생학습 포털의 개별 프로그램은 확인되나 행사·축제의 지속 canonical full-year listing을 확인하지 못함.
+- `seoul-yeongdeungpo`: **ONBOARDING_READY** — 공식 문화관광 문화행사 일정 목록에 title·full-year date·venue·first-party detail이 같은 목록 블록으로 확인되고 기간/구분 검색 구조가 있음.
+- 반복 collector gap: **4개** — `seoul-dongjak`, `seoul-mapo`, `seoul-seocho`, `seoul-songpa`. 공통 패턴은 **list에 title/date는 있으나 venue가 없거나 JS/API 렌더링으로 현재 generic collector가 self-contained core를 읽지 못하고 detail follow-up이 필요한 유형**이다. 이번 task에서는 구현하지 않았다.
+- 이번 batch 변화: `ONBOARDING_READY +1`, `COLLECTOR_GAP +4`, `WATCH +5`, `EXCLUDE +0`. 누적 `ONBOARDING_READY`는 **2개**(`seoul-gangnam`, `seoul-yeongdeungpo`)다.
+- 조사 후 inventory: ACTIVE 9 / ONBOARDING_READY 2 / COLLECTOR_GAP 10 / WATCH 22 / EXCLUDE 0 / UNREVIEWED 202, 총 245. 다음 deterministic queue는 **`seoul-yongsan`부터** 시작한다.
