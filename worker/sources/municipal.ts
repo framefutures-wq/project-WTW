@@ -1,5 +1,6 @@
 import { createEnrichmentCandidate, extractMunicipalCandidates, hasMunicipalDetailCoreConflict, selectMunicipalGate, type MunicipalCandidate } from "../../shared/municipal-discovery";
 import { municipalSourceAllowsUrl, MUNICIPAL_SOURCE_REGISTRY } from "../../shared/municipal-source-registry";
+import { fetchMunicipalSourcePages } from "../../shared/municipal-pagination";
 import { confirmRepeatedImageVisionCandidate, extractMunicipalDocumentCandidates, type MunicipalDocumentMode } from "../../shared/municipal-document-fallback";
 import { decideMunicipalDuplicate } from "../../shared/municipal-duplicate";
 import { decideAutonomousMunicipal, type AutonomousDecision } from "../../shared/municipal-autonomous";
@@ -21,6 +22,44 @@ async function official(url: string) {
   const response = await fetch(url, { signal: AbortSignal.timeout(20_000), headers: { "user-agent": "WeekendMwohaeMunicipal/1.0" } });
   if (!response.ok) throw new Error(`official_http_${response.status}`);
   return response.text();
+}
+type SourceCandidate = {
+  candidate: MunicipalCandidate;
+  mode: "registered" | "structured_event" | "generic_html" | MunicipalDocumentMode;
+  pageHtml: string;
+};
+async function collectSourceCandidates(env: Env, source: (typeof SOURCES)[number], koreaToday: string) {
+  return fetchMunicipalSourcePages<SourceCandidate>(
+    source,
+    koreaToday,
+    official,
+    async (pageHtml) => {
+      const extraction = extractMunicipalCandidates(source, pageHtml);
+      if (extraction.mode === "retry") {
+        const documentFallback = await extractMunicipalDocumentCandidates({
+          ai: municipalDocumentAI(env),
+          source,
+          html: pageHtml,
+        });
+        if (!documentFallback.candidates.length)
+          throw new Error(
+            `source_${extraction.assessment.status}:${extraction.assessment.reason}:${documentFallback.status}`,
+          );
+        return documentFallback.candidates.map((item) => ({
+          candidate: item.candidate,
+          mode: item.mode,
+          pageHtml,
+        }));
+      }
+      const extractionMode: "registered" | "structured_event" | "generic_html" =
+        extraction.mode;
+      return extraction.candidates.map((candidate) => ({
+        candidate,
+        mode: extractionMode,
+        pageHtml,
+      }));
+    },
+  );
 }
 async function duplicate(env: Env, candidate: MunicipalCandidate, id: string) {
   if (!candidate.start_date || !candidate.end_date || !candidate.venue) return { decision: "REVIEW" as const, rows: 0 };
@@ -60,39 +99,17 @@ export async function runMunicipalAutonomous(env: Env) {
   const summary = emptySummary(), now = new Date().toISOString(), koreaToday = today(), processed = new Set<string>();
   for (const source of SOURCES) {
     try {
-      const list = await official(source.url);
-      const extraction = extractMunicipalCandidates(source, list);
-      let sourceCandidates: Array<{
-        candidate: MunicipalCandidate;
-        mode: "registered" | "structured_event" | "generic_html" | MunicipalDocumentMode;
-      }>;
-      if (extraction.mode === "retry") {
-        const documentFallback = await extractMunicipalDocumentCandidates({
-          ai: municipalDocumentAI(env),
-          source,
-          html: list,
-        });
-        if (!documentFallback.candidates.length)
-          throw new Error(
-            `source_${extraction.assessment.status}:${extraction.assessment.reason}:${documentFallback.status}`,
-          );
-        sourceCandidates = documentFallback.candidates.map((item) => ({
-          candidate: item.candidate,
-          mode: item.mode,
-        }));
-      } else {
-        const extractionMode: "registered" | "structured_event" | "generic_html" =
-          extraction.mode;
-        sourceCandidates = extraction.candidates.map((candidate) => ({
-          candidate,
-          mode: extractionMode,
-        }));
-      }
+      const sourceCandidates = await collectSourceCandidates(
+        env,
+        source,
+        koreaToday,
+      );
       const candidates = sourceCandidates.slice(0, MAX_PER_SOURCE);
       if (!candidates.length) throw new Error("source_parse_zero_candidates");
-      if (candidates.length >= MAX_PER_SOURCE) throw new Error("source_candidate_circuit_breaker");
+      if (!source.pagination && candidates.length >= MAX_PER_SOURCE)
+        throw new Error("source_candidate_circuit_breaker");
       for (const sourceCandidate of candidates) {
-        const { candidate, mode: candidateMode } = sourceCandidate;
+        const { candidate, mode: candidateMode, pageHtml } = sourceCandidate;
         summary.discovered += 1;
         const id = candidateId(candidate.source, candidate.source_candidate_id, candidate.start_date);
         processed.add(id);
@@ -126,7 +143,7 @@ export async function runMunicipalAutonomous(env: Env) {
                 throw new Error("detail_host_not_allowed");
               const detail =
                 effectiveCandidate.official_url === source.url
-                  ? list
+                  ? pageHtml
                   : await official(effectiveCandidate.official_url);
               enrichment = createEnrichmentCandidate(effectiveCandidate, detail);
               detailError = Boolean(enrichment.parse_error);
@@ -179,30 +196,11 @@ export async function runMunicipalAutonomous(env: Env) {
         | MunicipalDocumentMode = "registered";
       const documentSnapshot = row.source_candidate_id.startsWith("doc-");
       if (candidate.official_url === source.url || documentSnapshot) {
-        detail = await official(source.url);
-        const extraction = extractMunicipalCandidates(source, detail);
-        let refreshedCandidates: Array<{
-          candidate: MunicipalCandidate;
-          mode: "registered" | "structured_event" | "generic_html" | MunicipalDocumentMode;
-        }>;
-        if (extraction.mode === "retry") {
-          const documentFallback = await extractMunicipalDocumentCandidates({
-            ai: municipalDocumentAI(env),
-            source,
-            html: detail,
-          });
-          refreshedCandidates = documentFallback.candidates.map((item) => ({
-            candidate: item.candidate,
-            mode: item.mode,
-          }));
-        } else {
-          const extractionMode: "registered" | "structured_event" | "generic_html" =
-            extraction.mode;
-          refreshedCandidates = extraction.candidates.map((item) => ({
-            candidate: item,
-            mode: extractionMode,
-          }));
-        }
+        const refreshedCandidates = await collectSourceCandidates(
+          env,
+          source,
+          koreaToday,
+        );
         const refreshed = refreshedCandidates.find(
           (item) =>
             item.candidate.source_candidate_id === candidate.source_candidate_id,
@@ -211,6 +209,7 @@ export async function runMunicipalAutonomous(env: Env) {
         // Canonical lists are current authority: an absent identity may never publish from an old snapshot.
         if (!refreshed) { summary.AUTO_RETRY += 1; continue; }
         candidate = refreshed.candidate;
+        detail = refreshed.pageHtml;
       } else {
         if (!municipalSourceAllowsUrl(source, candidate.official_url))
           throw new Error("detail_host_not_allowed");

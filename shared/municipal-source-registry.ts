@@ -18,6 +18,11 @@ export type MunicipalSourceDefinition = {
   ingestion: "registered_parser" | "generic_fallback";
   /** Generic sources may require an explicit first-party category on every card. */
   genericAllowedCategories?: readonly string[];
+  /** A bounded, query-parameter-only page sequence for canonical official lists. */
+  pagination?: {
+    queryParam: string;
+    maxPages: number;
+  };
 };
 
 export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
