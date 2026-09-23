@@ -108,6 +108,17 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     ingestion: "generic_fallback",
     genericAllowedCategories: ["공연", "전시", "축제/이벤트/행사", "체육"],
   },
+  {
+    key: "incheon-res",
+    region: "인천",
+    locality: "인천",
+    url: "https://www.incheon.go.kr/res/RE050101/",
+    allowedHosts: ["incheon.go.kr", "www.incheon.go.kr"],
+    healthMarkers: ["search-reservation-wrap"],
+    expectedSignals: ["html_list"],
+    ingestion: "generic_fallback",
+    pagination: { queryParam: "curPage", maxPages: 3 },
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

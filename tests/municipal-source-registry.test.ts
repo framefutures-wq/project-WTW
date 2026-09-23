@@ -35,6 +35,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "taebaek",
       "seoul-hangang",
       "daejeon-fvu",
+      "incheon-res",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -62,6 +63,25 @@ test("Daejeon FVU is a generic table source without a dedicated parser", () => {
     municipalSourceAllowsUrl(
       source,
       "https://daejeon.go.kr/fvu/FvuEventView.do?eventSeq=1",
+    ),
+    true,
+  );
+  assert.equal(
+    municipalSourceAllowsUrl(source, "https://example.com/event"),
+    false,
+  );
+});
+
+test("Incheon reservation is a bounded generic source without a dedicated parser", () => {
+  const source = municipalSourceByKey("incheon-res");
+  assert(source);
+  assert.equal(source.ingestion, "generic_fallback");
+  assert.equal(MUNICIPAL_PARSERS[source.key], undefined);
+  assert.deepEqual(source.pagination, { queryParam: "curPage", maxPages: 3 });
+  assert.equal(
+    municipalSourceAllowsUrl(
+      source,
+      "https://www.incheon.go.kr/res/RE050101/pblprfrDspyView?progrmSn=1",
     ),
     true,
   );
