@@ -521,3 +521,19 @@ UI 기준:
 - 4개 후보를 current generic collector와 공식 HTTP live probe로 다시 검증했으나 이번 batch의 ACTIVE 승격은 **0개**다. 광주는 legacy page의 `dmgj.kr` detail cross-host/ownership migration을 fail-closed로 `WATCH` 처리했고, 강원은 repeated HTTP timeout으로 `WATCH` 처리했다.
 - 충남(`pageIndex=1..3`)과 제주(canonical festival/list)는 official list·full-year core를 제공하지만 current generic extractor가 각각 0 candidates로 fail-closed되어 `COLLECTOR_GAP`으로 되돌렸다. dedicated parser나 list→detail 기능은 추가하지 않았다.
 - Registry는 기존 ACTIVE 9개를 유지했다. D1 write, municipal one-shot, Cron manual run, production deploy는 하지 않았다. 다음 운영 순서는 **내일 C 10:00 자동 Cron 검증 → D 11:00 TourAPI watchdog → B deterministic survey queue 재개**다.
+
+## 2026-09-23 Phase 6B — 서울 하위 지자체 첫 조사 batch
+
+- 조사 범위: `seoul-gangnam` → `seoul-dobong` 10개. 모두 HTTPS first-party 공식 구청/산하 문화·관광 source를 live read-only 확인했다. Registry·collector·D1·deploy·Cron/manual ingestion은 변경하지 않았다.
+- `seoul-gangnam`: **ONBOARDING_READY** — 강남문화재단 축제 목록. title·2026 full-year date·venue·first-party detail이 같은 목록 블록에 있고 pagination이 확인됨. `https://www.gangnam.go.kr/office/gfac/board/gfac_lifeculture/list.do?mid=gfac_festival06`
+- `seoul-gangdong`: **WATCH** — 강동 선사문화축제 일정표는 공식·venue는 확인되나 2025 정적 일정 중심이고 source-wide 2026 full-year canonical listing이 아님.
+- `seoul-gangbuk`: **WATCH** — 공식 포털의 개별 축제/문화행사·예약은 확인되나 혼합 feed와 개별 detail 중심으로 durable full-year listing을 확정하지 못함.
+- `seoul-gangseo`: **WATCH** — 겸재문화예술제 detail은 2026-05-09와 venue를 명시하지만 source-wide listing/pagination이 확인되지 않음.
+- `seoul-gwanak`: **WATCH** — 문화관광소식·예약 detail은 있으나 행사·축제 canonical full-year listing을 확인하지 못함.
+- `seoul-gwangjin`: **WATCH** — 주간행사/개별 공지·보도자료는 있으나 source-wide durable 행사 listing을 확인하지 못함.
+- `seoul-guro`: **WATCH** — 홈페이지·월간 소식/예약에 개별 core는 있으나 행사·축제 canonical listing이 아닌 혼합 feed 구조임.
+- `seoul-geumcheon`: **WATCH** — 소셜허브·미디어홍보에서 행사 게시물은 확인되나 full-year date·venue·durable detail이 함께 유지되는 일정 listing이 아님.
+- `seoul-nowon`: **WATCH** — 축제행사/문화공연 메뉴와 개별 안내는 있으나 source-wide durable listing·pagination을 확정하지 못함.
+- `seoul-dobong`: **WATCH** — 공식 문화관광 페이지가 장소와 반복 시기를 제공하지만 음력·기념일·월중 표현이 섞여 exact full-year extraction이 불가함.
+- 이번 batch의 신규 변화: `ONBOARDING_READY +1`, `COLLECTOR_GAP +0`, `WATCH +9`, `EXCLUDE +0`. 새 collector gap 반복 패턴은 확인하지 않았고, 기존 list→detail/HTML 구조 gap 계열은 구현하지 않았다.
+- 조사 후 inventory: ACTIVE 9 / ONBOARDING_READY 1 / COLLECTOR_GAP 6 / WATCH 17 / EXCLUDE 0 / UNREVIEWED 212, 총 245. 다음 queue는 **`seoul-dongdaemun`부터** 시작한다.
