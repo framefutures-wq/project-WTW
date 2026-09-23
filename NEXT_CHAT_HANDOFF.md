@@ -594,3 +594,21 @@ UI 기준:
 - 통합특별시 공식 누리집(`https://www.jeonnam.go.kr/`)은 현재 통합특별시 명칭·주소를 표시하고 관광객 메뉴에 `시군축제 일정`을 노출한다. 다만 실제 listing target과 지속성, 행사별 full-year date·venue·durable detail·pagination은 확인하지 못했다. 구 전남 legacy domain의 HTTP probe가 timeout/DNS 오류였으므로 구 광주 source와 결합하거나 이전 root 판정을 상속하지 않았다.
 - 따라서 `jeonnam-gwangju`는 **WATCH** (`official_tourism_listing_unverified`, `source_core_unverified`)로 분류한다. live listing이 열리지 않아 current collector extraction 적합성도 판정 불가다.
 - inventory summary는 ACTIVE 9 / READY 2 / GAP 15 / WATCH 21 / EXCLUDE 0 / UNREVIEWED 198, 총 245다. root가 queue에서 빠져 다음 deterministic 조사 대상은 **`incheon-강화`**다. validation 후 commit/push 예정이며 production·D1·Cron/manual ingestion·Registry·collector는 변경하지 않는다.
+
+## 2026-09-23 Phase 6B — 현행 인천 하위 11개 공식 행사 source 조사
+
+- 현행 2군 9구의 하위 11개를 모두 조사 완료했다. 신설 4개(검단·서해·영종·제물포)는 현재 각 구청 도메인과 현행 구 명칭/운영 주체를 확인했으며, 옛 서구·중구·동구 source를 자동 승계하지 않았다.
+- `incheon-강화`: **WATCH** — 구청 문화관광의 행사/전시 일정과 문화행사 영역이 모두 현재 게시물 없음. 개별 2026 축제 공지는 단발성이므로 지속 source로 승격하지 않았다.
+- `incheon-검단`: **WATCH** — 신설 검단구의 현재 문화행사 페이지에서 2026 가을 공연·전시는 확인했으나 계절별 편집 안내이고 행사별 장소·durable detail 및 listing/pagination이 불충분하다. 옛 서구 source는 사용하지 않았다.
+- `incheon-계양`: **WATCH** — 계양시설관리공단 문화회관 공연일정은 title·연도 있는 일시·장소·detail·3페이지가 있으나 live 본문/검색 캐시의 갱신 시점이 서로 달라 2026-09 현재 지속 갱신을 검증하지 못했고, 한 공연장 편성은 구 전체 행사 source를 대변하지 않는다.
+- `incheon-남동`: **WATCH** — 남동문화재단 목록은 title·날짜·venue·detail 및 bounded pagination 형태지만 live 요청 502, 검색 인덱스는 2026-05 항목으로 현재 freshness를 확정하지 못했다.
+- `incheon-미추홀`: **WATCH** — 구청의 현재 행사 공지는 개별 2026 title/date/venue를 제공하나 durable source-wide listing이 확인되지 않아 단발 공지를 승격하지 않았다.
+- `incheon-부평`: **WATCH** — 공식 부평풍물대축제 소개/detail은 확인했지만 연례축제 한 건 외에 full-year 행사 listing과 pagination을 확보하지 못했다.
+- `incheon-서해`: **ONBOARDING_READY** — 신설 서해구의 공식 전체행사 목록에서 현 구 주관 2026 항목의 title·explicit full-year start/end·venue·same-host durable detail과 34페이지 bounded listing을 확인했다. 옛 서구 이름의 항목은 자동 승계하지 않고 현재 서해구로 확인되는 항목만 대상. 광역 인천 ACTIVE와 중복 가능성은 있으나 지역-specific source라는 점을 기록했다.
+- `incheon-연수`: **WATCH** — 공식 기타축제정보 목록은 live 게시글 없음(1/0). 개별 축제 소개는 있지만 source-wide exact full-year date·venue·detail이 충족되지 않는다.
+- `incheon-영종`: **WATCH** — 신설 영종구의 현재 공식 축제·공연 목록은 2026-08-15 무의도 춤축제 한 건과 장소/detail을 제공하나 마감된 단일 항목뿐이라 지속적 future listing을 확정하지 못했다. 옛 중구 source는 계승하지 않았다.
+- `incheon-옹진`: **WATCH** — 공식 HTTPS 홈페이지 요청이 400으로 실패해 구청의 현재 행사 source와 core를 확인하지 못했다. 비공식/의회 페이지는 canonical로 쓰지 않았다.
+- `incheon-제물포`: **COLLECTOR_GAP** — 신설 제물포구가 연결하는 문화체육센터 listing은 91건·5페이지이나 목록은 title/등록일 위주다. 현재 구 주최 2026 전시 detail에는 full-year 기간·venue·주최가 명시되어 구현된 bounded list→detail follow-up이 해결할 수 있는 기존 공통 gap 유형이다. 옛 동구 source는 자동 승계하지 않았다.
+- 이번 batch 변화: `ONBOARDING_READY +1`, `COLLECTOR_GAP +1`, `WATCH +9`, `EXCLUDE +0`. 누적 READY는 **3개**(`seoul-gangnam`, `seoul-yeongdeungpo`, `incheon-서해`)이며, 별도 Phase 6E 후보로만 보존하고 이번에는 onboarding하지 않았다. 신규 반복 GAP 패턴(동일 인천 batch 2개 이상)은 없고, 제물포 1건은 기존 `list_detail_core_followup_needed` 계열이다.
+- inventory: 총 245; ACTIVE 9 / READY 3 / GAP 16 / WATCH 30 / EXCLUDE 0 / UNREVIEWED 187. 인천 하위 11개는 모두 survey queue에서 제거됐고 옛 중구·동구·서구 key는 생성되지 않았다. 다음 deterministic queue는 **`gyeonggi-가평`**부터다.
+- Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C **2026-09-24 10:00 KST** 기존 ACTIVE 9 read-only Cron 검증 → D **2026-09-24 11:00 KST** TourAPI watchdog read-only 검증 순서를 유지한다.

@@ -14,14 +14,14 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 2 |
-| COLLECTOR_GAP | 15 |
-| WATCH | 21 |
+| ONBOARDING_READY | 3 |
+| COLLECTOR_GAP | 16 |
+| WATCH | 30 |
 | EXCLUDE | 0 |
-| UNREVIEWED | 198 |
+| UNREVIEWED | 187 |
 
 ## Deterministic survey queue
 
 Order: unreviewed 광역단체 → 수도권 하위단체 → 광역시/특별자치 하위단체 → 도 단위 시·군. A source is classified without asking a user: immediately viable sources become `ONBOARDING_READY`; common collector deficiencies become `COLLECTOR_GAP`; source-side deficiencies become `WATCH`; unsuitable sources become `EXCLUDE`. When 3–5 `ONBOARDING_READY` sources accumulate, schedule Phase 6E batch onboarding. Source self-healing remains the later common fail-closed capability.
 
-First 20 queue entries: 1. `incheon-강화` · 2. `incheon-검단` · 3. `incheon-계양` · 4. `incheon-남동` · 5. `incheon-미추홀` · 6. `incheon-부평` · 7. `incheon-서해` · 8. `incheon-연수` · 9. `incheon-영종` · 10. `incheon-옹진` · 11. `incheon-제물포` · 12. `gyeonggi-가평` · 13. `gyeonggi-과천` · 14. `gyeonggi-광명` · 15. `gyeonggi-광주` · 16. `gyeonggi-구리` · 17. `gyeonggi-군포` · 18. `gyeonggi-김포` · 19. `gyeonggi-남양주` · 20. `gyeonggi-동두천`
+First 20 queue entries: 1. `gyeonggi-가평` · 2. `gyeonggi-과천` · 3. `gyeonggi-광명` · 4. `gyeonggi-광주` · 5. `gyeonggi-구리` · 6. `gyeonggi-군포` · 7. `gyeonggi-김포` · 8. `gyeonggi-남양주` · 9. `gyeonggi-동두천` · 10. `gyeonggi-성남` · 11. `gyeonggi-시흥` · 12. `gyeonggi-안산` · 13. `gyeonggi-안성` · 14. `gyeonggi-안양` · 15. `gyeonggi-양주` · 16. `gyeonggi-양평` · 17. `gyeonggi-여주` · 18. `gyeonggi-연천` · 19. `gyeonggi-오산` · 20. `gyeonggi-용인`
