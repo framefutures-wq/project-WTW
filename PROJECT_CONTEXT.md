@@ -262,10 +262,10 @@ Audit:
 현재 우선순위:
 
 1. 태백시 전체일정캘린더와 서울 한강 행사·공연 정보의 `generic_fallback` onboarding을 완료했다. 태백시의 행정·회의·교육 등 비행사 일정은 exclusion gate로 차단하고, 서울 한강은 source card의 명시적 축제·문화예술·공연 category만 후보로 허용한다.
-2. **갈틈 UI / 브랜드 시스템 v2를 다음 최우선 작업으로 진행**한다. 전국 coverage 확대는 이 UI 경계가 끝날 때까지 잠시 멈춘다.
-3. **상세페이지 정보구조 v2 + 갈틈 파생정보 레이어 + adaptive media fallback**을 UI 개편에 포함한다. 기준 샘플은 `서울 왕궁수문장 교대의식`이다.
-4. UI/상세 v2가 안정되면 **공식 상세정보 자동 보강 품질**을 확대한다. organizer/municipality/TourAPI 등 공식 근거가 있는 소개·운영시간·프로그램·문의·요금·이미지만 사용한다.
-5. 그 다음 **전국 지자체 coverage 확대**를 재개한다. `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입하며, 불명확한 core는 기존 retry·confirmation/last-known-good 정책을 유지한다. 상세 survey: `docs/municipal-source-survey-2026-09-22.md`.
+2. **상세 UI v2 production release를 완료했다.** 홈 UI와 상세 UI는 새로운 회귀가 없는 한 다시 열지 않는다.
+3. **TourAPI detail backlog 소진 / recovery 운영 확인**을 현재 작업 위치로 둔다. production D1은 read-only로 다시 측정해 backlog 감소와 state retry/recovery 동작을 확인한다.
+4. 그 다음 **공식 상세정보 자동 보강 품질**을 확대한다. organizer/municipality/TourAPI 등 공식 근거가 있는 소개·운영시간·프로그램·문의·요금·이미지만 사용한다.
+5. 이후 **전국 지자체 coverage 확대**를 재개한다. `generic_fallback`은 전용 parser 없이 allowlisted 공식 HTTPS source의 JSON-LD / PDF / image 및 self-contained HTML table row / list item / card에서 진입하며, 불명확한 core는 기존 retry·confirmation/last-known-good 정책을 유지한다. 상세 survey: `docs/municipal-source-survey-2026-09-22.md`.
 6. Search Console `sitemap.xml` 제출 상태 확인 → 무료 공개 traffic 관찰 → traffic 확보 뒤 수익화 순서로 진행한다.
 
 수익화는 현재 보류한다.
@@ -558,15 +558,18 @@ UI benchmark:
 
 이미지가 부족한 경우 빈 썸네일 슬롯을 만들지 않는다. 사진 대신 timeline, 지도, 공식 fact, 프로그램 카드, 주변행사 등 **검증된 정보의 시각화**로 밀도를 만든다.
 
-### UI v2 production closure (2026-09-23)
+### UI v2 production closure history (2026-09-23)
 
 - 상세 UI v2(1장/0장 fallback, 주변·비슷한 행사, 공식 추가 이미지 API, 2장 adaptive media)를 production에 반영했다.
 - production D1 migration `0021_event_additional_images.sql`을 additive로 적용하고, 기존 `sources.raw_payload.firstimage2`만으로 TourAPI secondary image 263건을 backfill했다. 기존 `event_images`는 263 rows / `ok` 263으로 전후 동일하다.
-- Worker `weekend-mwohae` production version `b0cc4224-a334-466d-bf4f-4775ee41dc7f`에 main `096ea81`을 배포했고, `galteum.com` API 및 desktop/mobile 2장 상세를 검증했다.
-- 다음 우선순위는 공식 상세 enrichment 품질과 source coverage 확대다. 4~5장 gallery는 공식 이미지 3장 이상이 실제로 확보될 때만 확장한다.
+- Worker `weekend-mwohae` production version `b0cc4224-a334-466d-bf4f-4775ee41dc7f`에 main `096ea81`을 배포했고, `galteum.com` API 및 desktop/mobile 2장 상세를 검증했다. 이는 현재 production 이전의 역사적 intermediate release다.
+- 최종 상세 media 수정은 `eaa56db` — `fix: preserve secondary detail poster` — 로 반영했고, production Worker version은 `b7ad1cae-cf68-4f3b-aac6-0ac8e4c2c13e`다.
+- 최종 production smoke는 desktop/mobile 모두 통과했다. `c496d96` — `test: align production detail media smoke` — 는 adaptive layout 구조에 맞춘 test-only commit이며 production 재배포는 하지 않았다.
+- 실제 production 검증은 서울 왕궁수문장 교대의식 rich detail + 2 images, 2026 화성행궁 야간개장 portrait secondary poster, 2026 수원화성 미디어아트 0-image fallback을 desktop/mobile에서 완료했다. 실제 1-image 행사는 현재 production 데이터에 없어 local/자동 테스트로만 검증했다.
+- 다음 우선순위는 TourAPI detail backlog 소진/recovery 확인과 공식 상세 enrichment 품질이다. 4~5장 gallery는 공식 이미지 3장 이상이 실제로 확보될 때만 확장한다.
 
 
-## 21. 2026-09-23 최신 현재 위치 — 홈 UI v2 종료 / 상세 UI production 마감
+## 21. 2026-09-23 최신 현재 위치 — 홈 UI v2 / 상세 UI v2 production 완료
 
 ### 홈 UI v2 최종 상태
 
@@ -583,20 +586,15 @@ UI benchmark:
 
 홈 UI는 회귀가 없는 한 완료로 간주하고 추가 미세조정 반복을 피한다.
 
-### 현재 우선순위
+### 상세 UI v2 최종 상태
 
-현재 큰 파트는 **상세페이지 UI v2의 실제 production 마감**이다.
+- 상세 UI v2 production 마감을 완료했다.
+- 최종 상세 media 수정은 `eaa56db`이며, Worker `b7ad1cae-cf68-4f3b-aac6-0ac8e4c2c13e`에 배포됐다.
+- `c496d96`은 `.detail-media-pair` 전체 컨테이너를 desktop에서 측정하고 mobile stacked media를 구조에 맞게 검증하는 test-only 수정이다. 이 commit 때문에 Worker를 재배포하지 않았다.
+- 서울 왕궁수문장 교대의식 rich detail + 2 images, 2026 화성행궁 야간개장 portrait secondary poster, 2026 수원화성 미디어아트 0-image fallback을 desktop/mobile에서 검증했다. overflow와 console/app error는 없었고 홈 핵심 shell/filter 회귀도 없었다.
+- 실제 1-image 행사는 현재 production 데이터에 없어 production 실데이터 검증은 수행하지 않았다. 1-image layout은 local/자동 테스트 검증만 존재한다.
 
-검수 범위:
-
-- 2-image 상세의 secondary 세로 포스터 crop.
-- 1-image 상세의 완성형 single layout.
-- 0-image 상세의 정보형 브랜드 graphic.
-- 정보가 풍부한 상세의 정보 위계/흐름.
-- 정보가 적은 상세의 과도한 공백/밀도 문제.
-
-known issue:
-`src/redesign.css`의 2-image secondary foreground는 `object-fit: cover`가 적용되어 포스터형 이미지가 과도하게 잘릴 수 있다. 이미지 비율/fit 로직을 사용해 해결하되 전체 media 구조를 다시 설계하지 않는다.
+홈과 상세 UI는 새로운 회귀가 없는 한 다시 열지 않는다.
 
 ### TourAPI detail 운영 상태
 
@@ -612,7 +610,7 @@ known issue:
 
 1. ✅ Cloudflare 운영 기반 / 기본 서비스
 2. ✅ 홈 UI v2
-3. 🟡 상세페이지 UI v2 production 마감
+3. ✅ 상세페이지 UI v2 production 마감
 4. 🟡 TourAPI detail backlog 소진 / recovery 확인
 5. ⏳ 공식 상세 enrichment 품질 강화
 6. ⏳ 전국 municipal/source coverage 확대
@@ -621,4 +619,4 @@ known issue:
 9. ⏳ 수익화 준비
 10. ⏳ Zero-Human 운영 자동화 최종 점검
 
-다음 세션은 상세 UI 실제 production 검수부터 시작한다. 홈 UI와 TourAPI network 원인 탐색으로 되돌아가지 않는다. 새로운 회귀 또는 새로운 실패 유형이 있을 때만 해당 파트를 다시 연다.
+다음 세션은 TourAPI detail backlog 소진 및 state retry/recovery 운영 확인부터 시작한다. production D1을 read-only로 다시 측정해 backlog가 실제로 감소했는지 확인한다. 홈 UI와 상세 UI는 새로운 회귀 또는 새로운 실패 유형이 있을 때만 다시 연다.

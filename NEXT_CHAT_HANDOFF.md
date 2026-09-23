@@ -266,12 +266,14 @@ UI 기준:
 - 2026-09-23 production 관측에서 network 최종 실패 8건은 `unknown_network`·`under_1s`였고 inline retry 복구는 0건이었다. 다음 작업은 이 runtime subtype이 왜 원문 없이 unknown으로 분류되는지 안전하게 진단하는 bounded audit이다.
 
 
-## 2026-09-23 최신 인수인계 — 홈 UI 종료, 상세 UI 실제 검수로 이동
+## 2026-09-23 최신 인수인계 — 홈 UI / 상세 UI v2 종료, TourAPI detail 운영 확인으로 이동
 
 ### 실제 최신 기준
 
-- 최신 main: `75802ac` — `style: strengthen home visual hierarchy`
-- 현재 production Worker version: `0a813e04-8287-4d95-806f-8d9dc595dd1b`
+- 최신 main: `c496d96` — `test: align production detail media smoke`
+- 상세 UI production 기준 main: `eaa56db` — `fix: preserve secondary detail poster`
+- 현재 production Worker version: `b7ad1cae-cf68-4f3b-aac6-0ac8e4c2c13e`
+- `c496d96`은 adaptive layout에 맞춘 production smoke test-only commit이며 Worker 재배포는 하지 않았다.
 - public: `https://galteum.com`
 - production health 정상.
 - Cron unchanged:
@@ -295,28 +297,16 @@ UI 기준:
 - 대신 DB에 확인된 날짜/기간/지역 등 사실만 사용한 deterministic 갈틈 정보형 그래픽을 사용한다.
 - 현재 PC 4열 / mobile 2열 유지, broken image 0.
 
-### 현재 다음 작업 — 상세페이지 UI v2 실제 production 검수
+### 상세 UI v2 production release — 완료
 
-다음 큰 파트는 **상세페이지 UI v2 production 마감**이다.
+- 상세 UI v2 production 마감을 완료했다.
+- production smoke는 desktop/mobile 모두 통과했다.
+- 서울 왕궁수문장 교대의식의 rich detail + 2 images, 2026 화성행궁 야간개장의 세로형 secondary poster `contain + backdrop`, 2026 수원화성 미디어아트의 0-image 정보형 fallback을 desktop/mobile에서 검증했다.
+- overflow와 console/app error는 없었고 홈 핵심 shell/filter 회귀도 없었다.
+- 실제 1-image 행사는 현재 production 데이터에 없어 production 실데이터 검증은 하지 않았다. 1-image layout은 local/자동 테스트 검증만 존재한다.
+- secondary portrait crop known issue는 해결 완료했다.
 
-새 채팅에서 바로 확인할 대표 상태:
-
-1. 공식 이미지 2장 상세
-   - secondary가 세로 포스터일 때 현재 `cover`로 과도하게 잘리는지 확인.
-2. 공식 이미지 1장 상세
-   - 한 장을 억지로 gallery처럼 보이지 않고 완성형으로 쓰는지 확인.
-3. 공식 이미지 0장 상세
-   - 정보형 브랜드 그래픽이 실제 행사 사진처럼 오인되지 않고 정보 중심 상세와 자연스럽게 이어지는지 확인.
-4. 정보가 풍부한 상세
-   - 날짜/장소 → 공식 CTA → 볼거리/일정/프로그램 → 소개 → 주변행사 → 출처 흐름 확인.
-5. 정보가 적은 상세
-   - optional 사실을 추측하지 않으면서도 화면이 과도하게 휑하지 않은지 확인.
-
-우선 known issue:
-- 2-image media의 secondary foreground가 세로 포스터여도 `cover`를 사용해 crop이 과할 수 있다.
-- sparse detail은 enrichment 부족 때문에 비어 보일 수 있으므로 UI 문제와 데이터 부족을 구분한다.
-
-홈 UI는 이 상세 검수 중 함께 다시 설계하지 않는다.
+홈 UI와 상세 UI는 새로운 회귀가 없는 한 다시 열지 않는다.
 
 ### TourAPI detail 안정화 상태
 
@@ -334,14 +324,16 @@ UI 기준:
 
 1. ✅ Cloudflare 운영 기반 / 기본 서비스
 2. ✅ 홈 UI v2
-3. 🟡 **상세페이지 UI v2 production 마감 — 현재 위치**
-4. 🟡 TourAPI detail backlog 소진 및 복구 운영 확인
+3. ✅ **상세페이지 UI v2 production 마감**
+4. 🟡 **TourAPI detail backlog 소진 / recovery 확인 — 현재 위치**
 5. ⏳ 공식 상세 enrichment 품질 강화
 6. ⏳ 전국 municipal/source coverage 확대
-7. ⏳ SEO / Search Console / 무료 검색 유입 점검
+7. ⏳ SEO / Search Console / 검색 유입 점검
 8. ⏳ 모바일 최종 polish
 9. ⏳ 수익화 준비
 10. ⏳ Zero-Human 운영 자동화 최종 점검
+
+다음 세션은 production D1을 read-only로 다시 측정해 backlog가 실제로 감소했는지 확인한다. 마지막 측정값 never_processed `78`과 `tourapi-1230074` 후보 순위 `18`은 과거 마지막 관측값일 뿐 최신값으로 단정하지 않는다.
 
 ### 새 채팅 시작 시 고정 순서
 
