@@ -665,7 +665,7 @@ export function selectMunicipalGate(candidate: MunicipalCandidate): {
     };
   const text = `${candidate.title} ${candidate.category ?? ""} ${candidate.snippet ?? ""}`;
   const education =
-    /평생학습|교육|강좌|수강|모집|워크숍|설명회|세미나|포럼|성과공유|회원.?전용|온라인|대관|기관행사|행정|회의|간담회|협의회|위원회|심의회|업무|훈련|점검|보고회|출범|순방|임명|기탁식|협약(?:식)?|개소식/.test(
+    /평생학습|교육|강좌|수강|모집|워크숍|설명회|세미나|포럼|성과공유|기념식|회원.?전용|온라인|대관|기관행사|행정|회의|간담회|협의회|위원회|심의회|업무|훈련|점검|보고회|출범|순방|임명|기탁식|협약(?:식)?|개소식/.test(
       text,
     );
   const outing =
@@ -686,6 +686,15 @@ export function selectMunicipalGate(candidate: MunicipalCandidate): {
     };
   if (/제\s*\d+회.*가요제|가요제.*제\s*\d+회/.test(text))
     return { gate: "MAIN", reason: "recurring_public_song_festival" };
+  if (
+    /뮤지컬|(?:토크|커피)?콘서트|연주회|독창회|독주회|오페라|발레|무용공연|연극|전시|개인전|회원(?:작품)?전|작가(?:회)?전|아트페어/.test(
+      text,
+    )
+  )
+    return {
+      gate: "MAIN",
+      reason: "explicit_public_culture_event",
+    };
   if (/공연|음악회|연극|합창|가요제/.test(text))
     return {
       gate: "NEARBY_ONLY",

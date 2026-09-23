@@ -45,6 +45,31 @@ test("selection keeps festivals reviewable, excludes courses, and never relies o
   assert.equal(selectMunicipalGate({ ...paju[0], title: "제28회 임진강가요제", category: "행사", snippet: "공개 본선 가요무대" }).gate, "MAIN");
 });
 
+test("selection publishes explicit public culture genres while admin evidence takes precedence", () => {
+  const gate = (title: string) =>
+    selectMunicipalGate({
+      ...paju[0],
+      title,
+      category: "공식 문화행사",
+      snippet: null,
+    }).gate;
+  assert.equal(gate("뮤지컬 <광화문연가>"), "MAIN");
+  assert.equal(gate("2026 김창옥 토크콘서트 시즌5 - 인천"), "MAIN");
+  assert.equal(gate("인천시립교향악단 기획연주회"), "MAIN");
+  assert.equal(gate("소프라노 독창회"), "MAIN");
+  assert.equal(gate("새생명 작가회전"), "MAIN");
+  assert.equal(gate("박희자 개인전"), "MAIN");
+  assert.equal(gate("사진동호회 회원작품전"), "MAIN");
+  assert.equal(gate("2026 아동학대예방의 날 기념식"), "EXCLUDE");
+  assert.equal(gate("마을공동체 성과공유회"), "EXCLUDE");
+  assert.equal(gate("시민 대상 교육 세미나"), "EXCLUDE");
+  assert.equal(gate("기관 업무협의회"), "EXCLUDE");
+  assert.equal(gate("성과공유회 기념 콘서트"), "EXCLUDE");
+  assert.equal(gate("지역 문화 공연"), "NEARBY_ONLY");
+  assert.equal(gate("시민 음악회"), "NEARBY_ONLY");
+  assert.equal(gate("시민 합창 발표회"), "NEARBY_ONLY");
+});
+
 test("only event-wide labels create operating-hour candidates, not program times", () => {
   const programOnly = createEnrichmentCandidate(paju[0], "2026년 제18회 문산거리축제 프로그램 공연: 20:30");
   assert.equal(programOnly.operating_hours, null);
