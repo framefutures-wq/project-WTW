@@ -847,3 +847,14 @@ UI 기준:
   2. canonical 4 source를 **한 번만** raw fetch + parser probe 재시도.
   3. 전부 `EAI_AGAIN`이면 반복 재시도하지 말고 DNS/environment issue로 종료하고 다음 독립 작업으로 이동.
 - production D1, Registry, manual ingestion, deploy는 이 검증과 무관하며 계속 금지.
+
+
+## 2026-09-24 — ENV_DNS_BLOCKED 재확인
+
+- Codespaces를 latest main `f53d826836947472a4c29faacd7ef97d8af889f0`까지 `git pull --ff-only origin main`으로 fast-forward했고 working tree clean을 확인했다.
+- canonical 4 source(서울 강남, 울산 북구, 경기 용인, 경기 포천)를 source당 1회만 raw fetch 재시도했으나 **4/4 모두 `EAI_AGAIN`**으로 실패했다.
+- 따라서 이번 환경에서는 parser probe를 더 반복하지 않는다. 상태는 `PAUSED_USER_ACTION / ENV_DNS_BLOCKED` 유지.
+- Complete/Partial/current/gate/COMPATIBLE 결과는 전부 미실행/미검증이며 inventory 분류나 Registry를 이 결과로 변경하지 않는다.
+- 다음 재개 조건: Codespaces/network DNS가 정상화되었거나 다른 실행 환경에서 raw official HTML fetch가 성공할 때, 같은 4 canonical source에 대해 parser probe를 단 1회 재실행.
+- 그 전에는 해당 4 source를 이유 없이 HOLD/READY로 재분류하거나 production onboarding하지 않는다.
+- 사용자 개입이 필요 없는 다음 작업은 다른 non-calendar GAP 그룹의 공통 패턴 조사/설계로 계속 진행한다.
