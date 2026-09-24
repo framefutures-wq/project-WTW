@@ -6,6 +6,9 @@ import { parse } from "jsonc-parser";
 // Authenticated remote development session: Cloudflare retains the existing Worker's
 // encrypted secrets. No public write route, secret export, new Worker or new database.
 const original = parse(readFileSync("wrangler.production.jsonc", "utf8"));
+const BASE_SYNC_CRON = "0 1 * * *";
+if (!original.triggers?.crons?.includes(BASE_SYNC_CRON))
+  throw new Error(`배포 설정에 base sync cron(${BASE_SYNC_CRON})이 없습니다.`);
 const preflight = spawnSync(
   "npx",
   ["wrangler", "secret", "list", "--config", "wrangler.production.jsonc"],
@@ -83,7 +86,7 @@ try {
   }
   if (!ready) throw new Error("Cloudflare 원격 세션 준비 시간 초과");
   const response = await fetch(
-    "http://127.0.0.1:8788/__scheduled?cron=0+21+*+*+*",
+    `http://127.0.0.1:8788/__scheduled?cron=${encodeURIComponent(BASE_SYNC_CRON)}`,
     { signal: AbortSignal.timeout(14 * 60_000) },
   );
   await response.text();
