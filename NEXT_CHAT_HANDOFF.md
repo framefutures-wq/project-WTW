@@ -801,8 +801,8 @@ UI 기준:
   - 울산 중구 / 경주 / 안동: 현재 HTML 날짜 그룹 계약과 calendarContext 규칙이 불일치.
   - 재개 조건: 공식 근거로 날짜+장소까지 bounded하게 확정 가능한 공통 구조 또는 compatible source 사례가 확보될 때.
 - **calendarContext 코드 상태**:
-  - latest main에 `5320599346e52a5e8e21e6b4595a184b1fe4eea7` (`feat: support bounded municipal calendar context`)로 이미 commit되어 있음.
-  - 판정은 **DO_NOT_MERGE_YET 의미로 운영 보류**: production onboarding 기준으로 사용하지 않고, Registry opt-in/production deploy는 compatible source가 실제로 생기기 전까지 금지.
+  - `5320599346e52a5e8e21e6b4595a184b1fe4eea7` 구현은 HOLD 판정에 따라 revert됐으며, 재개 조건이 충족될 때까지 main에 포함하지 않는다.
+  - 판정은 **DO_NOT_MERGE_YET 의미로 운영 보류**: Registry opt-in/production deploy는 compatible source가 실제로 생기기 전까지 금지.
   - 이유: live 5곳 compatible 전환 0개이며, extractor 약 97줄 + detail follow-up 의미 변경 약 37줄로 calendar 전용 범위를 넘어서는 영향이 있음.
   - 현재 production은 이전 배포 기준 `c223028fde02ed6bbff2badf39e80b14c4c6100e`이며 calendarContext 변경은 production에 반영하지 않는다.
 - **접근 미확인 7곳 HOLD**: 영등포, 부산 동구, 해운대, 의정부, 영주, 거제, 산청.
