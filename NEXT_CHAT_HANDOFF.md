@@ -790,3 +790,26 @@ UI 기준:
 - 배포된 Cron: `0 1 * * *`, `0 2 * * *`, `45 2 * * *`, `50 4 * * *`, `55 8 * * *` UTC (10:00 base, 11:00 watchdog, 11:45/13:50/17:55 retry recovery KST).
 - `https://galteum.com/api/health`와 `/api/events?limit=1&period=today` HTTP 200. manual base/municipal/detail, D1 write는 실행하지 않았다.
 - 다음: 2026-09-25 10:00 KST 자연 Cron 결과를 read-only 확인하고 과천·하남·상주 ingestion/state 및 후보 품질을 검증한다. 수동 수집은 하지 않는다.
+
+
+## 2026-09-24 — HOLD / 재개 조건 추적
+
+- HOLD는 폐기가 아니라 **재개 조건이 붙은 추적 상태**다. 새 채팅/후속 작업에서 아래 항목을 임의로 READY로 되돌리거나 처음부터 재조사하지 않는다.
+- **달력형 municipal 5곳 HOLD**: 목포, 울산 중구, 원주, 경주, 안동.
+  - 목포: calendarContext로 날짜 partial 5건까지 확인했지만 상세에서 장소/제목 검증 실패.
+  - 원주: 날짜 partial 1건까지 확인했지만 상세 장소 확인 실패.
+  - 울산 중구 / 경주 / 안동: 현재 HTML 날짜 그룹 계약과 calendarContext 규칙이 불일치.
+  - 재개 조건: 공식 근거로 날짜+장소까지 bounded하게 확정 가능한 공통 구조 또는 compatible source 사례가 확보될 때.
+- **calendarContext 코드 상태**:
+  - latest main에 `5320599346e52a5e8e21e6b4595a184b1fe4eea7` (`feat: support bounded municipal calendar context`)로 이미 commit되어 있음.
+  - 판정은 **DO_NOT_MERGE_YET 의미로 운영 보류**: production onboarding 기준으로 사용하지 않고, Registry opt-in/production deploy는 compatible source가 실제로 생기기 전까지 금지.
+  - 이유: live 5곳 compatible 전환 0개이며, extractor 약 97줄 + detail follow-up 의미 변경 약 37줄로 calendar 전용 범위를 넘어서는 영향이 있음.
+  - 현재 production은 이전 배포 기준 `c223028fde02ed6bbff2badf39e80b14c4c6100e`이며 calendarContext 변경은 production에 반영하지 않는다.
+- **접근 미확인 7곳 HOLD**: 영등포, 부산 동구, 해운대, 의정부, 영주, 거제, 산청.
+  - 사유: 404 / timeout / 보안 차단 등으로 collector 판정 자체가 불가능.
+  - 재개 조건: 접근 경로 변경, 공식 대체 source 확인, 또는 기존 차단 해소.
+- **UI v2.1 HOLD**: 행사소개 길이, 상세 정보 hierarchy, 정보 적은 상세 화면 밀도.
+  - 재개 조건: 데이터/collector 확대가 안정된 뒤 한 번에 일괄 수정.
+- **WATCH 168 후순위 유지**: 공식 source 구조/채널이 바뀌거나 새 지속 source가 확인될 때만 재평가. 일상 재조사 금지.
+- **TourAPI retry telemetry 의미 불일치 HOLD**: `retry_attempted/recovered/exhausted`와 `retry_rounds` 집계 의미가 어긋나는 observability 이슈. 실제 recovery 동작은 정상 확인됐으므로 즉시 운영 장애로 취급하지 않고 후순위 정리.
+- 다음 즉시 작업은 HOLD 항목을 더 파는 것이 아니라, 남은 non-calendar municipal GAP 중 공통 개선 효율이 높은 그룹을 계속 bounded하게 처리한다.
