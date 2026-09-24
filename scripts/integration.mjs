@@ -411,6 +411,8 @@ try {
     mapx: "127",
     mapy: "37",
     tel: "02-1234-5678",
+    firstimage: "https://images.example.test/tourapi-101-primary.jpg",
+    firstimage2: "https://images.example.test/tourapi-101-secondary.jpg",
   };
   const tourEvent = adapter.mapFestival(raw, new Map([["11", "서울"]]), now);
   const snapshot = {
@@ -423,6 +425,19 @@ try {
   };
   await adapter.saveFestivalSnapshot(db, snapshot);
   await adapter.saveFestivalSnapshot(db, snapshot);
+  assert.deepEqual(
+    (await db.prepare("SELECT event_id,image_url,source_type,sort_order FROM event_additional_images WHERE event_id='tourapi-101'").all()).results,
+    [{ event_id: "tourapi-101", image_url: raw.firstimage2, source_type: "tourapi", sort_order: 2 }],
+  );
+  await db.prepare("DELETE FROM event_additional_images WHERE event_id='tourapi-101'").run();
+  await db.prepare("INSERT INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,last_checked_at) VALUES(?,?,?,?,2,'ok',?)")
+    .bind("tourapi-101", "https://images.example.test/official-secondary.jpg", "official", "https://example.test/event", now)
+    .run();
+  await adapter.saveFestivalSnapshot(db, snapshot);
+  assert.deepEqual(
+    (await db.prepare("SELECT image_url,source_type,sort_order FROM event_additional_images WHERE event_id='tourapi-101'").all()).results,
+    [{ image_url: "https://images.example.test/official-secondary.jpg", source_type: "official", sort_order: 2 }],
+  );
   assert.equal(
     (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='NEW_EVENT'").first()).n,
     1,
