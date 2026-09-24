@@ -869,3 +869,16 @@ UI 기준:
 - 이번 batch는 extractor 신규 확장 없이 Registry opt-in만 사용한다. 평택 pagination은 안전한 query-param contract를 아직 확정하지 못해 첫 페이지만 사용하고, 경산만 `pageNum` 3페이지 bounded pagination을 사용한다.
 - production deploy / manual ingestion / D1 write는 아직 하지 않는다.
 - 다음 닫기 조건: GitHub Actions success → Codespaces에서 3 source raw/probe 1회 → 이상 없으면 기존 Worker에 deploy → 다음 자연 Cron에서 production read-only 확인. source 하나가 실패하면 그 source만 PAUSED하고 나머지를 막지 않는다.
+
+
+## 2026-09-24 — 10:00 KST production freeze / morning verifier
+
+- 2026-09-25 10:00 KST 자연 base collection을 가장 우선한다. **그 전까지 production Worker deploy, manual ingestion, remote D1 write, Cron 변경을 금지**한다.
+- production은 현재 검증된 `c223028fde02ed6bbff2badf39e80b14c4c6100e` / Worker version `d9118a65-9d67-490b-b51d-016c3bbbc437` 상태로 유지한다. latest main의 Batch A(평택·여주·경산)는 staged only이며 10:00 전 배포하지 않는다.
+- 현재 production Cron contract는 `0 1 * * *` base, `0 2 * * *` watchdog, `45 2 * * *` / `50 4 * * *` / `55 8 * * *` retry recovery이고 main config와 동일하다.
+- GitHub에는 10시 이후 production 상태를 한 번에 보는 **read-only verifier**를 추가했다.
+  - 실행: `npm run verify:morning:prod -- --remote`
+  - 조회만 수행하며 SQL은 SELECT/WITH만 허용한다.
+  - latest base sync, 과천·하남·상주 candidate state/재검증, base 이후 detail runs, TourAPI detail backlog를 출력한다.
+- 권장 실행 시점: 10:05~10:10 KST 이후. base가 아직 running이면 기다리며 polling하지 말고 나중에 1회 다시 확인한다.
+- morning 결과가 정상일 때만 Batch A live probe/deploy를 다시 연다.
