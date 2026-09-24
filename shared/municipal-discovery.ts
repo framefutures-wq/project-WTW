@@ -164,8 +164,10 @@ const explicitDateRange = (value: string) => {
   // tail (for example 2026.10.17~10.18 or 2026.10.17~18). Reuse the
   // explicitly printed start year only inside that same range expression;
   // never infer across years.
+  const compactStart =
+    "(20\\d{2})\\s*(?:년|[.\\-/])\\s*(\\d{1,2})\\s*(?:월|[.\\-/])\\s*(\\d{1,2})\\s*(?:일|\\.)?(?:\\s*\\([^)]*\\))?";
   const compactTail = new RegExp(
-    `${date}\\s*(?:[~∼]|부터|[-–])\\s*(?:(\\d{1,2})\\s*(?:월|[.\\-/])\\s*)?(\\d{1,2})\\s*(?:일|\\.)?(?:\\s*\\([^)]*\\))?`,
+    `${compactStart}\\s*(?:[~∼]|부터|[-–])\\s*(?:(\\d{1,2})\\s*(?:월|[.\\-/])\\s*)?(\\d{1,2})\\s*(?:일|\\.)?(?:\\s*\\([^)]*\\))?`,
   ).exec(text);
   if (compactTail) {
     const start_date = toExplicitDate(

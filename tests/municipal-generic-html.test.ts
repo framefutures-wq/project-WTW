@@ -390,6 +390,16 @@ test("generic HTML extractor accepts a year printed once in a bounded date range
   );
 });
 
+test("generic HTML extractor keeps a same-day event when only its time uses a range", () => {
+  const result = extracted(`
+    <ul><li><a class="title" href="/events/time-range">저녁 공연</a><span class="date">2026-10-17 19:00~21:00</span><span class="venue">가상공연장</span></li></ul>
+  `);
+  assert.deepEqual(
+    result.candidates.map(({ start_date, end_date }) => [start_date, end_date]),
+    [["2026-10-17", "2026-10-17"]],
+  );
+});
+
 test("generic HTML extractor does not infer a next year from a compact range tail", () => {
   const result = extracted(`
     <ul><li><a class="title" href="/events/cross-year">연말 행사</a><span class="date">2026.12.31~01.01</span><span class="venue">가상광장</span></li></ul>
