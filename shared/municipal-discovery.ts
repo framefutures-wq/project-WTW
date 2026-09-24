@@ -130,13 +130,7 @@ const metadataVenueFromBlock = (html: string) => {
       .map((value) => value.trim())
       .filter(Boolean);
     const dateIndex = values.findIndex((value) => explicitDateRange(value));
-    const venue = values
-      .slice(dateIndex + 1)
-      .find((value) =>
-        /^(?!(?:기타|미정|추후\\s*공지|장소\\s*미정|온라인)$).{2,120}$/.test(
-          value,
-        ),
-      );
+    const venue = values.slice(dateIndex + 1).find(isValidVenue);
     if (venue) return venue;
   }
   return null;
@@ -178,6 +172,66 @@ const singleExplicitDate = (value: string) => {
   return dates && dates.start_date === dates.end_date ? dates.start_date : null;
 };
 
+const invalidVenueLabels = new Set([
+  "장소",
+  "행사장",
+  "위치",
+  "venue",
+  "location",
+  "place",
+  "기타",
+  "미정",
+  "추후 공지",
+  "장소 미정",
+  "온라인",
+  "기간",
+  "일시",
+  "시간",
+  "운영시간",
+  "문의",
+  "전화",
+  "프로그램",
+  "무료",
+  "유료",
+]);
+
+const isValidVenue = (value: string) => {
+  const venue = clean(value).replace(/\s+/g, " ").trim();
+  if (venue.length < 2 || venue.length > 120) return false;
+  if (invalidVenueLabels.has(venue.toLocaleLowerCase())) return false;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(venue)) return false;
+  if (
+    /^(?:https?:\/\/|www\.)/i.test(venue) ||
+    /^(?:[\w-]+\.)+(?:com|net|org|kr|go\.kr|or\.kr)(?:[/:?#]|$)/i.test(
+      venue,
+    )
+  )
+    return false;
+  if (
+    /^(?:\+?82[-. ]?)?0\d{1,2}[-. ]?\d{3,4}[-. ]?\d{4}$/.test(venue) ||
+    /^0\d{8,10}$/.test(venue)
+  )
+    return false;
+  if (
+    /^(?:(?:오전|오후)\s*)?\d{1,2}(?::\d{2}|시(?:\s*\d{1,2}분)?)(?:\s*[~∼–-]\s*(?:(?:오전|오후)\s*)?\d{1,2}(?::\d{2}|시(?:\s*\d{1,2}분)?))?$/.test(
+      venue,
+    )
+  )
+    return false;
+  if (
+    explicitDateRange(venue) ||
+    /^(?:20\d{2}[.\-/년]\s*)?\d{1,2}(?:월\s*|[.\-/])\s*\d{1,2}(?:일|[.\-/])?$/.test(
+      venue,
+    )
+  )
+    return false;
+  return true;
+};
+
+const firstValidVenue = (...values: Array<string | null>) =>
+  values.find((value): value is string => Boolean(value && isValidVenue(value))) ??
+  null;
+
 const titleFromBlock = (html: string, text: string) =>
   htmlAttribute(html, "data-title") ??
   classValue(html, "tit_view_sub\\b") ??
@@ -189,13 +243,15 @@ const titleFromBlock = (html: string, text: string) =>
   labeledValue(text, ["행사명", "축제명", "공연명", "제목"]);
 
 const venueFromBlock = (html: string, text: string) =>
-  htmlAttribute(html, "data-venue") ??
-  definitionValue(html, ["행사장", "장소", "위치", "venue", "location"]) ??
-  classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]) ??
-  labeledValue(text, ["행사장", "장소", "위치", "venue", "location"]) ??
-  inlineLabeledValue(text, ["행사장", "장소", "위치", "venue", "location"]) ??
-  classValue(html, "(?:venue|location|place)") ??
-  metadataVenueFromBlock(html);
+  firstValidVenue(
+    htmlAttribute(html, "data-venue"),
+    definitionValue(html, ["행사장", "장소", "위치", "venue", "location"]),
+    classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]),
+    labeledValue(text, ["행사장", "장소", "위치", "venue", "location"]),
+    inlineLabeledValue(text, ["행사장", "장소", "위치", "venue", "location"]),
+    classValue(html, "(?:venue|location|place)"),
+    metadataVenueFromBlock(html),
+  );
 
 const dateFromBlock = (html: string, text: string) => {
   const explicit =
@@ -342,7 +398,8 @@ const tableRows = (source: MunicipalSourceDefinition, html: string) => {
                 ? { start_date: start, end_date: end }
                 : null;
             })();
-      const venue = clean(cells[venueIndex]) || null;
+      const rawVenue = clean(cells[venueIndex]) || null;
+      const venue = rawVenue && isValidVenue(rawVenue) ? rawVenue : null;
       const official_url = officialUrlFromBlock(source, cells[titleIndex]);
       const category = categoryIndex >= 0 ? clean(cells[categoryIndex]) : null;
       if (

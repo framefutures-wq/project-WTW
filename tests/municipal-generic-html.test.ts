@@ -224,6 +224,68 @@ test("generic extractor reads the bounded Hanam label/value card", () => {
       ],
     ],
   );
+  assert.equal(
+    result.candidates.some(({ venue }) => venue === "hanampen@naver.com"),
+    false,
+  );
+});
+
+test("generic extractor keeps Pyeongtaek physical venue and rejects a label-only venue", () => {
+  const source = genericSource(
+    "gyeonggi-평택",
+    "평택",
+    "https://www.pccf.or.kr/pfmc/pfmcAllList.do",
+  );
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-generic-pyeongtaek.html", "utf8"),
+  );
+  assert.deepEqual(
+    result.candidates.map(({ title, venue }) => [title, venue]),
+    [["2026 평택 마티네 콘서트", "북부문화예술회관 소공연장"]],
+  );
+});
+
+test("generic extractor skips Gyeongsan time metadata and keeps its explicit venue", () => {
+  const source = genericSource(
+    "gyeongbuk-경산",
+    "경산",
+    "https://gsctf.or.kr/user/performance/all/gal?pageNum=1",
+  );
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-generic-gyeongsan.html", "utf8"),
+  );
+  assert.deepEqual(
+    result.candidates.map(({ title, venue }) => [title, venue]),
+    [["2026 경산 생활밀착형 공연", "경산청년창작소"]],
+  );
+});
+
+test("generic venue validation rejects labels, contact data, URLs, dates, and times", () => {
+  const invalidValues = [
+    "장소",
+    "venue",
+    "a@example.com",
+    "https://example.com/place",
+    "www.example.kr",
+    "02-1234-5678",
+    "10:00",
+    "10:00~18:00",
+    "10시~18시",
+    "2026-10-24",
+    "10.24",
+    "10월 24일",
+    "기간",
+    "A",
+  ];
+  const html = `<ul>${invalidValues
+    .map(
+      (venue, index) =>
+        `<li><a class="title">가상구 행사 ${index}</a><span class="date">2026-10-24</span><span class="venue">${venue}</span></li>`,
+    )
+    .join("")}</ul>`;
+  assert.deepEqual(extracted(html).candidates, []);
 });
 
 test("generic extractor reads the bounded Sangju list item and keeps its list URL for a JavaScript detail link", () => {
