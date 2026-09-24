@@ -783,3 +783,10 @@ UI 기준:
   4. 그 다음 공통 COLLECTOR_GAP 해소를 반복 빈도/해결 효율 기준으로 묶어 처리.
 - 새 채팅 시작 시 규칙대로 `AGENTS.md → PROJECT_CONTEXT.md → NEXT_CHAT_HANDOFF.md → docs/WORKING_RULES.md`를 읽고, 최신 `origin/main`/working tree를 확인한 뒤 **C/D 또는 그 시각 이후 남은 다음 단계부터** 이어간다.
 
+## 2026-09-24 16:20 KST — municipal onboarding production 배포 완료
+
+- 기준 commit `c223028fde02ed6bbff2badf39e80b14c4c6100e`를 기존 Worker `weekend-mwohae`에 배포했다. Cloudflare latest deployment 확인: version `d9118a65-9d67-490b-b51d-016c3bbbc437`.
+- 배포된 Registry에는 과천·하남·상주 설정이 포함됐다. generic HTML 카드/목록형 extractor 보강 및 venue 오탐 방지도 포함됐다.
+- 배포된 Cron: `0 1 * * *`, `0 2 * * *`, `45 2 * * *`, `50 4 * * *`, `55 8 * * *` UTC (10:00 base, 11:00 watchdog, 11:45/13:50/17:55 retry recovery KST).
+- `https://galteum.com/api/health`와 `/api/events?limit=1&period=today` HTTP 200. manual base/municipal/detail, D1 write는 실행하지 않았다.
+- 다음: 2026-09-25 10:00 KST 자연 Cron 결과를 read-only 확인하고 과천·하남·상주 ingestion/state 및 후보 품질을 검증한다. 수동 수집은 하지 않는다.

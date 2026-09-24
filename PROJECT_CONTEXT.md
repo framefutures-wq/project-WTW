@@ -52,14 +52,15 @@ Production Cron 현재 상태:
 
 - 매일 10:00 KST base sync: `0 1 * * *` UTC
 - 매일 11:00 KST TourAPI detail enrichment: `0 2 * * *` UTC
+- retry recovery: 매일 11:45 / 13:50 / 17:55 KST (`45 2 * * *`, `50 4 * * *`, `55 8 * * *` UTC)
 - 현재 11시 detail run은 같은 KST 운영일의 10시 base run이 `success`로 끝난 것을 D1 `sync_runs`에서 확인한 뒤 실행한다.
 
-Zero-Human v2 결정(코드 구현 완료·production 배포 대기):
+Zero-Human v2 (production 배포 완료):
 
 - 10시 base 완료 후 11시까지 기다리지 않는다.
 - base에서 새 행사/변경 행사가 확인되는 즉시 detail 단계로 자동 handoff한다.
 - 전체 base가 10:05에 끝났다면 detail도 10:05부터 진행한다.
-- 11:00 Cron은 주 작업이 아니라 미완료·실패·재시도 대상을 보충하는 watchdog/recovery 역할로 유지한다.
+- 11:00 Cron은 주 작업이 아니라 미완료·실패·재시도 대상을 보충하는 watchdog 역할로 유지한다.
 - 이미 완료한 detail을 11시에 중복 처리하지 않도록 상태 기반 idempotency를 유지한다.
 
 ## 4. 데이터/정확성 원칙
@@ -644,3 +645,9 @@ UI benchmark:
 - 다음 우선순위는 **C 10:00 read-only 검증 → D 11:00 read-only 검증 → READY 3~5개 단위 Phase 6E onboarding → 공통 GAP 해소**다.
 - 사용자 승인 정책: routine bounded municipal 조사/문서/검증/commit/push는 중간 승인 없이 진행. destructive D1, secret/resource/비용/장애 위험 작업만 별도 승인.
 
+## 24. 2026-09-24 — municipal onboarding production 배포
+
+- `c223028fde02ed6bbff2badf39e80b14c4c6100e`를 기존 Worker `weekend-mwohae`에 production 배포했다. Worker version: `d9118a65-9d67-490b-b51d-016c3bbbc437`.
+- 과천·하남·상주 Registry 설정과 generic extractor 카드/목록형 보강, venue 오탐 방지가 배포 코드에 포함됐다. 10:00 / 11:00 및 11:45 / 13:50 / 17:55 KST Cron이 유지됐다.
+- `/api/health` 및 `/api/events?limit=1&period=today` 모두 HTTP 200. 수동 수집 및 D1 write는 하지 않았다.
+- 다음 검증: 2026-09-25 10:00 KST 자연 Cron 후 read-only로 과천·하남·상주 ingestion과 후보 품질 확인.
