@@ -1,6 +1,7 @@
 import { normalizeMunicipalTitle } from "./municipal-duplicate";
 import {
   parseGenericMunicipalDetail,
+  parseGenericMunicipalDetailCore,
   type MunicipalCandidate,
   type MunicipalListDetailPartial,
 } from "./municipal-discovery";
@@ -130,21 +131,40 @@ export async function followUpMunicipalListDetails(
         continue;
       }
       const detail = parseGenericMunicipalDetail(source, response.html);
-      if (!detail || !detail.start_date || !detail.end_date || !detail.venue) {
+      const core = parseGenericMunicipalDetailCore(response.html);
+      const title = detail?.title ?? core.title;
+      const venue = detail?.venue ?? core.venue;
+      const start_date = detail?.start_date ?? core.start_date ?? partial.start_date;
+      const end_date = detail?.end_date ?? core.end_date ?? partial.end_date;
+      if (!title || !start_date || !end_date || !venue) {
         result.rejected.push({
           url: partial.official_url,
           reason: "detail_missing_core",
         });
         continue;
       }
-      if (!titleMatches(partial.title, detail.title)) {
+      if (!titleMatches(partial.title, title)) {
         result.rejected.push({
           url: partial.official_url,
           reason: "detail_title_mismatch",
         });
         continue;
       }
-      if (listDetailConflict(partial, detail)) {
+      const completed: MunicipalCandidate = {
+        source: partial.source,
+        source_candidate_id: partial.source_candidate_id,
+        title,
+        start_date,
+        end_date,
+        region: partial.region,
+        locality: partial.locality,
+        venue,
+        official_url: partial.official_url,
+        category: partial.category ?? detail?.category ?? core.category,
+        snippet: partial.snippet ?? null,
+        image_candidate: null,
+      };
+      if (listDetailConflict(partial, completed)) {
         result.rejected.push({
           url: partial.official_url,
           reason: "list_detail_core_conflict",
@@ -152,16 +172,7 @@ export async function followUpMunicipalListDetails(
         continue;
       }
       result.candidates.push({
-        candidate: {
-          ...detail,
-          source: partial.source,
-          source_candidate_id: partial.source_candidate_id,
-          region: partial.region,
-          locality: partial.locality,
-          official_url: partial.official_url,
-          category: partial.category ?? detail.category,
-          snippet: partial.snippet ?? detail.snippet,
-        },
+        candidate: completed,
         detailHtml: response.html,
       });
     } catch {

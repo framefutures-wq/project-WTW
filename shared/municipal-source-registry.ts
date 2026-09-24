@@ -31,6 +31,8 @@ export type MunicipalSourceDefinition = {
   listDetailFollowup?: {
     maxDetails: number;
   };
+  /** Opt in to bounded extraction of events nested in explicitly dated calendar cells. */
+  calendarContext?: true;
 };
 
 export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
