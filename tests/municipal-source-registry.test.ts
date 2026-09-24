@@ -36,6 +36,9 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "seoul-hangang",
       "daejeon-fvu",
       "incheon-res",
+      "gyeonggi-과천",
+      "gyeonggi-하남",
+      "gyeongbuk-상주",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -92,6 +95,27 @@ test("Incheon reservation is a bounded generic source without a dedicated parser
     municipalSourceAllowsUrl(source, "https://example.com/event"),
     false,
   );
+});
+
+test("Gwacheon, Hanam, and Sangju use bounded generic registry settings", () => {
+  const expected = [
+    ["gyeonggi-과천", "pageIndex", 2],
+    ["gyeonggi-하남", "pageIndex", 3],
+    ["gyeongbuk-상주", "pageIndex", 2],
+  ] as const;
+  for (const [key, queryParam, maxPages] of expected) {
+    const source = municipalSourceByKey(key);
+    assert(source, key);
+    assert.equal(source.ingestion, "generic_fallback", key);
+    assert.equal(MUNICIPAL_PARSERS[source.key], undefined, key);
+    assert.deepEqual(source.pagination, { queryParam, maxPages }, key);
+    assert.equal(municipalSourceAllowsUrl(source, source.url), true, key);
+    assert.equal(
+      municipalSourceAllowsUrl(source, "https://example.com/event"),
+      false,
+      key,
+    );
+  }
 });
 
 test("generic registry sources enter JSON-LD fallback without a dedicated parser", () => {
