@@ -10,6 +10,7 @@ import {
   MUNICIPAL_SOURCE_REGISTRY,
   type MunicipalSourceDefinition,
 } from "../shared/municipal-source-registry";
+import { decideAutonomousMunicipal } from "../shared/municipal-autonomous";
 
 const source = {
   key: "generic-fixture",
@@ -24,6 +25,21 @@ const source = {
 
 const extracted = (body: string) =>
   extractMunicipalCandidates(source, `공식 행사 일정${body}`);
+
+const genericSource = (
+  key: string,
+  locality: string,
+  url: string,
+): MunicipalSourceDefinition => ({
+  key,
+  region: "경기",
+  locality,
+  url,
+  allowedHosts: [new URL(url).hostname],
+  healthMarkers: [],
+  expectedSignals: ["html_list", "html_cards"],
+  ingestion: "generic_fallback",
+});
 
 test("generic HTML extractor reads explicit core from one table row", () => {
   const result = extracted(`
@@ -147,6 +163,123 @@ test("generic HTML extractor reads explicit core from a card block", () => {
       result.candidates[0].venue,
     ],
     ["가상구 거리축제", "2026-10-24", "2026-10-26", "가상로 일원"],
+  );
+});
+
+test("generic extractor reads the bounded Gwacheon name/info card and keeps its list URL for a JavaScript detail link", () => {
+  const source = genericSource(
+    "gyeonggi-과천",
+    "과천",
+    "https://www.gcart.or.kr/kr/concert/concertList.do",
+  );
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-generic-gwacheon.html", "utf8"),
+  );
+  assert.deepEqual(
+    result.candidates.map(
+      ({ title, start_date, end_date, venue, official_url }) => [
+        title,
+        start_date,
+        end_date,
+        venue,
+        official_url,
+      ],
+    ),
+    [
+      [
+        "2026 과천 가을 음악회",
+        "2026-10-02",
+        "2026-10-02",
+        "대극장",
+        source.url,
+      ],
+    ],
+  );
+});
+
+test("generic extractor reads the bounded Hanam label/value card", () => {
+  const source = genericSource(
+    "gyeonggi-하남",
+    "하남",
+    "https://www.hanam.go.kr/www/selectClturEventWebList.do?key=12376",
+  );
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-generic-hanam.html", "utf8"),
+  );
+  assert.deepEqual(
+    result.candidates.map(({ title, start_date, end_date, venue }) => [
+      title,
+      start_date,
+      end_date,
+      venue,
+    ]),
+    [
+      [
+        "2026 하남 문화예술 전시",
+        "2026-10-01",
+        "2026-10-03",
+        "하남문화예술회관 전시장",
+      ],
+    ],
+  );
+});
+
+test("generic extractor reads the bounded Sangju list item and keeps its list URL for a JavaScript detail link", () => {
+  const source = genericSource(
+    "gyeongbuk-상주",
+    "상주",
+    "https://www.sangju.go.kr/life/page/10452/10182.tc",
+  );
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-generic-sangju.html", "utf8"),
+  );
+  assert.deepEqual(
+    result.candidates.map(
+      ({ title, start_date, end_date, venue, official_url }) => [
+        title,
+        start_date,
+        end_date,
+        venue,
+        official_url,
+      ],
+    ),
+    [
+      [
+        "2026 상주 가을 문화축제",
+        "2026-10-10",
+        "2026-10-12",
+        "상주시민문화공원 일원",
+        source.url,
+      ],
+    ],
+  );
+});
+
+test("generic card fallback excludes year-less dates, missing venues, and expired cards from publication", () => {
+  const cards = extracted(`
+    <ul>
+      <li><p class="name">연도 없는 행사</p><p class="info">10.02<br/>가상공연장</p></li>
+      <li><p class="name">장소 없는 행사</p><p class="info">2026.10.02<br/>기타</p></li>
+      <li><p class="name">지난 행사</p><p class="info">2026.09.01<br/>가상공연장</p></li>
+    </ul>
+  `);
+  assert.equal(cards.candidates.length, 1);
+  assert.equal(cards.candidates[0].title, "지난 행사");
+  assert.equal(
+    decideAutonomousMunicipal({
+      gate: selectMunicipalGate(cards.candidates[0]).gate,
+      duplicate: "NEW",
+      temporal: "EXPIRED",
+      trusted: true,
+      coreValid: true,
+      parserError: false,
+      detailError: false,
+      coreConflict: false,
+    }).state,
+    "EXPIRED",
   );
 });
 

@@ -108,10 +108,38 @@ const definitionValue = (html: string, labels: string[]) => {
 const classPairValue = (html: string, labels: string[]) => {
   const label = labels.map((value) => value.split("").join("\\s*")).join("|");
   const pair = new RegExp(
-    `<(?:div|span|p|strong)\\b[^>]*class=["'][^"']*(?:name|label)[^"']*["'][^>]*>\\s*(?:${label})\\s*<\\/(?:div|span|p|strong)>\\s*<(?:div|span|p)\\b[^>]*class=["'][^"']*(?:detail|value|text)[^"']*["'][^>]*>([\\s\\S]*?)<\\/(?:div|span|p)>`,
+    `<(?:div|span|p|strong|em)\\b[^>]*class=["'][^"']*(?:name|label|title)[^"']*["'][^>]*>\\s*(?:${label})\\s*<\\/(?:div|span|p|strong|em)\\s*>\\s*<(?:div|span|p|strong|em)\\b[^>]*class=["'][^"']*(?:detail|value|text|content)[^"']*["'][^>]*>([\\s\\S]*?)<\\/(?:div|span|p|strong|em)\\s*>`,
     "i",
   ).exec(html);
   return pair ? clean(pair[1]) || null : null;
+};
+
+/**
+ * Some official cards render a date and venue as separate lines inside one
+ * explicitly named information block. Keep that fallback inside the same
+ * repeated card and reject placeholder values such as `기타`.
+ */
+const metadataVenueFromBlock = (html: string) => {
+  const metadata = new RegExp(
+    `<([a-z0-9]+)\\b[^>]*class=["'][^"']*(?:info|meta(?:data)?|desc)[^"']*["'][^>]*>([\\s\\S]*?)<\\/\\1>`,
+    "gi",
+  );
+  for (const match of html.matchAll(metadata)) {
+    const values = blockText(match[2].replace(/<\/span\s*>/gi, " | "))
+      .split(/\s*[|｜]\s*/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const dateIndex = values.findIndex((value) => explicitDateRange(value));
+    const venue = values
+      .slice(dateIndex + 1)
+      .find((value) =>
+        /^(?!(?:기타|미정|추후\\s*공지|장소\\s*미정|온라인)$).{2,120}$/.test(
+          value,
+        ),
+      );
+    if (venue) return venue;
+  }
+  return null;
 };
 
 const toExplicitDate = (year: string, month: string, day: string) =>
@@ -153,7 +181,10 @@ const singleExplicitDate = (value: string) => {
 const titleFromBlock = (html: string, text: string) =>
   htmlAttribute(html, "data-title") ??
   classValue(html, "tit_view_sub\\b") ??
-  classValue(html, "(?:reservation-name|title|tit(?:_|\\b)|subject|name\\b)") ??
+  classValue(
+    html,
+    "(?:reservation-name|title|tit(?:_|\\b)|subject|name\\b|heading(?:-|\\b))",
+  ) ??
   definitionValue(html, ["행사명", "축제명", "공연명", "제목"]) ??
   labeledValue(text, ["행사명", "축제명", "공연명", "제목"]);
 
@@ -163,7 +194,8 @@ const venueFromBlock = (html: string, text: string) =>
   classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]) ??
   labeledValue(text, ["행사장", "장소", "위치", "venue", "location"]) ??
   inlineLabeledValue(text, ["행사장", "장소", "위치", "venue", "location"]) ??
-  classValue(html, "(?:venue|location|place)");
+  classValue(html, "(?:venue|location|place)") ??
+  metadataVenueFromBlock(html);
 
 const dateFromBlock = (html: string, text: string) => {
   const explicit =
@@ -196,7 +228,11 @@ const dateFromBlock = (html: string, text: string) => {
       "날짜",
       "date",
     ]);
-  return explicit ? explicitDateRange(explicit) : null;
+  // A date remains safe when it is explicitly printed in this one repeated
+  // card, even if the card uses a presentational `info`/`desc` class rather
+  // than a date-specific one. `explicitDateRange` still rejects year-less
+  // values and ambiguous multiple dates.
+  return explicitDateRange(explicit ?? text);
 };
 
 const categoryFromBlock = (html: string, text: string) =>
