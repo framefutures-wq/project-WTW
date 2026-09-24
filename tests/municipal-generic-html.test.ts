@@ -372,6 +372,32 @@ test("generic HTML extractor preserves literal angle-bracket title text", () => 
   assert.equal(result.candidates[0].title.includes("<strong>"), false);
 });
 
+test("generic HTML extractor accepts a year printed once in a bounded date range", () => {
+  const result = extracted(`
+    <ul>
+      <li><a class="title" href="/events/range-1">강남생활문화축제</a><span class="date">2026.10.17.(토)~10.18.(일) 11:00~17:00</span><span class="venue">일원에코파크 및 에코센터</span></li>
+      <li><a class="title" href="/events/range-2">포천 전시</a><span class="date">2026.09.15(화)~09.21(월)</span><span class="venue">포천반월아트홀</span></li>
+      <li><a class="title" href="/events/range-3">하루 확장 행사</a><span class="date">2026.10.17.(토) - 18.(일)</span><span class="venue">가상문화광장</span></li>
+    </ul>
+  `);
+  assert.deepEqual(
+    result.candidates.map(({ start_date, end_date }) => [start_date, end_date]),
+    [
+      ["2026-10-17", "2026-10-18"],
+      ["2026-09-15", "2026-09-21"],
+      ["2026-10-17", "2026-10-18"],
+    ],
+  );
+});
+
+test("generic HTML extractor does not infer a next year from a compact range tail", () => {
+  const result = extracted(`
+    <ul><li><a class="title" href="/events/cross-year">연말 행사</a><span class="date">2026.12.31~01.01</span><span class="venue">가상광장</span></li></ul>
+  `);
+  assert.equal(result.mode, "retry");
+  assert.deepEqual(result.candidates, []);
+});
+
 test("generic HTML extraction fails closed for missing date or venue", () => {
   const missingDate = extracted(
     '<ul><li><a class="title" href="/events/no-date">가상구 축제</a><span class="venue">가상공원</span></li></ul>',

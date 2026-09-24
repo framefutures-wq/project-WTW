@@ -159,6 +159,28 @@ const explicitDateRange = (value: string) => {
     );
     return validRange(start_date, end_date) ? { start_date, end_date } : null;
   }
+
+  // Official cards often print the year once, then omit it from the range
+  // tail (for example 2026.10.17~10.18 or 2026.10.17~18). Reuse the
+  // explicitly printed start year only inside that same range expression;
+  // never infer across years.
+  const compactTail = new RegExp(
+    `${date}\\s*(?:[~∼]|부터|[-–])\\s*(?:(\\d{1,2})\\s*(?:월|[.\\-/])\\s*)?(\\d{1,2})\\s*(?:일|\\.)?(?:\\s*\\([^)]*\\))?`,
+  ).exec(text);
+  if (compactTail) {
+    const start_date = toExplicitDate(
+      compactTail[1],
+      compactTail[2],
+      compactTail[3],
+    );
+    const end_date = toExplicitDate(
+      compactTail[1],
+      compactTail[4] ?? compactTail[2],
+      compactTail[5],
+    );
+    return validRange(start_date, end_date) ? { start_date, end_date } : null;
+  }
+
   const dates = [...text.matchAll(new RegExp(date, "g"))];
   if (dates.length !== 1) return null;
   const start_date = toExplicitDate(dates[0][1], dates[0][2], dates[0][3]);
