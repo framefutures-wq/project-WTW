@@ -160,37 +160,6 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     ingestion: "generic_fallback",
     pagination: { queryParam: "pageIndex", maxPages: 2 },
   },
-  {
-    key: "gyeonggi-평택",
-    region: "경기",
-    locality: "평택",
-    url: "https://www.pccf.or.kr/pfmc/pfmcAllList.do",
-    allowedHosts: ["pccf.or.kr", "www.pccf.or.kr"],
-    healthMarkers: ["ds-poster-list"],
-    expectedSignals: ["html_list"],
-    ingestion: "generic_fallback",
-  },
-  {
-    key: "gyeonggi-여주",
-    region: "경기",
-    locality: "여주",
-    url: "https://www.yjcf.or.kr/reserve/board/1/M/L/menu/401",
-    allowedHosts: ["yjcf.or.kr", "www.yjcf.or.kr"],
-    healthMarkers: ["공연일정"],
-    expectedSignals: ["html_list"],
-    ingestion: "generic_fallback",
-  },
-  {
-    key: "gyeongbuk-경산",
-    region: "경북",
-    locality: "경산",
-    url: "https://gsctf.or.kr/user/performance/all/gal?pageNum=1",
-    allowedHosts: ["gsctf.or.kr"],
-    healthMarkers: ["performance-list"],
-    expectedSignals: ["html_list"],
-    ingestion: "generic_fallback",
-    pagination: { queryParam: "pageNum", maxPages: 3 },
-  },
 ];
 
 export function municipalSourceByKey(key: string) {

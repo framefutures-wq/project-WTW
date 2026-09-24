@@ -860,15 +860,14 @@ UI 기준:
 - 사용자 개입이 필요 없는 다음 작업은 다른 non-calendar GAP 그룹의 공통 패턴 조사/설계로 계속 진행한다.
 
 
-## 2026-09-24 — ACTIVE 증가 우선 Batch A 준비
+## 2026-09-24 — ACTIVE 증가 우선 Batch A staging
 
 - 조사/보류 루프보다 production coverage 증가를 우선하는 운영으로 전환했다.
-- **Batch A Registry opt-in 준비**: `gyeonggi-평택`, `gyeonggi-여주`, `gyeongbuk-경산`.
-- 평택·경산은 이전 live dry-run에서 현재 generic extractor로 실제 candidate 추출이 확인됐고 retained live-shape fixture도 있다.
-- 여주는 이전 compatibility 분류에서 generic compatible/current candidate가 확인됐고, 2026-09-24 public official page에도 2026-09-30 공연의 explicit date/venue가 유지된다. 단, 이 환경의 raw fetch DNS 문제가 있으므로 production deploy 전 Codespaces에서 source 1회 raw probe만 확인한다.
-- 이번 batch는 extractor 신규 확장 없이 Registry opt-in만 사용한다. 평택 pagination은 안전한 query-param contract를 아직 확정하지 못해 첫 페이지만 사용하고, 경산만 `pageNum` 3페이지 bounded pagination을 사용한다.
-- production deploy / manual ingestion / D1 write는 아직 하지 않는다.
-- 다음 닫기 조건: GitHub Actions success → Codespaces에서 3 source raw/probe 1회 → 이상 없으면 기존 Worker에 deploy → 다음 자연 Cron에서 production read-only 확인. source 하나가 실패하면 그 source만 PAUSED하고 나머지를 막지 않는다.
+- Batch A 후보는 `gyeonggi-평택`, `gyeonggi-여주`, `gyeongbuk-경산`.
+- 평택·경산은 이전 live dry-run에서 현재 generic extractor로 실제 candidate 추출이 확인됐고 retained live-shape fixture도 있다. 여주는 이전 compatibility 분류상 후보지만 raw/live 재검증이 필요하다.
+- **10:00 KST 자연 수집 안전성을 위해 Batch A Registry opt-in은 main에서 제거하고 별도 branch `staging/municipal-batch-a`에 보존했다.**
+- main은 내일 10:00 전에 production deploy해도 신규 Batch A source가 들어오지 않는 상태로 유지한다. production 자체는 계속 기존 Worker `d9118a65-9d67-490b-b51d-016c3bbbc437` / code basis `c223028...`를 유지하며 오늘 밤에는 deploy하지 않는다.
+- 10:00 자연수집 read-only 검증이 정상이고 DNS/raw probe가 성공할 때만 staging branch 내용을 재검토해 main으로 가져온다.
 
 
 ## 2026-09-24 — 10:00 KST production freeze / morning verifier
