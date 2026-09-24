@@ -834,3 +834,16 @@ UI 기준:
   - 포항문화재단 main listing은 public HTML에서 filter shell만 보이고 event records는 동적으로 로드된다. search index에서 first-party `performance_detail/view.do?eventId=...` detail 형태는 확인됐지만 canonical listing endpoint는 아직 미확정.
   - 이천 시정달력은 public fetch에서 현재 bad request가 발생해 raw/live 확인은 Codespaces 체크포인트로 넘긴다.
 - 다음 autonomous 우선순위: latest GitHub Actions가 정상인지 확인한 뒤, production 변경 없이 embedded JSON / 남은 non-calendar GAP 중 **공통 패턴으로 2개 이상 해결 가능한 후보**를 계속 조사한다.
+
+
+## 2026-09-24 — 4-source live parser probe 미실행 / 환경 DNS
+
+- Codespaces read-only probe 시도 결과, `git fetch origin`은 성공했지만 local HEAD가 `48e8674`로 `origin/main 756d689`보다 3 commits 뒤였고 working tree는 clean이었다. checkout/pull은 수행하지 않았다.
+- 강남·울산 북구·용인·포천 4 source의 raw HTML fetch는 모두 `EAI_AGAIN`으로 실패해 **parser 자체는 실행되지 않았다**. 화면/웹 검색으로 보이는 사실은 raw parser 결과로 간주하지 않는다.
+- 따라서 Complete/Partial/current/gate/COMPATIBLE 판정은 전부 **미검증**이며 기존 inventory 상태를 이 결과만으로 변경하지 않는다.
+- 특히 울산 북구는 기존 canonical source `https://www.bukgu.ulsan.kr/art/BBS_014List.mo`가 inventory에 남아 있으므로, 축제 안내 페이지를 본 결과만으로 HOLD로 강등하지 않는다. 현재 상태는 `PAUSED_USER_ACTION / ENV_DNS_BLOCKED`.
+- 다음 사용자 환경 작업:
+  1. clean working tree에서 `git pull --ff-only origin main`으로 local HEAD를 latest main에 맞춤.
+  2. canonical 4 source를 **한 번만** raw fetch + parser probe 재시도.
+  3. 전부 `EAI_AGAIN`이면 반복 재시도하지 말고 DNS/environment issue로 종료하고 다음 독립 작업으로 이동.
+- production D1, Registry, manual ingestion, deploy는 이 검증과 무관하며 계속 금지.
