@@ -858,3 +858,14 @@ UI 기준:
 - 다음 재개 조건: Codespaces/network DNS가 정상화되었거나 다른 실행 환경에서 raw official HTML fetch가 성공할 때, 같은 4 canonical source에 대해 parser probe를 단 1회 재실행.
 - 그 전에는 해당 4 source를 이유 없이 HOLD/READY로 재분류하거나 production onboarding하지 않는다.
 - 사용자 개입이 필요 없는 다음 작업은 다른 non-calendar GAP 그룹의 공통 패턴 조사/설계로 계속 진행한다.
+
+
+## 2026-09-24 — ACTIVE 증가 우선 Batch A 준비
+
+- 조사/보류 루프보다 production coverage 증가를 우선하는 운영으로 전환했다.
+- **Batch A Registry opt-in 준비**: `gyeonggi-평택`, `gyeonggi-여주`, `gyeongbuk-경산`.
+- 평택·경산은 이전 live dry-run에서 현재 generic extractor로 실제 candidate 추출이 확인됐고 retained live-shape fixture도 있다.
+- 여주는 이전 compatibility 분류에서 generic compatible/current candidate가 확인됐고, 2026-09-24 public official page에도 2026-09-30 공연의 explicit date/venue가 유지된다. 단, 이 환경의 raw fetch DNS 문제가 있으므로 production deploy 전 Codespaces에서 source 1회 raw probe만 확인한다.
+- 이번 batch는 extractor 신규 확장 없이 Registry opt-in만 사용한다. 평택 pagination은 안전한 query-param contract를 아직 확정하지 못해 첫 페이지만 사용하고, 경산만 `pageNum` 3페이지 bounded pagination을 사용한다.
+- production deploy / manual ingestion / D1 write는 아직 하지 않는다.
+- 다음 닫기 조건: GitHub Actions success → Codespaces에서 3 source raw/probe 1회 → 이상 없으면 기존 Worker에 deploy → 다음 자연 Cron에서 production read-only 확인. source 하나가 실패하면 그 source만 PAUSED하고 나머지를 막지 않는다.
