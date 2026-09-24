@@ -813,3 +813,24 @@ UI 기준:
 - **WATCH 168 후순위 유지**: 공식 source 구조/채널이 바뀌거나 새 지속 source가 확인될 때만 재평가. 일상 재조사 금지.
 - **TourAPI retry telemetry 의미 불일치 HOLD**: `retry_attempted/recovered/exhausted`와 `retry_rounds` 집계 의미가 어긋나는 observability 이슈. 실제 recovery 동작은 정상 확인됐으므로 즉시 운영 장애로 취급하지 않고 후순위 정리.
 - 다음 즉시 작업은 HOLD 항목을 더 파는 것이 아니라, 남은 non-calendar municipal GAP 중 공통 개선 효율이 높은 그룹을 계속 bounded하게 처리한다.
+
+
+## 2026-09-24 — 사용자 부재 중 autonomous queue / PAUSED_USER_ACTION
+
+- 사용자 위임: routine municipal 작업은 중간 승인 없이 계속 진행한다. Codespaces/Cloudflare/D1가 필요한 지점은 `PAUSED_USER_ACTION`으로 남기고 다음 독립 작업을 진행한다. HOLD 항목은 기존 재개 조건 전까지 다시 열지 않는다.
+- **main 코드 준비 완료**:
+  - `8fbc284f29085e79fb9530333d6b4c69c60048fc` — 명시적 시작 연도가 있는 동일 범위 안에서 끝 날짜의 연도 생략형(`2026.10.17~10.18`, `2026.10.17~18`)을 보수적으로 파싱.
+  - `19b1552dbcabbe548d94bc8e8a4810ab64088330` — 시간 범위(`19:00~21:00`)를 날짜 범위로 오인하지 않도록 경계를 강화하고 회귀 테스트 추가.
+  - production deploy는 하지 않는다.
+- **PAUSED_USER_ACTION — 카드/목록형 live 검증**:
+  1. 서울 강남: 위 compact date-range 보강 후 실제 official HTML을 municipal live dry-run에 넣어 candidate/날짜/venue/gate를 확인해야 함. public page에서는 2026-10-17~10-18 및 일원에코파크/에코센터를 확인했으나 parser 실동작 검증은 Codespaces 필요.
+  2. 울산 북구: 현재 외부 public fetch가 timeout이라 raw/live HTML 구조를 Codespaces에서 확인해야 함.
+  3. 경기 용인: public official page에는 현재/미래 self-contained date+venue 항목이 보이지만 기존 generic probe는 0이었으므로 raw container/class 구조 probe가 필요.
+  4. 경기 포천: list의 venue가 반복적으로 `기타`이며 validator가 의도대로 거부함. 실제 venue를 얻으려면 JS detail 연결 및 first-party detail core를 live probe해야 함.
+- **PAUSED_USER_ACTION — production checkpoint**:
+  - 2026-09-25 10:00 KST 자연 Cron 후 과천·하남·상주 ingestion/state/candidate 품질과 TourAPI base/detail 상태를 production D1에서 read-only 확인. manual ingestion 금지.
+- **autonomous 조사 결과 / 다음 후보**:
+  - 대구 서구 비원뮤직홀 official page는 HTML 안에 `listMonthly[].playList[]` JSON을 직접 노출하며 각 record에 title/startDate/endDate/place가 있다. generic JSON-LD와 별개인 **embedded official JSON** 패턴 후보로 기록한다. 아직 source opt-in/collector code는 만들지 않는다.
+  - 포항문화재단 main listing은 public HTML에서 filter shell만 보이고 event records는 동적으로 로드된다. search index에서 first-party `performance_detail/view.do?eventId=...` detail 형태는 확인됐지만 canonical listing endpoint는 아직 미확정.
+  - 이천 시정달력은 public fetch에서 현재 bad request가 발생해 raw/live 확인은 Codespaces 체크포인트로 넘긴다.
+- 다음 autonomous 우선순위: latest GitHub Actions가 정상인지 확인한 뒤, production 변경 없이 embedded JSON / 남은 non-calendar GAP 중 **공통 패턴으로 2개 이상 해결 가능한 후보**를 계속 조사한다.

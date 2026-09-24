@@ -178,3 +178,15 @@ Codex/작업 프롬프트에는 가능하면 맨 위에 권장 모델을 명시�
 - source가 불명확하거나 접근 실패인 경우 임의 추론하지 않고 WATCH/GAP 등 fail-closed로 분류한 뒤 다음 queue로 진행한다.
 - 사용자에게는 매 batch마다 승인 요청하지 않고, 큰 지역 또는 큰 Phase가 닫힐 때만 요약 보고한다.
 
+
+
+## 11. 사용자 부재 시 routine 작업 계속 진행
+
+- 사용자가 routine municipal/coverage 작업을 계속 진행하도록 위임한 경우, 사용자가 자리를 비운 동안에도 현재 활성 turn에서 가능한 **독립 bounded task**를 승인 재요청 없이 순서대로 진행한다.
+- 한 단계가 Codespaces, Cloudflare production, remote D1, live parser probe, secret/resource 조작 등 현재 도구로 수행할 수 없는 환경을 요구하면 그 단계 때문에 전체 queue를 멈추지 않는다.
+- 해당 단계는 `PAUSED_USER_ACTION`으로 기록하고, **왜 사용자가 필요한지 / 다시 시작할 정확한 조건 / 그 전까지 하면 안 되는 행동**을 남긴 뒤 다음 독립 bounded task로 이동한다.
+- `HOLD`와 `PAUSED_USER_ACTION`을 구분한다.
+  - `HOLD`: 기술적·제품적 근거 때문에 당분간 재개하지 않는 상태. 재개 조건이 충족될 때만 연다.
+  - `PAUSED_USER_ACTION`: 작업 방향은 유효하지만 Codespaces/Cloudflare/D1 등 사용자 환경 또는 권한이 필요한 체크포인트.
+- 사용자 부재 중에도 destructive D1, secret 변경, 신규/교체 Cloudflare resource, outage-risk 변경, production 수동 ingestion은 자동 진행하지 않는다.
+- GitHub에서 가능한 read-only 조사, 문서 갱신, 작은 안전한 코드/테스트 수정, commit/push, Actions 검증은 기존 종료 규칙에 따라 진행할 수 있다.
