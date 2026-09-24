@@ -8,6 +8,7 @@ import {
   enrichTourApiDetails,
   failureLatencyBucket,
   selectTourApiDetailCandidates,
+  selectTourApiDetailRetryCandidates,
 } from "../worker/sources/tourapi-detail";
 
 async function setup() {
@@ -111,6 +112,7 @@ test("TourAPI detail maps only official summary, venue, whole-event hours, fee, 
       failure_endpoints: {},
       network_failure_subtypes: {},
       failure_latency: {},
+      retry_rounds: {},
     });
     assert.deepEqual(
       await DB.prepare(
@@ -178,6 +180,7 @@ test("higher-priority enrichment is preserved and detail failure retains the bas
       )?.summary,
       "보호된 공식 소개",
     );
+    await DB.prepare("UPDATE tourapi_detail_state SET last_success_at='2026-09-20T00:00:00.000Z' WHERE event_id='tourapi-1'").run();
     globalThis.fetch = (async () => {
       throw new Error("network");
     }) as typeof fetch;
@@ -254,7 +257,35 @@ test("detail candidates prioritize retry-due failures, then never-processed even
       candidates.map((candidate) => candidate.id),
       ["tourapi-failed-due", "tourapi-never", "tourapi-refresh"],
     );
+    const recoveryCandidates = await selectTourApiDetailRetryCandidates(DB, now, 10);
+    assert.deepEqual(
+      recoveryCandidates.map((candidate) => candidate.id),
+      ["tourapi-failed-due"],
+    );
   } finally {
+    await mf.dispose();
+  }
+});
+
+test("retry-only detail recovery skips waiting failures and records its retry round", async () => {
+  const { mf, DB, env } = await setup();
+  const restore = mockDetails();
+  const now = new Date("2026-09-21T01:00:00.000Z");
+  try {
+    await DB.prepare(
+      "INSERT INTO tourapi_detail_state(event_id,source_id,content_id,last_checked_at,last_success_at,status,failure_count,next_retry_at,updated_at) VALUES('tourapi-1','tourapi-1-source','1',?,NULL,'failed',1,?,?)",
+    ).bind(now.toISOString(), new Date(now.getTime() + 1).toISOString(), now.toISOString()).run();
+    let result = await enrichTourApiDetails(env as never, now, { candidateScope: "retry_due" });
+    assert.equal(result.candidates, 0);
+    assert.deepEqual(result.retry_rounds, {});
+
+    await DB.prepare("UPDATE tourapi_detail_state SET next_retry_at=? WHERE event_id='tourapi-1'")
+      .bind(new Date(now.getTime() - 1).toISOString()).run();
+    result = await enrichTourApiDetails(env as never, now, { candidateScope: "retry_due" });
+    assert.equal(result.enriched, 1);
+    assert.deepEqual(result.retry_rounds, { retry_1: { candidates: 1, enriched: 1, empty: 0, failed: 0 } });
+  } finally {
+    restore();
     await mf.dispose();
   }
 });

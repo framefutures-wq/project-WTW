@@ -14,9 +14,10 @@ type Candidate = { id: string; title: string; venue: string; address: string; st
 type DetailPayload = { common: TourApiRow; intro: TourApiRow; info: TourApiRow[] };
 export type DetailFailureReason = "network_or_timeout" | "http_429" | "http_5xx" | "provider_error" | "content_id_mismatch" | "response_bound" | "other";
 export type FailureLatencyBucket = "under_1s" | "1_to_5s" | "5_to_15s" | "15_to_25s" | "over_25s";
-export type DetailResult = { candidates: number; requested: number; attempts: number; retry_attempted: number; retry_recovered: number; retry_exhausted: number; enriched: number; empty: number; failed: number; failure_reasons: Partial<Record<DetailFailureReason, number>>; failure_endpoints: Partial<Record<(typeof DETAIL_ENDPOINTS)[number], number>>; network_failure_subtypes: Partial<Record<TourApiNetworkFailureSubtype, number>>; failure_latency: Partial<Record<FailureLatencyBucket, number>> };
+export type DetailResult = { candidates: number; requested: number; attempts: number; retry_attempted: number; retry_recovered: number; retry_exhausted: number; enriched: number; empty: number; failed: number; failure_reasons: Partial<Record<DetailFailureReason, number>>; failure_endpoints: Partial<Record<(typeof DETAIL_ENDPOINTS)[number], number>>; network_failure_subtypes: Partial<Record<TourApiNetworkFailureSubtype, number>>; failure_latency: Partial<Record<FailureLatencyBucket, number>>; retry_rounds: RetryRounds };
 type DetailRequestStats = { attempts: number; retry_attempted: number; retry_recovered: number; retry_exhausted: number; retries_used: number; failure_endpoints: Partial<Record<(typeof DETAIL_ENDPOINTS)[number], number>>; network_failure_subtypes: Partial<Record<TourApiNetworkFailureSubtype, number>>; failure_latency: Partial<Record<FailureLatencyBucket, number>> };
-type DetailRequestOptions = { sleep?: (milliseconds: number) => Promise<void>; nowMs?: () => number };
+type DetailRequestOptions = { sleep?: (milliseconds: number) => Promise<void>; nowMs?: () => number; candidateScope?: "all" | "retry_due" };
+type RetryRounds = Record<string, { candidates: number; enriched: number; empty: number; failed: number }>;
 class DetailEndpointFailure extends Error {
   constructor(readonly endpoint: (typeof DETAIL_ENDPOINTS)[number], readonly reason: DetailFailureReason, readonly retried: boolean, readonly latencyBucket: FailureLatencyBucket, readonly networkSubtype?: TourApiNetworkFailureSubtype, cause?: unknown) {
     super(`TourAPI ${endpoint} detail request failed`, { cause });
@@ -73,6 +74,24 @@ export async function selectTourApiDetailCandidates(db: D1Database, now = new Da
      ORDER BY CASE WHEN ds.status='failed' THEN 0 WHEN ds.event_id IS NULL THEN 1 ELSE 2 END,
        CASE WHEN e.start_date<=? THEN 0 ELSE 1 END,e.start_date,e.id LIMIT ?`,
   ).bind(today, until.toISOString().slice(0, 10), ttl, now.toISOString(), today, limit).all<Candidate>();
+  return rows.results;
+}
+
+export async function selectTourApiDetailRetryCandidates(db: D1Database, now = new Date(), limit = MAX_DETAIL_EVENTS_PER_RUN) {
+  const today = koreaDate(now); const until = new Date(`${today}T00:00:00Z`); until.setUTCDate(until.getUTCDate() + 30);
+  const rows = await db.prepare(
+    `SELECT e.id,e.title,e.venue,e.address,e.start_date,e.end_date,
+      (SELECT MIN(s.priority) FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=e.id) AS summary_priority,
+      (SELECT MIN(s.priority) FROM event_evidence ev JOIN sources s ON s.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='venue') AS venue_priority,
+      (SELECT MIN(s.priority) FROM event_evidence ev JOIN sources s ON s.id=ev.source_id WHERE ev.event_id=e.id AND ev.field='price') AS price_priority,
+      (SELECT MIN(s.priority) FROM event_programs p JOIN sources s ON s.id=p.source_id WHERE p.event_id=e.id) AS programs_priority,
+      (SELECT MIN(s.priority) FROM event_operating_hours h JOIN sources s ON s.id=h.source_id WHERE h.event_id=e.id) AS hours_priority,
+      ds.failure_count,ds.status
+     FROM events e JOIN sources ps ON ps.id=e.primary_source_id JOIN tourapi_detail_state ds ON ds.event_id=e.id
+     WHERE e.is_sample=0 AND e.verification='verified' AND ps.kind='tourapi' AND e.end_date>=? AND e.start_date<=?
+       AND ds.status='failed' AND ds.next_retry_at IS NOT NULL AND ds.next_retry_at<=?
+     ORDER BY ds.next_retry_at,e.start_date,e.id LIMIT ?`,
+  ).bind(today, until.toISOString().slice(0, 10), now.toISOString(), limit).all<Candidate>();
   return rows.results;
 }
 
@@ -149,22 +168,30 @@ async function saveFailure(db: D1Database, candidate: Candidate, checkedAt: stri
   ]);
 }
 export async function enrichTourApiDetails(env: Env, now = new Date(), options: DetailRequestOptions = {}): Promise<DetailResult> {
-  const emptyResult = { candidates: 0, requested: 0, attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, enriched: 0, empty: 0, failed: 0, failure_reasons: {}, failure_endpoints: {}, network_failure_subtypes: {}, failure_latency: {} } satisfies DetailResult;
+  const emptyResult = { candidates: 0, requested: 0, attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, enriched: 0, empty: 0, failed: 0, failure_reasons: {}, failure_endpoints: {}, network_failure_subtypes: {}, failure_latency: {}, retry_rounds: {} } satisfies DetailResult;
   if (env.TOUR_API_ENABLED !== "true" || !env.TOUR_API_KEY) return emptyResult;
-  const candidates = await selectTourApiDetailCandidates(env.DB, now);
+  const candidates = options.candidateScope === "retry_due"
+    ? await selectTourApiDetailRetryCandidates(env.DB, now)
+    : await selectTourApiDetailCandidates(env.DB, now);
   const stats: DetailRequestStats = { attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, retries_used: 0, failure_endpoints: {}, network_failure_subtypes: {}, failure_latency: {} };
   const sleep = options.sleep ?? ((milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
   const nowMs = options.nowMs ?? Date.now;
-  const result: DetailResult = { candidates: candidates.length, requested: 0, attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, enriched: 0, empty: 0, failed: 0, failure_reasons: {}, failure_endpoints: stats.failure_endpoints, network_failure_subtypes: stats.network_failure_subtypes, failure_latency: stats.failure_latency };
+  const retryRounds: RetryRounds = {};
+  const result: DetailResult = { candidates: candidates.length, requested: 0, attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, enriched: 0, empty: 0, failed: 0, failure_reasons: {}, failure_endpoints: stats.failure_endpoints, network_failure_subtypes: stats.network_failure_subtypes, failure_latency: stats.failure_latency, retry_rounds: retryRounds };
   for (const candidate of candidates) {
+    const retryRound = options.candidateScope === "retry_due" ? `retry_${candidate.failure_count ?? 0}` : null;
+    if (retryRound) retryRounds[retryRound] ??= { candidates: 0, enriched: 0, empty: 0, failed: 0 };
+    if (retryRound) retryRounds[retryRound].candidates++;
     const checkedAt = new Date().toISOString();
     try {
       result.requested += DETAIL_ENDPOINTS.length;
       const payload = await fetchPayload(env.TOUR_API_KEY, candidate.id.slice("tourapi-".length), stats, sleep, nowMs);
       const status = await saveSuccess(env.DB, candidate, payload, checkedAt);
       result[status === "success" ? "enriched" : "empty"]++;
+      if (retryRound) retryRounds[retryRound][status === "success" ? "enriched" : "empty"]++;
     } catch (error) {
       result.failed++;
+      if (retryRound) retryRounds[retryRound].failed++;
       const reason = classifyDetailFailure(error);
       result.failure_reasons[reason] = (result.failure_reasons[reason] ?? 0) + 1;
       if (error instanceof DetailEndpointFailure) {

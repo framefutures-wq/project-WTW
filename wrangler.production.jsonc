@@ -32,7 +32,7 @@
   },
   "secrets": { "required": ["TOUR_API_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"] },
   "triggers": {
-    "crons": ["0 1 * * *", "0 2 * * *"],
+    "crons": ["0 1 * * *", "0 2 * * *", "45 2 * * *", "50 4 * * *", "55 8 * * *"],
   },
   "observability": { "enabled": true },
 }

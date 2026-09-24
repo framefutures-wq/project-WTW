@@ -19,6 +19,9 @@ const privateLkgClause = (alias: string) => {
 const LKG_PRIMARY_SOURCE = `(ms.kind='municipality' OR (${privateLkgClause("ms")}))`;
 export const BASE_SYNC_CRON = "0 1 * * *";
 export const DETAIL_SYNC_CRON = "0 2 * * *";
+// 11:45 / 13:50 / 17:55 KST: each leaves room after the preceding bounded pass
+// for the 30m → 2h → 4h retry schedule, without polling candidates that are not due.
+export const DETAIL_RETRY_RECOVERY_CRONS = ["45 2 * * *", "50 4 * * *", "55 8 * * *"] as const;
 
 export type ScheduledDependencies = {
   syncTourApi: typeof syncTourApi;
@@ -189,7 +192,7 @@ export async function runDetailScheduled(
   env: Env,
   now = new Date(),
   dependencies = productionDependencies,
-  trigger: "base_handoff" | "watchdog" | "manual" = "watchdog",
+  trigger: "base_handoff" | "watchdog" | "retry_recovery" | "manual" = "watchdog",
   manualRunId?: string,
 ) {
   if (trigger === "manual" && manualRunId) {
@@ -237,6 +240,7 @@ export async function runDetailScheduled(
           failure_endpoints: {},
           network_failure_subtypes: {},
           failure_latency: {},
+          retry_rounds: {},
         }),
       )
       .run();
@@ -249,7 +253,9 @@ export async function runDetailScheduled(
   const started = await startRun(env, "tourapi-detail", now.toISOString());
   if (!started) return skipped("detail_already_running");
   try {
-    const detail = await dependencies.enrichTourApiDetails(env);
+    const detail = await dependencies.enrichTourApiDetails(env, now, {
+      candidateScope: trigger === "retry_recovery" ? "retry_due" : "all",
+    });
     await env.DB.prepare(
       "UPDATE sync_runs SET status='success',finished_at=?,message=? WHERE id=?",
     )
@@ -279,6 +285,7 @@ export async function runDetailScheduled(
           empty: 0,
           failed: 1,
           reason: "subsystem_error",
+          retry_rounds: {},
         }),
         started,
       )
@@ -296,6 +303,8 @@ export async function runScheduled(
   if (cron === BASE_SYNC_CRON) return runBaseScheduled(env, now, dependencies);
   if (cron === DETAIL_SYNC_CRON)
     return runDetailScheduled(env, now, dependencies, "watchdog");
+  if ((DETAIL_RETRY_RECOVERY_CRONS as readonly string[]).includes(cron))
+    return runDetailScheduled(env, now, dependencies, "retry_recovery");
   console.warn("unknown_scheduled_cron", { cron });
   return { skipped: "unknown_cron" };
 }

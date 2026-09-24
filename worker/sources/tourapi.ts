@@ -14,7 +14,7 @@ import {
 
 export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
-export type TourApiNetworkFailureSubtype = "timeout" | "connection" | "tls" | "preview_restriction" | "timeout_api_unavailable" | "unknown_network";
+export type TourApiNetworkFailureSubtype = "timeout" | "dns" | "connection_reset" | "connection_refused" | "connection" | "tls" | "fetch_failed" | "preview_restriction" | "timeout_api_unavailable" | "unknown_network";
 export class TourApiNetworkError extends Error {
   constructor(readonly subtype: TourApiNetworkFailureSubtype, endpoint: string, cause?: unknown) {
     super(`TourAPI ${endpoint} network/timeout failure (${subtype})`, { cause });
@@ -22,12 +22,18 @@ export class TourApiNetworkError extends Error {
 }
 export function classifyTourApiNetworkFailure(error: unknown): TourApiNetworkFailureSubtype {
   const name = error instanceof Error ? error.name : "";
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  const message = error instanceof Error
+    ? [error.message, error.cause instanceof Error ? error.cause.message : ""].join(" ").toLowerCase()
+    : "";
   if (message.includes("timeout is not a function")) return "timeout_api_unavailable";
   if (message.includes("preview")) return "preview_restriction";
   if (/\b(?:ssl|tls|certificate)\b/.test(message)) return "tls";
   if (name === "TimeoutError" || name === "AbortError" || message.includes("timeout")) return "timeout";
-  if (name === "TypeError" || /network|fetch failed|connection/.test(message)) return "connection";
+  if (/\b(?:eai_again|enotfound|dns|name resolution)\b/.test(message)) return "dns";
+  if (/\b(?:econnreset|connection reset|reset by peer)\b/.test(message)) return "connection_reset";
+  if (/\b(?:econnrefused|connection refused)\b/.test(message)) return "connection_refused";
+  if (/fetch failed/.test(message)) return "fetch_failed";
+  if (name === "TypeError" || /network|connection/.test(message)) return "connection";
   return "unknown_network";
 }
 export type TourApiRow = Record<string, unknown>;

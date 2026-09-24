@@ -5,6 +5,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import {
   BASE_SYNC_CRON,
   DETAIL_SYNC_CRON,
+  DETAIL_RETRY_RECOVERY_CRONS,
   runScheduled,
   type ScheduledDependencies,
 } from "../worker/cron";
@@ -55,6 +56,7 @@ function dependencies(
     failure_endpoints: {},
     network_failure_subtypes: {},
     failure_latency: {},
+    retry_rounds: {},
   },
 ): ScheduledDependencies {
   return {
@@ -143,6 +145,30 @@ test("11:00 KST runs detail only after the same KST date base succeeds", async (
     const message = JSON.parse(row!.message);
     assert.equal(message.trigger, "watchdog");
     assert.equal(message.requested, 3);
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("retry recovery Cron runs detail with retry-due scope only", async () => {
+  const { mf, DB, env } = await setup();
+  const calls: string[] = [];
+  try {
+    await DB.prepare(
+      "INSERT INTO sync_runs(id,started_at,finished_at,status,provider) VALUES('base',?,?, 'success','tourapi')",
+    ).bind("2026-09-21T01:00:00.000Z", "2026-09-21T01:10:00.000Z").run();
+    const deps = dependencies(calls);
+    let scope: string | undefined;
+    deps.enrichTourApiDetails = async (_env, _now, options) => {
+      scope = options?.candidateScope;
+      calls.push("detail-retry");
+      return { candidates: 0, requested: 0, attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, enriched: 0, empty: 0, failed: 0, failure_reasons: {}, failure_endpoints: {}, network_failure_subtypes: {}, failure_latency: {}, retry_rounds: {} };
+    };
+    await runScheduled(env as never, DETAIL_RETRY_RECOVERY_CRONS[0], new Date("2026-09-21T02:45:00.000Z"), deps);
+    assert.deepEqual(calls, ["detail-retry"]);
+    assert.equal(scope, "retry_due");
+    const row = await DB.prepare("SELECT message FROM sync_runs WHERE provider='tourapi-detail'").first<{ message: string }>();
+    assert.equal(JSON.parse(row!.message).trigger, "retry_recovery");
   } finally {
     await mf.dispose();
   }

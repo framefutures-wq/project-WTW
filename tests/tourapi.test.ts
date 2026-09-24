@@ -30,7 +30,10 @@ test("TourAPI network failures classify into sanitized subtypes", () => {
   const timeout = new Error("request aborted"); timeout.name = "TimeoutError";
   const connection = new TypeError("fetch failed");
   assert.equal(classifyTourApiNetworkFailure(timeout), "timeout");
-  assert.equal(classifyTourApiNetworkFailure(connection), "connection");
+  assert.equal(classifyTourApiNetworkFailure(connection), "fetch_failed");
+  assert.equal(classifyTourApiNetworkFailure(new Error("getaddrinfo ENOTFOUND provider")), "dns");
+  assert.equal(classifyTourApiNetworkFailure(new Error("ECONNRESET")), "connection_reset");
+  assert.equal(classifyTourApiNetworkFailure(new Error("ECONNREFUSED")), "connection_refused");
   assert.equal(classifyTourApiNetworkFailure(new Error("SSL handshake failed")), "tls");
   assert.equal(classifyTourApiNetworkFailure(new Error("preview environment restriction")), "preview_restriction");
   assert.equal(classifyTourApiNetworkFailure(new Error("AbortSignal.timeout is not a function")), "timeout_api_unavailable");
