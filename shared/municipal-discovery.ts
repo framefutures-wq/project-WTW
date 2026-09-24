@@ -348,27 +348,6 @@ const genericCandidateFromBlock = (
   };
 };
 
-export type MunicipalDetailCore = {
-  title: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  venue: string | null;
-  category: string | null;
-};
-
-/** Reads explicit facts from one detail document without requiring every fact. */
-export function parseGenericMunicipalDetailCore(html: string): MunicipalDetailCore {
-  const text = blockText(html);
-  const dates = dateFromBlock(html, text);
-  return {
-    title: titleFromBlock(html, text),
-    start_date: dates?.start_date ?? null,
-    end_date: dates?.end_date ?? null,
-    venue: venueFromBlock(html, text),
-    category: categoryFromBlock(html, text),
-  };
-}
-
 const tableRows = (source: MunicipalSourceDefinition, html: string) => {
   const tables = html.match(/<table\b[\s\S]*?<\/table>/gi) ?? [];
   return tables.flatMap((table) => {
@@ -507,73 +486,6 @@ export function parseGenericMunicipalHtml(
       ]),
     ).values(),
   ];
-}
-
-const calendarDateFromGroup = (html: string) => {
-  const explicit = htmlAttribute(html, "data-date") ?? htmlAttribute(html, "datetime");
-  const direct = explicitDateRange(explicit ?? "");
-  if (direct && direct.start_date === direct.end_date) return direct;
-  const year = htmlAttribute(html, "data-year");
-  const month = htmlAttribute(html, "data-month");
-  const day = htmlAttribute(html, "data-day");
-  if (year && month && day && /^20\d{2}$/.test(year)) {
-    const date = toExplicitDate(year, month, day);
-    return validRange(date, date) ? { start_date: date, end_date: date } : null;
-  }
-  const fromText = explicitDateRange(blockText(html));
-  return fromText && fromText.start_date === fromText.end_date ? fromText : null;
-};
-
-const calendarGroups = (html: string) => [
-  ...elementBlocks(html, "td", "(?:day|date|calendar|schedule)"),
-  ...elementBlocks(html, "tr", "(?:day|date|calendar|schedule)"),
-  ...elementBlocks(html, "div", "(?:day|date|calendar|schedual_day|schedule)"),
-  ...elementBlocks(html, "section", "(?:day|date|calendar|schedule)"),
-];
-
-/** A calendar date completes only event blocks physically nested in that date group. */
-export function parseGenericMunicipalCalendarContext(
-  source: MunicipalSourceDefinition,
-  html: string,
-): { candidates: MunicipalCandidate[]; partialCandidates: MunicipalListDetailPartial[] } {
-  if (!source.calendarContext) return { candidates: [], partialCandidates: [] };
-  const candidates: MunicipalCandidate[] = [];
-  const partialCandidates: MunicipalListDetailPartial[] = [];
-  for (const group of calendarGroups(html.replace(/<!--[\s\S]*?-->/g, ""))) {
-    const dates = calendarDateFromGroup(group);
-    if (!dates) continue;
-    const eventBlocks = [
-      ...elementBlocks(group, "li"),
-      ...elementBlocks(group, "td"),
-      ...elementBlocks(group, "article"),
-      ...elementBlocks(group, "div", "(?:event|item|schedule)"),
-    ];
-    for (const block of eventBlocks) {
-      const text = blockText(block);
-      const official_url = officialUrlFromBlock(source, block);
-      const title = titleFromBlock(block, text);
-      if (!title || !official_url || official_url === source.url) continue;
-      const venue = venueFromBlock(block, text);
-      const rawIdentity = `${official_url}|${title}|${dates.start_date}|${dates.end_date}`;
-      const base = {
-        source: source.key,
-        source_candidate_id: normalizeMunicipalTitle(rawIdentity).slice(0, 120),
-        title,
-        ...dates,
-        region: source.region,
-        locality: source.locality,
-        official_url,
-        category: categoryFromBlock(block, text) ?? "공식 달력 행사",
-        snippet: null,
-      };
-      if (venue) candidates.push({ ...base, venue, image_candidate: null });
-      else if (source.listDetailFollowup) partialCandidates.push({ ...base, venue: null });
-    }
-  }
-  return {
-    candidates: [...new Map(candidates.map((item) => [item.source_candidate_id, item])).values()],
-    partialCandidates: [...new Map(partialCandidates.map((item) => [item.official_url, item])).values()],
-  };
 }
 
 /**
@@ -1239,14 +1151,11 @@ export function extractMunicipalCandidates(
       source,
       html,
     );
-    const calendar = parseGenericMunicipalCalendarContext(source, html);
-    const combinedCandidates = [...candidates, ...calendar.candidates];
-    const combinedPartials = [...partialCandidates, ...calendar.partialCandidates];
-    if (combinedCandidates.length || combinedPartials.length)
+    if (candidates.length || partialCandidates.length)
       return {
         mode: "generic_html",
-        candidates: combinedCandidates,
-        partialCandidates: combinedPartials,
+        candidates,
+        partialCandidates,
         assessment,
       };
   }

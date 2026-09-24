@@ -6,7 +6,6 @@ import {
   parseGenericMunicipalHtml,
   selectMunicipalGate,
 } from "../shared/municipal-discovery";
-import { temporalStatus } from "../shared/municipal-approval";
 import {
   MUNICIPAL_SOURCE_REGISTRY,
   type MunicipalSourceDefinition,
@@ -495,65 +494,4 @@ test("Seoul Hangang generic cards require an explicit festival, culture, or perf
     ]),
     [["2026 한강 종이비행기 축제", "축제", hangang.url]],
   );
-});
-
-const calendarSource = (key: string) => ({
-  ...source,
-  key,
-  url: "https://events.example.go.kr/calendar",
-  allowedHosts: ["events.example.go.kr"],
-  healthMarkers: [],
-  expectedSignals: ["html_list", "html_table"],
-  calendarContext: true,
-  listDetailFollowup: { maxDetails: 3 },
-}) satisfies MunicipalSourceDefinition;
-
-test("calendar context joins each Mokpo-style event only to its containing date cell", () => {
-  const result = extractMunicipalCandidates(
-    calendarSource("mokpo-calendar"),
-    readFileSync("fixtures/municipal-generic-calendar-mokpo.html", "utf8"),
-  );
-  assert.equal(result.candidates.length, 0);
-  assert.deepEqual(
-    result.partialCandidates?.map(({ title, start_date, end_date, official_url }) => [title, start_date, end_date, official_url]),
-    [
-      ["목포 가을 음악회", "2026-10-03", "2026-10-03", "https://events.example.go.kr/art/performance/view/101"],
-      ["목포 어린이 연극", "2026-10-03", "2026-10-03", "https://events.example.go.kr/art/performance/view/102"],
-    ],
-  );
-});
-
-test("calendar context supports Wonju-style schedule rows and Gyeongju-style date groups", () => {
-  for (const [fixture, title, date] of [
-    ["municipal-generic-calendar-wonju.html", "원주 시민 음악회", "2026-10-04"],
-    ["municipal-generic-calendar-gyeongju.html", "경주 문화유산 야행", "2026-10-05"],
-  ]) {
-    const result = extractMunicipalCandidates(
-      calendarSource(fixture),
-      readFileSync(`fixtures/${fixture}`, "utf8"),
-    );
-    assert.deepEqual(
-      result.partialCandidates?.map(({ title: actual, start_date, end_date }) => [actual, start_date, end_date]),
-      [[title, date, date]],
-    );
-  }
-});
-
-test("calendar context fails closed without an explicit year-month-day and never publishes a missing venue", () => {
-  const result = extractMunicipalCandidates(
-    calendarSource("unclear-calendar"),
-    '<ul><li class="event-item"><a class="title" href="/event/1">가을 음악회</a></li></ul>',
-  );
-  assert.equal(result.mode, "retry");
-  assert.deepEqual(result.candidates, []);
-  assert.equal(result.partialCandidates, undefined);
-});
-
-test("calendar dates retain normal expiration handling", () => {
-  const result = extractMunicipalCandidates(
-    calendarSource("expired-calendar"),
-    '<div class="calendar-day" data-date="2026-09-01"><div class="event-item"><a class="title" href="/event/1">지난 문화제</a><span class="venue">가상광장</span></div></div>',
-  );
-  assert.equal(result.candidates.length, 1);
-  assert.equal(temporalStatus(result.candidates[0], "2026-09-24"), "EXPIRED");
 });

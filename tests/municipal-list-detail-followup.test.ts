@@ -100,22 +100,6 @@ test("Busan/Sejong-style detail core and Seocho-style date-less calendar both re
   );
 });
 
-test("an explicit calendar date can be retained when the opted-in detail confirms only venue", async () => {
-  const result = await followUpMunicipalListDetails(
-    source,
-    [partial("https://events.example.go.kr/detail/calendar-venue")],
-    "2026-09-23",
-    async (url) => ({
-      html: '<article><h1 class="title">2026 가상구 문화축제</h1><dl><dt>장소</dt><dd>가상문화광장</dd></dl></article>',
-      finalUrl: url,
-    }),
-  );
-  assert.deepEqual(
-    result.candidates.map(({ candidate }) => [candidate.start_date, candidate.end_date, candidate.venue]),
-    [["2026-10-24", "2026-10-25", "가상문화광장"]],
-  );
-});
-
 test("cross-host redirects and list-detail core conflicts fail closed", async () => {
   const crossHost = await followUpMunicipalListDetails(
     source,
