@@ -39,6 +39,9 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeonggi-과천",
       "gyeonggi-하남",
       "gyeongbuk-상주",
+      "gyeonggi-평택",
+      "gyeonggi-여주",
+      "gyeongbuk-경산",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -115,6 +118,52 @@ test("Gwacheon, Hanam, and Sangju use bounded generic registry settings", () => 
       false,
       key,
     );
+  }
+});
+
+test("Pyeongtaek, Yeoju, and Gyeongsan are bounded generic sources without dedicated parsers", () => {
+  const expected = [
+    ["gyeonggi-평택", "https://www.pccf.or.kr/pfmc/pfmcAllList.do"],
+    ["gyeonggi-여주", "https://www.yjcf.or.kr/reserve/board/1/M/L/menu/401"],
+    ["gyeongbuk-경산", "https://gsctf.or.kr/user/performance/all/gal?pageNum=1"],
+  ] as const;
+  for (const [key, url] of expected) {
+    const source = municipalSourceByKey(key);
+    assert(source, key);
+    assert.equal(source.url, url, key);
+    assert.equal(source.ingestion, "generic_fallback", key);
+    assert.equal(MUNICIPAL_PARSERS[source.key], undefined, key);
+    assert.equal(municipalSourceAllowsUrl(source, source.url), true, key);
+    assert.equal(
+      municipalSourceAllowsUrl(source, "https://example.com/event"),
+      false,
+      key,
+    );
+  }
+  assert.deepEqual(municipalSourceByKey("gyeongbuk-경산")?.pagination, {
+    queryParam: "pageNum",
+    maxPages: 3,
+  });
+});
+
+test("Pyeongtaek and Gyeongsan registry contracts parse their retained live-shape fixtures", () => {
+  const fixtureByGenericKey = {
+    "gyeonggi-평택": "fixtures/municipal-generic-pyeongtaek.html",
+    "gyeongbuk-경산": "fixtures/municipal-generic-gyeongsan.html",
+  } as const;
+  for (const [key, fixture] of Object.entries(fixtureByGenericKey)) {
+    const source = municipalSourceByKey(key);
+    assert(source, key);
+    const html = readFileSync(fixture, "utf8");
+    const assessment = assessMunicipalSourceDocument(source, html);
+    assert.equal(
+      assessment.status,
+      "healthy",
+      `${key}: ${assessment.reason}`,
+    );
+    const extracted = extractMunicipalCandidates(source, html);
+    assert.equal(extracted.mode, "generic_html", key);
+    assert(extracted.candidates.length > 0, key);
   }
 });
 

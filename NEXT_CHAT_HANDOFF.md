@@ -905,3 +905,12 @@ UI 기준:
 - 다음 Cron에서 하루 전체를 놓치는 것을 줄이기 위해 municipal official fetch에 **network/timeout 한정 1회 inline retry**를 추가했다. HTTP 4xx/5xx는 retry하지 않는다.
 - `runMunicipalAutonomous` 결과에 source별 `source_outcomes`(ok/error, candidate count, bounded reason)을 추가해 다음 `sync_runs.message.municipal`만으로 source failure 원인을 확인할 수 있게 했다.
 - ingestion/gate/D1 publication 정책은 변경하지 않았다. 잘못된 데이터 허용 범위 확대 없음.
+
+
+## 2026-09-26 — Batch A main opt-in 재개
+
+- 과천·하남·상주는 OBSERVE 트랙으로 내리고 신규 municipal coverage 확대를 재개한다.
+- staging branch에 보존하던 Batch A `gyeonggi-평택`, `gyeonggi-여주`, `gyeongbuk-경산` Registry opt-in 및 관련 tests를 current main에 재적용한다.
+- 이 batch는 기존 generic extractor만 사용하고 새 parser/collector 범위 확대는 하지 않는다.
+- production deploy 전 GitHub Project checks 성공이 필수다. Cloudflare 인증이 필요한 실제 deploy만 사용자 환경에서 1회 실행한다.
+- source 하나가 실패해도 나머지 source 진행을 막지 않는다. 다음부터 coverage 성과는 ACTIVE 증가 수로 보고한다.
