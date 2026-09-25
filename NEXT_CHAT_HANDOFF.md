@@ -990,3 +990,11 @@ UI 기준:
 - `gyeonggi-이천`: 이천시 공식 시정달력은 current 48-page listing에서 2026 이천아트홀 서커스 페스티벌 등 title·full-year period·venue를 self-contained로 제공한다. pagination query contract는 추측하지 않고 first page only로 등록했다.
 - 둘 다 기존 `generic_fallback`만 사용하며 새 parser/publication policy는 추가하지 않았다. source parse failure는 기존 source_outcomes fail-closed 경로로 격리된다.
 - main 누적 신규 준비량은 **총 +12**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — access HOLD 해제: 의정부 +1
+
+- `gyeonggi-의정부` 공식 2026 연간 행사·축제 목록이 다시 정상 접근되고 현재 38페이지 table에서 제목·시작일·종료일·장소·담당부서를 명시적으로 제공함을 재확인했다.
+- HOLD였던 접근 상태를 해제하고 first page only `generic_fallback` Registry opt-in으로 전환했다. pagination parameter는 추측하지 않았다.
+- live-shape retained fixture로 split start/end columns와 venue가 candidate core로 추출되는 계약을 고정했다.
+- main 누적 신규 준비량은 **총 +13**. production deploy는 아직 하지 않는다.

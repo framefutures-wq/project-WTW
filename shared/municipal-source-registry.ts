@@ -284,6 +284,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list", "html_cards"],
     ingestion: "generic_fallback",
   },
+  {
+    key: "gyeonggi-의정부",
+    region: "경기",
+    locality: "의정부",
+    url: "https://ui4u.go.kr/portal/eventNoti/list.do?mId=0301170300",
+    allowedHosts: ["ui4u.go.kr", "www.ui4u.go.kr"],
+    healthMarkers: ["2026년 연간 행사·축제 일정"],
+    expectedSignals: ["html_table"],
+    ingestion: "generic_fallback",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

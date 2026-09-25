@@ -52,6 +52,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gangwon-원주",
       "gyeonggi-용인",
       "gyeonggi-이천",
+      "gyeonggi-의정부",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -296,6 +297,39 @@ test("Yongin and Icheon use bounded generic source contracts", () => {
       source.key,
     );
   }
+});
+
+test("Uijeongbu official annual event table parses explicit split dates and venue", () => {
+  const source = municipalSourceByKey("gyeonggi-의정부");
+  assert(source);
+  const html = readFileSync("fixtures/municipal-generic-uijeongbu.html", "utf8");
+  const assessment = assessMunicipalSourceDocument(source, html);
+  assert.equal(assessment.status, "healthy");
+  const extraction = extractMunicipalCandidates(source, html);
+  assert.equal(extraction.mode, "generic_html");
+  assert.equal(extraction.candidates.length, 2);
+  assert.deepEqual(
+    extraction.candidates.map((candidate) => [
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "송3 어울림 한마당 축제",
+        "2026-10-17",
+        "2026-10-17",
+        "민락2지구 로데오 거리 일대",
+      ],
+      [
+        "제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최",
+        "2026-10-03",
+        "2026-10-03",
+        "동오마을 공영주차장 일원(경전철 동오역 인근)",
+      ],
+    ],
+  );
 });
 
 test("generic registry sources enter JSON-LD fallback without a dedicated parser", () => {
