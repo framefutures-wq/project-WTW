@@ -51,7 +51,8 @@
     "test:ui:ci": "playwright test tests/browser/discovery.spec.ts --config playwright.ci.config.ts",
     "municipal:ai:probe": "node scripts/run-municipal-ai-probe.mjs",
     "municipal:list-detail:probe": "node --import tsx scripts/municipal-list-detail-probe.mjs",
-    "verify:morning:prod": "node scripts/morning-production-check.mjs"
+    "verify:morning:prod": "node scripts/morning-production-check.mjs",
+    "diagnose:municipal:3": "node --import tsx scripts/municipal-source-diagnostic.mjs"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
