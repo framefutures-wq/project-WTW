@@ -4,23 +4,15 @@ try {
     signal: AbortSignal.timeout(20_000),
     headers: {"user-agent":"GaltteumMunicipalGapDiagnostic/1.0 read-only"},
   });
-  const text = await response.text();
-  const lines = text.split(/\r?\n/);
-  const interesting = lines
-    .map((line, index) => ({line:index + 1, text:line.trim()}))
-    .filter(({text}) =>
-      /fn_list|ajax|fetch\(|\.do\b|\/api\/|culture_performance|pageNo|pageIndex|search/i.test(text)
-    )
-    .slice(0, 180);
-  console.log(JSON.stringify({
-    http_status: response.status,
-    final_url: response.url,
-    bytes: Buffer.byteLength(text,"utf8"),
-    interesting,
-  }, null, 2));
+  const body = await response.text();
+  const lines = body.split(/\r?\n/);
+  const ranges = [[245,390],[500,760],[760,930]];
+  const excerpts = ranges.map(([start,end]) => ({
+    start,
+    end,
+    text: lines.slice(start-1,end).map((line,index)=>String(start+index).padStart(4,"0")+": "+line).join("\n")
+  }));
+  console.log(JSON.stringify({http_status:response.status,excerpts},null,2));
 } catch (error) {
-  console.log(JSON.stringify({
-    status:"FETCH_FAILED",
-    error:error instanceof Error ? error.message : String(error),
-  }, null, 2));
+  console.log(JSON.stringify({status:"FETCH_FAILED",error:error instanceof Error?error.message:String(error)},null,2));
 }
