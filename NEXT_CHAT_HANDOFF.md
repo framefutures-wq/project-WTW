@@ -894,3 +894,14 @@ UI 기준:
 - production에는 잘못된 municipal candidate가 publish되지 않았고, TourAPI/base는 정상. **안전성 문제는 없음. 다만 municipal +3 검증은 실패**.
 - Batch A(평택·여주·경산)는 `staging/municipal-batch-a`에 계속 보존하고, 과천·하남·상주 원인 진단 전 production 확대 deploy는 보류.
 - 다음 bounded task: source별로 raw fetch 성공 / health marker / extraction mode / candidate 수를 분리해 보는 **read-only municipal source diagnostic**. 원인 확인 후 해당 source만 수정하고, 나머지 onboarding batch를 막지 않는다.
+
+
+## 2026-09-26 — municipal live diagnostic 성공 / transient fetch hardening
+
+- 사용자가 latest main에서 `npm run diagnose:municipal:3`를 실행했고, 초기 sandbox fetch 실패 후 network 권한 재실행에서 **과천·하남·상주 모두 HTTP 200 / document healthy / generic_html extraction 성공**을 확인했다.
+- 추출 complete candidate 수: **과천 6 / 하남 5 / 상주 12**. 일부 gate는 REVIEW지만 candidate 자체는 정상 추출된다.
+- 따라서 2026-09-25 10:00 자연 Cron의 3 source `observed=0`은 parser가 구조적으로 0을 내는 상태가 아니라, 당시 production fetch/환경의 일시 실패 가능성이 가장 높다. gate가 REVIEW여도 state는 저장되므로 observed 0의 원인이 gate 자체일 수는 없다.
+- production code basis c223028과 main의 municipal runtime 차이는 compact date-range parser 보강뿐이며 Registry/pagination/municipal worker는 동일했다.
+- 다음 Cron에서 하루 전체를 놓치는 것을 줄이기 위해 municipal official fetch에 **network/timeout 한정 1회 inline retry**를 추가했다. HTTP 4xx/5xx는 retry하지 않는다.
+- `runMunicipalAutonomous` 결과에 source별 `source_outcomes`(ok/error, candidate count, bounded reason)을 추가해 다음 `sync_runs.message.municipal`만으로 source failure 원인을 확인할 수 있게 했다.
+- ingestion/gate/D1 publication 정책은 변경하지 않았다. 잘못된 데이터 허용 범위 확대 없음.

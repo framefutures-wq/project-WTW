@@ -98,13 +98,41 @@ const emptySummary = (): Summary => ({
 async function official(url: string) {
   return (await officialResponse(url)).html;
 }
+const retryableOfficialFetchError = (error: unknown) => {
+  if (error instanceof TypeError) return true;
+  const name =
+    error && typeof error === "object" && "name" in error
+      ? String((error as { name?: unknown }).name ?? "")
+      : "";
+  if (name === "AbortError" || name === "TimeoutError") return true;
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /fetch failed|network|timeout/i.test(message);
+};
+const municipalSourceFailureReason = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (message === "source_parse_zero_candidates") return message;
+  const http = /^official_http_(\d{3})$/.exec(message);
+  if (http) return `official_http_${http[1]}`;
+  if (retryableOfficialFetchError(error)) return "network_or_timeout";
+  return "source_error";
+};
 async function officialResponse(url: string) {
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(20_000),
-    headers: { "user-agent": "WeekendMwohaeMunicipal/1.0" },
-  });
-  if (!response.ok) throw new Error(`official_http_${response.status}`);
-  return { html: await response.text(), finalUrl: response.url };
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(20_000),
+        headers: { "user-agent": "WeekendMwohaeMunicipal/1.0" },
+      });
+      if (!response.ok) throw new Error(`official_http_${response.status}`);
+      return { html: await response.text(), finalUrl: response.url };
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0 && retryableOfficialFetchError(error)) continue;
+      throw error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("official_fetch_failed");
 }
 type SourceCandidate = {
   candidate: MunicipalCandidate;
@@ -364,6 +392,12 @@ async function publish(
 
 export async function runMunicipalAutonomous(env: Env) {
   const summary = emptySummary(),
+    source_outcomes: Array<{
+      source: string;
+      status: "ok" | "error";
+      candidates: number;
+      reason?: string;
+    }> = [],
     now = new Date().toISOString(),
     koreaToday = today(),
     processed = new Set<string>();
@@ -383,6 +417,11 @@ export async function runMunicipalAutonomous(env: Env) {
             MAX_PER_SOURCE,
           );
       if (!candidates.length) throw new Error("source_parse_zero_candidates");
+      source_outcomes.push({
+        source: source.key,
+        status: "ok",
+        candidates: candidates.length,
+      });
       for (const sourceCandidate of candidates) {
         const {
           candidate,
@@ -547,9 +586,16 @@ export async function runMunicipalAutonomous(env: Env) {
       }
     } catch (error) {
       summary.source_errors += 1;
+      const reason = municipalSourceFailureReason(error);
+      source_outcomes.push({
+        source: source.key,
+        status: "error",
+        candidates: 0,
+        reason,
+      });
       console.error("municipal_source_failed", {
         source: source.key,
-        reason: error instanceof Error ? error.message : "unknown",
+        reason,
       });
     }
   }
@@ -748,6 +794,7 @@ export async function runMunicipalAutonomous(env: Env) {
     .bind(now)
     .run();
   summary.rows_written += expiredRetries.meta.changes ?? 0;
-  console.log("municipal_autonomous_summary", summary);
-  return summary;
+  const result = { ...summary, source_outcomes };
+  console.log("municipal_autonomous_summary", result);
+  return result;
 }

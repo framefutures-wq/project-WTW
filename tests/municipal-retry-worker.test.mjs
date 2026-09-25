@@ -250,3 +250,49 @@ test("Suwon healthy 31-row canonical list selects a deterministic downstream 25 
     ["4000", "4020", "4001", "4021", "4002", "4022", "4003", "4023", "4004", "4024", "4005", "4025", "4006", "4026", "4007", "4027", "4008", "4028", "4009", "4029", "4010", "4030", "4011", "4012", "4013"],
   );
 });
+
+
+test("municipal official fetch retries one transient network failure and records a healthy source outcome", async () => {
+  const mock = createMockDb();
+  let pajuFetches = 0;
+  const result = await withFetch((url) => {
+    if (url === sourceUrls.paju) {
+      pajuFetches += 1;
+      if (pajuFetches === 1) throw new TypeError("fetch failed");
+      return pajuList();
+    }
+    if (url === "https://tour.paju.go.kr/detail/940")
+      return "2026 문산거리축제 행사 상세";
+    return emptySourcePage(url);
+  }, () => runMunicipalAutonomous(productionEnv(mock.db)));
+
+  assert.equal(pajuFetches, 2);
+  assert.equal(result.AUTO_PUBLISH, 1);
+  assert.deepEqual(
+    result.source_outcomes.find((item) => item.source === "paju"),
+    { source: "paju", status: "ok", candidates: 1 },
+  );
+});
+
+test("municipal official fetch does not retry HTTP failures and persists a bounded reason in the summary", async () => {
+  const mock = createMockDb();
+  let pajuFetches = 0;
+  const result = await withFetch((url) => {
+    if (url === sourceUrls.paju) {
+      pajuFetches += 1;
+      return new Response("unavailable", { status: 503 });
+    }
+    return emptySourcePage(url);
+  }, () => runMunicipalAutonomous(productionEnv(mock.db)));
+
+  assert.equal(pajuFetches, 1);
+  assert.deepEqual(
+    result.source_outcomes.find((item) => item.source === "paju"),
+    {
+      source: "paju",
+      status: "error",
+      candidates: 0,
+      reason: "official_http_503",
+    },
+  );
+});
