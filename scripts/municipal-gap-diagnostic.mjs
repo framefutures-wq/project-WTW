@@ -157,6 +157,14 @@ for (const source of sources) {
       extraction_mode: extraction.mode,
       complete_candidates: extraction.candidates.length,
       partial_candidates: extraction.partialCandidates?.length ?? 0,
+      first_full_date_snippet: (() => {
+        const match = /20\d{2}[-./]\s*\d{1,2}[-./]\s*\d{1,2}/.exec(fetched.html);
+        if (!match || match.index === undefined) return null;
+        return fetched.html
+          .slice(Math.max(0, match.index - 1200), Math.min(fetched.html.length, match.index + 2600))
+          .replace(/\s+/g, " ")
+          .slice(0, 4000);
+      })(),
       raw_snippet: (() => {
         if (!source.needle) return null;
         const at = fetched.html.indexOf(source.needle);
