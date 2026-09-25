@@ -18,7 +18,7 @@ const sourceMarkers = {
 };
 
 function pajuList(id = "940", title = "2026 문산거리축제", url = `https://tour.paju.go.kr/detail/${id}`) {
-  return `<ul><li><span class="titl">${title}</span><span class="list-info">행사 : 2026-10-03 ~ 2026-10-04 장소 : 문산천 비용 : 무료</span><a href="${url}">상세</a></li></ul>`;
+  return `<ul><li><span class="titl">${title}</span><span class="list-info">행사 : 2026-10-03 ~ 2026-10-04 장소 : 문산천 비용 : 무료</span><a href="${url}" onclick="jsCulturalView(${id})">상세</a></li></ul>`;
 }
 function suwonList(id = "3049", title = "제1회 수원거리축제", url = `https://www.swcf.or.kr/?p=29_view&idx=${id}`) {
   return `<table><tr><td>축제</td><td>2026-10-03 ~ 2026-10-04</td><td><a href="${url}">${title}</a></td><td>수원화성</td></tr></table>`;
