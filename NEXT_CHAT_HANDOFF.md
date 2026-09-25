@@ -1008,3 +1008,11 @@ UI 기준:
 - `busan-동`: 기존 access HOLD였지만 live HTTP 200과 73건/8페이지 gallery를 확인했다. nested `dt + 기간 + 장소` 구조 전용 registered parser로 first page를 안전하게 읽도록 등록했다.
 - 세 source 모두 retained live-shape fixture와 registered-parser path 회귀 테스트를 추가했다. pagination은 추측하지 않고 first page only로 제한했다.
 - main 누적 신규 준비량은 기존 +13에서 **총 +16**으로 증가. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — access HOLD 해제: 영주 +1
+
+- GitHub Actions live fetch에서 영주시 문화달력이 HTTP 200으로 정상 접근되고, 현재 2026-09 일정의 title·venue·full-year start/end·detail `mon_uid`가 같은 행사 block에 있음을 확인했다.
+- calendar는 같은 multi-day 행사를 여러 날짜에 반복 노출할 수 있어 `mon_uid` 기준 dedupe하는 registered parser를 추가했다.
+- `gyeongbuk-영주` access HOLD를 해제하고 Registry opt-in했다. retained live-shape fixture에서 category/title/venue/date/detail id와 중복 제거를 검증한다.
+- main 누적 신규 준비량은 **총 +17**. production deploy는 아직 하지 않는다.

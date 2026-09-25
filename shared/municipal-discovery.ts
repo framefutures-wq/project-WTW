@@ -1115,6 +1115,78 @@ export function parseBusanDongCultureList(html: string): MunicipalCandidate[] {
   });
 }
 
+
+export function parseYeongjuCultureCalendar(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://www.yeongju.go.kr/open_content/main/page.do?mnu_uid=10617";
+  const candidates = elementBlocks(html, "li").flatMap<MunicipalCandidate>(
+    (block) => {
+      const titleMatch =
+        /<p\b[^>]*class=["'][^"']*\btit\b[^"']*["'][^>]*>([\s\S]*?)<\/p>/i.exec(
+          block,
+        );
+      const href =
+        /<a\b[^>]*href=["']([^"']*mon_uid=\d+[^"']*)["']/i.exec(block)?.[1];
+      if (!titleMatch || !href) return [];
+
+      const paragraphs = [
+        ...block.matchAll(/<p\b([^>]*)>([\s\S]*?)<\/p>/gi),
+      ].map((match) => ({
+        attrs: match[1],
+        value: clean(match[2]),
+      }));
+      const titleRaw = clean(titleMatch[1]);
+      const categoryMatch = /^\[([^\]]+)\]\s*/.exec(titleRaw);
+      const title = titleRaw.replace(/^\[[^\]]+\]\s*/, "").trim();
+      const dateEntry = paragraphs.find((entry) => explicitDateRange(entry.value));
+      const dates = dateEntry ? explicitDateRange(dateEntry.value) : null;
+      const titleIndex = paragraphs.findIndex((entry) =>
+        /\btit\b/i.test(entry.attrs),
+      );
+      const dateIndex = dateEntry ? paragraphs.indexOf(dateEntry) : -1;
+      const venue =
+        titleIndex >= 0 && dateIndex > titleIndex + 1
+          ? paragraphs
+              .slice(titleIndex + 1, dateIndex)
+              .map((entry) => entry.value)
+              .find((value) => isValidVenue(value)) ?? null
+          : null;
+      const official_url = absolute(sourceUrl, clean(href));
+      const source_candidate_id = official_url
+        ? new URL(official_url).searchParams.get("mon_uid")
+        : null;
+      if (
+        !title ||
+        !venue ||
+        !dates ||
+        !official_url ||
+        !source_candidate_id
+      )
+        return [];
+      return [
+        {
+          source: "gyeongbuk-영주",
+          source_candidate_id,
+          title,
+          ...dates,
+          venue,
+          region: "경북",
+          locality: "영주",
+          official_url,
+          category: categoryMatch?.[1] ?? "문화행사",
+          snippet: null,
+          image_candidate: null,
+        },
+      ];
+    },
+  );
+  return [
+    ...new Map(
+      candidates.map((candidate) => [candidate.source_candidate_id, candidate]),
+    ).values(),
+  ];
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1260,6 +1332,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "chungbuk-옥천": parseOkcheonFestivalList,
   "gyeongbuk-안동": parseAndongCultureList,
   "busan-동": parseBusanDongCultureList,
+  "gyeongbuk-영주": parseYeongjuCultureCalendar,
 };
 
 type JsonRecord = Record<string, unknown>;

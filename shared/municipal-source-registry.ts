@@ -324,6 +324,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list"],
     ingestion: "registered_parser",
   },
+  {
+    key: "gyeongbuk-영주",
+    region: "경북",
+    locality: "영주",
+    url: "https://www.yeongju.go.kr/open_content/main/page.do?mnu_uid=10617",
+    allowedHosts: ["yeongju.go.kr", "www.yeongju.go.kr"],
+    healthMarkers: ["문화달력", "schedule_tit"],
+    expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

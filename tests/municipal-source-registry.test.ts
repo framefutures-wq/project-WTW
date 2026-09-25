@@ -25,6 +25,7 @@ const fixtureByKey: Record<string, string> = {
   "chungbuk-옥천": "fixtures/municipal-discovery-okcheon.html",
   "gyeongbuk-안동": "fixtures/municipal-discovery-andong.html",
   "busan-동": "fixtures/municipal-discovery-busan-dong.html",
+  "gyeongbuk-영주": "fixtures/municipal-discovery-yeongju.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -59,6 +60,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "chungbuk-옥천",
       "gyeongbuk-안동",
       "busan-동",
+      "gyeongbuk-영주",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -438,6 +440,42 @@ test("Busan Dong-gu parser reads nested gallery cards without mixing child list 
         "2026-06-20",
         "2026-10-25",
         "동구 문화플랫폼 시민마당 전시장",
+      ],
+    ],
+  );
+});
+
+test("Yeongju parser deduplicates repeated calendar-day appearances by mon_uid", () => {
+  const source = municipalSourceByKey("gyeongbuk-영주");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-yeongju.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.equal(result.candidates.length, 2);
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "388",
+        "청소년 페스티벌",
+        "2026-09-05",
+        "2026-09-05",
+        "영주시문화예술회관 까치홀(가흥로 257)",
+      ],
+      [
+        "401",
+        "8090 락페스티벌",
+        "2026-09-12",
+        "2026-09-12",
+        "영주 중앙시장 상설무대",
       ],
     ],
   );
