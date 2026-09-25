@@ -1,6 +1,5 @@
 import {
   assessMunicipalSourceDocument,
-  type MunicipalSourceDefinition,
 } from "../shared/municipal-source-registry.ts";
 import {
   extractMunicipalCandidates,
@@ -69,7 +68,7 @@ const sources = [
   healthMarkers: [],
   expectedSignals: ["html_table", "html_list", "html_cards"],
   ingestion: "generic_fallback",
-})) satisfies MunicipalSourceDefinition[];
+}));
 
 const fetchHtml = async (url) => {
   const response = await fetch(url, {
