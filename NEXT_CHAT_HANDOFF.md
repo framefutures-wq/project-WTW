@@ -914,3 +914,14 @@ UI 기준:
 - 이 batch는 기존 generic extractor만 사용하고 새 parser/collector 범위 확대는 하지 않는다.
 - production deploy 전 GitHub Project checks 성공이 필수다. Cloudflare 인증이 필요한 실제 deploy만 사용자 환경에서 1회 실행한다.
 - source 하나가 실패해도 나머지 source 진행을 막지 않는다. 다음부터 coverage 성과는 ACTIVE 증가 수로 보고한다.
+
+
+## 2026-09-26 — municipal Batch B +2 main 준비
+
+- Codespaces를 쓰지 않고 GitHub/web read-only 조사만으로 다음 READY batch를 진행했다.
+- Batch B main opt-in: `incheon-서해`, `jeonnam-gwangju-곡성`.
+- 서해 공식 전체행사 목록은 현재 title/full-year period/venue를 반복 제공하고 page 2 URL에서 `pgno=2`를 확인했다. Registry는 `pgno`, max 3 pages로 bounded.
+- 곡성 공식 공연/체험행사 목록은 현재 2026 월별 문화달력/행사를 title/full-year period/venue로 제공하고 pagination `page`를 사용한다. Registry는 max 3 pages로 bounded.
+- 둘 다 기존 `generic_fallback`만 사용하며 새 parser/collector code는 추가하지 않았다.
+- `gyeonggi-광주`는 current official page에 2026 future 행사 core가 확인되지만 pagination query contract를 GitHub/web만으로 확정하지 못해 이번 batch에서 억지로 넣지 않았다. 다음 독립 batch에서 bounded paging contract를 먼저 확정한다.
+- production deploy는 아직 하지 않는다. 여러 batch를 모은 뒤 사용자 Codespaces는 최종 deploy 1회에만 사용한다.

@@ -42,6 +42,8 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeonggi-평택",
       "gyeonggi-여주",
       "gyeongbuk-경산",
+      "incheon-서해",
+      "jeonnam-gwangju-곡성",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -144,6 +146,36 @@ test("Pyeongtaek, Yeoju, and Gyeongsan are bounded generic sources without dedic
     queryParam: "pageNum",
     maxPages: 3,
   });
+});
+
+
+test("Seohae and Gokseong are bounded generic sources without dedicated parsers", () => {
+  const expected = [
+    [
+      "incheon-서해",
+      "https://www.seohae.go.kr/open_content/culture/cultureListAll.do",
+      "pgno",
+    ],
+    [
+      "jeonnam-gwangju-곡성",
+      "https://www.gokseong.go.kr/tour/festivity/event",
+      "page",
+    ],
+  ] as const;
+  for (const [key, url, queryParam] of expected) {
+    const source = municipalSourceByKey(key);
+    assert(source, key);
+    assert.equal(source.url, url, key);
+    assert.equal(source.ingestion, "generic_fallback", key);
+    assert.equal(MUNICIPAL_PARSERS[source.key], undefined, key);
+    assert.deepEqual(source.pagination, { queryParam, maxPages: 3 }, key);
+    assert.equal(municipalSourceAllowsUrl(source, source.url), true, key);
+    assert.equal(
+      municipalSourceAllowsUrl(source, "https://example.com/event"),
+      false,
+      key,
+    );
+  }
 });
 
 test("Pyeongtaek and Gyeongsan registry contracts parse their retained live-shape fixtures", () => {

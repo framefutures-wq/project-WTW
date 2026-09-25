@@ -191,6 +191,28 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     ingestion: "generic_fallback",
     pagination: { queryParam: "pageNum", maxPages: 3 },
   },
+  {
+    key: "incheon-서해",
+    region: "인천",
+    locality: "서해",
+    url: "https://www.seohae.go.kr/open_content/culture/cultureListAll.do",
+    allowedHosts: ["seohae.go.kr", "www.seohae.go.kr"],
+    healthMarkers: ["행사검색"],
+    expectedSignals: ["html_table", "html_list"],
+    ingestion: "generic_fallback",
+    pagination: { queryParam: "pgno", maxPages: 3 },
+  },
+  {
+    key: "jeonnam-gwangju-곡성",
+    region: "전남광주통합특별시",
+    locality: "곡성",
+    url: "https://www.gokseong.go.kr/tour/festivity/event",
+    allowedHosts: ["gokseong.go.kr", "www.gokseong.go.kr"],
+    healthMarkers: ["공연/체험행사"],
+    expectedSignals: ["html_list", "html_cards"],
+    ingestion: "generic_fallback",
+    pagination: { queryParam: "page", maxPages: 3 },
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
