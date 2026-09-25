@@ -875,6 +875,109 @@ export function parseBucheonAutumnList(html: string): MunicipalCandidate[] {
   });
 }
 
+export function parseDaeguSeoMusicSchedule(html: string): MunicipalCandidate[] {
+  const marker = '"listMonthly"';
+  const markerIndex = html.indexOf(marker);
+  if (markerIndex < 0) return [];
+
+  const start = html.lastIndexOf("{", markerIndex);
+  if (start < 0) return [];
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let end = -1;
+  for (let index = start; index < html.length; index += 1) {
+    const char = html[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        end = index + 1;
+        break;
+      }
+    }
+  }
+  if (end < 0) return [];
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(html.slice(start, end));
+  } catch {
+    return [];
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload))
+    return [];
+  const months = (payload as { listMonthly?: unknown }).listMonthly;
+  if (!Array.isArray(months)) return [];
+
+  const candidates = months.flatMap<MunicipalCandidate>((day) => {
+    if (!day || typeof day !== "object" || Array.isArray(day)) return [];
+    const playList = (day as { playList?: unknown }).playList;
+    if (!Array.isArray(playList)) return [];
+    return playList.flatMap<MunicipalCandidate>((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+      const record = item as Record<string, unknown>;
+      const title =
+        typeof record.title === "string" ? clean(record.title) : "";
+      const venue =
+        typeof record.place === "string" ? clean(record.place) || null : null;
+      const start_date =
+        typeof record.startDate === "string"
+          ? /^(20\d{2}-\d{2}-\d{2})/.exec(record.startDate.trim())?.[1] ?? null
+          : null;
+      const end_date =
+        typeof record.endDate === "string"
+          ? /^(20\d{2}-\d{2}-\d{2})/.exec(record.endDate.trim())?.[1] ?? start_date
+          : start_date;
+      if (!title || !venue || !start_date || !end_date) return [];
+      const rawId =
+        typeof record.idx === "number" || typeof record.idx === "string"
+          ? String(record.idx)
+          : `${title}|${start_date}|${venue}`;
+      return [
+        {
+          source: "daegu-서",
+          source_candidate_id: rawId,
+          title,
+          start_date,
+          end_date,
+          venue,
+          region: "대구",
+          locality: "서구",
+          official_url:
+            "https://www.dgs.go.kr/music/contents.do?mid=0400000000",
+          category:
+            typeof record.category === "string"
+              ? `비원뮤직홀 category ${record.category}`
+              : "비원뮤직홀 공연",
+          snippet: null,
+          image_candidate: null,
+          ...(!validRange(start_date, end_date)
+            ? { parse_error: "invalid_date_range" }
+            : {}),
+        },
+      ];
+    });
+  });
+
+  return [
+    ...new Map(
+      candidates.map((candidate) => [candidate.source_candidate_id, candidate]),
+    ).values(),
+  ];
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1016,6 +1119,7 @@ export const MUNICIPAL_PARSERS: Partial<
   goyang: parseGoyangList,
   hwaseong: parseHwaseongList,
   bucheon: parseBucheonAutumnList,
+  "daegu-서": parseDaeguSeoMusicSchedule,
 };
 
 type JsonRecord = Record<string, unknown>;

@@ -243,6 +243,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list", "html_cards"],
     ingestion: "generic_fallback",
   },
+  {
+    key: "daegu-서",
+    region: "대구",
+    locality: "서구",
+    url: "https://www.dgs.go.kr/music/contents.do?mid=0400000000",
+    allowedHosts: ["dgs.go.kr", "www.dgs.go.kr"],
+    healthMarkers: ['"listMonthly"'],
+    expectedSignals: ["html_table"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

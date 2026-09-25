@@ -21,6 +21,7 @@ const fixtureByKey: Record<string, string> = {
   goyang: "fixtures/municipal-discovery-goyang.html",
   hwaseong: "fixtures/municipal-discovery-hwaseong.html",
   bucheon: "fixtures/municipal-discovery-bucheon.html",
+  "daegu-서": "fixtures/municipal-discovery-daegu-seo.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -47,6 +48,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeonggi-광주",
       "seoul-gangnam",
       "ulsan-북",
+      "daegu-서",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -293,6 +295,45 @@ test("current municipal fixtures satisfy their registered parser contracts", () 
     assert(parser);
     assert(parser(html).length > 0);
   }
+});
+
+test("Daegu Seo registered parser reads the official embedded monthly schedule payload", () => {
+  const source = municipalSourceByKey("daegu-서");
+  assert(source);
+  assert.equal(source.ingestion, "registered_parser");
+  assert.equal(typeof MUNICIPAL_PARSERS[source.key], "function");
+  const html = readFileSync(
+    "fixtures/municipal-discovery-daegu-seo.html",
+    "utf8",
+  );
+  const extraction = extractMunicipalCandidates(source, html);
+  assert.equal(extraction.mode, "registered");
+  assert.equal(extraction.candidates.length, 2);
+  assert.deepEqual(
+    extraction.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "340",
+        "My Favorite Songs",
+        "2026-04-04",
+        "2026-04-04",
+        "비원뮤직홀 공연장",
+      ],
+      [
+        "367",
+        "[대관]CINEMA IN CLASSIC",
+        "2026-04-11",
+        "2026-04-11",
+        "비원뮤직홀 공연",
+      ],
+    ],
+  );
 });
 
 test("format changes fail closed while exposing fallback document signals", () => {

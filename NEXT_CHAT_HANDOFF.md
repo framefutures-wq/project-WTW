@@ -958,3 +958,12 @@ UI 기준:
 - 두 source 모두 pagination parameter를 추측하지 않고 현재 first page만 `generic_fallback`으로 읽도록 제한했다.
 - 이 batch는 새 parser나 publication policy를 추가하지 않는다. source가 runtime에서 generic candidate를 만들지 못하면 기존 fail-closed/source_outcomes 경로로 해당 source만 error 처리되고 다른 source를 막지 않는다.
 - main 누적 신규 준비량은 Batch A +3 / B +2 / C +1 / D +2 = **총 +8**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal GAP 해소: 대구 서구 parser
+
+- 대구 서구 비원뮤직홀 공식 공연일정은 HTML 안에 `listMonthly[].playList[]` JSON payload를 직접 포함한다. 2026 schedule에서 `title/startDate/endDate/place/idx` core가 명시적으로 확인됐다.
+- generic HTML DOM 추측 대신 source-specific registered parser `parseDaeguSeoMusicSchedule`를 추가해 embedded JSON만 읽도록 했다.
+- parser는 balanced JSON object extraction → JSON.parse → explicit title/full-year dates/venue만 candidate로 만들고 idx로 dedupe한다. 누락 core는 fail-closed 제외한다.
+- source `daegu-서`를 Registry에 registered_parser로 추가했고 retained fixture/test를 추가했다.
+- main 누적 신규 준비량은 기존 +8에 대구 서구 +1을 더해 **총 +9**. production deploy는 아직 하지 않는다.
