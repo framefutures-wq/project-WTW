@@ -1025,3 +1025,12 @@ UI 기준:
 - source-specific parser는 table caption의 명시 연도를 같은 row의 exact yearless 날짜에만 적용한다. '9월 중'·복수 날짜 나열처럼 불명확한 일정은 fail-closed 제외하고 full-year/cross-year 범위는 그대로 사용한다.
 - `busan-해운대` HOLD를 해제하고 annual source로 Registry opt-in했다.
 - main 누적 신규 준비량은 **총 +18**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal GAP 해소: 경주 +1
+
+- GitHub Actions live probe에서 경주문화관광 `mnu_uid=4609&listType=list`가 HTTP 200으로 current list를 직접 반환하고, 각 `dl`에 title·full-year 기간·장소·first-party detail `con_uid`를 self-contained로 제공함을 확인했다.
+- 기존 inventory의 `mnu_uid=4608` 대신 live current list인 4609/listType=list를 Registry canonical source로 사용한다.
+- source-specific registered parser는 각 `dl` 블록 안에서만 title/기간/장소/detail id를 읽어 candidate를 만들며, core 누락은 fail-closed 제외한다.
+- retained live-shape fixture와 registered-parser 회귀 테스트를 추가했다.
+- main 누적 신규 준비량은 **총 +19**. production deploy는 아직 하지 않는다.

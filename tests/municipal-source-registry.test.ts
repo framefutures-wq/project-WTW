@@ -27,6 +27,7 @@ const fixtureByKey: Record<string, string> = {
   "busan-동": "fixtures/municipal-discovery-busan-dong.html",
   "gyeongbuk-영주": "fixtures/municipal-discovery-yeongju.html",
   "busan-해운대": "fixtures/municipal-discovery-haeundae.html",
+  "gyeongbuk-경주": "fixtures/municipal-discovery-gyeongju.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -63,6 +64,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "busan-동",
       "gyeongbuk-영주",
       "busan-해운대",
+      "gyeongbuk-경주",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -531,6 +533,41 @@ test("Haeundae annual parser uses the page year only for exact yearless dates", 
         candidate.title !== "해운대비긴어게인" &&
         candidate.title !== "2026 해운대해양레저 축제",
     ),
+  );
+});
+
+test("Gyeongju parser reads official list cards with full dates and venue", () => {
+  const source = municipalSourceByKey("gyeongbuk-경주");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-gyeongju.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "7746",
+        "2026 한수원아트페스티벌 특별전 <한국 미술, 조선 후기부터 현대까지>",
+        "2026-06-30",
+        "2026-10-18",
+        "경주예술의전당 알천미술관 갤러리해(4F)",
+      ],
+      [
+        "7777",
+        "경주문화관1918 환경영화제 <지구를 위해, 다시 PLAY>",
+        "2026-09-05",
+        "2026-09-06",
+        "경주문화관1918(구 경주역)",
+      ],
+    ],
   );
 });
 

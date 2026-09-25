@@ -1262,6 +1262,63 @@ export function parseHaeundaeAnnualEvents(html: string): MunicipalCandidate[] {
   );
 }
 
+
+export function parseGyeongjuCultureList(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://www.gyeongju.go.kr/tour/page.do?mnu_uid=4609&listType=list";
+  return elementBlocks(html, "dl").flatMap<MunicipalCandidate>((block) => {
+    const titleBlock =
+      /<p\b[^>]*class=["'][^"']*\btitle\b[^"']*["'][^>]*>([\s\S]*?)<\/p>/i.exec(
+        block,
+      )?.[1] ?? "";
+    if (!titleBlock) return [];
+    const category =
+      /<span\b[^>]*>([\s\S]*?)<\/span>/i.exec(titleBlock)?.[1] ?? null;
+    const title = clean(titleBlock.replace(/<span\b[\s\S]*?<\/span>/i, " "));
+    const period = clean(
+      /<li\b[^>]*>\s*<span\b[^>]*>\s*기간\s*<\/span>\s*([\s\S]*?)<\/li>/i.exec(
+        block,
+      )?.[1] ?? "",
+    );
+    const venue = clean(
+      /<li\b[^>]*>\s*<span\b[^>]*>\s*장소\s*<\/span>\s*([\s\S]*?)<\/li>/i.exec(
+        block,
+      )?.[1] ?? "",
+    );
+    const dates = period ? explicitDateRange(period) : null;
+    const href =
+      /<a\b[^>]*href=["']([^"']*con_uid=\d+[^"']*)["']/i.exec(block)?.[1];
+    const official_url = href ? absolute(sourceUrl, clean(href)) : null;
+    const source_candidate_id = official_url
+      ? new URL(official_url).searchParams.get("con_uid")
+      : null;
+    if (
+      !title ||
+      !venue ||
+      !dates ||
+      !official_url ||
+      !source_candidate_id ||
+      !isValidVenue(venue)
+    )
+      return [];
+    return [
+      {
+        source: "gyeongbuk-경주",
+        source_candidate_id,
+        title,
+        ...dates,
+        venue,
+        region: "경북",
+        locality: "경주",
+        official_url,
+        category: category ? clean(category) : "문화행사",
+        snippet: null,
+        image_candidate: null,
+      },
+    ];
+  });
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1409,6 +1466,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "busan-동": parseBusanDongCultureList,
   "gyeongbuk-영주": parseYeongjuCultureCalendar,
   "busan-해운대": parseHaeundaeAnnualEvents,
+  "gyeongbuk-경주": parseGyeongjuCultureList,
 };
 
 type JsonRecord = Record<string, unknown>;

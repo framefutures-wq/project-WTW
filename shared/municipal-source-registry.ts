@@ -344,6 +344,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_table"],
     ingestion: "registered_parser",
   },
+  {
+    key: "gyeongbuk-경주",
+    region: "경북",
+    locality: "경주",
+    url: "https://www.gyeongju.go.kr/tour/page.do?mnu_uid=4609&listType=list",
+    allowedHosts: ["gyeongju.go.kr", "www.gyeongju.go.kr"],
+    healthMarkers: ["cultureList", "리스트형"],
+    expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
