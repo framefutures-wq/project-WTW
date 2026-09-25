@@ -934,3 +934,11 @@ UI 기준:
 - pagination query parameter는 GitHub/web read-only 환경에서 raw href까지 확정하지 못했으므로 추측하지 않았다. 이번 opt-in은 **현재 first page만** 읽는 `generic_fallback`으로 제한한다.
 - first page 자체에 current/future candidate가 충분하며, pagination을 억지로 선언하지 않아 잘못된 repeated-page crawl 위험을 피한다.
 - production deploy는 아직 하지 않는다. Batch A +3, Batch B +2, Batch C +1을 묶어 최종 deploy 1회로 가져간다.
+
+
+## 2026-09-26 — 사용자 위임: 끝까지 자동 진행
+
+- 사용자는 municipal coverage 확대를 **추가 시작/계속 명령 없이 가능한 데까지 끝까지 밀어붙이는 방식**으로 운영하길 명시했다.
+- routine GitHub 조사·수정·테스트·commit/push·CI 확인은 중간 승인 없이 연속 진행한다.
+- Codespaces는 여러 batch를 모은 뒤 final deploy 1회에만 요청하는 것을 기본으로 한다.
+- 개별 source가 막히면 그 source만 분리하고 전체 queue는 계속 진행한다.

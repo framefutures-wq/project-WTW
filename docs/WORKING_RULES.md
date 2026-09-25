@@ -190,3 +190,14 @@ Codex/작업 프롬프트에는 가능하면 맨 위에 권장 모델을 명시�
   - `PAUSED_USER_ACTION`: 작업 방향은 유효하지만 Codespaces/Cloudflare/D1 등 사용자 환경 또는 권한이 필요한 체크포인트.
 - 사용자 부재 중에도 destructive D1, secret 변경, 신규/교체 Cloudflare resource, outage-risk 변경, production 수동 ingestion은 자동 진행하지 않는다.
 - GitHub에서 가능한 read-only 조사, 문서 갱신, 작은 안전한 코드/테스트 수정, commit/push, Actions 검증은 기존 종료 규칙에 따라 진행할 수 있다.
+
+
+## 12. 사용자 명령 없는 연속 진행 원칙
+
+- 사용자가 한 번 방향을 위임한 routine municipal/coverage 작업은 **매 bounded task마다 '시작', '계속', 승인 메시지를 기다리지 않는다.**
+- 현재 활성 turn에서는 하나의 bounded task를 구현/검증/commit-push로 닫은 뒤, 다음 안전한 bounded task가 명확하면 **즉시 이어서 진행**한다.
+- 중간보고는 생략하고, 실제로 멈춰야 하는 지점(`PAUSED_USER_ACTION`, 고위험 변경, 불명확한 제품 결정)에 도달했을 때만 사용자 개입을 요청한다.
+- 한 source의 실패가 batch 전체를 막지 않도록 해당 source만 HOLD/OBSERVE/PAUSED로 분리하고 다음 source로 이동한다.
+- 비용 절약을 위해 Codespaces는 최종 통합 deploy처럼 사용자 환경이 꼭 필요한 시점에만 사용하고, 가능한 조사·코드·테스트·commit/push·CI 확인은 GitHub에서 처리한다.
+- 여러 안전한 source 변경은 main에 누적한 뒤 **production deploy를 가능한 한 1회로 묶는다.**
+- 단, ChatGPT가 답변을 보낸 뒤 새 사용자 메시지 없이 백그라운드에서 스스로 새 turn을 시작할 수는 없다. 이 제약을 작업 완료 약속처럼 표현하지 않는다.
