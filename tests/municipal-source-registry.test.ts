@@ -73,6 +73,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeongbuk-포항",
       "gyeonggi-포천",
       "gyeongnam-거제",
+      "jeonnam-gwangju-목포",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -205,6 +206,33 @@ test("Seohae and Gokseong are bounded generic sources without dedicated parsers"
       key,
     );
   }
+});
+
+test("Mokpo art homepage is a first-page generic source without a dedicated parser", () => {
+  const source = municipalSourceByKey("jeonnam-gwangju-목포");
+  assert(source);
+  assert.equal(source.url, "https://www.mokpo.go.kr/art");
+  assert.equal(source.ingestion, "generic_fallback");
+  assert.equal(MUNICIPAL_PARSERS[source.key], undefined);
+  assert.equal(source.pagination, undefined);
+  assert.equal(
+    municipalSourceAllowsUrl(
+      source,
+      "https://www.mokpo.go.kr/art/performance/new_performance?mode=view&idx=5975",
+    ),
+    true,
+  );
+  assert.equal(
+    municipalSourceAllowsUrl(
+      source,
+      "https://biz.mokpo.go.kr/art/performance/new_performance?mode=view&idx=5975",
+    ),
+    true,
+  );
+  assert.equal(
+    municipalSourceAllowsUrl(source, "https://example.com/event"),
+    false,
+  );
 });
 
 test("Gyeonggi Gwangju uses the current first-page generic source without guessing pagination", () => {

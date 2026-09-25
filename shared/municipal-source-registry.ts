@@ -396,6 +396,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_table"],
     ingestion: "registered_parser",
   },
+  {
+    key: "jeonnam-gwangju-목포",
+    region: "전남광주통합특별시",
+    locality: "목포",
+    url: "https://www.mokpo.go.kr/art",
+    allowedHosts: ["mokpo.go.kr", "www.mokpo.go.kr", "biz.mokpo.go.kr"],
+    healthMarkers: ["목포시 문예시설", "공연정보"],
+    expectedSignals: ["html_list"],
+    ingestion: "generic_fallback",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

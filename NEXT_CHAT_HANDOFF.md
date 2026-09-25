@@ -1074,3 +1074,12 @@ UI 기준:
 - first-party detail href가 있으면 보존하고 없으면 공식 월별 목록 URL을 provenance로 유지한다.
 - GitHub Actions 환경에서 해당 host fetch는 실패했지만 공식 web source는 접근 가능하므로 source_outcomes 격리 전제 하에 opt-in했다. production에서 fetch 실패 시 이 source만 error로 격리된다.
 - main 누적 신규 준비량은 **총 +23**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal staging: 목포 homepage +1
+
+- 기존 문예시설 월간 schedule URL은 GitHub Actions live fetch에서 HTTP 200이지만 current generic extractor가 0 candidate였다.
+- 같은 공식 목포시 문예시설 homepage `https://www.mokpo.go.kr/art`는 live diagnostic에서 HTTP 200, **generic_html 74 candidates**를 반환했다. 현재 2026-10 future 전시/공연도 title·full-year 기간·venue·first-party detail URL을 같은 card에서 추출한다.
+- 새 parser를 만들지 않고 검증된 기존 `generic_fallback`으로 homepage를 canonical source로 전환한다. pagination은 추측하지 않고 first page only다.
+- `www.mokpo.go.kr`와 동일 공식 mirror `biz.mokpo.go.kr` detail host만 allowlist한다.
+- 이 commit은 Geoje 뒤 staging에서 CI 검증 후 main에 fast-forward할 예정이며, main 반영 시 신규 준비량은 **총 +24**가 된다.
