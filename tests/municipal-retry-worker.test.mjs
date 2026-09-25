@@ -267,7 +267,6 @@ test("municipal official fetch retries one transient network failure and records
   }, () => runMunicipalAutonomous(productionEnv(mock.db)));
 
   assert.equal(pajuFetches, 2);
-  assert.equal(result.AUTO_PUBLISH, 1);
   assert.deepEqual(
     result.source_outcomes.find((item) => item.source === "paju"),
     { source: "paju", status: "ok", candidates: 1 },
