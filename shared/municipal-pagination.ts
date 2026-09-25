@@ -6,6 +6,8 @@ import {
 
 /** A registry value can never turn one source into an unbounded crawler. */
 export const MAX_MUNICIPAL_PAGINATION_PAGES = 3;
+/** Current month plus at most two future months per source run. */
+export const MAX_MUNICIPAL_CALENDAR_MONTHS_AHEAD = 2;
 /** A single canonical list may exceed the downstream budget, but not become unbounded. */
 export const MAX_MUNICIPAL_SINGLE_LIST_CANDIDATES = 100;
 
@@ -20,14 +22,64 @@ const validPagination = (
     pagination.maxPages <= MAX_MUNICIPAL_PAGINATION_PAGES,
   );
 
+const validCalendarWindow = (
+  calendarWindow: MunicipalSourceDefinition["calendarWindow"],
+): calendarWindow is NonNullable<MunicipalSourceDefinition["calendarWindow"]> =>
+  Boolean(
+    calendarWindow &&
+    /^[A-Za-z][A-Za-z0-9_-]*$/.test(calendarWindow.queryParam) &&
+    Number.isInteger(calendarWindow.monthsAhead) &&
+    calendarWindow.monthsAhead >= 0 &&
+    calendarWindow.monthsAhead <= MAX_MUNICIPAL_CALENDAR_MONTHS_AHEAD &&
+    (calendarWindow.format === "yyyy-mm-01" ||
+      calendarWindow.format === "yyyymm"),
+  );
+
+const monthWindowValue = (
+  current: string,
+  offset: number,
+  format: "yyyy-mm-01" | "yyyymm",
+) => {
+  if (!/^20\d{2}-\d{2}-\d{2}$/.test(current)) return null;
+  const year = Number(current.slice(0, 4));
+  const month = Number(current.slice(5, 7));
+  if (!Number.isInteger(year) || month < 1 || month > 12) return null;
+  const date = new Date(Date.UTC(year, month - 1 + offset, 1));
+  const y = String(date.getUTCFullYear());
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return format === "yyyymm" ? y + m : y + "-" + m + "-01";
+};
+
 /** Returns null for an unsafe registry declaration instead of guessing a URL. */
 export function municipalSourcePageUrls(
   source: MunicipalSourceDefinition,
+  current?: string,
 ): string[] | null {
-  if (!source.pagination) return [source.url];
-  if (!validPagination(source.pagination)) return null;
+  if (source.pagination && source.calendarWindow) return null;
+  if (!source.pagination && !source.calendarWindow) return [source.url];
   const urls: string[] = [];
   try {
+    if (source.calendarWindow) {
+      if (!validCalendarWindow(source.calendarWindow) || !current) return null;
+      for (
+        let offset = 0;
+        offset <= source.calendarWindow.monthsAhead;
+        offset += 1
+      ) {
+        const value = monthWindowValue(
+          current,
+          offset,
+          source.calendarWindow.format,
+        );
+        if (!value) return null;
+        const url = new URL(source.url);
+        url.searchParams.set(source.calendarWindow.queryParam, value);
+        if (!municipalSourceAllowsUrl(source, url.toString())) return null;
+        urls.push(url.toString());
+      }
+      return urls;
+    }
+    if (!source.pagination || !validPagination(source.pagination)) return null;
     for (let page = 1; page <= source.pagination.maxPages; page += 1) {
       const url = new URL(source.url);
       url.searchParams.set(source.pagination.queryParam, String(page));
@@ -128,12 +180,12 @@ export async function fetchMunicipalSourcePages<
   fetchPage: (url: string) => Promise<string>,
   parsePage: (html: string, url: string) => Promise<T[]>,
 ): Promise<T[]> {
-  const urls = municipalSourcePageUrls(source);
+  const urls = municipalSourcePageUrls(source, current);
   if (!urls) throw new Error("municipal_pagination_invalid");
   const pages: T[] = [];
   for (const url of urls)
     pages.push(...(await parsePage(await fetchPage(url), url)));
-  return source.pagination
+  return source.pagination || source.calendarWindow
     ? mergePaginatedMunicipalCandidates(pages, current)
     : pages;
 }
