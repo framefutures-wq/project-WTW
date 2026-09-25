@@ -50,6 +50,8 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "ulsan-북",
       "daegu-서",
       "gangwon-원주",
+      "gyeonggi-용인",
+      "gyeonggi-이천",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -270,6 +272,30 @@ test("Wonju generic table source parses complete rows and rejects rows without a
       "원주백운아트홀",
     ],
   );
+});
+
+test("Yongin and Icheon use bounded generic source contracts", () => {
+  const yongin = municipalSourceByKey("gyeonggi-용인");
+  assert(yongin);
+  assert.equal(yongin.ingestion, "generic_fallback");
+  assert.equal(MUNICIPAL_PARSERS[yongin.key], undefined);
+  assert.deepEqual(yongin.pagination, { queryParam: "page", maxPages: 3 });
+  assert.equal(municipalSourceAllowsUrl(yongin, yongin.url), true);
+
+  const icheon = municipalSourceByKey("gyeonggi-이천");
+  assert(icheon);
+  assert.equal(icheon.ingestion, "generic_fallback");
+  assert.equal(MUNICIPAL_PARSERS[icheon.key], undefined);
+  assert.equal(icheon.pagination, undefined);
+  assert.equal(municipalSourceAllowsUrl(icheon, icheon.url), true);
+
+  for (const source of [yongin, icheon]) {
+    assert.equal(
+      municipalSourceAllowsUrl(source, "https://example.com/event"),
+      false,
+      source.key,
+    );
+  }
 });
 
 test("generic registry sources enter JSON-LD fallback without a dedicated parser", () => {

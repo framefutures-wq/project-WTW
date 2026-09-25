@@ -982,3 +982,11 @@ UI 기준:
 - 신규 registered parser `daegu-서` 추가 뒤 공통 parser-backed fixture test의 fixture map에 해당 key가 빠져 Project checks 1건이 실패한 원인을 확인했다.
 - runtime/parser 동작은 변경하지 않고 `tests/municipal-generic-html.test.ts`의 기존 registered-parser fixture map에 대구 서구 retained fixture를 연결했다.
 - 기능 변경이 아닌 test contract 누락 수정이며 production deploy 대상이 아니다.
+
+
+## 2026-09-26 — municipal Batch F +2 용인·이천
+
+- `gyeonggi-용인`: 용인문화재단 공식 전체일정은 2026 current/future 항목에서 title·full-year date range·venue를 같은 항목에 제공한다. 공식 pagination link가 실제로 `page=2`를 사용함을 확인해 max 3 pages로 bounded 등록했다.
+- `gyeonggi-이천`: 이천시 공식 시정달력은 current 48-page listing에서 2026 이천아트홀 서커스 페스티벌 등 title·full-year period·venue를 self-contained로 제공한다. pagination query contract는 추측하지 않고 first page only로 등록했다.
+- 둘 다 기존 `generic_fallback`만 사용하며 새 parser/publication policy는 추가하지 않았다. source parse failure는 기존 source_outcomes fail-closed 경로로 격리된다.
+- main 누적 신규 준비량은 **총 +12**. production deploy는 아직 하지 않는다.

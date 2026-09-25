@@ -263,6 +263,27 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_table"],
     ingestion: "generic_fallback",
   },
+  {
+    key: "gyeonggi-용인",
+    region: "경기",
+    locality: "용인",
+    url: "https://www.yicf.or.kr/main/show/list.do?menuNo=010000&show_type=all&subMenuNo=010100&thirdMenuNo=&viewType=img",
+    allowedHosts: ["yicf.or.kr", "www.yicf.or.kr"],
+    healthMarkers: ["구분", "날짜", "장소"],
+    expectedSignals: ["html_list"],
+    ingestion: "generic_fallback",
+    pagination: { queryParam: "page", maxPages: 3 },
+  },
+  {
+    key: "gyeonggi-이천",
+    region: "경기",
+    locality: "이천",
+    url: "https://www.icheon.go.kr/portal/universal/kalendar/index.do?mid=0401030000",
+    allowedHosts: ["icheon.go.kr", "www.icheon.go.kr"],
+    healthMarkers: ["시정달력(행사/축제)"],
+    expectedSignals: ["html_list", "html_cards"],
+    ingestion: "generic_fallback",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
