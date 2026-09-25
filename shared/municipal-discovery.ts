@@ -1352,7 +1352,7 @@ export function parseUlsanJungCultureSchedule(
         expanded[column] = carried[column].value;
         column += 1;
       }
-      const value = clean(cell[2].replace(/<br\s*\/?>/gi, " / "));
+      const value = clean(cell[2].replace(/<br\s*\/?>/gi, " "));
       expanded[column] = value;
       const rowspan = Number(
         /rowspan\s*=\s*["']?(\d+)/i.exec(cell[1])?.[1] ?? "1",
