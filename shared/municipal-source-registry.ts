@@ -4,7 +4,8 @@ export type MunicipalDocumentSignal =
   | "html_cards"
   | "structured_event"
   | "pdf_attachment"
-  | "image_attachment";
+  | "image_attachment"
+  | "json_payload";
 
 export type MunicipalSourceDefinition = {
   /** A durable source slug. New generic sources do not require a code change here. */
@@ -364,6 +365,17 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_table"],
     ingestion: "registered_parser",
   },
+  {
+    key: "gyeongbuk-포항",
+    region: "경북",
+    locality: "포항",
+    url: "https://www.phcf.or.kr/api/phcf/performance/getPerformanceList.do?categoryFilter=&statusFilter=&fieldFilter=&sortFilter=date&searchKeyword=&pageIndex=1&pageSize=25&searchMode=NOMAL",
+    allowedHosts: ["phcf.or.kr", "www.phcf.or.kr"],
+    healthMarkers: ["\"list\"", "\"event_id\""],
+    expectedSignals: ["json_payload"],
+    ingestion: "registered_parser",
+    pagination: { queryParam: "pageIndex", maxPages: 3 },
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
@@ -391,6 +403,19 @@ export function detectMunicipalDocumentSignals(
   html: string,
 ): MunicipalDocumentSignal[] {
   const signals = new Set<MunicipalDocumentSignal>();
+  const trimmed = html.trim();
+  if (
+    (trimmed.startsWith("{") || trimmed.startsWith("[")) &&
+    (() => {
+      try {
+        JSON.parse(trimmed);
+        return true;
+      } catch {
+        return false;
+      }
+    })()
+  )
+    signals.add("json_payload");
   if (/<table\b[\s\S]*?<tr\b/i.test(html)) signals.add("html_table");
   if (/<(?:ul|ol)\b[\s\S]*?<li\b/i.test(html)) signals.add("html_list");
   if (

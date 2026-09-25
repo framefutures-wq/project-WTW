@@ -1422,6 +1422,109 @@ export function parseUlsanJungCultureSchedule(
   ];
 }
 
+
+export function parsePohangCultureApi(
+  body: string,
+): MunicipalCandidate[] {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    return [];
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload))
+    return [];
+  const list = (payload as { list?: unknown }).list;
+  if (!Array.isArray(list)) return [];
+
+  return list.flatMap<MunicipalCandidate>((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const record = item as Record<string, unknown>;
+    const stringValue = (key: string) =>
+      typeof record[key] === "string" ? clean(record[key] as string) : "";
+
+    const eventId = stringValue("event_id");
+    const title = stringValue("event_title");
+    const start_date =
+      /^(20\d{2}-\d{2}-\d{2})/.exec(stringValue("start_date"))?.[1] ?? null;
+    const end_date =
+      /^(20\d{2}-\d{2}-\d{2})/.exec(stringValue("end_date"))?.[1] ??
+      start_date;
+    const status = stringValue("event_status").toUpperCase();
+    if (status === "CANCELLED" || status === "CANCELED") return [];
+
+    const spaceName = stringValue("space_name");
+    const eventVenue = stringValue("event_venue");
+    const venue =
+      spaceName && spaceName !== "기타"
+        ? spaceName
+        : eventVenue.includes("포항")
+          ? eventVenue
+          : "";
+    if (
+      !eventId ||
+      !title ||
+      !start_date ||
+      !end_date ||
+      !validRange(start_date, end_date) ||
+      !venue ||
+      !isValidVenue(venue)
+    )
+      return [];
+
+    const eventCategory = stringValue("event_category").toUpperCase();
+    const eventField = stringValue("event_field").toUpperCase();
+    const contentType = stringValue("content_type").toUpperCase();
+    const detailPath =
+      contentType === "FESTIVAL"
+        ? "/phcf/festival_detail/view.do?festivalId=" +
+          encodeURIComponent(eventId)
+        : eventCategory === "REGION" && eventField === "FESTIVAL"
+          ? "/phcf/region_detail/view.do?eventId=" +
+            encodeURIComponent(eventId) +
+            "&menu_site_id=region_detail"
+          : "/phcf/performance_detail/view.do?eventId=" +
+            encodeURIComponent(eventId) +
+            "&menu_site_id=performance_detail";
+    const official_url = absolute(
+      "https://www.phcf.or.kr",
+      detailPath,
+    );
+    if (!official_url) return [];
+
+    const category =
+      contentType === "FESTIVAL" || eventField === "FESTIVAL"
+        ? "축제"
+        : eventCategory === "PERFORMANCE"
+          ? "공연"
+          : eventCategory === "EXHIBITION"
+            ? "전시"
+            : eventCategory === "EDUCATION"
+              ? "교육"
+              : eventCategory === "EVENT"
+                ? "행사"
+                : "기타";
+    const rawSummary = stringValue("event_summary");
+
+    return [
+      {
+        source: "gyeongbuk-포항",
+        source_candidate_id: eventId,
+        title,
+        start_date,
+        end_date,
+        venue,
+        region: "경북",
+        locality: "포항",
+        official_url,
+        category,
+        snippet: rawSummary ? rawSummary.slice(0, 280) : null,
+        image_candidate: null,
+      },
+    ];
+  });
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1571,6 +1674,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "busan-해운대": parseHaeundaeAnnualEvents,
   "gyeongbuk-경주": parseGyeongjuCultureList,
   "ulsan-jung": parseUlsanJungCultureSchedule,
+  "gyeongbuk-포항": parsePohangCultureApi,
 };
 
 type JsonRecord = Record<string, unknown>;

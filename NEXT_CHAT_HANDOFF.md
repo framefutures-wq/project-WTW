@@ -1043,3 +1043,13 @@ UI 기준:
 - '미정' title, 날짜를 정확히 해석할 수 없는 row, venue 누락은 fail-closed 제외한다.
 - 현재 live page 자체는 2026-05 공연분과로 오래된 일정이므로 당장 publish 증가를 기대하지 않고, 다음 공식 갱신 시 자동 수집 가능한 상태로만 전환한다.
 - main 누적 신규 준비량은 **총 +20**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal JSON source staging: 포항 +1
+
+- GitHub Actions live probe에서 포항문화재단 공개 API `/api/phcf/performance/getPerformanceList.do`가 HTTP 200 JSON으로 `event_id/event_title/start_date/end_date/space_name/event_venue/event_category/event_field`를 제공함을 확인했다.
+- API client contract에서 `pageIndex/pageSize`를 공식적으로 사용하므로 source URL을 pageSize 25, max 3 pages로 bounded 등록했다. 한 run에서 최대 75개를 읽고 기존 source budget에서 현재/미래 우선 25개만 처리한다.
+- registered JSON source만 사용할 수 있도록 `json_payload` document signal을 추가했다. generic extractor에는 JSON 추측 경로를 추가하지 않았다.
+- Pohang parser는 취소 상태를 제외하고 full-year date만 허용한다. `space_name=기타`일 때는 `event_venue`에 '포항'이 명시된 경우만 venue로 사용해 외부 지역 행사를 포항으로 오분류하지 않는다.
+- first-party detail URL은 API client의 performance/festival/region routing contract 그대로 만든다.
+- 이 작업은 **staging branch에서 먼저 CI 검증 후 main에 fast-forward**한다. main 반영 시 신규 준비량은 **총 +21**이 된다.

@@ -29,6 +29,7 @@ const fixtureByKey: Record<string, string> = {
   "busan-해운대": "fixtures/municipal-discovery-haeundae.html",
   "gyeongbuk-경주": "fixtures/municipal-discovery-gyeongju.html",
   "ulsan-jung": "fixtures/municipal-discovery-ulsan-jung.html",
+  "gyeongbuk-포항": "fixtures/municipal-discovery-pohang.json",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -67,6 +68,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "busan-해운대",
       "gyeongbuk-경주",
       "ulsan-jung",
+      "gyeongbuk-포항",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -596,6 +598,48 @@ test("Ulsan Jung parser carries explicit rowspan venue only within the same offi
         "2026-05-24",
         "2026-05-24",
         "문화의 거리",
+      ],
+    ],
+  );
+});
+
+test("Pohang registered JSON source keeps bounded current candidates and first-party detail URLs", () => {
+  const source = municipalSourceByKey("gyeongbuk-포항");
+  assert(source);
+  assert.equal(source.ingestion, "registered_parser");
+  assert.deepEqual(source.pagination, { queryParam: "pageIndex", maxPages: 3 });
+  const body = readFileSync("fixtures/municipal-discovery-pohang.json", "utf8");
+  assert(detectMunicipalDocumentSignals(body).includes("json_payload"));
+  const result = extractMunicipalCandidates(source, body);
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+      candidate.category,
+      candidate.official_url,
+    ]),
+    [
+      [
+        "EVT_LOCAL_001",
+        "포항 가을 음악회",
+        "2026-10-03",
+        "2026-10-03",
+        "포항문화예술회관",
+        "공연",
+        "https://www.phcf.or.kr/phcf/performance_detail/view.do?eventId=EVT_LOCAL_001&menu_site_id=performance_detail",
+      ],
+      [
+        "FST_LOCAL_001",
+        "포항 바다축제",
+        "2026-10-10",
+        "2026-10-12",
+        "포항 영일대해수욕장 일원",
+        "축제",
+        "https://www.phcf.or.kr/phcf/festival_detail/view.do?festivalId=FST_LOCAL_001",
       ],
     ],
   );

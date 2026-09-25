@@ -1,0 +1,68 @@
+{
+  "result": true,
+  "totalCount": 5,
+  "pageIndex": 1,
+  "list": [
+    {
+      "event_id": "EVT_LOCAL_001",
+      "event_title": "포항 가을 음악회",
+      "start_date": "2026-10-03",
+      "end_date": "2026-10-03",
+      "space_name": "포항문화예술회관",
+      "event_venue": "대공연장",
+      "event_category": "PERFORMANCE",
+      "event_field": "PLANNING",
+      "content_type": null,
+      "event_status": "ONGOING",
+      "event_summary": "가을 기획 공연"
+    },
+    {
+      "event_id": "FST_LOCAL_001",
+      "event_title": "포항 바다축제",
+      "start_date": "2026-10-10",
+      "end_date": "2026-10-12",
+      "space_name": "기타",
+      "event_venue": "포항 영일대해수욕장 일원",
+      "event_category": "FESTIVAL",
+      "event_field": "FESTIVAL",
+      "content_type": "FESTIVAL",
+      "event_status": "PLANNING"
+    },
+    {
+      "event_id": "EVT_EXTERNAL_001",
+      "event_title": "외부 지역 순회공연",
+      "start_date": "2026-10-15",
+      "end_date": "2026-10-15",
+      "space_name": "기타",
+      "event_venue": "경주 서라벌문화회관",
+      "event_category": "PERFORMANCE",
+      "event_field": "PLANNING",
+      "content_type": null,
+      "event_status": "ONGOING"
+    },
+    {
+      "event_id": "EVT_CANCELLED_001",
+      "event_title": "취소된 포항 공연",
+      "start_date": "2026-10-20",
+      "end_date": "2026-10-20",
+      "space_name": "대잠홀",
+      "event_venue": null,
+      "event_category": "PERFORMANCE",
+      "event_field": "PLANNING",
+      "content_type": null,
+      "event_status": "CANCELLED"
+    },
+    {
+      "event_id": "EVT_BAD_DATE_001",
+      "event_title": "날짜 미정 행사",
+      "start_date": "",
+      "end_date": "",
+      "space_name": "포항문화예술회관",
+      "event_venue": null,
+      "event_category": "EVENT",
+      "event_field": "EVENT",
+      "content_type": null,
+      "event_status": "ONGOING"
+    }
+  ]
+}
