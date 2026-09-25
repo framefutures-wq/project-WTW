@@ -376,6 +376,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     ingestion: "registered_parser",
     pagination: { queryParam: "pageIndex", maxPages: 3 },
   },
+  {
+    key: "gyeonggi-포천",
+    region: "경기",
+    locality: "포천",
+    url: "https://www.pcfac.or.kr/",
+    allowedHosts: ["pcfac.or.kr", "www.pcfac.or.kr"],
+    healthMarkers: ["mainBx", "performtit"],
+    expectedSignals: ["html_list", "html_table"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

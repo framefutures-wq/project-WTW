@@ -30,6 +30,7 @@ const fixtureByKey: Record<string, string> = {
   "gyeongbuk-경주": "fixtures/municipal-discovery-gyeongju.html",
   "ulsan-jung": "fixtures/municipal-discovery-ulsan-jung.html",
   "gyeongbuk-포항": "fixtures/municipal-discovery-pohang.json",
+  "gyeonggi-포천": "fixtures/municipal-discovery-pocheon.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -69,6 +70,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeongbuk-경주",
       "ulsan-jung",
       "gyeongbuk-포항",
+      "gyeonggi-포천",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -642,6 +644,65 @@ test("Pohang registered JSON source keeps bounded current candidates and first-p
         "https://www.phcf.or.kr/phcf/festival_detail/view.do?festivalId=FST_LOCAL_001",
       ],
     ],
+  );
+});
+
+test("Pocheon homepage parser keeps only cards with explicit first-party core", () => {
+  const source = municipalSourceByKey("gyeonggi-포천");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-pocheon.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+      candidate.official_url,
+    ]),
+    [
+      [
+        "1819113",
+        "시민과 함께하는 <Pride 클래식 콘서트>",
+        "2026-10-10",
+        "2026-10-10",
+        "대극장",
+        "https://www.pcfac.or.kr/sub02/sub01-1.php?type=view&uid=1819113",
+      ],
+      [
+        "1819099",
+        "<가을엔 포크 콘서트> 송창식×정미조×함춘호 밴드",
+        "2026-10-16",
+        "2026-10-16",
+        "대극장",
+        "https://www.pcfac.or.kr/sub02/sub01-1.php?type=view&uid=1819099",
+      ],
+      [
+        "1819125",
+        "가족뮤지컬 <더 스토리 오브 언더더씨>",
+        "2026-10-31",
+        "2026-10-31",
+        "대극장",
+        "https://www.pcfac.or.kr/sub02/sub01-1.php?type=view&uid=1819125",
+      ],
+      [
+        "1819145",
+        "2026년 제29회 포천 산정호수 명성산 <억새꽃축제>",
+        "2026-10-16",
+        "2026-10-18",
+        "포천시 산정호수 명성산 일원",
+        "https://www.pcfac.or.kr/sub03/sub06-1.php?type=view&uid=1819145",
+      ],
+    ],
+  );
+  assert(
+    result.candidates.every(
+      (candidate) => candidate.title !== "장소 미확정 문화프로그램",
+    ),
   );
 });
 

@@ -1054,3 +1054,13 @@ UI 기준:
 - first-party detail URL은 API client의 performance/festival/region routing contract 그대로 만든다.
 - staging branch Project checks 성공 후 commit `2e161e8dbe14c90fa0a217e939bd4b3e4151f89a`를 main에 fast-forward 반영했다.
 - main 누적 신규 준비량은 **총 +21**. production deploy는 아직 하지 않았다.
+
+
+## 2026-09-26 — municipal GAP 해소: 포천 +1
+
+- 기존 포천 문화사업 월간목록은 list/detail 모두 장소를 `기타`로만 제공하는 항목이 많아 venue core를 안전하게 채울 수 없음을 GitHub Actions POST-detail probe로 재확인했다.
+- 같은 포천문화관광재단 공식 홈페이지의 현재 추천 공연·문화관광 card는 2026-10 future 일정에서 title·full-year date·explicit venue·first-party detail uid를 self-contained로 제공한다. 예: Pride 클래식 콘서트, 가을엔 포크 콘서트, 가족뮤지컬, 산정호수 명성산 억새꽃축제.
+- 따라서 canonical source를 homepage로 바꾸고 source-specific registered parser `parsePocheonHomepageEvents`를 추가했다. 각 `li.mainBx` 내부 정보만 읽고, `장소=기타` 등 invalid venue card는 fail-closed 제외한다.
+- detail URL은 card의 first-party `location.href`만 허용하고 uid를 source identity로 사용한다.
+- retained live-shape fixture/test를 추가했다.
+- main 누적 신규 준비량은 기존 +21에서 **총 +22**. production deploy는 아직 하지 않는다.

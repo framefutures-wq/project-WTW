@@ -1525,6 +1525,63 @@ export function parsePohangCultureApi(
   });
 }
 
+
+export function parsePocheonHomepageEvents(html: string): MunicipalCandidate[] {
+  const sourceUrl = "https://www.pcfac.or.kr/";
+  const rowValue = (block: string, label: string) =>
+    clean(
+      new RegExp(
+        "<tr\\b[^>]*>\\s*<td\\b[^>]*>\\s*" +
+          label +
+          "\\s*<\\/td>\\s*<td\\b[^>]*>([\\s\\S]*?)<\\/td>\\s*<\\/tr>",
+        "i",
+      ).exec(block)?.[1] ?? "",
+    );
+
+  return elementBlocks(html, "li", "mainBx").flatMap<MunicipalCandidate>(
+    (block) => {
+      const title = classValue(block, "performtit") ?? "";
+      const period = rowValue(block, "일자");
+      const venue = rowValue(block, "장소");
+      const category = rowValue(block, "장르") || null;
+      const dates = period ? explicitDateRange(period) : null;
+      const route =
+        /onclick=["'][^"']*location\.href\s*=\s*['"]([^'"]+)['"]/i.exec(
+          block,
+        )?.[1] ?? null;
+      const official_url = route ? absolute(sourceUrl, clean(route)) : null;
+      const source_candidate_id = official_url
+        ? new URL(official_url).searchParams.get("uid")
+        : null;
+      if (
+        !title ||
+        !dates ||
+        !venue ||
+        !isValidVenue(venue) ||
+        !official_url ||
+        !source_candidate_id ||
+        !official_url.startsWith("https://www.pcfac.or.kr/")
+      )
+        return [];
+      return [
+        {
+          source: "gyeonggi-포천",
+          source_candidate_id,
+          title,
+          ...dates,
+          venue,
+          region: "경기",
+          locality: "포천",
+          official_url,
+          category,
+          snippet: null,
+          image_candidate: null,
+        },
+      ];
+    },
+  );
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1675,6 +1732,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "gyeongbuk-경주": parseGyeongjuCultureList,
   "ulsan-jung": parseUlsanJungCultureSchedule,
   "gyeongbuk-포항": parsePohangCultureApi,
+  "gyeonggi-포천": parsePocheonHomepageEvents,
 };
 
 type JsonRecord = Record<string, unknown>;
