@@ -967,3 +967,11 @@ UI 기준:
 - parser는 balanced JSON object extraction → JSON.parse → explicit title/full-year dates/venue만 candidate로 만들고 idx로 dedupe한다. 누락 core는 fail-closed 제외한다.
 - source `daegu-서`를 Registry에 registered_parser로 추가했고 retained fixture/test를 추가했다.
 - main 누적 신규 준비량은 기존 +8에 대구 서구 +1을 더해 **총 +9**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal Batch E +1 원주
+
+- 원주시 공식 주요 문화행사 월간일정은 table header가 `행사명 / 기간 / 장소명`을 명시하고, 2026-09 실제 row에서 full-year date와 venue를 self-contained로 제공한다.
+- `gangwon-원주`를 기존 generic table extractor로 Registry opt-in했다. pagination은 별도 추측하지 않고 현재 monthly source URL 한 페이지만 읽는다.
+- retained live-shape fixture에서 완전한 row 1건은 candidate가 되고 venue 누락 row는 fail-closed 제외되는 테스트를 추가했다.
+- main 누적 신규 준비량은 **총 +10**. production deploy는 아직 하지 않는다.

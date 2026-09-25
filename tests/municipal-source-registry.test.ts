@@ -49,6 +49,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "seoul-gangnam",
       "ulsan-북",
       "daegu-서",
+      "gangwon-원주",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -243,6 +244,32 @@ test("Pyeongtaek and Gyeongsan registry contracts parse their retained live-shap
     assert.equal(extracted.mode, "generic_html", key);
     assert(extracted.candidates.length > 0, key);
   }
+});
+
+test("Wonju generic table source parses complete rows and rejects rows without a venue", () => {
+  const source = municipalSourceByKey("gangwon-원주");
+  assert(source);
+  assert.equal(source.ingestion, "generic_fallback");
+  const html = readFileSync("fixtures/municipal-generic-wonju.html", "utf8");
+  const assessment = assessMunicipalSourceDocument(source, html);
+  assert.equal(assessment.status, "healthy");
+  const extraction = extractMunicipalCandidates(source, html);
+  assert.equal(extraction.mode, "generic_html");
+  assert.equal(extraction.candidates.length, 1);
+  assert.deepEqual(
+    [
+      extraction.candidates[0].title,
+      extraction.candidates[0].start_date,
+      extraction.candidates[0].end_date,
+      extraction.candidates[0].venue,
+    ],
+    [
+      "백건우 & 슈베르트",
+      "2026-09-03",
+      "2026-09-03",
+      "원주백운아트홀",
+    ],
+  );
 });
 
 test("generic registry sources enter JSON-LD fallback without a dedicated parser", () => {

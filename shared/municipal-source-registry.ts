@@ -253,6 +253,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_table"],
     ingestion: "registered_parser",
   },
+  {
+    key: "gangwon-원주",
+    region: "강원",
+    locality: "원주",
+    url: "https://www.wonju.go.kr/www/selectCtyhllCldrListCal.do?key=213&pageIndex=1&pageUnit=10&searchCnd=all&searchLgd=7",
+    allowedHosts: ["wonju.go.kr", "www.wonju.go.kr"],
+    healthMarkers: ["월간일정"],
+    expectedSignals: ["html_table"],
+    ingestion: "generic_fallback",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
