@@ -1083,3 +1083,13 @@ UI 기준:
 - 새 parser를 만들지 않고 검증된 기존 `generic_fallback`으로 homepage를 canonical source로 전환한다. pagination은 추측하지 않고 first page only다.
 - `www.mokpo.go.kr`와 동일 공식 mirror `biz.mokpo.go.kr` detail host만 allowlist한다.
 - 이 commit은 Geoje 뒤 staging에서 CI 검증 후 main에 fast-forward할 예정이며, main 반영 시 신규 준비량은 **총 +24**가 된다.
+
+
+## 2026-09-26 — municipal staging: 산청 +1
+
+- 산청군 공식 문화관광 관광캘린더는 공식 web 검색 결과에서 구분·full-year 기간·일정명·주최/주관·장소를 동일 table row에 제공하는 current source임을 확인했다.
+- generic table parser는 header `일정명`을 core title label로 사용하지 않으므로 전역 generic 규칙을 넓히지 않고 source-specific registered parser `parseSancheongTourCalendar`를 추가했다.
+- parser는 row 안의 명시 full-year date만 사용하며 venue/title/category가 같은 row에 없으면 fail-closed 제외한다. first-party detail href가 있으면 보존하고 없으면 공식 calendar URL을 provenance로 유지한다.
+- GitHub Actions 환경에서는 sancheong host가 timeout이지만 공식 web source는 접근 가능하므로 source_outcomes 격리 전제로 opt-in한다.
+- retained official-shape fixture로 2026 벚꽃축제·농특산물 대제전·꽃잔디축제 row를 회귀 검증한다.
+- 이 commit은 Mokpo staging 뒤에서 CI 검증 후 main에 fast-forward할 예정이며, 반영 시 신규 준비량은 **총 +25**가 된다.

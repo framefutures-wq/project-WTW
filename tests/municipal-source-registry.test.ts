@@ -32,6 +32,7 @@ const fixtureByKey: Record<string, string> = {
   "gyeongbuk-포항": "fixtures/municipal-discovery-pohang.json",
   "gyeonggi-포천": "fixtures/municipal-discovery-pocheon.html",
   "gyeongnam-거제": "fixtures/municipal-discovery-geoje.html",
+  "gyeongnam-산청": "fixtures/municipal-discovery-sancheong.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -74,6 +75,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeonggi-포천",
       "gyeongnam-거제",
       "jeonnam-gwangju-목포",
+      "gyeongnam-산청",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -765,6 +767,48 @@ test("Geoje parser binds two-digit row years only to the explicit page year", ()
         "2026-08-01",
         "2026-08-01",
         "거제문화예술회관 야외공연장",
+        "축제",
+      ],
+    ],
+  );
+});
+
+test("Sancheong parser reads explicit full-year calendar rows without inferring dates", () => {
+  const source = municipalSourceByKey("gyeongnam-산청");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-sancheong.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+      candidate.category,
+    ]),
+    [
+      [
+        "2026 신안면청년회 벚꽃축제(블라썸피크닉)",
+        "2026-04-03",
+        "2026-04-04",
+        "경남 산청군 신안면 하정리 813-267(원지둔치 일원)",
+        "행사",
+      ],
+      [
+        "2026 산청 농특산물 대제전",
+        "2026-04-10",
+        "2026-04-12",
+        "경남 산청군 금서면 동의보감로555번길 45-2(동의보감촌 잔디광장)",
+        "축제",
+      ],
+      [
+        "생초국제조각공원 꽃잔디축제",
+        "2026-04-10",
+        "2026-04-19",
+        "경남 산청군 생초면 산수로 1064(생초국제조각공원 일원)",
         "축제",
       ],
     ],

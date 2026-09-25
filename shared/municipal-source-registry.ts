@@ -406,6 +406,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list"],
     ingestion: "generic_fallback",
   },
+  {
+    key: "gyeongnam-산청",
+    region: "경남",
+    locality: "산청",
+    url: "https://www.sancheong.go.kr/tour/selectSchdulWeb.do?key=545",
+    allowedHosts: ["sancheong.go.kr", "www.sancheong.go.kr"],
+    healthMarkers: ["관광캘린더", "일정표"],
+    expectedSignals: ["html_table"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
