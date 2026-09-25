@@ -44,6 +44,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeongbuk-경산",
       "incheon-서해",
       "jeonnam-gwangju-곡성",
+      "gyeonggi-광주",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -176,6 +177,23 @@ test("Seohae and Gokseong are bounded generic sources without dedicated parsers"
       key,
     );
   }
+});
+
+test("Gyeonggi Gwangju uses the current first-page generic source without guessing pagination", () => {
+  const source = municipalSourceByKey("gyeonggi-광주");
+  assert(source);
+  assert.equal(
+    source.url,
+    "https://www.gjcity.go.kr/portal/bbs/list.do?mId=0201030100&ptIdx=24",
+  );
+  assert.equal(source.ingestion, "generic_fallback");
+  assert.equal(MUNICIPAL_PARSERS[source.key], undefined);
+  assert.equal(source.pagination, undefined);
+  assert.equal(municipalSourceAllowsUrl(source, source.url), true);
+  assert.equal(
+    municipalSourceAllowsUrl(source, "https://example.com/event"),
+    false,
+  );
 });
 
 test("Pyeongtaek and Gyeongsan registry contracts parse their retained live-shape fixtures", () => {

@@ -213,6 +213,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     ingestion: "generic_fallback",
     pagination: { queryParam: "page", maxPages: 3 },
   },
+  {
+    key: "gyeonggi-광주",
+    region: "경기",
+    locality: "광주",
+    url: "https://www.gjcity.go.kr/portal/bbs/list.do?mId=0201030100&ptIdx=24",
+    allowedHosts: ["gjcity.go.kr", "www.gjcity.go.kr"],
+    healthMarkers: ["문화ㆍ행사"],
+    expectedSignals: ["html_list"],
+    ingestion: "generic_fallback",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

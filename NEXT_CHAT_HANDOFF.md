@@ -925,3 +925,12 @@ UI 기준:
 - 둘 다 기존 `generic_fallback`만 사용하며 새 parser/collector code는 추가하지 않았다.
 - `gyeonggi-광주`는 current official page에 2026 future 행사 core가 확인되지만 pagination query contract를 GitHub/web만으로 확정하지 못해 이번 batch에서 억지로 넣지 않았다. 다음 독립 batch에서 bounded paging contract를 먼저 확정한다.
 - production deploy는 아직 하지 않는다. 여러 batch를 모은 뒤 사용자 Codespaces는 최종 deploy 1회에만 사용한다.
+
+
+## 2026-09-26 — municipal Batch C +1 경기 광주
+
+- Batch C로 `gyeonggi-광주`를 main Registry에 opt-in했다.
+- 공식 광주시 문화·행사 목록은 현재 31페이지이며 2026-10-15, 10-18, 10-31~11-01, 11-19 등 future 행사에서 title·explicit date·venue를 같은 목록 항목에 제공하는 것을 재확인했다.
+- pagination query parameter는 GitHub/web read-only 환경에서 raw href까지 확정하지 못했으므로 추측하지 않았다. 이번 opt-in은 **현재 first page만** 읽는 `generic_fallback`으로 제한한다.
+- first page 자체에 current/future candidate가 충분하며, pagination을 억지로 선언하지 않아 잘못된 repeated-page crawl 위험을 피한다.
+- production deploy는 아직 하지 않는다. Batch A +3, Batch B +2, Batch C +1을 묶어 최종 deploy 1회로 가져간다.
