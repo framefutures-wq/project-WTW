@@ -881,3 +881,16 @@ UI 기준:
   - latest base sync, 과천·하남·상주 candidate state/재검증, base 이후 detail runs, TourAPI detail backlog를 출력한다.
 - 권장 실행 시점: 10:05~10:10 KST 이후. base가 아직 running이면 기다리며 polling하지 말고 나중에 1회 다시 확인한다.
 - morning 결과가 정상일 때만 Batch A live probe/deploy를 다시 연다.
+
+
+## 2026-09-26 — 2026-09-25 자연 Cron production checkpoint 결과
+
+- 사용자가 2026-09-25 10:00 KST 자연 Cron 이후 `npm run verify:morning:prod -- --remote`를 실행했고, production D1에 **SELECT only** 검증을 완료했다.
+- base sync: **success / stale 0**.
+- TourAPI detail backlog: **target 213 / success 189 / never_processed 24 / failed 0 / retry_due 0 / retry_waiting 0**. 즉 detail recovery는 운영상 정상이며 남은 24건은 미처리 backlog이지 실패 backlog가 아니다.
+- 과천·하남·상주: 이번 base 실행에서 `observed=0`. verifier 판정은 `BASE_OK_MUNICIPAL_SOURCE_NOT_OBSERVED`.
+- 현재 공식 페이지 기준으로 하남은 2026-10-01 및 2026-10-07 future 항목을, 상주는 2026-10-24~25 future 축제를 실제 제공한다. 따라서 최소 하남·상주의 observed 0은 '행사 없음'으로 해석하지 않는다. source fetch / health marker / generic parser contract 중 어디에서 실패했는지 별도 진단 필요.
+- 과천 공식 공연 목록은 현재 검색 가능한 9월 일정이 중심이며 대표 축제는 2026-09-20 종료. 과천 observed 0도 현재 pipeline이 candidate state를 만들지 못했다는 사실만 확정하며 원인은 아직 미분리.
+- production에는 잘못된 municipal candidate가 publish되지 않았고, TourAPI/base는 정상. **안전성 문제는 없음. 다만 municipal +3 검증은 실패**.
+- Batch A(평택·여주·경산)는 `staging/municipal-batch-a`에 계속 보존하고, 과천·하남·상주 원인 진단 전 production 확대 deploy는 보류.
+- 다음 bounded task: source별로 raw fetch 성공 / health marker / extraction mode / candidate 수를 분리해 보는 **read-only municipal source diagnostic**. 원인 확인 후 해당 source만 수정하고, 나머지 onboarding batch를 막지 않는다.

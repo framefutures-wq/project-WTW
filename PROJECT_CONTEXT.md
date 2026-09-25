@@ -651,3 +651,12 @@ UI benchmark:
 - 과천·하남·상주 Registry 설정과 generic extractor 카드/목록형 보강, venue 오탐 방지가 배포 코드에 포함됐다. 10:00 / 11:00 및 11:45 / 13:50 / 17:55 KST Cron이 유지됐다.
 - `/api/health` 및 `/api/events?limit=1&period=today` 모두 HTTP 200. 수동 수집 및 D1 write는 하지 않았다.
 - 다음 검증: 2026-09-25 10:00 KST 자연 Cron 후 read-only로 과천·하남·상주 ingestion과 후보 품질 확인.
+
+
+## 25. 2026-09-26 — 9/25 자연수집 checkpoint
+
+- 2026-09-25 10:00 KST production base sync는 **success**, stale 0.
+- TourAPI detail은 대상 213건 중 success 189 / never_processed 24 / failed 0 / retry due/waiting 0. 운영 recovery는 정상이고 남은 24건은 backlog 소진 대상이다.
+- 과천·하남·상주 municipal 3 source는 이번 실행에서 candidate `observed=0`. 잘못된 publish는 없었고 base/TourAPI에는 영향이 없었다.
+- 하남·상주는 공식 current page에 future 2026 항목이 존재하므로 observed 0을 '현재 행사 없음'으로 처리하지 않는다. municipal source fetch/health/parser 진단이 다음 우선순위다.
+- Batch A 평택·여주·경산은 staging branch에만 보존하며 production 확대 전 위 3 source 원인을 먼저 분리한다.
