@@ -1582,6 +1582,113 @@ export function parsePocheonHomepageEvents(html: string): MunicipalCandidate[] {
   );
 }
 
+
+export function parseGeojeMonthlyEvents(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://geoje.go.kr/board/list.geoje?boardId=FESTIVAL&contentsSid=8213&menuCd=DOM_000008504014001000";
+  const pageYear =
+    /(?:^|[>\s])(20\d{2})년\s*\d{1,2}월\s*행사일정표/i.exec(html)?.[1] ??
+    /(?:^|[>\s])(20\d{2})년\s*\d{1,2}월/i.exec(html)?.[1] ??
+    null;
+  if (!pageYear) return [];
+
+  const table =
+    (html.match(/<table\b[\s\S]*?<\/table>/gi) ?? []).find((candidate) => {
+      const text = clean(candidate);
+      return (
+        /축제\/행사\/공연명/.test(text) &&
+        /장소/.test(text) &&
+        /기간/.test(text)
+      );
+    }) ?? null;
+  if (!table) return [];
+
+  const rows = table.match(/<tr\b[\s\S]*?<\/tr>/gi) ?? [];
+  const header = rows.find((row) => /<th\b/i.test(row));
+  if (!header) return [];
+  const labels = [...header.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map(
+    (cell) => clean(cell[1]),
+  );
+  const titleIndex = labels.findIndex((label) =>
+    /축제\/행사\/공연명|행사명|공연명|축제명/.test(label),
+  );
+  const venueIndex = labels.findIndex((label) => /장소/.test(label));
+  const periodIndex = labels.findIndex((label) => /기간/.test(label));
+  if (titleIndex < 0 || venueIndex < 0 || periodIndex < 0) return [];
+
+  const shortYear = pageYear.slice(2);
+  return rows.flatMap<MunicipalCandidate>((row) => {
+    if (!/<td\b/i.test(row)) return [];
+    const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(
+      (cell) => cell[1],
+    );
+    if (!cells[titleIndex] || !cells[venueIndex] || !cells[periodIndex])
+      return [];
+
+    const titleRaw = clean(cells[titleIndex]);
+    const category = /^\[([^\]]+)\]\s*/.exec(titleRaw)?.[1] ?? null;
+    const title = titleRaw.replace(/^\[[^\]]+\]\s*/, "").trim();
+    const venue = clean(cells[venueIndex]);
+    const period = clean(cells[periodIndex]);
+    const range =
+      /^(\d{2})\.(\d{1,2})\.(\d{1,2})\s*~\s*(\d{2})\.(\d{1,2})\.(\d{1,2})$/.exec(
+        period,
+      );
+    if (
+      !title ||
+      !venue ||
+      !isValidVenue(venue) ||
+      !range ||
+      range[1] !== shortYear ||
+      range[4] !== shortYear
+    )
+      return [];
+
+    const start_date = toExplicitDate(pageYear, range[2], range[3]);
+    const end_date = toExplicitDate(pageYear, range[5], range[6]);
+    if (!validRange(start_date, end_date)) return [];
+
+    const href = /<a\b[^>]*href=["']([^"']+)["']/i.exec(
+      cells[titleIndex],
+    )?.[1];
+    const resolved =
+      href && !/^(?:javascript:|#)/i.test(href)
+        ? absolute(sourceUrl, clean(href))
+        : null;
+    const official_url =
+      resolved &&
+      /^https:\/\/(?:[^/]+\.)?geoje\.go\.kr\//i.test(resolved)
+        ? resolved
+        : sourceUrl;
+    const source_candidate_id =
+      (official_url !== sourceUrl
+        ? new URL(official_url).searchParams.get("dataSid") ||
+          new URL(official_url).searchParams.get("idx") ||
+          new URL(official_url).searchParams.get("seq")
+        : null) ??
+      normalizeMunicipalTitle(
+        title + "|" + start_date + "|" + end_date + "|" + venue,
+      ).slice(0, 120);
+
+    return [
+      {
+        source: "gyeongnam-거제",
+        source_candidate_id,
+        title,
+        start_date,
+        end_date,
+        venue,
+        region: "경남",
+        locality: "거제",
+        official_url,
+        category,
+        snippet: null,
+        image_candidate: null,
+      },
+    ];
+  });
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1733,6 +1840,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "ulsan-jung": parseUlsanJungCultureSchedule,
   "gyeongbuk-포항": parsePohangCultureApi,
   "gyeonggi-포천": parsePocheonHomepageEvents,
+  "gyeongnam-거제": parseGeojeMonthlyEvents,
 };
 
 type JsonRecord = Record<string, unknown>;

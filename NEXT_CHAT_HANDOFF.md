@@ -1064,3 +1064,13 @@ UI 기준:
 - detail URL은 card의 first-party `location.href`만 허용하고 uid를 source identity로 사용한다.
 - retained live-shape fixture/test를 추가했다.
 - main 누적 신규 준비량은 기존 +21에서 **총 +22**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal GAP 해소: 거제 +1
+
+- 거제시 공식 문화관광 행사일정표는 web 확인 기준 2026 월별 목록에서 행사명·장소·기간·시간을 동일 row에 제공한다. 기간은 `26.08.21 ~ 26.08.22`처럼 2자리 연도라 generic full-year parser가 의도적으로 거부하던 구조다.
+- source-specific registered parser `parseGeojeMonthlyEvents`를 추가했다. 페이지에 명시된 `2026년 08월 행사일정표`의 4자리 연도와 row의 2자리 연도가 정확히 일치할 때만 full-year 날짜로 승격한다.
+- category prefix([공연]/[축제]/[전시])는 category로 분리하고, venue placeholder/날짜 불일치 row는 fail-closed 제외한다.
+- first-party detail href가 있으면 보존하고 없으면 공식 월별 목록 URL을 provenance로 유지한다.
+- GitHub Actions 환경에서 해당 host fetch는 실패했지만 공식 web source는 접근 가능하므로 source_outcomes 격리 전제 하에 opt-in했다. production에서 fetch 실패 시 이 source만 error로 격리된다.
+- main 누적 신규 준비량은 **총 +23**. production deploy는 아직 하지 않는다.

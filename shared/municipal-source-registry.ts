@@ -386,6 +386,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list", "html_table"],
     ingestion: "registered_parser",
   },
+  {
+    key: "gyeongnam-거제",
+    region: "경남",
+    locality: "거제",
+    url: "https://geoje.go.kr/board/list.geoje?boardId=FESTIVAL&contentsSid=8213&menuCd=DOM_000008504014001000",
+    allowedHosts: ["geoje.go.kr", "www.geoje.go.kr", "tour.geoje.go.kr"],
+    healthMarkers: ["행사일정표", "축제/행사/공연명"],
+    expectedSignals: ["html_table"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

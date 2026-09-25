@@ -31,6 +31,7 @@ const fixtureByKey: Record<string, string> = {
   "ulsan-jung": "fixtures/municipal-discovery-ulsan-jung.html",
   "gyeongbuk-포항": "fixtures/municipal-discovery-pohang.json",
   "gyeonggi-포천": "fixtures/municipal-discovery-pocheon.html",
+  "gyeongnam-거제": "fixtures/municipal-discovery-geoje.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -71,6 +72,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "ulsan-jung",
       "gyeongbuk-포항",
       "gyeonggi-포천",
+      "gyeongnam-거제",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -703,6 +705,41 @@ test("Pocheon homepage parser keeps only cards with explicit first-party core", 
     result.candidates.every(
       (candidate) => candidate.title !== "장소 미확정 문화프로그램",
     ),
+  );
+});
+
+test("Geoje parser binds two-digit row years only to the explicit page year", () => {
+  const source = municipalSourceByKey("gyeongnam-거제");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-geoje.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+      candidate.category,
+    ]),
+    [
+      [
+        "극단 장자번덕 가무백희악극 <토끼, 날다!>",
+        "2026-08-21",
+        "2026-08-22",
+        "거제문화예술회관 소극장",
+        "공연",
+      ],
+      [
+        "2026 블루거제 페스티벌",
+        "2026-08-01",
+        "2026-08-01",
+        "거제문화예술회관 야외공연장",
+        "축제",
+      ],
+    ],
   );
 });
 
