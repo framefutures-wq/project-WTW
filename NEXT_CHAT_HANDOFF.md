@@ -1016,3 +1016,12 @@ UI 기준:
 - calendar는 같은 multi-day 행사를 여러 날짜에 반복 노출할 수 있어 `mon_uid` 기준 dedupe하는 registered parser를 추가했다.
 - `gyeongbuk-영주` access HOLD를 해제하고 Registry opt-in했다. retained live-shape fixture에서 category/title/venue/date/detail id와 중복 제거를 검증한다.
 - main 누적 신규 준비량은 **총 +17**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — access HOLD 해제: 해운대 +1
+
+- 기존 해운대 문화회관 program source는 live HTTP 200이지만 current generic extractor가 0 candidate였다.
+- 대신 같은 해운대구청의 더 넓고 durable한 연간행사안내를 GitHub Actions에서 live probe했다. HTTP 200, annual table에서 행사명·기간·장소·소관부서를 self-contained로 제공한다.
+- source-specific parser는 table caption의 명시 연도를 같은 row의 exact yearless 날짜에만 적용한다. '9월 중'·복수 날짜 나열처럼 불명확한 일정은 fail-closed 제외하고 full-year/cross-year 범위는 그대로 사용한다.
+- `busan-해운대` HOLD를 해제하고 annual source로 Registry opt-in했다.
+- main 누적 신규 준비량은 **총 +18**. production deploy는 아직 하지 않는다.

@@ -26,6 +26,7 @@ const fixtureByKey: Record<string, string> = {
   "gyeongbuk-안동": "fixtures/municipal-discovery-andong.html",
   "busan-동": "fixtures/municipal-discovery-busan-dong.html",
   "gyeongbuk-영주": "fixtures/municipal-discovery-yeongju.html",
+  "busan-해운대": "fixtures/municipal-discovery-haeundae.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -61,6 +62,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeongbuk-안동",
       "busan-동",
       "gyeongbuk-영주",
+      "busan-해운대",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -478,6 +480,57 @@ test("Yeongju parser deduplicates repeated calendar-day appearances by mon_uid",
         "영주 중앙시장 상설무대",
       ],
     ],
+  );
+});
+
+test("Haeundae annual parser uses the page year only for exact yearless dates", () => {
+  const source = municipalSourceByKey("busan-해운대");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-haeundae.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "제39회 해운대북극곰축제",
+        "2026-01-17",
+        "2026-01-18",
+        "해운대해수욕장 일원",
+      ],
+      [
+        "2026 봄을 알리는 콘서트",
+        "2026-03-19",
+        "2026-03-19",
+        "해운대문화회관 해운홀",
+      ],
+      [
+        "톡톡톡(Talk) 실내악 페스티벌",
+        "2026-03-11",
+        "2026-03-13",
+        "해운대문화회관 해운홀",
+      ],
+      [
+        "제13회 해운대빛축제",
+        "2026-11-29",
+        "2027-01-18",
+        "구남로 및 해운대해수욕장 일원",
+      ],
+    ],
+  );
+  assert(
+    result.candidates.every(
+      (candidate) =>
+        candidate.title !== "해운대비긴어게인" &&
+        candidate.title !== "2026 해운대해양레저 축제",
+    ),
   );
 });
 

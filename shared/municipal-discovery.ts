@@ -1187,6 +1187,81 @@ export function parseYeongjuCultureCalendar(html: string): MunicipalCandidate[] 
   ];
 }
 
+
+export function parseHaeundaeAnnualEvents(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://www.haeundae.go.kr/index.do?menuCd=DOM_000000104002004000";
+  const year =
+    /<caption\b[^>]*>[\s\S]*?(20\d{2})년\s*해운대\s*행사\s*캘린더/i.exec(
+      html,
+    )?.[1] ?? null;
+  if (!year) return [];
+
+  const yearlessDates = (value: string) => {
+    const text = clean(value);
+    const explicit = explicitDateRange(text);
+    if (explicit) return explicit;
+
+    const range =
+      /^(\d{1,2})\.(\d{1,2})\.\s*~\s*(?:(\d{1,2})\.)?(\d{1,2})\.\s*$/.exec(
+        text,
+      );
+    if (range) {
+      const start_date = toExplicitDate(year, range[1], range[2]);
+      const end_date = toExplicitDate(
+        year,
+        range[3] ?? range[1],
+        range[4],
+      );
+      return validRange(start_date, end_date)
+        ? { start_date, end_date }
+        : null;
+    }
+    const single = /^(\d{1,2})\.(\d{1,2})\.\s*$/.exec(text);
+    if (!single) return null;
+    const start_date = toExplicitDate(year, single[1], single[2]);
+    return validRange(start_date, start_date)
+      ? { start_date, end_date: start_date }
+      : null;
+  };
+
+  return (html.match(/<tr\b[\s\S]*?<\/tr>/gi) ?? []).flatMap<MunicipalCandidate>(
+    (row) => {
+      if (/<th\b[^>]*>\s*행사명\s*<\/th>/i.test(row)) return [];
+      const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(
+        (match) => clean(match[1]),
+      );
+      if (cells.length < 4) return [];
+      const [title, period, venue] = cells;
+      const dates = yearlessDates(period);
+      if (!title || !dates || !venue || !isValidVenue(venue)) return [];
+      return [
+        {
+          source: "busan-해운대",
+          source_candidate_id: normalizeMunicipalTitle(
+            title +
+              "|" +
+              dates.start_date +
+              "|" +
+              dates.end_date +
+              "|" +
+              venue,
+          ).slice(0, 120),
+          title,
+          ...dates,
+          venue,
+          region: "부산",
+          locality: "해운대",
+          official_url: sourceUrl,
+          category: "연간행사",
+          snippet: null,
+          image_candidate: null,
+        },
+      ];
+    },
+  );
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1333,6 +1408,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "gyeongbuk-안동": parseAndongCultureList,
   "busan-동": parseBusanDongCultureList,
   "gyeongbuk-영주": parseYeongjuCultureCalendar,
+  "busan-해운대": parseHaeundaeAnnualEvents,
 };
 
 type JsonRecord = Record<string, unknown>;

@@ -334,6 +334,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list"],
     ingestion: "registered_parser",
   },
+  {
+    key: "busan-해운대",
+    region: "부산",
+    locality: "해운대",
+    url: "https://www.haeundae.go.kr/index.do?menuCd=DOM_000000104002004000",
+    allowedHosts: ["haeundae.go.kr", "www.haeundae.go.kr"],
+    healthMarkers: ["해운대 행사 캘린더"],
+    expectedSignals: ["html_table"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
