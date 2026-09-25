@@ -975,3 +975,10 @@ UI 기준:
 - `gangwon-원주`를 기존 generic table extractor로 Registry opt-in했다. pagination은 별도 추측하지 않고 현재 monthly source URL 한 페이지만 읽는다.
 - retained live-shape fixture에서 완전한 row 1건은 candidate가 되고 venue 누락 row는 fail-closed 제외되는 테스트를 추가했다.
 - main 누적 신규 준비량은 **총 +10**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — 대구 서구 parser CI fixture 회귀 수정
+
+- 신규 registered parser `daegu-서` 추가 뒤 공통 parser-backed fixture test의 fixture map에 해당 key가 빠져 Project checks 1건이 실패한 원인을 확인했다.
+- runtime/parser 동작은 변경하지 않고 `tests/municipal-generic-html.test.ts`의 기존 registered-parser fixture map에 대구 서구 retained fixture를 연결했다.
+- 기능 변경이 아닌 test contract 누락 수정이며 production deploy 대상이 아니다.

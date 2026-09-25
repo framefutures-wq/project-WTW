@@ -446,6 +446,7 @@ test("existing parser-backed fixtures remain on their registered parser path", (
     goyang: "fixtures/municipal-discovery-goyang.html",
     hwaseong: "fixtures/municipal-discovery-hwaseong.html",
     bucheon: "fixtures/municipal-discovery-bucheon.html",
+    "daegu-서": "fixtures/municipal-discovery-daegu-seo.html",
   };
   for (const registered of MUNICIPAL_SOURCE_REGISTRY.filter(
     (source) => source.ingestion === "registered_parser",
