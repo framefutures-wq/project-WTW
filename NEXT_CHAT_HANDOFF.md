@@ -948,3 +948,13 @@ UI 기준:
 
 - 사용자는 새 채팅에서 `계속`이라고 말하면 먼저 **현재까지 완료 / 지금 하는 중 / 앞으로 남은 작업 / 사용자 개입 필요 여부**를 한 번에 보고받고 싶어 한다.
 - 보고 후에는 추가 승인 없이 안전한 다음 작업을 바로 이어간다.
+
+
+## 2026-09-26 — municipal Batch D +2 강남·울산 북구
+
+- Batch D로 `seoul-gangnam`, `ulsan-북`을 main Registry에 opt-in했다.
+- 강남문화재단 공식 강남생활문화축제 목록은 2026-10-17~18 행사기간과 일원에코파크 및 에코센터 장소를 같은 목록 항목에서 제공하고 first-party detail URL도 유지한다.
+- 울산 북구문화예술회관 공식 공연 목록은 2026-09~11 current/future 공연을 행사기간·장소·first-party detail과 함께 반복 제공한다.
+- 두 source 모두 pagination parameter를 추측하지 않고 현재 first page만 `generic_fallback`으로 읽도록 제한했다.
+- 이 batch는 새 parser나 publication policy를 추가하지 않는다. source가 runtime에서 generic candidate를 만들지 못하면 기존 fail-closed/source_outcomes 경로로 해당 source만 error 처리되고 다른 source를 막지 않는다.
+- main 누적 신규 준비량은 Batch A +3 / B +2 / C +1 / D +2 = **총 +8**. production deploy는 아직 하지 않는다.

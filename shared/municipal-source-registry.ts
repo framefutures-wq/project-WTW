@@ -223,6 +223,26 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list"],
     ingestion: "generic_fallback",
   },
+  {
+    key: "seoul-gangnam",
+    region: "서울",
+    locality: "강남",
+    url: "https://www.gangnam.go.kr/office/gfac/board/gfac_lifeculture/list.do?mid=gfac_festival06",
+    allowedHosts: ["gangnam.go.kr", "www.gangnam.go.kr"],
+    healthMarkers: ["강남생활문화축제"],
+    expectedSignals: ["html_list"],
+    ingestion: "generic_fallback",
+  },
+  {
+    key: "ulsan-북",
+    region: "울산",
+    locality: "북구",
+    url: "https://www.bukgu.ulsan.kr/art/BBS_014List.mo",
+    allowedHosts: ["bukgu.ulsan.kr", "www.bukgu.ulsan.kr"],
+    healthMarkers: ["공연/영화"],
+    expectedSignals: ["html_list", "html_cards"],
+    ingestion: "generic_fallback",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

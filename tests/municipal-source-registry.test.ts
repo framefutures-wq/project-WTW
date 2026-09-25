@@ -45,6 +45,8 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "incheon-서해",
       "jeonnam-gwangju-곡성",
       "gyeonggi-광주",
+      "seoul-gangnam",
+      "ulsan-북",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -194,6 +196,30 @@ test("Gyeonggi Gwangju uses the current first-page generic source without guessi
     municipalSourceAllowsUrl(source, "https://example.com/event"),
     false,
   );
+});
+
+test("Gangnam and Ulsan Buk-gu use first-page generic sources without guessed pagination", () => {
+  const expected = [
+    [
+      "seoul-gangnam",
+      "https://www.gangnam.go.kr/office/gfac/board/gfac_lifeculture/list.do?mid=gfac_festival06",
+    ],
+    ["ulsan-북", "https://www.bukgu.ulsan.kr/art/BBS_014List.mo"],
+  ] as const;
+  for (const [key, url] of expected) {
+    const source = municipalSourceByKey(key);
+    assert(source, key);
+    assert.equal(source.url, url, key);
+    assert.equal(source.ingestion, "generic_fallback", key);
+    assert.equal(MUNICIPAL_PARSERS[source.key], undefined, key);
+    assert.equal(source.pagination, undefined, key);
+    assert.equal(municipalSourceAllowsUrl(source, source.url), true, key);
+    assert.equal(
+      municipalSourceAllowsUrl(source, "https://example.com/event"),
+      false,
+      key,
+    );
+  }
 });
 
 test("Pyeongtaek and Gyeongsan registry contracts parse their retained live-shape fixtures", () => {
