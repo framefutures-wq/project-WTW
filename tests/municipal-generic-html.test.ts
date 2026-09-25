@@ -447,6 +447,9 @@ test("existing parser-backed fixtures remain on their registered parser path", (
     hwaseong: "fixtures/municipal-discovery-hwaseong.html",
     bucheon: "fixtures/municipal-discovery-bucheon.html",
     "daegu-서": "fixtures/municipal-discovery-daegu-seo.html",
+    "chungbuk-옥천": "fixtures/municipal-discovery-okcheon.html",
+    "gyeongbuk-안동": "fixtures/municipal-discovery-andong.html",
+    "busan-동": "fixtures/municipal-discovery-busan-dong.html",
   };
   for (const registered of MUNICIPAL_SOURCE_REGISTRY.filter(
     (source) => source.ingestion === "registered_parser",

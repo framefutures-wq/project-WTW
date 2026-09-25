@@ -294,6 +294,36 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_table"],
     ingestion: "generic_fallback",
   },
+  {
+    key: "chungbuk-옥천",
+    region: "충북",
+    locality: "옥천",
+    url: "https://oc.go.kr/tour/selectTnTursmResrceListU.do?key=2529&rcpp=9&sa1=%EC%B6%95%EC%A0%9C%EC%B2%B4%ED%97%98&so1=ORDR",
+    allowedHosts: ["oc.go.kr", "www.oc.go.kr"],
+    healthMarkers: ["photo_item", "info_title"],
+    expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
+  },
+  {
+    key: "gyeongbuk-안동",
+    region: "경북",
+    locality: "안동",
+    url: "https://andongculture.com/index.do?menuId=00000235&ordBy=1&pageIndex=1&pageSize=12&progStat=&realmDcd=&searchDiv=&searchTxt=&ym=",
+    allowedHosts: ["andongculture.com", "www.andongculture.com"],
+    healthMarkers: ["ct_list_ul", "ct_list_date"],
+    expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
+  },
+  {
+    key: "busan-동",
+    region: "부산",
+    locality: "동구",
+    url: "https://www.bsdonggu.go.kr/tour/board/list.donggu?boardId=BBS_0000336&contentsSid=2300&cpath=%2Ftour&menuCd=DOM_000000312001001000",
+    allowedHosts: ["bsdonggu.go.kr", "www.bsdonggu.go.kr"],
+    healthMarkers: ["bbs_gall_typeB", "공연·전시명"],
+    expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {

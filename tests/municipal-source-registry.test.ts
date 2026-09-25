@@ -22,6 +22,9 @@ const fixtureByKey: Record<string, string> = {
   hwaseong: "fixtures/municipal-discovery-hwaseong.html",
   bucheon: "fixtures/municipal-discovery-bucheon.html",
   "daegu-서": "fixtures/municipal-discovery-daegu-seo.html",
+  "chungbuk-옥천": "fixtures/municipal-discovery-okcheon.html",
+  "gyeongbuk-안동": "fixtures/municipal-discovery-andong.html",
+  "busan-동": "fixtures/municipal-discovery-busan-dong.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -53,6 +56,9 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeonggi-용인",
       "gyeonggi-이천",
       "gyeonggi-의정부",
+      "chungbuk-옥천",
+      "gyeongbuk-안동",
+      "busan-동",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -327,6 +333,111 @@ test("Uijeongbu official annual event table parses explicit split dates and venu
         "2026-10-03",
         "2026-10-03",
         "동오마을 공영주차장 일원(경전철 동오역 인근)",
+      ],
+    ],
+  );
+});
+
+test("Okcheon parser keeps the explicit venue instead of mistaking the title for venue", () => {
+  const source = municipalSourceByKey("chungbuk-옥천");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-okcheon.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.equal(result.candidates.length, 2);
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "옥천묘목축제",
+        "2026-04-02",
+        "2026-04-05",
+        "옥천묘목공원 （옥천군 이원면 이원리 503번지 일원）",
+      ],
+      [
+        "청산생선국수 축제",
+        "2026-04-11",
+        "2026-04-12",
+        "청산체육공원",
+      ],
+    ],
+  );
+});
+
+test("Andong parser reads the official repeated culture cards", () => {
+  const source = municipalSourceByKey("gyeongbuk-안동");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-andong.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.equal(result.candidates.length, 2);
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "CENT0000001237",
+        "문화놀이터 - 휴앤아트",
+        "2026-11-07",
+        "2026-11-07",
+        "옥동제4공원",
+      ],
+      [
+        "CENT0000001238",
+        "안동 가을 문화마당",
+        "2026-10-10",
+        "2026-10-11",
+        "안동문화예술의전당",
+      ],
+    ],
+  );
+});
+
+test("Busan Dong-gu parser reads nested gallery cards without mixing child list items", () => {
+  const source = municipalSourceByKey("busan-동");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-busan-dong.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.equal(result.candidates.length, 2);
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      [
+        "5097323",
+        "유규영 작가 초대전 <<엄마의 식탁>>",
+        "2026-10-01",
+        "2026-12-31",
+        "유치환의 우체통 아트갤러리",
+      ],
+      [
+        "5091365",
+        "《재수의 연습장 : 재수 좋은 날》",
+        "2026-06-20",
+        "2026-10-25",
+        "동구 문화플랫폼 시민마당 전시장",
       ],
     ],
   );

@@ -998,3 +998,13 @@ UI 기준:
 - HOLD였던 접근 상태를 해제하고 first page only `generic_fallback` Registry opt-in으로 전환했다. pagination parameter는 추측하지 않았다.
 - live-shape retained fixture로 split start/end columns와 venue가 candidate core로 추출되는 계약을 고정했다.
 - main 누적 신규 준비량은 **총 +13**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal parser Batch G +3 옥천·안동·부산 동구
+
+- GitHub Actions read-only live diagnostic으로 남은 source를 실제 HTTP fetch했다. 목포·울산중구·포천·포항·경주·안동은 기존 generic extractor가 0 candidate였고, 옥천은 8 candidate를 만들었지만 venue를 title로 잘못 읽는 구조 문제를 확인했다.
+- `chungbuk-옥천`: official `photo_item` card의 `info_title / info_item type1 / type3`를 명시적으로 읽는 registered parser를 추가해 실제 venue를 보존한다.
+- `gyeongbuk-안동`: official `ct_list_li` card의 subject/date/venue/detail id를 직접 읽는 registered parser를 추가했다.
+- `busan-동`: 기존 access HOLD였지만 live HTTP 200과 73건/8페이지 gallery를 확인했다. nested `dt + 기간 + 장소` 구조 전용 registered parser로 first page를 안전하게 읽도록 등록했다.
+- 세 source 모두 retained live-shape fixture와 registered-parser path 회귀 테스트를 추가했다. pagination은 추측하지 않고 first page only로 제한했다.
+- main 누적 신규 준비량은 기존 +13에서 **총 +16**으로 증가. production deploy는 아직 하지 않는다.

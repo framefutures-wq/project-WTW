@@ -978,6 +978,143 @@ export function parseDaeguSeoMusicSchedule(html: string): MunicipalCandidate[] {
   ];
 }
 
+
+export function parseOkcheonFestivalList(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://oc.go.kr/tour/selectTnTursmResrceListU.do?key=2529&rcpp=9&sa1=%EC%B6%95%EC%A0%9C%EC%B2%B4%ED%97%98&so1=ORDR";
+  return elementBlocks(html, "li", "photo_item").flatMap<MunicipalCandidate>(
+    (block) => {
+      const title = classValue(block, "info_title") ?? "";
+      const venue = classValue(block, "info_item\\s+type1");
+      const period = classValue(block, "info_item\\s+type3");
+      const dates = period ? explicitDateRange(period) : null;
+      const href = /<a\b[^>]*href=["']([^"']+)["']/i.exec(block)?.[1];
+      const official_url = href ? absolute(sourceUrl, clean(href)) : null;
+      const source_candidate_id = official_url
+        ? new URL(official_url).searchParams.get("resrceNo")
+        : null;
+      if (
+        !title ||
+        !venue ||
+        !dates ||
+        !official_url ||
+        !source_candidate_id ||
+        !isValidVenue(venue)
+      )
+        return [];
+      return [
+        {
+          source: "chungbuk-옥천",
+          source_candidate_id,
+          title,
+          ...dates,
+          venue,
+          region: "충북",
+          locality: "옥천",
+          official_url,
+          category: "축제/체험",
+          snippet: null,
+          image_candidate: null,
+        },
+      ];
+    },
+  );
+}
+
+export function parseAndongCultureList(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://andongculture.com/index.do?menuId=00000235&ordBy=1&pageIndex=1&pageSize=12&progStat=&realmDcd=&searchDiv=&searchTxt=&ym=";
+  return elementBlocks(html, "li", "ct_list_li").flatMap<MunicipalCandidate>(
+    (block) => {
+      const title = classValue(block, "ct_list_subj") ?? "";
+      const venue = classValue(block, "ct_list_subtxt");
+      const period = classValue(block, "ct_list_date");
+      const dates = period ? explicitDateRange(period) : null;
+      const category = classValue(block, "ct_list_cat");
+      const href =
+        /<a\b[^>]*href=["']([^"']*mode=detail[^"']*)["']/i.exec(block)?.[1];
+      const official_url = href ? absolute(sourceUrl, clean(href)) : null;
+      const source_candidate_id = official_url
+        ? new URL(official_url).searchParams.get("clturEventId")
+        : null;
+      if (
+        !title ||
+        !venue ||
+        !dates ||
+        !official_url ||
+        !source_candidate_id ||
+        !isValidVenue(venue)
+      )
+        return [];
+      return [
+        {
+          source: "gyeongbuk-안동",
+          source_candidate_id,
+          title,
+          ...dates,
+          venue,
+          region: "경북",
+          locality: "안동",
+          official_url,
+          category: category ?? "문화행사",
+          snippet: null,
+          image_candidate: null,
+        },
+      ];
+    },
+  );
+}
+
+export function parseBusanDongCultureList(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://www.bsdonggu.go.kr/tour/board/list.donggu?boardId=BBS_0000336&contentsSid=2300&cpath=%2Ftour&menuCd=DOM_000000312001001000";
+  return elementBlocks(html, "li").flatMap<MunicipalCandidate>((block) => {
+    const title = clean(/<dt\b[^>]*>([\s\S]*?)<\/dt>/i.exec(block)?.[1] ?? "");
+    const period = clean(
+      /<li\b[^>]*>\s*<span\b[^>]*>\s*기간\s*<\/span>\s*([\s\S]*?)<\/li>/i.exec(
+        block,
+      )?.[1] ?? "",
+    );
+    const venue = clean(
+      /<li\b[^>]*>\s*<span\b[^>]*>\s*장소\s*<\/span>\s*([\s\S]*?)<\/li>/i.exec(
+        block,
+      )?.[1] ?? "",
+    );
+    const dates = period ? explicitDateRange(period) : null;
+    const href = /<a\b[^>]*href=["']([^"']*dataSid=\d+[^"']*)["']/i.exec(
+      block,
+    )?.[1];
+    const official_url = href ? absolute(sourceUrl, clean(href)) : null;
+    const source_candidate_id = official_url
+      ? new URL(official_url).searchParams.get("dataSid")
+      : null;
+    if (
+      !title ||
+      !venue ||
+      !dates ||
+      !official_url ||
+      !source_candidate_id ||
+      !isValidVenue(venue)
+    )
+      return [];
+    return [
+      {
+        source: "busan-동",
+        source_candidate_id,
+        title,
+        ...dates,
+        venue,
+        region: "부산",
+        locality: "동구",
+        official_url,
+        category: "공연·전시",
+        snippet: null,
+        image_candidate: null,
+      },
+    ];
+  });
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1120,6 +1257,9 @@ export const MUNICIPAL_PARSERS: Partial<
   hwaseong: parseHwaseongList,
   bucheon: parseBucheonAutumnList,
   "daegu-서": parseDaeguSeoMusicSchedule,
+  "chungbuk-옥천": parseOkcheonFestivalList,
+  "gyeongbuk-안동": parseAndongCultureList,
+  "busan-동": parseBusanDongCultureList,
 };
 
 type JsonRecord = Record<string, unknown>;
