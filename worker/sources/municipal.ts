@@ -409,7 +409,7 @@ export async function runMunicipalAutonomous(env: Env) {
         source,
         koreaToday,
       );
-      const candidates = source.pagination
+      const candidates = source.pagination || source.calendarWindow
         ? sourceCandidates.slice(0, MAX_PER_SOURCE)
         : selectBoundedMunicipalCandidates(
             sourceCandidates,
