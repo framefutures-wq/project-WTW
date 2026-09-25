@@ -25,6 +25,15 @@ export type MunicipalSourceDefinition = {
     maxPages: number;
   };
   /**
+   * Bounded current/future month window for official monthly calendars.
+   * This is mutually exclusive with numeric pagination.
+   */
+  calendarWindow?: {
+    queryParam: string;
+    monthsAhead: number;
+    format: "yyyy-mm-01" | "yyyymm";
+  };
+  /**
    * Opt in to bounded first-party detail reads when a canonical list has a
    * title/link but deliberately omits part of the event core.  Omitted means
    * the legacy single-page extraction path remains unchanged.
@@ -395,6 +404,22 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     healthMarkers: ["행사일정표", "축제/행사/공연명"],
     expectedSignals: ["html_table"],
     ingestion: "registered_parser",
+  },
+  {
+    key: "jeonnam-gwangju-목포",
+    region: "전남광주통합특별시",
+    locality: "목포",
+    url: "https://www.mokpo.go.kr/art/performance/art_schedule",
+    allowedHosts: ["mokpo.go.kr", "www.mokpo.go.kr"],
+    healthMarkers: ["board_calendar", "view_popup"],
+    expectedSignals: ["html_table", "html_list"],
+    ingestion: "generic_fallback",
+    calendarWindow: {
+      queryParam: "date",
+      monthsAhead: 2,
+      format: "yyyy-mm-01",
+    },
+    listDetailFollowup: { maxDetails: 10 },
   },
 ];
 
