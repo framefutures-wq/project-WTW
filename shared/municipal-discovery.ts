@@ -1319,6 +1319,109 @@ export function parseGyeongjuCultureList(html: string): MunicipalCandidate[] {
   });
 }
 
+
+export function parseUlsanJungCultureSchedule(
+  html: string,
+): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://www.junggu.ulsan.kr/tour/index.ulsan?menuCd=DOM_000002208005006002";
+  const section =
+    /<h4\b[^>]*>\s*공연분과\s*\(\s*(20\d{2})\.\s*(\d{1,2})월\s*\)[\s\S]*?<table\b[^>]*>([\s\S]*?)<\/table>/i.exec(
+      html,
+    );
+  if (!section) return [];
+
+  const year = section[1];
+  const tableBody = section[3];
+  const rows = elementBlocks("<table>" + tableBody + "</table>", "tr");
+  let carried: Record<number, { value: string; left: number }> = {};
+  const candidates: MunicipalCandidate[] = [];
+
+  for (const row of rows) {
+    const rawCells = [
+      ...row.matchAll(/<td\b([^>]*)>([\s\S]*?)<\/td>/gi),
+    ];
+    if (!rawCells.length) continue;
+
+    const expanded: string[] = [];
+    const newCarry: Record<number, { value: string; left: number }> = {};
+    let column = 0;
+
+    for (const cell of rawCells) {
+      while (carried[column]) {
+        expanded[column] = carried[column].value;
+        column += 1;
+      }
+      const value = clean(cell[2].replace(/<br\s*\/?>/gi, " / "));
+      expanded[column] = value;
+      const rowspan = Number(
+        /rowspan\s*=\s*["']?(\d+)/i.exec(cell[1])?.[1] ?? "1",
+      );
+      if (rowspan > 1)
+        newCarry[column] = { value, left: rowspan - 1 };
+      column += 1;
+    }
+    while (column < 6) {
+      if (carried[column]) expanded[column] = carried[column].value;
+      column += 1;
+    }
+
+    const nextCarry: Record<number, { value: string; left: number }> = {};
+    for (const [key, value] of Object.entries(carried)) {
+      if (value.left > 1)
+        nextCarry[Number(key)] = { value: value.value, left: value.left - 1 };
+    }
+    carried = { ...nextCarry, ...newCarry };
+
+    const title = (expanded[1] ?? "")
+      .replace(/^\s*•\s*/, "")
+      .replace(/\s*•\s*/g, " / ")
+      .trim();
+    const dateText = expanded[2] ?? "";
+    const venue = expanded[3] ?? "";
+    if (!title || /^미정$/i.test(title) || !venue || !isValidVenue(venue))
+      continue;
+
+    const monthDays = [
+      ...dateText.matchAll(
+        /(\d{1,2})\.\s*(\d{1,2})\.\s*(?:\([^)]*\))?/g,
+      ),
+    ];
+    if (!monthDays.length || monthDays.length > 2) continue;
+    const start_date = toExplicitDate(
+      year,
+      monthDays[0][1],
+      monthDays[0][2],
+    );
+    const endMatch = monthDays[1] ?? monthDays[0];
+    const end_date = toExplicitDate(year, endMatch[1], endMatch[2]);
+    if (!validRange(start_date, end_date)) continue;
+
+    candidates.push({
+      source: "ulsan-jung",
+      source_candidate_id: normalizeMunicipalTitle(
+        title + "|" + start_date + "|" + end_date + "|" + venue,
+      ).slice(0, 120),
+      title,
+      start_date,
+      end_date,
+      venue,
+      region: "울산",
+      locality: "중구",
+      official_url: sourceUrl,
+      category: "공연",
+      snippet: null,
+      image_candidate: null,
+    });
+  }
+
+  return [
+    ...new Map(
+      candidates.map((candidate) => [candidate.source_candidate_id, candidate]),
+    ).values(),
+  ];
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -1467,6 +1570,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "gyeongbuk-영주": parseYeongjuCultureCalendar,
   "busan-해운대": parseHaeundaeAnnualEvents,
   "gyeongbuk-경주": parseGyeongjuCultureList,
+  "ulsan-jung": parseUlsanJungCultureSchedule,
 };
 
 type JsonRecord = Record<string, unknown>;

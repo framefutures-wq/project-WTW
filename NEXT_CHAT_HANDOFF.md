@@ -1034,3 +1034,12 @@ UI 기준:
 - source-specific registered parser는 각 `dl` 블록 안에서만 title/기간/장소/detail id를 읽어 candidate를 만들며, core 누락은 fail-closed 제외한다.
 - retained live-shape fixture와 registered-parser 회귀 테스트를 추가했다.
 - main 누적 신규 준비량은 **총 +19**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — municipal parser Batch H +1 울산 중구
+
+- GitHub Actions live fetch에서 울산 중구 문화예술업종행사일정이 HTTP 200으로 정상 접근되고, 공식 공연분과 table이 heading에 2026년/월을 명시하며 행사명·일자·장소를 제공함을 확인했다.
+- table은 장소/내용/주최를 rowspan으로 공유하므로 generic extractor 대신 source-specific registered parser를 추가했다. parser는 같은 table 안의 rowspan만 carry하고 heading의 명시 연도와 각 row의 명시 월·일만 결합한다.
+- '미정' title, 날짜를 정확히 해석할 수 없는 row, venue 누락은 fail-closed 제외한다.
+- 현재 live page 자체는 2026-05 공연분과로 오래된 일정이므로 당장 publish 증가를 기대하지 않고, 다음 공식 갱신 시 자동 수집 가능한 상태로만 전환한다.
+- main 누적 신규 준비량은 **총 +20**. production deploy는 아직 하지 않는다.

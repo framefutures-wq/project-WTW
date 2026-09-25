@@ -28,6 +28,7 @@ const fixtureByKey: Record<string, string> = {
   "gyeongbuk-영주": "fixtures/municipal-discovery-yeongju.html",
   "busan-해운대": "fixtures/municipal-discovery-haeundae.html",
   "gyeongbuk-경주": "fixtures/municipal-discovery-gyeongju.html",
+  "ulsan-jung": "fixtures/municipal-discovery-ulsan-jung.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -65,6 +66,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeongbuk-영주",
       "busan-해운대",
       "gyeongbuk-경주",
+      "ulsan-jung",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(
@@ -566,6 +568,34 @@ test("Gyeongju parser reads official list cards with full dates and venue", () =
         "2026-09-05",
         "2026-09-06",
         "경주문화관1918(구 경주역)",
+      ],
+    ],
+  );
+});
+
+test("Ulsan Jung parser carries explicit rowspan venue only within the same official table", () => {
+  const source = municipalSourceByKey("ulsan-jung");
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-ulsan-jung.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    ]),
+    [
+      ["에어로폰 마유희", "2026-05-09", "2026-05-09", "문화의 거리"],
+      ["블루데일", "2026-05-10", "2026-05-10", "문화의 거리"],
+      [
+        "정글밴문화원 / 샤인롱기타",
+        "2026-05-24",
+        "2026-05-24",
+        "문화의 거리",
       ],
     ],
   );

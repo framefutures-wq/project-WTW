@@ -354,6 +354,16 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list"],
     ingestion: "registered_parser",
   },
+  {
+    key: "ulsan-jung",
+    region: "울산",
+    locality: "중구",
+    url: "https://www.junggu.ulsan.kr/tour/index.ulsan?menuCd=DOM_000002208005006002",
+    allowedHosts: ["junggu.ulsan.kr", "www.junggu.ulsan.kr"],
+    healthMarkers: ["문화예술업종행사일정", "공연분과"],
+    expectedSignals: ["html_table"],
+    ingestion: "registered_parser",
+  },
 ];
 
 export function municipalSourceByKey(key: string) {
