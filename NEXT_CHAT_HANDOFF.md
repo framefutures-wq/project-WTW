@@ -1052,4 +1052,5 @@ UI 기준:
 - registered JSON source만 사용할 수 있도록 `json_payload` document signal을 추가했다. generic extractor에는 JSON 추측 경로를 추가하지 않았다.
 - Pohang parser는 취소 상태를 제외하고 full-year date만 허용한다. `space_name=기타`일 때는 `event_venue`에 '포항'이 명시된 경우만 venue로 사용해 외부 지역 행사를 포항으로 오분류하지 않는다.
 - first-party detail URL은 API client의 performance/festival/region routing contract 그대로 만든다.
-- 이 작업은 **staging branch에서 먼저 CI 검증 후 main에 fast-forward**한다. main 반영 시 신규 준비량은 **총 +21**이 된다.
+- staging branch Project checks 성공 후 commit `2e161e8dbe14c90fa0a217e939bd4b3e4151f89a`를 main에 fast-forward 반영했다.
+- main 누적 신규 준비량은 **총 +21**. production deploy는 아직 하지 않았다.
