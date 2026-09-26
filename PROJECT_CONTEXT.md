@@ -737,3 +737,12 @@ UI benchmark:
 - Sitemap `https://galteum.com/sitemap.xml` is registered with 0 warnings / 0 errors and was re-submitted on 2026-09-26 after new SEO landing/detail URLs went live.
 - New URLs such as `/weekend/seoul` and a representative municipal event detail were still unknown to Google at the time of inspection, which is consistent with the sitemap having last been downloaded before those URLs were deployed.
 - Search Console monitoring is now an active SEO operations lane: track sitemap download/index coverage and inspect representative landing/detail URLs without excessive repeated polling.
+
+
+## 34. 2026-09-26 — first promotion experiment
+
+- First active promotion experiment is a 7-day organic Threads pilot.
+- Initial landing target: `/weekend/seoul`.
+- Do not start with paid acquisition; first establish which organic hook produces qualified link clicks and actual site sessions.
+- Search Console pre-promotion baseline: 0 clicks / 2 impressions through 2026-09-23.
+- If the pilot produces measurable qualified traffic, reuse the winning hook on Instagram and relevant community channels in later bounded experiments rather than launching all channels at once.
