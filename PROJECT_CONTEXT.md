@@ -777,3 +777,10 @@ UI benchmark:
 - Obsolete `운영 준비 중` copy has been removed from production.
 - Production smoke and desktop/mobile overflow checks pass.
 - This bounded UI task is closed; promotion remains paused pending final visual review.
+
+
+## 39. 2026-09-26 — home control cleanup checkpoint
+
+- Production screenshot review reopened one final home-organization issue: theme controls were duplicated across quick categories, advanced filters and active-filter chips, making the interface look busier than benchmark discovery services.
+- Main now contains the simplified single-theme-control implementation and lighter sparse-result/footer treatment; production deploy is pending.
+- Data truth is unchanged: a filtered query showing 4 events reflects the current matched official results and is not a four-card UI cap.
