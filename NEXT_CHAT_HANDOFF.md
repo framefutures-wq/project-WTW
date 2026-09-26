@@ -1432,3 +1432,15 @@ UI 기준:
   - featured grid remains 2 columns
   - featured card title size 14px
 - Therefore the home card/section hierarchy task is fully closed in production without layout regression.
+
+
+## 2026-09-26 — trust section / footer polish merged, production pending
+
+- PR #39 `style: polish home trust section and footer` merged as `7eb50cef60f3de2cc7d722b5dbe885047348fc11`.
+- Home trust/principle area now uses a bright warm surface with restrained deep-green verification accent instead of an orange notice-box treatment.
+- Footer no longer appears as a detached charcoal slab; it now uses a warm light brand finish while preserving the shared horizontal rail.
+- Obsolete production footer copy `운영 준비 중` was removed; production mode now reads `공식 출처 기반 · 확인된 정보만 안내합니다.` while sample mode still identifies itself as sample data.
+- Existing trust modal entry point, footer SEO landing link, page rails, cards, filters, APIs and data behavior are unchanged.
+- Browser regression covers light footer treatment, trust surface, removal of prelaunch copy, and horizontal overflow.
+- UI browser smoke #111 SUCCESS; Project checks #649 SUCCESS.
+- Production deploy + desktop/mobile public verification remain required before closing this bounded task.
