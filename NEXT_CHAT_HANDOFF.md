@@ -1216,3 +1216,16 @@ UI 기준:
 - Pilot URL은 `/weekend/seoul`; 일반 faceted query URL은 계속 홈 canonical 통합 정책을 유지한다.
 - Municipal ingestion/D1/Cron/Registry에는 변경 없음.
 - External fetch 도구에서는 galteum.com 직접 응답 검증이 차단되어 있어, production-specific SEO head/sitemap 최종 확인은 Codespaces에서 curl로 확인한다.
+
+
+## 2026-09-26 — Seoul weekend SEO landing production verification complete
+
+- Production `https://galteum.com/weekend/seoul` returned HTTP 200.
+- Production HTML verified:
+  - title: `서울 이번 주말 행사·축제 | 갈틈`
+  - description: 서울 이번 주말 행사·축제·체험 안내 문구 정상
+  - canonical: `https://galteum.com/weekend/seoul`
+  - og:url: `https://galteum.com/weekend/seoul`
+- Production sitemap contains `https://galteum.com/weekend/seoul`.
+- SEO 2차 pilot landing task is fully closed through production verification.
+- Expansion to additional regional/period landing pages remains gated on pilot indexing/traffic evidence; do not mass-generate similar pages yet.
