@@ -800,3 +800,10 @@ UI benchmark:
 - Desktop and mobile direct checks pass with no horizontal overflow; mobile keeps 2-column cards and 14px featured-card titles.
 - The home now uses a neutral-first warm canvas, one vivid discovery orange (#F45A2A), lighter control chrome, unboxed featured content, reduced repeated editorial labels, compact card location meta, and restrained fallback graphics.
 - This bounded UI task is closed. Promotion remains paused until the user's next product/UI decision.
+
+
+## 42. 2026-09-27 — home typography rhythm checkpoint
+
+- Home benchmark cleanup now also reduces explanatory copy inside category/date/filter controls, matching the shorter-label rhythm observed across current major discovery services.
+- Main contains the implementation and passing UI/project checks; production deploy is pending.
+- No data, API, ingestion, SEO or detail behavior changed.
