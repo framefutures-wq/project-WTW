@@ -1542,3 +1542,20 @@ UI 기준:
   - featured card title = 14px
 - Therefore the benchmark-informed home palette / hierarchy bounded task is fully closed in production.
 - No redeploy is required for this documentation-only closure.
+
+
+## 2026-09-27 — home typography rhythm cleanup merged, production pending
+
+- Follow-up benchmarking against current Klook/Fever/GetYourGuide discovery/search pages showed another common pattern: category/date controls use short labels with minimal explanatory copy, letting content cards carry the page.
+- PR #43 `style: tighten home typography rhythm` merged as `e1c5dd92d7b52b28cf083e64a4ffd502326ea457`.
+- Changes are bounded to home control text density:
+  - removed `빠르게 둘러보기` kicker and explanatory sentence;
+  - quick-category cards now show symbol + category label only (no per-category hint line);
+  - date preset buttons now show icon + short label only (no explanatory subtitle);
+  - custom date button removed its helper subtitle;
+  - advanced-filter summary removed `누구와 · 알림` helper copy;
+  - desktop quick-category target reduced to 44px and date controls to ~40px while preserving tap/readability constraints;
+  - existing #F45A2A benchmark palette and all filter/data behavior remain unchanged.
+- First UI run failed only because an older regression still required >=46px category height; contract was updated to the new intentional 44px compact target.
+- Final UI browser smoke #122 SUCCESS; Project checks #693 SUCCESS.
+- Production deploy + desktop/mobile direct verification remain required before closing this bounded task.
