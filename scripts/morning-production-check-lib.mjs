@@ -1,4 +1,40 @@
-const PROD_MUNICIPAL_KEYS = ["gyeonggi-과천", "gyeonggi-하남", "gyeongbuk-상주"];
+const PROD_MUNICIPAL_KEYS = [
+  "paju",
+  "suwon",
+  "goyang",
+  "hwaseong",
+  "bucheon",
+  "taebaek",
+  "seoul-hangang",
+  "daejeon-fvu",
+  "incheon-res",
+  "gyeonggi-과천",
+  "gyeonggi-하남",
+  "gyeongbuk-상주",
+  "gyeonggi-평택",
+  "gyeonggi-여주",
+  "gyeongbuk-경산",
+  "incheon-서해",
+  "jeonnam-gwangju-곡성",
+  "gyeonggi-광주",
+  "seoul-gangnam",
+  "ulsan-북",
+  "daegu-서",
+  "gangwon-원주",
+  "gyeonggi-용인",
+  "gyeonggi-이천",
+  "gyeonggi-의정부",
+  "chungbuk-옥천",
+  "gyeongbuk-안동",
+  "busan-동",
+  "gyeongbuk-영주",
+  "busan-해운대",
+  "gyeongbuk-경주",
+  "ulsan-jung",
+  "gyeongbuk-포항",
+  "gyeonggi-포천",
+  "gyeongnam-거제",
+];
 
 export function assertReadOnlySql(sql) {
   const normalized = String(sql ?? "").replace(/--.*$/gm, " ").trim();
@@ -66,6 +102,39 @@ export function municipalPublishedSql(startedAt) {
     GROUP BY registry.source_key
     ORDER BY registry.source_key
   `);
+}
+
+export function summarizeMunicipalSourceOutcomes(message) {
+  const outcomes = Array.isArray(message?.municipal?.source_outcomes)
+    ? message.municipal.source_outcomes
+    : [];
+  const expected = new Set(PROD_MUNICIPAL_KEYS);
+  const bySource = new Map();
+  for (const row of outcomes) {
+    if (!row || typeof row.source !== "string" || !expected.has(row.source))
+      continue;
+    bySource.set(row.source, row);
+  }
+  const missing = PROD_MUNICIPAL_KEYS.filter((key) => !bySource.has(key));
+  const errors = PROD_MUNICIPAL_KEYS
+    .map((key) => bySource.get(key))
+    .filter((row) => row?.status === "error")
+    .map((row) => ({
+      source: row.source,
+      candidates: Number(row.candidates ?? 0),
+      reason: typeof row.reason === "string" ? row.reason : "source_error",
+    }));
+  const ok = PROD_MUNICIPAL_KEYS.filter(
+    (key) => bySource.get(key)?.status === "ok",
+  ).length;
+  return {
+    expected: PROD_MUNICIPAL_KEYS.length,
+    reported: bySource.size,
+    ok,
+    error: errors.length,
+    missing,
+    errors,
+  };
 }
 
 export function detailBacklogSql() {
