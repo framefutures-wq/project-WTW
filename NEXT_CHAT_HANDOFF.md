@@ -1307,3 +1307,17 @@ UI 기준:
 - Repository has Naver site verification meta but no Google site verification meta. This does not imply Search Console is unverified because a Google Domain property should normally be verified by DNS TXT/CNAME and does not require an HTML meta tag.
 - Next operational gate is Search Console account/property verification plus sitemap submission and URL Inspection for `/`, `/weekend/seoul`, and representative event detail URLs.
 - No code change is required before Search Console setup. Do not add a Google verification meta token unless the user chooses URL-prefix HTML-tag verification and provides the exact token.
+
+
+## 2026-09-26 — Google Search Console connected / sitemap re-submitted
+
+- GSC Wizard connection confirmed with Google Search Console full access.
+- Property: `sc-domain:galteum.com`.
+- Existing sitemap: `https://galteum.com/sitemap.xml`.
+- Before re-submit: lastSubmitted `2026-09-21T16:38:28.770Z`, lastDownloaded `2026-09-25T15:31:46.285Z`, warnings 0, errors 0, contents submitted 222 / indexed 0.
+- URL Inspection:
+  - `https://galteum.com/`: PASS, `Submitted and indexed`, robots allowed, indexing allowed, fetched successfully as MOBILE, last crawl `2026-09-23T22:44:28Z`.
+  - `https://galteum.com/weekend/seoul`: unknown to Google (not yet crawled).
+  - representative encoded municipal detail (`서울함공원 한가위 특별행사`): unknown to Google (not yet crawled).
+- Sitemap was re-submitted successfully at `2026-09-26T05:58:59.708Z`; accepted/confirmed, warnings 0, errors 0, currently pending Google re-download.
+- Do not repeatedly poll. Re-check sitemap/index status after Google has had time to fetch the updated sitemap.
