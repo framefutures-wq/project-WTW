@@ -1491,3 +1491,25 @@ UI 기준:
   - footer bottom radius 22px / bottom border 1px / bottom margin 34px
 - Mobile 390px verification: document scrollWidth = viewport = 390.
 - Home control cleanup / sparse-result / footer-finish bounded task is fully closed in production.
+
+
+## 2026-09-26 — benchmark-informed home visual cleanup merged, production pending
+
+- User requested that remaining home polish be done while actively benchmarking Klook, Fever and GetYourGuide rather than by intuition alone, including color balance.
+- Current benchmark takeaways used for this bounded task:
+  - Klook: search/content first, vivid orange accent, mostly neutral surfaces;
+  - Fever: dark immersive discovery/hero treatment with content imagery carrying most of the visual weight;
+  - GetYourGuide: strong dark text + vivid coral-orange CTA/selection accent, generous white/neutral surfaces and limited container chrome.
+- 갈틈 keeps its own warm-ivory canvas and deep-green official/trust state. It does not copy competitor layouts/assets.
+- New home discovery accent is `#F45A2A`, intentionally between the Klook/GetYourGuide orange-coral family but distinct from either exact brand color; neutral surfaces now dominate more strongly.
+- PR #41 `style: benchmark home visual hierarchy and palette` merged as `438ccb8ca2bb76b1ab9e793c7454f254a0054260`.
+- Changes:
+  - featured recommendation outer box removed; differentiation now comes from heading/spacing rather than another rounded container;
+  - repeated editorial wording simplified: top kicker `이번 주말`, featured heading `먼저 볼 곳`, lower kicker `전체 행사`;
+  - card region + venue collapsed to one compact location line;
+  - fallback date graphic reduced so it does not overpower photo cards;
+  - quick-category/date/control surfaces use less border chrome and a single stronger orange selection accent;
+  - desktop 4-column/mobile 2-column and all data behavior remain unchanged.
+- Initial UI CI failed only because two older visual assertions still required the previously boxed featured section and 14px mobile title. Contracts were updated to the new unboxed direction and mobile title kept at 14px for readability.
+- Final UI browser smoke #117 SUCCESS; Project checks #674 SUCCESS.
+- Production deploy + public desktop/mobile visual verification remain required before closing this bounded task.
