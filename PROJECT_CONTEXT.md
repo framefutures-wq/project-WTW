@@ -710,3 +710,12 @@ UI benchmark:
 - 2026-09-26 첫 production QA: 30 events / 15 regions. Detail API와 목록↔상세 데이터 계약은 전반적으로 안정적이었고 source URL 30/30 reachable.
 - Promotion blocker 두 개가 확인됐다: (1) URL 문자를 포함한 municipal event ID의 public detail page 404, (2) 390px mobile production event-grid의 약 42px horizontal overflow.
 - 두 blocker 수정 및 production 재검증 전에는 대규모 홍보를 시작하지 않는다. SEO/indexing 작업은 별도 lane으로 유지 가능하다.
+
+
+## 31. 2026-09-26 — promotion blockers closed in production
+
+- The two concrete blockers found by the first 30-event / 15-region pre-promotion QA are now closed in production.
+- Encoded municipal public detail route: verified HTTP 200 with correct canonical.
+- 390px mobile event grid: verified no horizontal document overflow (`scrollWidth=390`) and all cards within viewport.
+- Production smoke passed after both fixes.
+- Broad promotion is no longer blocked by those defects, but the promotion-readiness gate should be closed with one final read-only QA rerun before traffic is actively pushed.
