@@ -1180,3 +1180,15 @@ UI 기준:
 - Project checks and UI browser smoke both passed. PR #30 merged to main as `3de8d6f270cec27461d341a599d3a83aef787d32`.
 - No municipal ingestion, D1, Cron, Registry, API contract, or production data changed.
 - This frontend/runtime change still needs one verified production deploy and production smoke from the authenticated Codespaces environment before the SEO task is closed.
+
+
+## 2026-09-26 — SEO home-to-detail internal links deployed
+
+- PR #30의 crawlable home event-card links가 authenticated Codespaces에서 production에 verified deploy됐다.
+- Deploy main: `c8b9ecbbde9c141a6761b952b4e820bb2bc7bd63`.
+- Production Worker version: `3fe9b62a-5a77-4704-bd6e-f9af4b499d78`.
+- Production smoke PASS: D1 연결, 날짜 구간, 필터, 반려동물, 거리순, 페이지, 상세, 취소 제외, 입력 검증, SQL 바인딩, Static Assets, SPA 정상.
+- 홈 행사 카드는 이제 canonical `/events/:id` href를 노출하면서 일반 클릭에서는 기존 SPA 상세 UX를 유지한다.
+- Municipal ingestion/D1/Cron/Registry에는 변경 없음.
+- 이 SEO bounded task는 production까지 완료로 닫는다.
+- 다음 독립 SEO 후보: 지역/기간 검색어를 받을 indexable landing surface 필요성 및 현재 query-URL canonical 동작 점검. 기존 municipal 35-source natural validation은 별도 대기 상태를 유지한다.
