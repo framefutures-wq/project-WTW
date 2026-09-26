@@ -35,6 +35,7 @@ import {
   validDate,
 } from "../shared/domain";
 import { USER_CONTENT_FILTERS } from "../shared/content-filters";
+import { seoLandingForPath } from "../shared/seo-landings";
 import { recommendationReasonLabel } from "../shared/recommendation-ranking";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
 import { formatEventDateLabel } from "../shared/event-date-display";
@@ -526,7 +527,10 @@ export default function App() {
       ? new URLSearchParams()
       : new URLSearchParams(window.location.search),
   ).current;
-  const initialPeriod = initialParams.get("period");
+  const initialLanding = useRef(
+    typeof window === "undefined" ? null : seoLandingForPath(window.location.pathname),
+  ).current;
+  const initialPeriod = initialLanding?.period ?? initialParams.get("period");
   const initialDate = initialParams.get("date");
   const initialStart = initialParams.get("startDate");
   const initialEnd = initialParams.get("endDate");
@@ -539,11 +543,13 @@ export default function App() {
         validDate(initialEnd)))
       ? { start: initialDate ?? initialStart!, end: initialDate ?? initialEnd! }
       : null;
-  const initialRegion = REGION_OPTIONS.some(
-    ({ queryValue }) => queryValue === initialParams.get("region"),
-  )
-    ? initialParams.get("region")!
-    : "";
+  const initialRegion = initialLanding?.region
+    ? initialLanding.region
+    : REGION_OPTIONS.some(
+          ({ queryValue }) => queryValue === initialParams.get("region"),
+        )
+      ? initialParams.get("region")!
+      : "";
   const initialAudience = Object.prototype.hasOwnProperty.call(
     AUDIENCES,
     initialParams.get("audience") ?? "",
@@ -715,6 +721,21 @@ export default function App() {
     }))
       if (value) params.set(key, value);
     if (sort !== "recommended" && !location) params.set("sort", sort);
+    const currentLanding = seoLandingForPath(window.location.pathname);
+    const matchesCurrentLanding =
+      currentLanding &&
+      !customRange &&
+      period === currentLanding.period &&
+      region === currentLanding.region &&
+      !audience &&
+      !theme &&
+      !query &&
+      sort === "recommended" &&
+      !location;
+    if (matchesCurrentLanding) {
+      window.history.replaceState(window.history.state, "", currentLanding.path);
+      return;
+    }
     const next = params.toString();
     window.history.replaceState(
       window.history.state,
