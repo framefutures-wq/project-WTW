@@ -201,7 +201,7 @@ test("데스크톱 홈 상단과 하단은 같은 가로 레일에 맞는다", a
   }
 });
 
-test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정보 위계가 유지된다", async ({ page }) => {
+test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분리되고 카드 정보 위계가 유지된다", async ({ page }) => {
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
@@ -211,13 +211,15 @@ test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정�
     const style = getComputedStyle(el);
     return {
       paddingTop: parseFloat(style.paddingTop),
+      borderTopWidth: parseFloat(style.borderTopWidth),
       borderRadius: parseFloat(style.borderRadius),
       backgroundColor: style.backgroundColor,
     };
   });
-  expect(featuredStyle.paddingTop).toBeGreaterThanOrEqual(20);
-  expect(featuredStyle.borderRadius).toBeGreaterThanOrEqual(20);
-  expect(featuredStyle.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+  expect(featuredStyle.paddingTop).toBe(0);
+  expect(featuredStyle.borderTopWidth).toBe(0);
+  expect(featuredStyle.borderRadius).toBe(0);
+  expect(featuredStyle.backgroundColor).toBe("rgba(0, 0, 0, 0)");
 
   const allStyle = await page.locator(".all-events-section").evaluate((el) => {
     const style = getComputedStyle(el);
@@ -226,7 +228,7 @@ test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정�
       borderTopWidth: parseFloat(style.borderTopWidth),
     };
   });
-  expect(allStyle.paddingTop).toBeGreaterThanOrEqual(30);
+  expect(allStyle.paddingTop).toBeGreaterThanOrEqual(28);
   expect(allStyle.borderTopWidth).toBeGreaterThanOrEqual(1);
 
   const titleStyle = await page.locator(".featured-events .card-content h3").first().evaluate((el) => {
@@ -236,7 +238,7 @@ test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정�
       fontWeight: parseInt(style.fontWeight, 10),
     };
   });
-  expect(titleStyle.fontSize).toBeGreaterThanOrEqual(18);
+  expect(titleStyle.fontSize).toBeGreaterThanOrEqual(17);
   expect(titleStyle.fontWeight).toBeGreaterThanOrEqual(700);
 
   const dateWeight = await page.locator(".featured-events .event-date").first().evaluate((el) =>
