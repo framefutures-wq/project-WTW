@@ -89,6 +89,34 @@ test("detail API returns primary then distinct usable additional images only", a
   } finally { await mf.dispose(); }
 });
 
+test("encoded municipal ids with URL punctuation and Korean text work for detail API and public event pages", async () => {
+  const { mf, env } = await setup();
+  try {
+    const id = "municipal-seoul-hangang-https://hangang.seoul.go.kr/www/event?mid=538|서울함공원 한가위 특별행사|2026-09-26";
+    const now = new Date().toISOString();
+    await (env as { DB: D1Database }).DB.batch([
+      (env as { DB: D1Database }).DB.prepare(
+        "INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,'scheduled','verified',0,'source',?,?)",
+      ).bind(id, "서울함공원 한가위 특별행사", "설명", "서울", "서울함공원", "서울 마포구", "2026-09-26", "2026-09-26", "unknown", now, now),
+      ...["schedule", "venue", "status"].map((field) =>
+        (env as { DB: D1Database }).DB.prepare(
+          "INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,'source',?,?,?)",
+        ).bind(id, field, "확인", now),
+      ),
+    ]);
+    const encoded = encodeURIComponent(id);
+    const api = await worker.fetch(new Request("https://galteum.com/api/events/" + encoded), env as never);
+    assert.equal(api.status, 200);
+    assert.equal(((await api.json()) as { event: { id: string } }).event.id, id);
+
+    const page = await worker.fetch(new Request("https://galteum.com/events/" + encoded), env as never);
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes("https://galteum.com/events/" + encoded));
+  } finally {
+    await mf.dispose();
+  }
+});
+
 test("root canonical, sitemap, robots, and event 404s follow the public visibility contract", async () => {
   const { mf, env } = await setup();
   try {
@@ -110,11 +138,12 @@ test("root canonical, sitemap, robots, and event 404s follow the public visibili
   }
 });
 
-test("sitemap XML escapes canonical event ids and keeps only route-safe identifiers", () => {
+test("sitemap XML percent-encodes municipal event ids into one canonical path segment", () => {
   const xml = sitemapXml([
     { id: "safe_event", title: "x", venue: "x", address: "x", start_date: "2026-01-01", end_date: "2026-01-01", status: "unknown", cost: "unknown", image_url: null, image_status: null, updated_at: null, checked_at: null },
-    { id: "not/a/path", title: "x", venue: "x", address: "x", start_date: "2026-01-01", end_date: "2026-01-01", status: "unknown", cost: "unknown", image_url: null, image_status: null, updated_at: null, checked_at: null },
+    { id: "not/a/path|서울?event=1", title: "x", venue: "x", address: "x", start_date: "2026-01-01", end_date: "2026-01-01", status: "unknown", cost: "unknown", image_url: null, image_status: null, updated_at: null, checked_at: null },
   ]);
   assert.match(xml, /events\/safe_event/);
-  assert.doesNotMatch(xml, /not\/a\/path/);
+  assert.match(xml, /events\/not%2Fa%2Fpath%7C/);
+  assert.doesNotMatch(xml, /events\/not\/a\/path/);
 });
