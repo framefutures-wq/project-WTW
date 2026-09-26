@@ -1151,3 +1151,13 @@ UI 기준:
 - A regression test locks verifier keys to `MUNICIPAL_SOURCE_REGISTRY`, so future Registry additions cannot silently drift from production verification coverage.
 - No Worker/runtime behavior, D1 schema/data, Cron, secrets, ingestion, or production deployment changed; Cloudflare redeploy is not needed for this verifier-only change.
 - Next action remains: after the 2026-09-27 10:00 KST natural base Cron, pull latest main and run `npm run verify:morning:prod -- --remote` to inspect all 35 sources. Do not trigger manual ingestion.
+
+
+## 2026-09-26 — all-source verifier D1 query compatibility fix
+
+- PR #29 `fix: avoid complex LIKE in municipal verifier` passed Project checks and was merged to main as `6c49f05f9f6ac0d596620e14e6652f6a025e6618`.
+- The previous all-35 verifier used a dynamic `LIKE 'municipal-source-municipal-' || source_key || '-%'` join for published/revalidated counts; Cloudflare D1 rejected it with `LIKE or GLOB pattern too complex`.
+- The read-only verifier now joins `municipal_candidate_state.candidate_id = events.id` and groups by `source_key`, removing LIKE/GLOB entirely.
+- Regression coverage forbids LIKE/GLOB in this verifier query.
+- No Worker/runtime behavior, D1 schema/data, Cron, secrets, ingestion, or production deployment changed. No redeploy is required.
+- A verifier run on 2026-09-26 will still reflect the latest base run from 10:00 KST, which occurred before the +23 production deploy; therefore incomplete 35-source outcomes are expected until the 2026-09-27 10:00 KST natural base run.
