@@ -1461,3 +1461,16 @@ UI 기준:
   - document scrollWidth = viewport = 390
   - obsolete prelaunch copy absent
 - Trust/footer polish task is fully closed in production.
+
+
+## 2026-09-26 — home control cleanup merged, production pending
+
+- User production review found the home still visually cluttered, especially when a quick category such as 공연 was selected: theme selection auto-opened the advanced filter panel, the same theme controls were repeated inside that panel, and the active-filter row repeated the selection again.
+- PR #40 `refactor: simplify home filters and page ending` merged as `eb0e7f9afe946d52d46788f1df4bd5cbe43fb89e`.
+- Quick categories are now the single theme/category control. Selecting a theme no longer auto-opens advanced filters and no longer creates a duplicate theme active-filter chip.
+- Advanced filters now focus on audience, location-related state and notifications; duplicate `무엇을` theme chips were removed.
+- Discovery/filter container removes side borders/rounded outer box; advanced-filter summary becomes a compact control and its open body uses a light divider instead of another nested card.
+- Sparse-result exploration CTA is now a light divider/action row instead of a large boxed panel. Actual result counts remain unchanged; e.g. a 공연 filter that returns 4 official matches still shows exactly those 4 rather than invented filler cards.
+- Footer now has a full bottom border/radius plus bottom breathing room, fixing the visually clipped ending.
+- UI browser smoke #113 SUCCESS; Project checks #659 SUCCESS.
+- Production deploy + desktop/mobile visual verification are still required before closing this bounded task.
