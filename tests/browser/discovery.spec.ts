@@ -94,6 +94,10 @@ test("서울 이번 주말 SEO landing은 같은 필터 결과를 바로 보여�
   await expect(page.getByLabel("지역", { exact: true })).toHaveValue("서울");
   await expect(page.locator(".active-filter")).toContainText(["서울"]);
   await expect(page.locator(".event-card").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "서울 이번 주말 행사" })).toHaveAttribute(
+    "href",
+    "/weekend/seoul",
+  );
 });
 
 test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, context }) => {
