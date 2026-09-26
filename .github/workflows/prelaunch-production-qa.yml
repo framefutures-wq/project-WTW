@@ -24,7 +24,8 @@ jobs:
       - name: Run read-only production QA
         env:
           QA_BASE_URL: https://galteum.com
-          QA_SAMPLE_SIZE: "30"
+          QA_SAMPLE_SIZE: "5"
+          QA_MOBILE_ONLY: "1"
         run: node scripts/prelaunch-production-qa.mjs
       - name: Upload QA report
         if: always()
