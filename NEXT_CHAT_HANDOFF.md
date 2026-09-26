@@ -1109,3 +1109,13 @@ UI 기준:
 - 이번 expansion에서 main에 이미 준비된 신규 source는 여전히 **+23개**이며 production 미배포다. 이번 audit은 신규 Registry source를 추가하지 않았다.
 - 다음 안전한 단계는 이 audit PR 검증/merge 후, 누적 +23 source를 기존 Worker에 production deploy 1회로 반영하는 것이다. Cloudflare 인증이 필요한 실제 deploy는 사용자 Codespaces 환경이 필요한 checkpoint로 취급한다.
 - TourAPI와 UI v2는 계속 동결한다.
+
+
+## 2026-09-26 — PR #26 merged / production deploy checkpoint
+
+- PR #26 `docs: close final municipal ready audit`의 Project checks가 success로 완료된 뒤 main에 병합했다.
+- merge commit: `57187395084c4f9bb088af0c23d96802588e7483`.
+- main Registry는 35 source, ONBOARDING_READY 중 Registry 미등록은 0개다.
+- 누적 신규 +23 municipal source는 아직 production 미배포 상태다.
+- 다음 단계는 사용자 Codespaces/Cloudflare 인증 환경에서 기존 Worker `weekend-mwohae`에 production deploy 1회 수행 후 galteum.com smoke를 확인하는 것.
+- 신규 Cloudflare resource, D1 migration/write, Cron 변경, secret 변경은 필요 없다. 다음 자연 10:00 KST Cron에서 35 source의 `source_outcomes`를 read-only로 검증한다.
