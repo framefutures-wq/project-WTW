@@ -1444,3 +1444,20 @@ UI 기준:
 - Browser regression covers light footer treatment, trust surface, removal of prelaunch copy, and horizontal overflow.
 - UI browser smoke #111 SUCCESS; Project checks #649 SUCCESS.
 - Production deploy + desktop/mobile public verification remain required before closing this bounded task.
+
+
+## 2026-09-26 — trust section / footer production verification complete
+
+- Main `fa47301a4790d0074ac41e2ce12a4aa881ebca11` deployed to production.
+- Production Worker version: `d88238c4-c3e0-460a-a087-23f87207d56f`.
+- Production smoke PASS.
+- Desktop 1365px verification:
+  - document scrollWidth = viewport = 1365
+  - principle radius 22px; its background uses a CSS linear-gradient, so `backgroundColor` reports transparent by design
+  - footer background = rgba(239,234,225,0.76), radius 22px, text color charcoal, brand weight 900
+  - obsolete `운영 준비 중` copy absent
+  - footer copy: `공식 출처 기반 · 확인된 정보만 안내합니다.`
+- Mobile 390px verification:
+  - document scrollWidth = viewport = 390
+  - obsolete prelaunch copy absent
+- Trust/footer polish task is fully closed in production.
