@@ -41,6 +41,7 @@ import { formatEventDateLabel } from "../shared/event-date-display";
 import { cardImageFit, type ImageFit } from "../shared/image-fit";
 import { selectProgramOccurrenceGroup } from "../shared/program-occurrence-selection";
 import { deriveEventDetailInfo } from "../shared/event-derived-info";
+import { detailMapAction, detailOfficialUrl } from "../shared/detail-actions";
 import { nearbyDetailEvents, similarDetailEvents } from "../shared/detail-exploration";
 import { formatProgramTime } from "../shared/event-program-time";
 import { decodeEventPathId, validEventId } from "../shared/event-id";
@@ -60,7 +61,6 @@ import {
 import {
   cardStatusLabel,
   formatTrustDate,
-  hasOfficialSource,
   trustChangeLabel,
 } from "./trust";
 import {
@@ -245,12 +245,6 @@ const safeUrl = (url: string | null | undefined) => {
     return undefined;
   }
 };
-const officialDetailSource = (detail: Detail) =>
-  detail.enrichment &&
-  ["organizer", "municipality"].includes(detail.enrichment.source_kind) &&
-  detail.enrichment.source_priority <= 2
-    ? safeUrl(detail.enrichment.source_url)
-    : undefined;
 function TrustInfo({
   event,
   card = false,
@@ -2150,11 +2144,11 @@ export default function App() {
               ),
             );
             const price = detail.event.price_text?.trim();
-            const officialUrl =
-              officialDetailSource(detail) ??
-              (hasOfficialSource(detail.event)
-                ? safeUrl(detail.event.trust_source_url)
-                : null);
+            const officialUrl = detailOfficialUrl(
+              detail.event,
+              detail.enrichment,
+            );
+            const mapAction = detailMapAction(detail.event);
             const description =
               detail.enrichment?.summary ??
               usefulDescription(detail.event.description);
@@ -2239,21 +2233,37 @@ export default function App() {
                         )}
                       </div>
                     )}
-                    {officialUrl && (
-                      <a
-                        className="primary source-button detail-official-link detail-official-link-top"
-                        href={officialUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                          trackOfficialLinkClick(
-                            detail.event.id,
-                            detail.event.source_kind,
-                          )
-                        }
+                    {(officialUrl || mapAction) && (
+                      <div
+                        className={`detail-action-row${officialUrl && mapAction ? "" : " detail-action-row-single"}`}
                       >
-                        공식 안내 확인 <ExternalLink size={16} />
-                      </a>
+                        {officialUrl && (
+                          <a
+                            className="primary source-button detail-official-link detail-official-link-top"
+                            href={officialUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() =>
+                              trackOfficialLinkClick(
+                                detail.event.id,
+                                detail.event.source_kind,
+                              )
+                            }
+                          >
+                            공식 안내 확인 <ExternalLink size={16} />
+                          </a>
+                        )}
+                        {mapAction && (
+                          <a
+                            className="detail-map-link"
+                            href={mapAction.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {mapAction.label} <Navigation size={16} />
+                          </a>
+                        )}
+                      </div>
                     )}
                     {(operatingHours || price || detail.contact_phone) && (
                       <div className="detail-supporting-facts" aria-label="추가 행사 정보">
