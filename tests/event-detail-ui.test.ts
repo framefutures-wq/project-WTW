@@ -106,3 +106,14 @@ test("detail delegates official-page and map actions to deterministic helpers", 
   assert.match(app, /mapAction\.href/);
   assert.match(app, /mapAction\.label/);
 });
+
+test("mobile two-image detail media stays compact instead of stacking two full cards", () => {
+  assert.match(
+    redesign,
+    /\.detail-media-pair\s*\{[^}]*grid-template-columns: minmax\(0, 1\.55fr\) minmax\(0, \.85fr\)[^}]*height: clamp\(220px, 64vw, 250px\)[^}]*max-height: 250px/s,
+  );
+  assert.match(
+    redesign,
+    /\.detail-media-pair button\s*\{[^}]*height: 100%[^}]*max-height: none[^}]*aspect-ratio: auto/s,
+  );
+});
