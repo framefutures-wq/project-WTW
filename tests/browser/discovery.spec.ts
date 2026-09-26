@@ -167,8 +167,8 @@ test("초기 화면은 1365x768과 1920x900에서 행사까지 바로 이어진�
     expect(hero!.height).toBeGreaterThanOrEqual(214);
     expect(hero!.height).toBeLessThanOrEqual(232);
     expect(quick!.height).toBeLessThanOrEqual(64);
-    expect(category!.height).toBeGreaterThanOrEqual(46);
-    expect(category!.height).toBeLessThanOrEqual(54);
+    expect(category!.height).toBeGreaterThanOrEqual(40);
+    expect(category!.height).toBeLessThanOrEqual(44);
     const productionAdjustedY = firstScene!.y - (sampleBanner?.height ?? 0);
     expect(productionAdjustedY).toBeLessThanOrEqual(viewport.maxSceneY + 70);
     expect(
@@ -285,6 +285,38 @@ test("홈 벤치마크 정리는 추천 박스를 걷어내고 카드 메타를 
     getComputedStyle(el).backgroundColor,
   );
   expect(accent).toBe("rgb(244, 90, 42)");
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
+test("데스크톱 탐색 컨트롤은 카테고리 한 줄 + 필터 툴바 한 줄로 정리된다", async ({ page }) => {
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.goto("/");
+  await expect(page.locator(".quick-category-grid")).toBeVisible();
+  await expect(page.locator(".periods")).toBeVisible();
+  await expect(page.locator(".filter-body")).toBeVisible();
+
+  const category = await page.locator(".quick-category").first().boundingBox();
+  const periods = await page.locator(".periods").boundingBox();
+  const filters = await page.locator(".filter-body").boundingBox();
+  const discovery = await page.locator(".discovery").boundingBox();
+
+  expect(category).not.toBeNull();
+  expect(periods).not.toBeNull();
+  expect(filters).not.toBeNull();
+  expect(discovery).not.toBeNull();
+
+  expect(category!.height).toBeLessThanOrEqual(44);
+  expect(Math.abs(periods!.y - filters!.y)).toBeLessThanOrEqual(3);
+  expect(discovery!.height).toBeLessThanOrEqual(62);
+
+  const advanced = page.locator(".advanced-filters");
+  await expect(advanced).not.toHaveAttribute("open", "");
+  await advanced.locator("summary").click();
+  await expect(advanced).toHaveAttribute("open", "");
+  await expect(advanced.locator(".advanced-filter-body")).toBeVisible();
 
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
