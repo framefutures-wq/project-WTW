@@ -109,9 +109,20 @@ test("encoded municipal ids with URL punctuation and Korean text work for detail
     assert.equal(api.status, 200);
     assert.equal(((await api.json()) as { event: { id: string } }).event.id, id);
 
+    (env as { ASSETS: { fetch: (request: Request) => Promise<Response> } }).ASSETS = {
+      fetch: async (request: Request) =>
+        new URL(request.url).pathname === "/"
+          ? new Response(html, { headers: { "Content-Type": "text/html" } })
+          : new Response("asset not found", {
+              status: 404,
+              headers: { "Content-Type": "text/html" },
+            }),
+    };
+
     const page = await worker.fetch(new Request("https://galteum.com/events/" + encoded), env as never);
+    const pageBody = await page.text();
     assert.equal(page.status, 200);
-    assert.ok((await page.text()).includes("https://galteum.com/events/" + encoded));
+    assert.ok(pageBody.includes("https://galteum.com/events/" + encoded));
   } finally {
     await mf.dispose();
   }
