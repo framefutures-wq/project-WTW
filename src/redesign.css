@@ -2053,6 +2053,21 @@ body {
   color: #343a40;
 }
 
+.detail-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.detail-action-row-single {
+  grid-template-columns: 1fr;
+}
+
+.detail-action-row .detail-official-link-top {
+  margin-top: 0;
+}
+
 .detail-official-link-top {
   min-height: 48px;
   margin-top: 12px;
@@ -2063,6 +2078,25 @@ body {
 
 .detail-official-link-top:hover {
   background: #d95727;
+}
+
+.detail-map-link {
+  min-height: 48px;
+  border: 1px solid rgba(23, 26, 29, 0.18);
+  border-radius: 13px;
+  background: #fff;
+  color: #171a1d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.detail-map-link:hover {
+  background: #f2eee8;
 }
 
 .detail-supporting-facts {
