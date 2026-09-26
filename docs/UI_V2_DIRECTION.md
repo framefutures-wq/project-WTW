@@ -247,3 +247,18 @@ Adaptive media:
 - 홈 탐색영역은 큰 rounded container 안에 작은 box를 중첩하는 구조를 피하고, 얇은 divider와 여백 중심으로 정돈한다.
 - 필터 결과가 4개처럼 적더라도 공식 확인 결과 수를 임의로 늘리지 않는다. 대신 탐색 전환 CTA를 큰 박스가 아닌 가벼운 구분선/액션으로 연결한다.
 - footer는 상단만 둥근 잘린 panel처럼 끝내지 않고 전체 radius + bottom border + 바닥 여백을 가진 완결된 surface로 마감한다.
+
+
+## 14. 2026-09-26 경쟁 서비스 벤치마크 기반 홈 컬러 / 정돈 기준
+
+남은 홈 UI는 Klook, Fever, GetYourGuide의 실제 탐색 패턴을 함께 보며 다듬는다. 그대로 복제하지 않고 공통 원칙만 가져온다.
+
+- Klook에서 가져올 것: **검색 우선, 중립 surface 비중, 선명한 오렌지의 제한적 사용**. Klook의 보조 purple/cyan/yellow 팔레트는 갈틈에 가져오지 않는다.
+- Fever에서 가져올 것: **hero/이미지가 감성을 담당하고 컨트롤은 뒤로 물러나는 구조**. 전체 화면을 dark theme로 만들지는 않는다.
+- GetYourGuide에서 가져올 것: **강한 dark text + coral-orange CTA/선택 상태 + 넓은 neutral surface**. 경쟁사 고유 레이아웃/자산/브랜드 조합은 복제하지 않는다.
+- 갈틈 고유값은 warm ivory canvas + charcoal/dark ink + discovery orange + verified deep-green으로 유지한다.
+- 홈 discovery accent는 `#F45A2A`를 기준으로 사용한다. orange는 CTA/active/recommendation처럼 행동과 발견에만 쓰고, 일반 border/surface에는 남발하지 않는다.
+- 추천 섹션은 큰 rounded container로 감싸지 않는다. heading/spacing으로 우선순위를 만들고 행사 사진이 먼저 보이게 한다.
+- 카드 메타는 행 수를 줄인다. 홈에서는 지역+장소를 한 줄로 합치고, 상세에서 전체 정보를 보여준다.
+- 이미지 없는 날짜 fallback은 사진 카드보다 더 강한 시각적 주인공이 되지 않도록 날짜 타이포 크기를 억제한다.
+- 동일 의미의 kicker/heading 반복을 피한다. 홈의 기본 editorial 흐름은 `이번 주말 → 이번 주말, 여기 어때요? → 갈틈 추천 / 먼저 볼 곳 → 전체 행사 / 더 둘러보기` 수준으로 제한한다.
