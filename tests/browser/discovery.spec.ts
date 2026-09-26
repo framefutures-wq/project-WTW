@@ -94,6 +94,16 @@ test("서울 이번 주말 SEO landing은 같은 필터 결과를 바로 보여�
   await expect(page.getByLabel("지역", { exact: true })).toHaveValue("서울");
   await expect(page.locator(".active-filter")).toContainText(["서울"]);
   await expect(page.locator(".event-card").first()).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  const cardsFitViewport = await page.locator(".event-card").evaluateAll((cards) =>
+    cards.every((card) => {
+      const rect = card.getBoundingClientRect();
+      return rect.left >= -1 && rect.right <= innerWidth + 1;
+    }),
+  );
+  expect(cardsFitViewport).toBe(true);
   await expect(page.getByRole("link", { name: "서울 이번 주말 행사" })).toHaveAttribute(
     "href",
     "/weekend/seoul",
