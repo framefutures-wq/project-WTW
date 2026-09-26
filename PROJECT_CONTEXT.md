@@ -802,8 +802,12 @@ UI benchmark:
 - This bounded UI task is closed. Promotion remains paused until the user's next product/UI decision.
 
 
-## 42. 2026-09-27 — home typography rhythm checkpoint
+## 42. 2026-09-27 — home typography rhythm production complete
 
-- Home benchmark cleanup now also reduces explanatory copy inside category/date/filter controls, matching the shorter-label rhythm observed across current major discovery services.
-- Main contains the implementation and passing UI/project checks; production deploy is pending.
+- PR #43 home typography/control-density cleanup is live in production.
+- Deployed code baseline: `923472d65fa8a59acb1610f009b4cb9b48b60f15`; production Worker version: `77db54bf-267e-4eed-a4d5-a2f556ad1d86`.
+- Production smoke PASS.
+- Desktop 1365px direct verification: no horizontal overflow, quick category 44px, period control 40px, removed helper copy absent.
+- Mobile 390px direct verification: no horizontal overflow, quick category 50px, period control 42px, removed helper copy absent, featured grid remains 2 columns (`169px 169px`).
 - No data, API, ingestion, SEO or detail behavior changed.
+- This bounded UI task is closed. Do not redeploy for documentation-only closure; further UI work should start only from a new production screenshot / concrete visible issue.
