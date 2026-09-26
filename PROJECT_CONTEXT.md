@@ -728,3 +728,12 @@ UI benchmark:
 - The 17 warnings are not launch blockers: 16 are external official-source fetch failures from the GitHub runner and 1 is an approximately 150h-old `checked_at` freshness warning for `2026 수원화성 미디어아트`.
 - Broad promotion may start. Continue normal monitoring for freshness, source availability, indexing, and user-reported data issues.
 - This does not replace the independent municipal 35-source natural-run verification planned after the 2026-09-27 10:00 KST base Cron.
+
+
+## 33. 2026-09-26 — Google Search Console operational
+
+- `galteum.com` is connected as a Google Search Console Domain property (`sc-domain:galteum.com`).
+- Root URL is confirmed indexed by Google.
+- Sitemap `https://galteum.com/sitemap.xml` is registered with 0 warnings / 0 errors and was re-submitted on 2026-09-26 after new SEO landing/detail URLs went live.
+- New URLs such as `/weekend/seoul` and a representative municipal event detail were still unknown to Google at the time of inspection, which is consistent with the sitemap having last been downloaded before those URLs were deployed.
+- Search Console monitoring is now an active SEO operations lane: track sitemap download/index coverage and inspect representative landing/detail URLs without excessive repeated polling.
