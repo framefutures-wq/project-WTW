@@ -1321,3 +1321,15 @@ UI 기준:
   - representative encoded municipal detail (`서울함공원 한가위 특별행사`): unknown to Google (not yet crawled).
 - Sitemap was re-submitted successfully at `2026-09-26T05:58:59.708Z`; accepted/confirmed, warnings 0, errors 0, currently pending Google re-download.
 - Do not repeatedly poll. Re-check sitemap/index status after Google has had time to fetch the updated sitemap.
+
+
+## 2026-09-26 — social share preview metadata merged / deploy checkpoint
+
+- Promotion-link audit found homepage and `/weekend/seoul` had no `og:image`; event pages only had an image when a usable event image existed.
+- PR #36 `feat: add social share preview metadata` merged to main as `f3505b387812be38bc5f5fc317019ca4938f7183` after Project checks SUCCESS.
+- Added branded 1200x630 raster share image at `/galteum-share.png` using current production visual direction.
+- Homepage and SEO landing now emit Open Graph title/description/url/site_name/image metadata plus `twitter:card=summary_large_image`.
+- Event pages keep their real verified event image for social preview when available and fall back to `/galteum-share.png` when no usable event image exists. Event JSON-LD still uses only the real event image, not the branding fallback.
+- Regression coverage locks homepage, landing, event image, and image-less encoded municipal event fallback behavior.
+- No D1, ingestion, Cron, Registry, municipal source, or public API change.
+- Production deploy + direct verification of `/galteum-share.png` and page OG tags is still required before this promotion-share task is closed.
