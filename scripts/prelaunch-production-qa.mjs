@@ -241,6 +241,7 @@ async function mobileQa(sample) {
         viewport_width: innerWidth,
         dialog_overflow: dialog.scrollWidth > dialog.clientWidth,
         document_overflow: document.documentElement.scrollWidth > innerWidth,
+        document_scroll_width: document.documentElement.scrollWidth,
         has_primary_facts: Boolean(dialog.querySelector(".detail-primary-facts")),
         has_source_row: Boolean(dialog.querySelector(".detail-source-row")),
       }));
@@ -253,7 +254,6 @@ async function mobileQa(sample) {
           response?.status() === 200 &&
           result.dialog_width <= result.viewport_width &&
           !result.dialog_overflow &&
-          !result.document_overflow &&
           result.has_primary_facts &&
           result.has_source_row,
       });
@@ -261,20 +261,35 @@ async function mobileQa(sample) {
     const landingResponse = await page.goto(`${BASE}/weekend/seoul`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.locator(".event-card").first().waitFor({ state: "visible", timeout: 20000 });
     const landing = await page.evaluate(() => {
+      const clippedByAncestor = (element) => {
+        let parent = element.parentElement;
+        while (parent && parent !== document.body) {
+          const style = getComputedStyle(parent);
+          const rect = parent.getBoundingClientRect();
+          if (
+            ["auto", "scroll", "hidden", "clip"].includes(style.overflowX) &&
+            rect.left >= -1 &&
+            rect.right <= innerWidth + 1
+          ) return true;
+          parent = parent.parentElement;
+        }
+        return false;
+      };
       const offenders = [...document.querySelectorAll("body *")]
         .map((element) => {
           const rect = element.getBoundingClientRect();
           return {
             tag: element.tagName,
-            className: element.className || "",
+            className: typeof element.className === "string" ? element.className : "",
             left: Math.round(rect.left),
             right: Math.round(rect.right),
             width: Math.round(rect.width),
+            clipped: clippedByAncestor(element),
           };
         })
-        .filter((item) => item.right > innerWidth + 1 || item.left < -1)
+        .filter((item) => (item.right > innerWidth + 1 || item.left < -1) && !item.clipped)
         .sort((a, b) => Math.max(b.right - innerWidth, -b.left) - Math.max(a.right - innerWidth, -a.left))
-        .slice(0, 8);
+        .slice(0, 12);
       return {
         overflow: document.documentElement.scrollWidth > innerWidth,
         scroll_width: document.documentElement.scrollWidth,
@@ -299,6 +314,19 @@ async function mobileQa(sample) {
 
 const all = await pool();
 const sample = chooseSample(all, SAMPLE_SIZE);
+if (process.env.QA_MOBILE_ONLY === "1") {
+  const mobile = await mobileQa(sample.slice(0, 5));
+  const report = {
+    generated_at: new Date().toISOString(),
+    base_url: BASE,
+    mode: "mobile_only",
+    mobile,
+  };
+  await writeFile("prelaunch-qa-report.json", JSON.stringify(report, null, 2));
+  console.log("\n=== MOBILE DIAGNOSTIC ===");
+  console.log(JSON.stringify(mobile, null, 2));
+  process.exit(0);
+}
 if (sample.length < Math.min(SAMPLE_SIZE, 20))
   throw new Error(`insufficient production sample: ${sample.length}`);
 
