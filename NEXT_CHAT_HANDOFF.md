@@ -1474,3 +1474,20 @@ UI 기준:
 - Footer now has a full bottom border/radius plus bottom breathing room, fixing the visually clipped ending.
 - UI browser smoke #113 SUCCESS; Project checks #659 SUCCESS.
 - Production deploy + desktop/mobile visual verification are still required before closing this bounded task.
+
+
+## 2026-09-26 — home control cleanup production verification complete
+
+- Main `f511901a68f60b13dc327062c35f43617574a98a` deployed to production.
+- Production Worker version: `6b8faaf3-9ab1-4ded-a2a7-5aea14fb52cb`.
+- Production smoke PASS.
+- 공연 filter production API returned exactly 4 matches; renderedCards = 4, confirming the four-card state is data-driven rather than a UI cap.
+- Desktop 1365px verification:
+  - document scrollWidth = viewport = 1365
+  - advanced filters remain closed after quick-category selection
+  - duplicate theme row absent
+  - redundant active-filter bar absent
+  - sparse-results CTA uses top divider only (1px top / 0px left / 0 radius)
+  - footer bottom radius 22px / bottom border 1px / bottom margin 34px
+- Mobile 390px verification: document scrollWidth = viewport = 390.
+- Home control cleanup / sparse-result / footer-finish bounded task is fully closed in production.
