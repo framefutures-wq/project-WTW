@@ -167,8 +167,8 @@ test("초기 화면은 1365x768과 1920x900에서 행사까지 바로 이어진�
     expect(hero!.height).toBeGreaterThanOrEqual(214);
     expect(hero!.height).toBeLessThanOrEqual(232);
     expect(quick!.height).toBeLessThanOrEqual(64);
-    expect(category!.height).toBeGreaterThanOrEqual(46);
-    expect(category!.height).toBeLessThanOrEqual(54);
+    expect(category!.height).toBeGreaterThanOrEqual(44);
+    expect(category!.height).toBeLessThanOrEqual(50);
     const productionAdjustedY = firstScene!.y - (sampleBanner?.height ?? 0);
     expect(productionAdjustedY).toBeLessThanOrEqual(viewport.maxSceneY + 70);
     expect(
