@@ -1128,3 +1128,16 @@ UI 기준:
 - PR #27 `fix: support municipal event ids in detail routes` passed both Project checks and UI browser smoke and was merged to main as `2033d54b457d4b190b1df66a1d0828bb2240e2b8`.
 - The fix changes URL encoding/decoding/validation and related tests only; it does not change D1 rows/schema, Cron, secrets, ingestion policy, or Cloudflare resources.
 - Next checkpoint: pull latest main in Codespaces, run one verified production redeploy, then run production smoke. If smoke passes, close the +23 deploy stabilization phase and wait for the next natural 10:00 KST Cron to validate all 35 Registry sources via `source_outcomes`.
+
+
+## 2026-09-26 — +23 production deploy stabilization complete
+
+- 누적 신규 +23 municipal source를 포함한 main이 기존 production Worker `weekend-mwohae`에 배포됐다.
+- 첫 배포 후 production smoke가 municipal event ID의 URL encoding 문제를 잡았고, PR #27 hotfix를 main에 병합한 뒤 재배포했다.
+- 최종 확인 production Worker version: `b187830c-1bd8-440d-b50c-31ad6ac0402e`.
+- 최종 main at deploy: `b6788b0bb24abbac28c9f822815f079ede0562dd`.
+- production smoke는 hotfix 재배포 후 연속 2회 PASS: D1 연결, 날짜 구간, 필터, 거리순, 페이지, 상세, 취소 제외, 입력 검증, SQL 바인딩, Static Assets, SPA 정상.
+- 기존 D1 `weekend-mwohae-production`, Cron 5개, secrets, bindings는 유지됐고 schema/data migration 및 수동 ingestion은 하지 않았다.
+- +23 배포 안정화 Phase는 완료로 닫는다.
+- 다음 단계: 2026-09-27 10:00 KST 자연 base Cron에서 Registry 35 source의 `source_outcomes`를 read-only 검증한다. 실패 source만 분리하고 정상 source는 건드리지 않는다.
+- 해당 자연수집 검증이 끝나면 전국 245개 1차 조사 + 현재 바로 onboarding 가능한 source 단계는 마감하고, COLLECTOR_GAP 41개를 반복 유형별 공통 기능으로 해결하는 다음 Phase로 넘어간다.
