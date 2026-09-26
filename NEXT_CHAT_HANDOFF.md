@@ -1192,3 +1192,16 @@ UI 기준:
 - Municipal ingestion/D1/Cron/Registry에는 변경 없음.
 - 이 SEO bounded task는 production까지 완료로 닫는다.
 - 다음 독립 SEO 후보: 지역/기간 검색어를 받을 indexable landing surface 필요성 및 현재 query-URL canonical 동작 점검. 기존 municipal 35-source natural validation은 별도 대기 상태를 유지한다.
+
+
+## 2026-09-26 — Seoul weekend SEO landing merged / production deploy checkpoint
+
+- SEO 2차는 faceted query URL 전체를 색인시키지 않고, 실제 검색 의도와 제품 결과가 일치하는 단일 pilot landing만 여는 것으로 결정했다.
+- PR #31 `feat: add Seoul weekend SEO landing`이 Project checks와 UI browser smoke를 모두 통과하고 main에 `20a3d7e493bed1073177021b320ac9ff8dcb8f4c`로 병합됐다.
+- Pilot URL: `/weekend/seoul`.
+- 해당 URL은 서울 + 이번 주말 필터 결과를 직접 보여주며 자체 title/description/canonical/OG metadata를 갖고 sitemap에 포함된다.
+- 홈 footer에 `서울 이번 주말 행사` 실제 `<a href>` 내부링크를 추가해 sitemap-only discovery를 피했다.
+- 일반 `?period=&region=&theme=&...` 필터 URL은 계속 홈 `/` canonical로 통합해 faceted URL 폭증을 막는다.
+- No municipal ingestion, D1 schema/data, Cron, Registry, collector, event API contract change.
+- Frontend/Worker/SEO runtime change이므로 authenticated Codespaces에서 verified production deploy + smoke가 필요하다.
+- Municipal 35-source natural validation은 독립적으로 2026-09-27 10:00 KST checkpoint를 유지한다.
