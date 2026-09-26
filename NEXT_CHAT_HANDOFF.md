@@ -1354,3 +1354,11 @@ UI 기준:
 - Strategy: conversation-first post copy, one clear link CTA, topic tagging where relevant, and Threads Insights/link-click data to compare hooks. Do not spam identical link posts or mass-post to unrelated communities.
 - First 7-day experiment should test three message angles: `서울 이번 주말 뭐하지?`, `아이랑/데이트 어디 가지?`, and `축제·행사 한눈에 보기`.
 - Success is evaluated on Threads views/replies/reposts/link clicks plus GA/Search Console lift, not follower count alone.
+
+
+## 2026-09-26 — promotion pilot paused / UI polish reprioritized
+
+- User paused the planned Threads promotion pilot before execution.
+- Do not start active promotion yet.
+- Immediate priority is UI polish/review on current production before traffic acquisition resumes.
+- When UI work restarts, inspect current production/code state and follow `docs/UI_V2_DIRECTION.md`; do not reopen already-completed UI v2 work unless there is a concrete regression or a newly identified visual/UX issue.
