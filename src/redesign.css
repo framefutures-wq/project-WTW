@@ -3516,3 +3516,140 @@ footer {
     font-size: clamp(18px, 6vw, 24px);
   }
 }
+
+
+/* Benchmark-informed control compression v8:
+   desktop keeps categories as one band and all primary filters as one toolbar. */
+@media (min-width: 981px) {
+  .quick-discovery {
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .quick-discovery-heading h2 {
+    margin-bottom: 0;
+    font-size: 18px;
+  }
+
+  .quick-category-grid {
+    gap: 7px;
+  }
+
+  .quick-category {
+    min-height: 42px;
+    padding: 5px 8px;
+    border-radius: 11px;
+  }
+
+  .quick-category-symbol {
+    width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+    border-radius: 9px;
+    font-size: 14px;
+  }
+
+  .quick-category strong {
+    font-size: 12px;
+  }
+
+  .discovery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 18px;
+    row-gap: 10px;
+    margin-top: 12px;
+    padding: 10px 0 12px;
+  }
+
+  .periods {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    gap: 5px;
+    padding-bottom: 0;
+    overflow: visible;
+  }
+
+  .period {
+    min-height: 36px;
+    padding: 6px 9px;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .period svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .filter-body {
+    grid-column: 2;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: start;
+    gap: 6px;
+    padding-top: 0;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .region-select,
+  .location-button {
+    height: 36px;
+    border-radius: 999px;
+  }
+
+  .region-select {
+    width: 178px;
+    padding: 0 11px;
+  }
+
+  .region-select select {
+    font-size: 12px;
+  }
+
+  .location-button {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .advanced-filters {
+    margin-top: 0;
+  }
+
+  .advanced-filters > summary {
+    min-height: 36px;
+    padding: 0 11px;
+  }
+
+  .advanced-filters > summary > small {
+    display: none;
+  }
+
+  .advanced-filters[open] {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .advanced-filter-body,
+  .active-filters {
+    grid-column: 1 / -1;
+  }
+
+  .date-picker {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: 0;
+  }
+
+  .results {
+    margin-top: 20px;
+  }
+}
