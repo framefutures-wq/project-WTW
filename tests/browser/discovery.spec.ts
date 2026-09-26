@@ -21,7 +21,6 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   });
   await page.getByLabel("지역", { exact: true }).selectOption("서울");
   await regionResponse;
-  await page.locator(".advanced-filters > summary").click();
   const flowerResponse = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return (
@@ -31,9 +30,11 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
     );
   });
   await page
-    .locator(".advanced-filters")
+    .locator(".quick-category-grid")
     .getByRole("button", { name: "꽃", exact: true })
     .click();
+  await expect(page.locator(".advanced-filters")).not.toHaveAttribute("open", "");
+  await expect(page.locator(".active-filters")).toHaveCount(1);
   const flowerData = await (await flowerResponse).json();
   expect(flowerData.total).toBe(1);
   await expect(page.locator(".event-card")).toHaveCount(1);
@@ -79,6 +80,30 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   });
   expect(errors).toEqual([]);
 });
+test("빠른 카테고리는 세부필터를 자동으로 열거나 같은 주제를 중복 표시하지 않는다", async ({ page }) => {
+  await page.goto("/");
+  const advanced = page.locator(".advanced-filters");
+  await expect(advanced).not.toHaveAttribute("open", "");
+
+  const responsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/events" && url.searchParams.get("theme") === "performance";
+  });
+
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "공연", exact: true })
+    .click();
+  await responsePromise;
+
+  await expect(advanced).not.toHaveAttribute("open", "");
+  await expect(advanced.getByText("무엇을", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".active-filters")).toHaveCount(0);
+  await expect(
+    page.locator(".quick-category-grid").getByRole("button", { name: "공연", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
 test("서울 이번 주말 SEO landing은 같은 필터 결과를 바로 보여준다", async ({ page }) => {
   const responsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -344,6 +369,34 @@ test("모바일 추천 카드 위계는 2열과 가로 넘침을 깨지 않는�
   ).toBe(true);
 });
 
+test("소수 결과의 탐색 전환은 큰 박스 대신 가벼운 구분선으로 이어진다", async ({ page }) => {
+  await page.goto("/");
+  const responsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/events" && url.searchParams.get("theme") === "performance";
+  });
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "공연", exact: true })
+    .click();
+  await responsePromise;
+  await expect(page.locator(".exploration-cta")).toBeVisible();
+
+  const style = await page.locator(".exploration-cta").evaluate((el) => {
+    const css = getComputedStyle(el);
+    return {
+      borderTop: parseFloat(css.borderTopWidth),
+      borderLeft: parseFloat(css.borderLeftWidth),
+      radius: parseFloat(css.borderRadius),
+      background: css.backgroundColor,
+    };
+  });
+  expect(style.borderTop).toBeGreaterThanOrEqual(1);
+  expect(style.borderLeft).toBe(0);
+  expect(style.radius).toBe(0);
+  expect(style.background).toBe("rgba(0, 0, 0, 0)");
+});
+
 test("하단 신뢰영역과 footer는 밝은 브랜드 마감으로 이어지고 준비중 문구가 없다", async ({ page }) => {
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/");
@@ -374,6 +427,19 @@ test("하단 신뢰영역과 footer는 밝은 브랜드 마감으로 이어지�
   expect(styles!.footerRadius).toBeGreaterThanOrEqual(20);
   expect(styles!.footerBg).not.toBe("rgb(17, 24, 32)");
   expect(styles!.brandWeight).toBeGreaterThanOrEqual(800);
+  const footerBox = await page.locator("footer").boundingBox();
+  expect(footerBox).not.toBeNull();
+  const footerFinish = await page.locator("footer").evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      bottomRadius: parseFloat(style.borderBottomLeftRadius),
+      bottomBorder: parseFloat(style.borderBottomWidth),
+      marginBottom: parseFloat(style.marginBottom),
+    };
+  });
+  expect(footerFinish.bottomRadius).toBeGreaterThanOrEqual(20);
+  expect(footerFinish.bottomBorder).toBeGreaterThanOrEqual(1);
+  expect(footerFinish.marginBottom).toBeGreaterThanOrEqual(30);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
