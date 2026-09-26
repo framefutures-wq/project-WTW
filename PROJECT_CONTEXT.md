@@ -784,3 +784,11 @@ UI benchmark:
 - Production screenshot review reopened one final home-organization issue: theme controls were duplicated across quick categories, advanced filters and active-filter chips, making the interface look busier than benchmark discovery services.
 - Main now contains the simplified single-theme-control implementation and lighter sparse-result/footer treatment; production deploy is pending.
 - Data truth is unchanged: a filtered query showing 4 events reflects the current matched official results and is not a four-card UI cap.
+
+
+## 40. 2026-09-26 — home control cleanup production complete
+
+- Simplified home controls are live in production: quick categories are the single theme selector, advanced filters no longer duplicate theme controls or auto-open for a theme selection, and redundant active-filter theme chips are gone.
+- Sparse-result exploration and footer finishing are also live; the production 공연 query currently returns 4 official matches and the UI renders all 4 without imposing an artificial four-card cap.
+- Production smoke and desktop/mobile overflow checks pass.
+- This bounded UI cleanup task is closed. Promotion remains paused pending the user's final visual review of the production home.
