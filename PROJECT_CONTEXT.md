@@ -746,3 +746,10 @@ UI benchmark:
 - Do not start with paid acquisition; first establish which organic hook produces qualified link clicks and actual site sessions.
 - Search Console pre-promotion baseline: 0 clicks / 2 impressions through 2026-09-23.
 - If the pilot produces measurable qualified traffic, reuse the winning hook on Instagram and relevant community channels in later bounded experiments rather than launching all channels at once.
+
+
+## 35. 2026-09-26 — promotion paused for UI polish
+
+- Active promotion is temporarily paused by user decision.
+- Current priority is production UI polish before resuming the 7-day Threads acquisition experiment.
+- Promotion-readiness technical gate remains passed; this pause is a product/UI quality decision, not a reliability rollback.
