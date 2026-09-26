@@ -1398,3 +1398,18 @@ UI 기준:
   - principle = x 16 / width 358
   - footer = x 16 / width 358
 - Therefore the user-reported top/bottom width mismatch is closed in production and the stronger first-screen hierarchy is live without horizontal overflow.
+
+
+## 2026-09-26 — home card / section hierarchy merged, production pending
+
+- PR #38 `style: strengthen home card and section hierarchy` merged as `12b3739c8e123dd7f67e8cdebcb4d75b2cf9d364`.
+- Scope stayed limited to the home discovery/results area:
+  - featured recommendation section now has a restrained warm-white editorial surface and clearer heading hierarchy;
+  - full-list section is separated more strongly with additional top spacing/divider;
+  - event title/date/place typography is stronger and easier to scan;
+  - recommendation reason uses the orange discovery accent rather than reading like low-priority metadata;
+  - desktop remains 4-column and mobile remains 2-column.
+- New browser assertions cover featured-section distinction, card title/date hierarchy, mobile 2-column layout, and horizontal overflow.
+- UI browser smoke #109 SUCCESS; Project checks #639 SUCCESS.
+- No D1/API/ingestion/municipal/SEO-route/detail-page changes.
+- Production deploy + desktop/mobile visual verification remain required before closing this bounded task.
