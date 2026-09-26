@@ -40,6 +40,7 @@ import {
 } from "../shared/event-operating-hours";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 import { analyticsRuntimeConfig } from "../shared/analytics-config";
+import { seoLandingForPath } from "../shared/seo-landings";
 import { legacyHostRedirect } from "./host";
 import {
   decodeSeoEventId,
