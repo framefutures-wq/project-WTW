@@ -205,3 +205,15 @@ Adaptive media:
 **“AGENTS.md, PROJECT_CONTEXT.md, NEXT_CHAT_HANDOFF.md, docs/UI_V2_DIRECTION.md를 읽고 현재 working tree와 origin/main을 확인한 뒤, 기존 결정을 바꾸지 말고 중단 지점부터 이어서 작업해.”**
 
 이 문서의 UI/상세 방향을 변경하려면 사용자의 명시적 새 결정을 우선한다.
+
+
+## 10. 2026-09-26 홈 상단 hierarchy / 공통 가로 레일 보정
+
+사용자 production 검수로 홈 UI를 제한적으로 다시 열었다. 기존 v2 색상·카드·상세 방향은 유지하되 다음을 새 고정 기준으로 추가한다.
+
+- 데스크톱에서 hero, 본문 핵심 surface, 신뢰영역, footer는 서로 다른 legacy max-width를 쓰지 않고 **하나의 시각적 가로 레일**로 정렬한다.
+- footer가 header/main보다 눈에 띄게 짧아지는 상태를 허용하지 않는다.
+- 상단은 너무 압축하지 않는다. 행사 이미지 + 큰 제목 + 검색창이 첫 화면의 주인공이어야 하며, 검색창은 작은 보조 컨트롤처럼 보이면 안 된다.
+- 다만 상단을 키운다는 이유로 필터/카드 구조를 새로 만들거나 첫 결과 접근성을 과도하게 늦추지 않는다.
+- 이번 보정 기준의 desktop hero는 약 220px 수준이며, 검색 field/CTA는 약 44px 수준으로 이전보다 한 단계 더 명확한 primary action hierarchy를 가진다.
+- 모바일은 별도 밀도를 유지하고 2열 카드/overflow-free 계약을 계속 지킨다.
