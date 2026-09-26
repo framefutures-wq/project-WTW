@@ -1,0 +1,35 @@
+name: Prelaunch production QA
+
+on:
+  pull_request:
+    paths:
+      - "scripts/prelaunch-production-qa.mjs"
+      - ".github/workflows/prelaunch-production-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  production-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run read-only production QA
+        env:
+          QA_BASE_URL: https://galteum.com
+          QA_SAMPLE_SIZE: "30"
+        run: node scripts/prelaunch-production-qa.mjs
+      - name: Upload QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prelaunch-production-qa
+          path: prelaunch-qa-report.json
+          if-no-files-found: warn
