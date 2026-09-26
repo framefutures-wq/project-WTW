@@ -52,7 +52,7 @@ const first = await get("/api/events?limit=1&page=1"),
   second = await get("/api/events?limit=1&page=2");
 assert.notEqual(first.events[0].id, second.events[0].id);
 assert.equal(
-  (await get("/api/events/" + all.events[0].id)).event.id,
+  (await get("/api/events/" + encodeURIComponent(all.events[0].id))).event.id,
   all.events[0].id,
 );
 assert.ok(!all.events.some((e) => e.id === "sample-cancelled"));
