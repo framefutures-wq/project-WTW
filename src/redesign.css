@@ -1637,6 +1637,19 @@ footer small {
     padding: 0;
   }
 
+  .detail-media-pair {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, .85fr);
+    height: clamp(220px, 64vw, 250px);
+    max-height: 250px;
+    aspect-ratio: auto;
+  }
+
+  .detail-media-pair button {
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+  }
+
   .detail-dialog .scene-detail {
     min-height: 0;
     height: auto;
