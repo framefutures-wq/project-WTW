@@ -1074,3 +1074,26 @@ UI 기준:
 - first-party detail href가 있으면 보존하고 없으면 공식 월별 목록 URL을 provenance로 유지한다.
 - GitHub Actions 환경에서 해당 host fetch는 실패했지만 공식 web source는 접근 가능하므로 source_outcomes 격리 전제 하에 opt-in했다. production에서 fetch 실패 시 이 source만 error로 격리된다.
 - main 누적 신규 준비량은 **총 +23**. production deploy는 아직 하지 않는다.
+
+
+## 2026-09-26 — 채팅 한도 도달 handoff 저장
+
+- 사용자가 현재 대화 최대 길이에 도달해 **새 채팅에서 즉시 이어갈 수 있도록 이 지점을 canonical handoff로 저장**했다.
+- 이 저장 직전 latest main: `1b647f6cfd4e346fb0b6a7a1c9feadcb53651277` — `feat: parse Geoje monthly events`.
+- 해당 commit의 **Project checks / UI browser smoke 모두 success**.
+- municipal source Registry는 현재 **35개**.
+- 이번 expansion에서 main에 새로 준비된 source는 누적 **+23개**이며 **아직 production 미배포** 상태다.
+- 포천 다음으로 **거제까지 완료**됐다. 거제는 `parseGeojeMonthlyEvents` registered parser로 2자리 연도를 페이지의 명시 4자리 연도와 일치할 때만 승격하고, venue/date/category/detail provenance를 fail-closed 처리한다.
+- 현재 ONBOARDING_READY 중 Registry 미등록은 정확히 **3개**:
+  1. `seoul-yeongdeungpo` — 영등포 공식 문화행사 일정. inventory상 generic_fallback_paginated 후보지만 이전 GitHub probe에서는 자동 접근 안정성이 문제였다.
+  2. `jeonnam-gwangju-목포` — 목포시 공식 문예시설 공연·행사일정. inventory상 generic_fallback_paginated 후보지만 최근 GitHub 환경 fetch가 불안정했다.
+  3. `gyeongnam-산청` — 산청군 공식 문화관광 행사일정. inventory상 generic_fallback 후보지만 host/path 접근 안정성 확인이 남아 있다.
+- 다음 새 채팅에서 사용자가 `계속`이라고 하면:
+  - 먼저 latest main / Actions / 실제 production 상태를 확인하고,
+  - **완료 / 현재 / 남은 작업 / 사용자 필요 여부**를 짧게 보고한 뒤,
+  - 별도 승인 없이 위 3개를 순서대로 조사·처리한다.
+- source 하나가 막히면 그 source만 HOLD로 두고 나머지는 계속 진행한다.
+- 3개를 가능한 범위까지 닫은 뒤, main 누적 source 변경을 **production deploy 1회**로 묶는다. 그 전까지 Codespaces를 켜라고 하지 않는다.
+- production은 이번 +23 source를 아직 포함하지 않는다. last-known deployed municipal hardening 기준은 main `86163bcdfc2b67e52c3611f7676f946a632e23ed`, Worker version `5d02024b-3f76-4cdd-b751-c59d9e59e97d`; 다음 세션 시작 시 실제 production 상태가 달라졌는지 우선 재확인한다.
+- TourAPI 계통은 안정화된 상태이므로 새 증거가 없는 한 다시 건드리지 않는다. UI v2도 회귀가 없는 한 동결 유지.
+- 사용자는 routine GitHub 조사/수정/테스트/commit/push에 매번 `시작` 승인을 요구하지 않는다. 활성 turn 안에서는 안전한 bounded task를 연속 처리하고 마지막에 한 번 보고한다.

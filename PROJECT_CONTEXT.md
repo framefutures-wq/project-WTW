@@ -660,3 +660,15 @@ UI benchmark:
 - 과천·하남·상주 municipal 3 source는 이번 실행에서 candidate `observed=0`. 잘못된 publish는 없었고 base/TourAPI에는 영향이 없었다.
 - 하남·상주는 공식 current page에 future 2026 항목이 존재하므로 observed 0을 '현재 행사 없음'으로 처리하지 않는다. municipal source fetch/health/parser 진단이 다음 우선순위다.
 - Batch A 평택·여주·경산은 staging branch에만 보존하며 production 확대 전 위 3 source 원인을 먼저 분리한다.
+
+
+## 26. 2026-09-26 — municipal expansion 최신 checkpoint
+
+- 현재 개발 우선순위는 **전국 municipal/source coverage 확대 마감**이다.
+- latest functional main checkpoint: `1b647f6cfd4e346fb0b6a7a1c9feadcb53651277` — 거제 monthly parser 포함.
+- 이 checkpoint의 Project checks / UI browser smoke는 모두 success.
+- Registry는 **35 source**, 이번 expansion 누적 신규 준비량은 **+23 source**.
+- ONBOARDING_READY 중 아직 Registry 미등록은 **영등포 / 목포 / 산청 3 source**만 남아 있다.
+- 이번 +23 source는 아직 production에 배포하지 않았다. 여러 source를 끝까지 모은 뒤 deploy를 1회로 묶는 운영 원칙을 유지한다.
+- last-known production municipal hardening code는 `86163bcdfc2b67e52c3611f7676f946a632e23ed`, Worker version `5d02024b-3f76-4cdd-b751-c59d9e59e97d`. 실제 production이 이후 변경됐는지는 다음 세션 시작 시 재확인한다.
+- TourAPI recovery는 안정화됐고 municipal expansion과 독립적으로 동결한다. UI v2도 완료/동결 상태를 유지한다.
