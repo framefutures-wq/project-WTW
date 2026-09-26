@@ -1242,3 +1242,14 @@ UI 기준:
 - 실제 promotion blocker #2: mobile 390px에서 production event grid가 document width를 432px까지 밀어 오른쪽 42px overflow. offender는 `.event-card/.card-button/.scene` 2열 카드(각 약 220px). 상세 dialog 자체는 5/5 HTTP 200, primary facts/source row 정상, dialog horizontal overflow 없음.
 - 따라서 현재 verdict는 `NOT_PROMOTION_READY`. 본격 홍보 전 위 2개 blocker를 각각 bounded fix로 닫고 동일 production QA를 다시 통과시켜야 한다.
 - 다음 bounded task 우선순위: municipal URL형 ID의 public detail 404 수정 → regression test → CI → deploy → affected URL production 200/canonical 확인. 그 다음 mobile 390px event-grid overflow 수정.
+
+
+## 2026-09-26 — encoded municipal public detail 404 fix merged / deploy checkpoint
+
+- Promotion blocker #1 root cause confirmed: event lookup/decode was correct (detail API 200), but SEO/public detail rendering fetched the encoded `/events/:id` path from the Static Assets binding. For URL-bearing municipal IDs, the asset layer could return 404 even after the Worker had already found the event.
+- PR #33 `fix: serve SEO event pages from root SPA shell` changes SEO/public pages to always render from the root SPA shell, then inject event/landing SEO metadata. Missing events still fail closed before shell rendering.
+- Regression test now simulates the production asset-fallback failure for an encoded Seoul Hangang municipal ID and requires the public detail page to remain HTTP 200 with canonical URL.
+- Project checks SUCCESS. PR #33 merged to main as `4fc86027485f1ca9d7935b6a6587a9ebb0db98f2`.
+- No D1, ingestion, Cron, Registry, collector, or API contract changes.
+- Production deploy + direct verification of `서울함공원 한가위 특별행사` public URL (HTTP 200 + canonical) is still required before blocker #1 is closed.
+- Promotion blocker #2 remains: 390px mobile event-grid horizontal overflow (~42px).
