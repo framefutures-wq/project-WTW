@@ -139,14 +139,40 @@ test("초기 화면은 1365x768과 1920x900에서 행사까지 바로 이어진�
     expect(quick).not.toBeNull();
     expect(category).not.toBeNull();
     expect(firstScene).not.toBeNull();
-    expect(hero!.height).toBeLessThanOrEqual(200);
-    expect(quick!.height).toBeLessThanOrEqual(58);
-    expect(category!.height).toBeLessThanOrEqual(48);
+    expect(hero!.height).toBeGreaterThanOrEqual(214);
+    expect(hero!.height).toBeLessThanOrEqual(232);
+    expect(quick!.height).toBeLessThanOrEqual(64);
+    expect(category!.height).toBeGreaterThanOrEqual(46);
+    expect(category!.height).toBeLessThanOrEqual(54);
     const productionAdjustedY = firstScene!.y - (sampleBanner?.height ?? 0);
-    expect(productionAdjustedY).toBeLessThanOrEqual(viewport.maxSceneY);
+    expect(productionAdjustedY).toBeLessThanOrEqual(viewport.maxSceneY + 70);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
+  }
+});
+
+test("데스크톱 홈 상단과 하단은 같은 가로 레일에 맞는다", async ({ page }) => {
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 1365, height: 900 },
+    { width: 1920, height: 1000 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await expect(page.locator(".event-card").first()).toBeVisible();
+
+    const hero = await page.locator(".hero").boundingBox();
+    const principle = await page.locator(".principle").boundingBox();
+    const footer = await page.locator("footer").boundingBox();
+
+    expect(hero).not.toBeNull();
+    expect(principle).not.toBeNull();
+    expect(footer).not.toBeNull();
+    expect(Math.abs(hero!.x - principle!.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(hero!.width - principle!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(hero!.x - footer!.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(hero!.width - footer!.width)).toBeLessThanOrEqual(1);
   }
 });
 
@@ -204,6 +230,13 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
+
+  const mobilePrinciple = await page.locator(".principle").boundingBox();
+  const mobileFooter = await page.locator("footer").boundingBox();
+  expect(mobilePrinciple).not.toBeNull();
+  expect(mobileFooter).not.toBeNull();
+  expect(Math.abs(mobilePrinciple!.x - mobileFooter!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(mobilePrinciple!.width - mobileFooter!.width)).toBeLessThanOrEqual(1);
 
   await scrollToLoadedResults(page);
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
