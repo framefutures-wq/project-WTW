@@ -1513,3 +1513,19 @@ UI 기준:
 - Initial UI CI failed only because two older visual assertions still required the previously boxed featured section and 14px mobile title. Contracts were updated to the new unboxed direction and mobile title kept at 14px for readability.
 - Final UI browser smoke #117 SUCCESS; Project checks #674 SUCCESS.
 - Production deploy + public desktop/mobile visual verification remain required before closing this bounded task.
+
+
+## 2026-09-26 — benchmark home visual production deploy complete / mobile direct verify pending
+
+- Main `7bd0a2651dfa84f5dff102160a0c2c3fb1f3a259` deployed to production.
+- Production Worker version: `0e30b84c-3549-4fac-b1cd-d6f7e93b8582`.
+- Production smoke PASS.
+- Desktop 1365px direct verification PASS:
+  - document scrollWidth = viewport = 1365
+  - discovery accent = rgb(244,90,42) / #F45A2A
+  - featured section padding 0 / radius 0 / transparent background (unboxed editorial treatment live)
+  - featured heading = `먼저 볼 곳`
+  - obsolete `이번 주말 먼저 볼 곳` absent
+  - first card location line combines region + venue
+- Mobile direct verification script failed before assertions because `document.querySelector('.featured-grid')` was null when `getComputedStyle` ran. This is a verification-script timing issue, not evidence of a production UI failure; UI browser smoke #117 had already passed mobile coverage before merge.
+- Run one short mobile production check that waits for `.featured-grid` before reading computed styles, then close this bounded task if 2 columns / 14px title / no horizontal overflow pass.
