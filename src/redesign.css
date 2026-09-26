@@ -3121,3 +3121,131 @@ footer small {
     font-size: 18px;
   }
 }
+
+
+/* Home cleanup v6: one theme control, lighter filters, intentional sparse-results flow. */
+.discovery {
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.advanced-filters {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.advanced-filters > summary {
+  width: max-content;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #ddd5ca;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #4a535c;
+}
+
+.advanced-filters[open] > summary {
+  border-bottom: 1px solid #ddd5ca;
+}
+
+.advanced-filter-body {
+  margin-top: 9px;
+  padding: 13px 0 3px;
+  border-top: 1px solid rgba(23, 26, 29, 0.1);
+  background: transparent;
+}
+
+.advanced-filter-body .filter-row:first-child {
+  margin-top: 0;
+}
+
+.active-filters {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px dashed rgba(23, 26, 29, 0.09);
+}
+
+.list-exploration {
+  margin-top: 28px;
+}
+
+.list-progress {
+  margin-bottom: 10px;
+  color: #69737b;
+}
+
+.exploration-cta {
+  margin-top: 16px;
+  padding: 18px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(23, 26, 29, 0.12);
+  border-radius: 0;
+  background: transparent;
+}
+
+.exploration-cta h3 {
+  color: #343a40;
+  font-size: 14px;
+}
+
+.exploration-cta p {
+  margin: 4px 0 11px;
+  color: #707980;
+}
+
+.exploration-actions button {
+  border-color: #ddd5ca;
+  background: rgba(255, 255, 255, 0.72);
+  color: #4a535c;
+}
+
+.exploration-actions button:hover {
+  background: #fff;
+}
+
+.principle {
+  margin-top: 56px;
+}
+
+footer {
+  margin-top: 20px;
+  margin-bottom: 34px;
+  padding: 22px 24px;
+  border-bottom: 1px solid rgba(23, 26, 29, 0.08);
+  border-radius: 22px;
+}
+
+@media (max-width: 760px) {
+  .advanced-filters > summary {
+    min-height: 36px;
+  }
+
+  .advanced-filter-body {
+    padding-top: 12px;
+  }
+
+  .list-exploration {
+    margin-top: 22px;
+  }
+
+  .exploration-cta {
+    margin-top: 14px;
+    padding-top: 15px;
+  }
+
+  .principle {
+    margin-top: 42px;
+  }
+
+  footer {
+    margin-top: 18px;
+    margin-bottom: 20px;
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+}
