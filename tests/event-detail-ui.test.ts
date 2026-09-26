@@ -59,6 +59,13 @@ test("detail renders derived event status without replacing official status noti
   assert.match(redesign, /\.detail-glance-status\s*\{[^}]*color: #c34f24/);
 });
 
+test("home event cards expose canonical crawlable detail links", () => {
+  assert.match(app, /className="card-button"/);
+  assert.match(app, /href=\{\`\/events\/\$\{encodeURIComponent\(event\.id\)\}\`\}/);
+  assert.match(app, /clickEvent\.preventDefault\(\)/);
+  assert.match(app, /setSelected\(event\.id\)/);
+});
+
 test("detail exploration reuses scoped API queries and canonical links", () => {
   assert.match(app, /fetch\("\/api\/events\/nearby"/);
   assert.match(app, /event\.lat !== null && event\.lng !== null/);
