@@ -176,6 +176,54 @@ test("데스크톱 홈 상단과 하단은 같은 가로 레일에 맞는다", a
   }
 });
 
+test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정보 위계가 유지된다", async ({ page }) => {
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.goto("/");
+  await expect(page.locator(".featured-events")).toBeVisible();
+  await expect(page.locator(".all-events-section")).toBeVisible();
+
+  const featuredStyle = await page.locator(".featured-events").evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      paddingTop: parseFloat(style.paddingTop),
+      borderRadius: parseFloat(style.borderRadius),
+      backgroundColor: style.backgroundColor,
+    };
+  });
+  expect(featuredStyle.paddingTop).toBeGreaterThanOrEqual(20);
+  expect(featuredStyle.borderRadius).toBeGreaterThanOrEqual(20);
+  expect(featuredStyle.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+
+  const allStyle = await page.locator(".all-events-section").evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      paddingTop: parseFloat(style.paddingTop),
+      borderTopWidth: parseFloat(style.borderTopWidth),
+    };
+  });
+  expect(allStyle.paddingTop).toBeGreaterThanOrEqual(30);
+  expect(allStyle.borderTopWidth).toBeGreaterThanOrEqual(1);
+
+  const titleStyle = await page.locator(".featured-events .card-content h3").first().evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      fontSize: parseFloat(style.fontSize),
+      fontWeight: parseInt(style.fontWeight, 10),
+    };
+  });
+  expect(titleStyle.fontSize).toBeGreaterThanOrEqual(18);
+  expect(titleStyle.fontWeight).toBeGreaterThanOrEqual(700);
+
+  const dateWeight = await page.locator(".featured-events .event-date").first().evaluate((el) =>
+    parseInt(getComputedStyle(el).fontWeight, 10),
+  );
+  expect(dateWeight).toBeGreaterThanOrEqual(700);
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
 test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toHaveCount(0);
@@ -273,6 +321,27 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(firstCardButton).toBeFocused();
+});
+
+test("모바일 추천 카드 위계는 2열과 가로 넘침을 깨지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.locator(".featured-events")).toBeVisible();
+
+  const columns = await page.locator(".featured-grid").evaluate((el) =>
+    getComputedStyle(el).gridTemplateColumns.split(" ").length,
+  );
+  expect(columns).toBe(2);
+
+  const titleSize = await page.locator(".featured-events .card-content h3").first().evaluate((el) =>
+    parseFloat(getComputedStyle(el).fontSize),
+  );
+  expect(titleSize).toBeGreaterThanOrEqual(14);
+  expect(titleSize).toBeLessThanOrEqual(15);
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
 });
 
 test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 눌리지 않는다", async ({ page }) => {
