@@ -1344,3 +1344,13 @@ UI 기준:
 - Homepage production HTML emits expected Open Graph metadata including title, description, site_name, 1200x630 share image, alt text, and `twitter:card=summary_large_image`.
 - `/weekend/seoul` production HTML emits the same complete social-preview image metadata with landing-specific title/description.
 - Social share preview bounded task is fully closed in production.
+
+
+## 2026-09-26 — first promotion channel selected: Threads 7-day organic pilot
+
+- Search Console baseline before active promotion: last 28 settled days through 2026-09-23 = 0 clicks, 2 impressions, root page only. This is the measurement baseline for first-promotion lift.
+- First promotion channel is Threads, using organic posts only for the first 7-day pilot; no paid ads yet.
+- First campaign URL is `https://galteum.com/weekend/seoul`, not the generic homepage, because it matches a clear search/social intent and already has dedicated title/description/canonical/OG metadata.
+- Strategy: conversation-first post copy, one clear link CTA, topic tagging where relevant, and Threads Insights/link-click data to compare hooks. Do not spam identical link posts or mass-post to unrelated communities.
+- First 7-day experiment should test three message angles: `서울 이번 주말 뭐하지?`, `아이랑/데이트 어디 가지?`, and `축제·행사 한눈에 보기`.
+- Success is evaluated on Threads views/replies/reposts/link clicks plus GA/Search Console lift, not follower count alone.
