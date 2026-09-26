@@ -692,3 +692,13 @@ UI benchmark:
 - production smoke 최종 PASS. 기존 D1/Cron/Secrets/Bindings 유지, migration·수동 ingestion 없음.
 - 현재 우선순위는 2026-09-27 10:00 KST 자연수집에서 35 Registry source의 source_outcomes/후보 수/decision 분포/오류를 read-only 검증하는 것.
 - 그 검증이 안정적으로 닫히면 municipal 1차 전국 조사·즉시 onboarding Phase를 완료 처리하고 COLLECTOR_GAP 41 공통 collector capability Phase로 전환한다.
+
+
+## 29. 2026-09-26 — SEO pilot landing 전략 확정
+
+- 검색 유입 확대는 무한 faceted query URL 색인 방식으로 하지 않는다. 일반 필터 조합 URL은 홈 `/` canonical로 통합한다.
+- 첫 indexable search landing은 `/weekend/seoul` 단일 pilot으로 제한한다.
+- Pilot은 서울 + 이번 주말 실제 행사 결과를 바로 보여주고, 자체 title/description/canonical/OG metadata와 sitemap entry를 가진다.
+- 홈에서 해당 landing으로 가는 crawlable footer anchor를 제공한다.
+- Pilot 성능/색인 상태를 확인한 뒤에만 다른 지역·기간 landing 확장을 결정한다. 비슷한 얇은 페이지를 대량 생성하지 않는다.
+- Municipal 35-source natural validation과는 독립적인 SEO lane으로 운영한다.
