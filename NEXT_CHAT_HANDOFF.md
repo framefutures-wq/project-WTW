@@ -1141,3 +1141,13 @@ UI 기준:
 - +23 배포 안정화 Phase는 완료로 닫는다.
 - 다음 단계: 2026-09-27 10:00 KST 자연 base Cron에서 Registry 35 source의 `source_outcomes`를 read-only 검증한다. 실패 source만 분리하고 정상 source는 건드리지 않는다.
 - 해당 자연수집 검증이 끝나면 전국 245개 1차 조사 + 현재 바로 onboarding 가능한 source 단계는 마감하고, COLLECTOR_GAP 41개를 반복 유형별 공통 기능으로 해결하는 다음 Phase로 넘어간다.
+
+
+## 2026-09-26 — all-35 municipal production verifier ready
+
+- PR #28 `feat: verify all municipal production sources` passed Project checks and was merged to main as `f5edabce93e3072b8d764de22bdc5d505c49b931`.
+- `verify:morning:prod` now covers all 35 Registry municipal sources instead of the previous 3-source checkpoint.
+- It reports municipal `source_outcomes` summary as expected/reported/ok/error/missing and bounded error reasons, while keeping all D1 access SELECT/WITH read-only.
+- A regression test locks verifier keys to `MUNICIPAL_SOURCE_REGISTRY`, so future Registry additions cannot silently drift from production verification coverage.
+- No Worker/runtime behavior, D1 schema/data, Cron, secrets, ingestion, or production deployment changed; Cloudflare redeploy is not needed for this verifier-only change.
+- Next action remains: after the 2026-09-27 10:00 KST natural base Cron, pull latest main and run `npm run verify:morning:prod -- --remote` to inspect all 35 sources. Do not trigger manual ingestion.
