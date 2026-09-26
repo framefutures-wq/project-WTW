@@ -768,3 +768,12 @@ UI benchmark:
 - Featured cards use stronger event-title/date hierarchy while desktop 4-column and mobile 2-column layouts remain intact.
 - Production smoke and desktop/mobile overflow checks pass.
 - This bounded UI task is closed. Promotion remains paused while the remaining home UI review continues.
+
+
+## 38. 2026-09-26 — trust section / footer production complete
+
+- Home trust area and footer polish are live in production.
+- The trust surface now ends the content flow with a bright verified-information treatment and restrained deep-green accent; the footer uses a warm light brand finish instead of a detached dark slab.
+- Obsolete `운영 준비 중` copy has been removed from production.
+- Production smoke and desktop/mobile overflow checks pass.
+- This bounded UI task is closed; promotion remains paused pending final visual review.
