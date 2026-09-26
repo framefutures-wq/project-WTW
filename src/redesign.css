@@ -2850,3 +2850,155 @@ footer {
     padding: 22px 16px 28px;
   }
 }
+
+
+/* Home card hierarchy v4: make recommendations read first, then let the full list breathe. */
+.discovery-results {
+  gap: 38px;
+}
+
+.featured-events {
+  padding: 22px 22px 24px;
+  border: 1px solid rgba(23, 26, 29, 0.09);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.featured-events .subsection-heading {
+  margin-bottom: 20px;
+}
+
+.featured-events .subsection-heading span {
+  color: #c85228;
+}
+
+.featured-events .subsection-heading h3 {
+  font-size: 26px;
+  letter-spacing: -1.25px;
+}
+
+.featured-events .subsection-heading p {
+  color: #505961;
+  font-size: 12px;
+}
+
+.featured-grid {
+  gap: 24px 20px;
+}
+
+.all-events-section {
+  padding-top: 34px;
+  border-top: 1px solid rgba(23, 26, 29, 0.2);
+}
+
+.all-events-section .subsection-heading {
+  margin-bottom: 20px;
+}
+
+.all-events-section .subsection-heading h3 {
+  font-size: 25px;
+}
+
+.card-content {
+  padding-top: 12px;
+}
+
+.card-content h3 {
+  margin-bottom: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.72px;
+}
+
+.featured-events .card-content h3 {
+  font-size: 18px;
+  line-height: 1.28;
+}
+
+.recommendation-reason {
+  margin-bottom: 8px;
+  color: #c85228;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.event-date {
+  margin-bottom: 6px;
+  color: #252d34;
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+.card-meta,
+.venue {
+  font-size: 11.5px;
+}
+
+.card-meta {
+  color: #56616a;
+}
+
+.venue {
+  color: #414b54;
+}
+
+.scene {
+  border-radius: 16px;
+}
+
+.event-card:hover .scene,
+.card-button:focus-visible .scene {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(50, 35, 24, 0.16);
+}
+
+@media (max-width: 760px) {
+  .discovery-results {
+    gap: 30px;
+  }
+
+  .featured-events {
+    padding: 18px 14px 20px;
+    border-radius: 18px;
+  }
+
+  .featured-events .subsection-heading {
+    margin-bottom: 16px;
+  }
+
+  .featured-events .subsection-heading h3,
+  .all-events-section .subsection-heading h3 {
+    font-size: 23px;
+  }
+
+  .all-events-section {
+    padding-top: 28px;
+  }
+
+  .card-content {
+    padding-top: 9px;
+  }
+
+  .card-content h3,
+  .featured-events .card-content h3 {
+    font-size: 14px;
+    line-height: 1.32;
+    letter-spacing: -0.45px;
+  }
+
+  .recommendation-reason {
+    margin-bottom: 6px;
+    font-size: 9.5px;
+  }
+
+  .event-date,
+  .card-meta,
+  .venue {
+    font-size: 10px;
+  }
+
+  .scene {
+    border-radius: 13px;
+  }
+}
