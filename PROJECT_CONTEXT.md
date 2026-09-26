@@ -682,3 +682,13 @@ UI benchmark:
 - 결과적으로 municipal inventory의 UNREVIEWED는 0을 유지하고, **ONBOARDING_READY 중 Registry 미등록도 0**이 됐다.
 - Registry는 35 source. 이번 expansion 누적 신규 준비량은 +23 source이며 아직 production에 배포하지 않았다.
 - 다음 운영 단계는 누적 source 변경을 기존 Worker에 1회 배포하고 production source_outcomes/smoke를 확인하는 것. 신규 리소스·D1 파괴 변경은 필요 없다.
+
+
+## 28. 2026-09-26 — +23 municipal production deploy 안정화 완료
+
+- Registry 35 source와 누적 신규 +23 source가 production Worker `weekend-mwohae`에 반영됐다.
+- 배포 후 발견된 municipal event detail URL encoding 회귀는 PR #27로 수정·검증·main 병합 후 재배포했다.
+- 최종 production Worker version: `b187830c-1bd8-440d-b50c-31ad6ac0402e`; deploy main: `b6788b0bb24abbac28c9f822815f079ede0562dd`.
+- production smoke 최종 PASS. 기존 D1/Cron/Secrets/Bindings 유지, migration·수동 ingestion 없음.
+- 현재 우선순위는 2026-09-27 10:00 KST 자연수집에서 35 Registry source의 source_outcomes/후보 수/decision 분포/오류를 read-only 검증하는 것.
+- 그 검증이 안정적으로 닫히면 municipal 1차 전국 조사·즉시 onboarding Phase를 완료 처리하고 COLLECTOR_GAP 41 공통 collector capability Phase로 전환한다.
