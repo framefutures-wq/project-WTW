@@ -55,6 +55,8 @@ test("event pages are self-canonical, escaped, and expose one factual Event JSON
     assert.match(response.headers.get("content-type") ?? "", /text\/html/);
     assert.match(body, /<link rel="canonical" href="https:\/\/galteum\.com\/events\/seo-event_1"/);
     assert.match(body, /<meta property="og:image" content="https:\/\/images\.example\.test\/event\.jpg"/);
+    assert.match(body, /<meta property="og:image:alt" content="봄 &lt;행사&gt; 행사 이미지"/);
+    assert.match(body, /<meta name="twitter:card" content="summary_large_image"/);
     assert.doesNotMatch(body, /봄 <행사>/);
     const json = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(body)?.[1];
     assert(json);
@@ -123,6 +125,10 @@ test("encoded municipal ids with URL punctuation and Korean text work for detail
     const pageBody = await page.text();
     assert.equal(page.status, 200);
     assert.ok(pageBody.includes("https://galteum.com/events/" + encoded));
+    assert.match(
+      pageBody,
+      /<meta property="og:image" content="https:\/\/galteum\.com\/galteum-share\.png"/,
+    );
   } finally {
     await mf.dispose();
   }
@@ -149,6 +155,18 @@ test("Seoul weekend landing is self-canonical while faceted query URLs stay cons
       landingBody,
       /서울에서 이번 주말 열리는 축제·지역행사·체험/,
     );
+    assert.match(
+      landingBody,
+      /<meta property="og:image" content="https:\/\/galteum\.com\/galteum-share\.png"/,
+    );
+    assert.match(
+      landingBody,
+      /<meta property="og:image:width" content="1200"/,
+    );
+    assert.match(
+      landingBody,
+      /<meta property="og:image:height" content="630"/,
+    );
 
     const faceted = await worker.fetch(
       new Request("https://galteum.com/?period=weekend&region=%EC%84%9C%EC%9A%B8"),
@@ -167,7 +185,11 @@ test("root canonical, sitemap, robots, and event 404s follow the public visibili
   const { mf, env } = await setup();
   try {
     const root = await worker.fetch(new Request("https://galteum.com/?q=private"), env as never);
-    assert.match(await root.text(), /<link rel="canonical" href="https:\/\/galteum\.com\/"/);
+    const rootBody = await root.text();
+    assert.match(rootBody, /<link rel="canonical" href="https:\/\/galteum\.com\/"/);
+    assert.match(rootBody, /<meta property="og:title" content="갈틈 · 오늘 갈 만한 곳을 한눈에"/);
+    assert.match(rootBody, /<meta property="og:image" content="https:\/\/galteum\.com\/galteum-share\.png"/);
+    assert.match(rootBody, /<meta name="twitter:card" content="summary_large_image"/);
     const sitemap = await worker.fetch(new Request("https://galteum.com/sitemap.xml"), env as never);
     const sitemapBody = await sitemap.text();
     assert.equal(sitemap.status, 200);

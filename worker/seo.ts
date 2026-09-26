@@ -2,6 +2,7 @@ import { decodeEventPathId, validEventId } from "../shared/event-id";
 import { SEO_LANDINGS, type SeoLanding } from "../shared/seo-landings";
 
 export const CANONICAL_ORIGIN = "https://galteum.com";
+export const DEFAULT_SHARE_IMAGE = `${CANONICAL_ORIGIN}/galteum-share.png`;
 
 export type SeoEvent = {
   id: string;
@@ -73,6 +74,18 @@ function jsonForHtml(value: unknown) {
 
 type SeoHead = { title: string; description: string; canonical: string; extra: string };
 
+function socialImageTags(image: string, alt: string, isDefault = false) {
+  return [
+    `<meta property="og:image" content="${escapeHtml(image)}" />`,
+    isDefault ? '<meta property="og:image:type" content="image/png" />' : "",
+    isDefault ? '<meta property="og:image:width" content="1200" />' : "",
+    isDefault ? '<meta property="og:image:height" content="630" />' : "",
+    `<meta property="og:image:alt" content="${escapeHtml(alt)}" />`,
+    '<meta name="twitter:card" content="summary_large_image" />',
+    `<meta name="twitter:image" content="${escapeHtml(image)}" />`,
+  ].filter(Boolean);
+}
+
 function landingHead(landing: SeoLanding): SeoHead {
   return {
     title: landing.title,
@@ -83,23 +96,36 @@ function landingHead(landing: SeoLanding): SeoHead {
       `<meta property="og:title" content="${escapeHtml(landing.title)}" />`,
       `<meta property="og:description" content="${escapeHtml(landing.description)}" />`,
       `<meta property="og:url" content="${escapeHtml(`${CANONICAL_ORIGIN}${landing.path}`)}" />`,
+      '<meta property="og:site_name" content="갈틈" />',
+      ...socialImageTags(DEFAULT_SHARE_IMAGE, "갈틈 · 오늘 갈 만한 곳을 한눈에", true),
     ].join("\n    "),
   };
 }
 
 function rootHead(): SeoHead {
+  const title = "갈틈 · 오늘 갈 만한 곳을 한눈에";
+  const description =
+    "오늘, 이번 주말, 원하는 날짜에 갈 만한 축제·지역행사·체험을 찾아보세요.";
   return {
-    title: "갈틈 · 오늘 갈 만한 곳을 한눈에",
-    description: "오늘, 이번 주말, 원하는 날짜에 갈 만한 축제·지역행사·체험을 찾아보세요.",
+    title,
+    description,
     canonical: `${CANONICAL_ORIGIN}/`,
-    extra: "",
+    extra: [
+      '<meta property="og:type" content="website" />',
+      `<meta property="og:title" content="${escapeHtml(title)}" />`,
+      `<meta property="og:description" content="${escapeHtml(description)}" />`,
+      `<meta property="og:url" content="${CANONICAL_ORIGIN}/" />`,
+      '<meta property="og:site_name" content="갈틈" />',
+      ...socialImageTags(DEFAULT_SHARE_IMAGE, title, true),
+    ].join("\n    "),
   };
 }
 
 function eventHead(event: SeoEvent): SeoHead {
   const canonical = eventCanonicalUrl(event.id);
   const description = eventDescription(event);
-  const image = safeImage(event.image_url, event.image_status);
+  const eventImage = safeImage(event.image_url, event.image_status);
+  const shareImage = eventImage ?? DEFAULT_SHARE_IMAGE;
   const structuredData: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -117,7 +143,7 @@ function eventHead(event: SeoEvent): SeoHead {
       },
     },
   };
-  if (image) structuredData.image = [image];
+  if (eventImage) structuredData.image = [eventImage];
   if (event.status === "scheduled")
     structuredData.eventStatus = "https://schema.org/EventScheduled";
   if (event.status === "cancelled")
@@ -133,9 +159,12 @@ function eventHead(event: SeoEvent): SeoHead {
       `<meta property="og:title" content="${escapeHtml(`${event.title} | 갈틈`)}" />`,
       `<meta property="og:description" content="${escapeHtml(description)}" />`,
       `<meta property="og:url" content="${escapeHtml(canonical)}" />`,
-      image
-        ? `<meta property="og:image" content="${escapeHtml(image)}" />`
-        : "",
+      '<meta property="og:site_name" content="갈틈" />',
+      ...socialImageTags(
+        shareImage,
+        eventImage ? `${event.title} 행사 이미지` : "갈틈 · 오늘 갈 만한 곳을 한눈에",
+        !eventImage,
+      ),
       `<script type="application/ld+json">${jsonForHtml(structuredData)}</script>`,
     ]
       .filter(Boolean)
