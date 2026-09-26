@@ -84,8 +84,9 @@ test("detail content follows the user-first hierarchy", () => {
   assert.doesNotMatch(app, /놓치지 마세요/);
 });
 
-test("detail uses a stable canonical path while accepting legacy query URLs", () => {
+test("detail uses encoded event ids for API and canonical paths while accepting legacy query URLs", () => {
   assert.match(app, /eventIdFromPath/);
+  assert.match(app, /fetch\("\/api\/events\/" \+ encodeURIComponent\(selected\)/);
   assert.match(app, /\/events\/\$\{encodeURIComponent\(selected\)\}/);
   assert.match(app, /detailUrl\.searchParams\.get\("event"\) === selected/);
 });
