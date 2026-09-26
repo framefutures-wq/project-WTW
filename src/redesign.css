@@ -3516,3 +3516,104 @@ footer {
     font-size: clamp(18px, 6vw, 24px);
   }
 }
+
+
+/* Home typography rhythm v8: short labels, less explanatory chrome. */
+.quick-discovery {
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.quick-discovery-heading {
+  align-self: center;
+}
+
+.quick-discovery-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.quick-discovery-heading > span,
+.quick-discovery-heading p,
+.quick-category small,
+.period small,
+.advanced-filters > summary > small {
+  display: none;
+}
+
+.quick-category {
+  min-height: 44px;
+  padding: 7px 12px;
+  gap: 9px;
+}
+
+.quick-category > strong,
+.period > strong {
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: -0.2px;
+}
+
+.quick-category-symbol {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}
+
+.periods {
+  gap: 4px;
+}
+
+.period {
+  min-height: 40px;
+  padding: 7px 10px;
+  gap: 7px;
+}
+
+.period > svg {
+  width: 17px;
+  height: 17px;
+}
+
+.period.active {
+  color: #fff;
+}
+
+.search-row {
+  gap: 8px;
+}
+
+.advanced-filters > summary {
+  gap: 0;
+  padding: 0 12px;
+}
+
+@media (max-width: 760px) {
+  .quick-discovery {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .quick-discovery-heading h2 {
+    font-size: 20px;
+  }
+
+  .quick-category {
+    min-height: 50px;
+    padding: 8px 10px;
+  }
+
+  .quick-category > strong {
+    font-size: 12px;
+  }
+
+  .period {
+    min-height: 42px;
+    padding: 8px 9px;
+  }
+
+  .period > strong {
+    font-size: 11px;
+  }
+}

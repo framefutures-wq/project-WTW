@@ -128,18 +128,18 @@ const vapidBytes = (key: string) => {
   const raw = atob(padded);
   return Uint8Array.from(raw, (char) => char.charCodeAt(0));
 };
-const PERIODS: { value: Period; label: string; small: string }[] = [
-  { value: "today", label: "오늘", small: "지금 떠나볼까?" },
-  { value: "weekend", label: "이번 주말", small: "기다려온 쉬는 날" },
-  { value: "next-weekend", label: "다음 주말", small: "미리 계획해요" },
+const PERIODS: { value: Period; label: string }[] = [
+  { value: "today", label: "오늘" },
+  { value: "weekend", label: "이번 주말" },
+  { value: "next-weekend", label: "다음 주말" },
 ];
 const QUICK_CATEGORIES = [
-  { value: "", label: "전체", symbol: "⌁", hint: "모든 행사" },
-  { value: "food", label: "먹거리", symbol: "◉", hint: "시장 · 푸드" },
-  { value: "fireworks", label: "불꽃", symbol: "✦", hint: "야간 · 불꽃" },
-  { value: "flowers", label: "꽃", symbol: "✿", hint: "정원 · 꽃축제" },
-  { value: "experience", label: "체험", symbol: "△", hint: "직접 해보기" },
-  { value: "performance", label: "공연", symbol: "♫", hint: "공연 · 무대" },
+  { value: "", label: "전체", symbol: "⌁" },
+  { value: "food", label: "먹거리", symbol: "◉" },
+  { value: "fireworks", label: "불꽃", symbol: "✦" },
+  { value: "flowers", label: "꽃", symbol: "✿" },
+  { value: "experience", label: "체험", symbol: "△" },
+  { value: "performance", label: "공연", symbol: "♫" },
 ] as const;
 const dateLabel = (date: string) => {
   const localDate = date.includes("T") ? koreaDate(new Date(date)) : date;
@@ -1519,11 +1519,7 @@ export default function App() {
         </section>
         <section className="quick-discovery" aria-label="빠른 카테고리">
           <div className="quick-discovery-heading">
-            <div>
-              <span>빠르게 둘러보기</span>
-              <h2>뭐 하고 싶어요?</h2>
-            </div>
-            <p>관심 있는 주제를 누르면 바로 골라드려요.</p>
+            <h2>뭐 하고 싶어요?</h2>
           </div>
           <div className="quick-category-grid" ref={themeFilterRef} tabIndex={-1}>
             {QUICK_CATEGORIES.map((category) => (
@@ -1546,10 +1542,7 @@ export default function App() {
                 <span className="quick-category-symbol" aria-hidden="true">
                   {category.symbol}
                 </span>
-                <span>
-                  <strong>{category.label}</strong>
-                  <small>{category.hint}</small>
-                </span>
+                <strong>{category.label}</strong>
               </button>
             ))}
           </div>
@@ -1564,10 +1557,7 @@ export default function App() {
                 aria-pressed={period === p.value}
               >
                 <CalendarDays size={20} />
-                <span>
-                  <strong>{p.label}</strong>
-                  <small>{p.small}</small>
-                </span>
+                <strong>{p.label}</strong>
                 {period === p.value && <Check size={16} />}
               </button>
             ))}
@@ -1577,10 +1567,7 @@ export default function App() {
               aria-pressed={period === "custom"}
             >
               <CalendarDays size={20} />
-              <span>
-                <strong>날짜 선택</strong>
-                <small>원하는 날을 골라요</small>
-              </span>
+              <strong>날짜 선택</strong>
               {period === "custom" && <Check size={16} />}
             </button>
           </div>
@@ -1727,7 +1714,6 @@ export default function App() {
                   <SlidersHorizontal size={16} />
                   세부 필터
                 </span>
-                <small>누구와 · 알림</small>
               </summary>
               <div className="advanced-filter-body">
                 <div className="filter-row">
