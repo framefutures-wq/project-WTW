@@ -1097,3 +1097,15 @@ UI 기준:
 - production은 이번 +23 source를 아직 포함하지 않는다. last-known deployed municipal hardening 기준은 main `86163bcdfc2b67e52c3611f7676f946a632e23ed`, Worker version `5d02024b-3f76-4cdd-b751-c59d9e59e97d`; 다음 세션 시작 시 실제 production 상태가 달라졌는지 우선 재확인한다.
 - TourAPI 계통은 안정화된 상태이므로 새 증거가 없는 한 다시 건드리지 않는다. UI v2도 회귀가 없는 한 동결 유지.
 - 사용자는 routine GitHub 조사/수정/테스트/commit/push에 매번 `시작` 승인을 요구하지 않는다. 활성 turn 안에서는 안전한 bounded task를 연속 처리하고 마지막에 한 번 보고한다.
+
+## 2026-09-26 — final ONBOARDING_READY audit closed
+
+- 새 채팅 handoff에 남아 있던 Registry 미등록 READY 3개(영등포·목포·산청)를 최신 공식 source 기준으로 다시 조사했다.
+- `seoul-yeongdeungpo`: 기존 공식 문화행사 canonical endpoint가 현재 404이므로 READY를 철회하고 WATCH로 fail-closed했다. 대체 durable event-only listing은 아직 확정하지 않았다.
+- `jeonnam-gwangju-목포`: 목포문예시설 공식 공연·행사일정은 2026-09 current page와 최신 업데이트를 유지하지만, 현재 calendar surface를 existing generic extractor가 행사별 title/date/venue/detail core로 안정적으로 읽는 계약이 검증되지 않아 COLLECTOR_GAP으로 재분류했다.
+- `gyeongnam-산청`: 공식 관광캘린더 table의 event core는 충분하지만 source가 `yyyymm` 월 파라미터에 의존한다. Registry에 특정 월을 고정하면 자동수집이 낡으므로 bounded rolling-month URL 지원 전까지 COLLECTOR_GAP으로 재분류했다.
+- inventory 최신 분류: ACTIVE 9 / ONBOARDING_READY 26 / COLLECTOR_GAP 41 / WATCH 169 / EXCLUDE 0 / UNREVIEWED 0.
+- Registry는 35 source이고, **ONBOARDING_READY 중 Registry 미등록은 0개**다.
+- 이번 expansion에서 main에 이미 준비된 신규 source는 여전히 **+23개**이며 production 미배포다. 이번 audit은 신규 Registry source를 추가하지 않았다.
+- 다음 안전한 단계는 이 audit PR 검증/merge 후, 누적 +23 source를 기존 Worker에 production deploy 1회로 반영하는 것이다. Cloudflare 인증이 필요한 실제 deploy는 사용자 Codespaces 환경이 필요한 checkpoint로 취급한다.
+- TourAPI와 UI v2는 계속 동결한다.

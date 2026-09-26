@@ -14,9 +14,9 @@ Generated from `docs/municipal-source-inventory.json`; do not hand-edit counts.
 | Status | Count |
 | --- | ---: |
 | ACTIVE | 9 |
-| ONBOARDING_READY | 29 |
-| COLLECTOR_GAP | 39 |
-| WATCH | 168 |
+| ONBOARDING_READY | 26 |
+| COLLECTOR_GAP | 41 |
+| WATCH | 169 |
 | EXCLUDE | 0 |
 | UNREVIEWED | 0 |
 

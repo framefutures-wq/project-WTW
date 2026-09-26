@@ -307,11 +307,11 @@ const known = {
     "https://www.yangcheon.go.kr"
   ],
   "seoul-yeongdeungpo": [
-    "ONBOARDING_READY",
+    "WATCH",
     "https://www.ydp.go.kr/tour/selectTnTursmSchdulListU.do?key=4016",
     "official_tourism_listing",
-    "generic_fallback_paginated",
-    "영등포구 공식 문화관광 문화행사 일정 목록. live listing 구조에서 title·full-year start/end·venue가 같은 카드/목록 블록에 있고 first-party detail URL·기간/구분 검색 구조가 확인되어 current generic self-contained extraction에 적합함. 개별 detail은 기간·장소·주최를 제공하며 URL은 공식 ydp.go.kr host로 유지됨.",
+    "source_endpoint_retired",
+    "2026-09-26 재확인에서 기존 문화행사 canonical endpoint가 공식 404로 전환됐다. current 2026 행사 source를 대체할 durable event-only listing을 공식 도메인에서 확정하지 못했으므로 이전 READY 판정을 철회하고 WATCH로 fail-closed한다.",
     "https://www.ydp.go.kr"
   ],
   "seoul-yongsan": [
@@ -1279,11 +1279,11 @@ const known = {
     "Registry key taebaek"
   ],
   "jeonnam-gwangju-목포": [
-    "ONBOARDING_READY",
-    "https://www.mokpo.go.kr/art/performance/art_schedule",
+    "COLLECTOR_GAP",
+    "https://art.mokpo.go.kr/art/performance/art_schedule",
     "official_city_arts_schedule",
-    "generic_fallback_paginated",
-    "목포시 공식 문예시설 공연·행사일정은 2026 월별 일정에서 공연/행사 건수를 유지하고, 목록/홈 카드에 title·explicit full-year 기간·venue·first-party detail을 self-contained로 제공한다. 시 직영 문예시설 범위라는 scope를 명시하되 현재 source 구조는 generic extraction 후보로 충분해 READY.",
+    "calendar_candidate_core_extraction_gap",
+    "2026-09-26 재확인에서 목포문예시설 공식 공연·행사일정은 2026년 09월 공연 17건·행사 4건과 최신 업데이트를 유지한다. 다만 current calendar surface에서 generic extractor가 행사별 title·explicit period·venue·detail을 하나의 self-contained candidate로 안정적으로 읽는 계약을 검증하지 못했다. detail에는 core가 존재하므로 source 자체가 아니라 collector gap으로 유지한다.",
     "https://www.mokpo.go.kr"
   ],
   "jeonnam-gwangju-무안": [
@@ -1895,11 +1895,11 @@ const known = {
     "https://www.sacheon.go.kr"
   ],
   "gyeongnam-산청": [
-    "ONBOARDING_READY",
+    "COLLECTOR_GAP",
     "https://www.sancheong.go.kr/tour/selectSchdulWeb.do?key=545&yyyymm=20260519",
     "official_tourism_event_calendar",
-    "generic_fallback",
-    "산청군 공식 문화관광 행사일정은 2026 월별 calendar/list에서 구분·explicit 기간·행사명·주최·venue·first-party detail을 self-contained로 제공한다. current generic collector 후보로 READY.",
+    "rolling_month_parameter_needed",
+    "2026-09-26 재확인에서 산청군 공식 관광캘린더는 월별 table에 구분·explicit full-year 기간·행사명·주최·venue를 self-contained로 제공한다. 그러나 source 선택이 yyyymm 월 파라미터에 의존하고 current Registry는 rolling month URL을 생성하지 않는다. 특정 월을 고정 등록하면 자동수집이 낡으므로 READY를 철회하고 bounded rolling-month collector 지원 전까지 COLLECTOR_GAP으로 둔다.",
     "https://www.sancheong.go.kr"
   ],
   "gyeongnam-양산": [
