@@ -760,3 +760,11 @@ UI benchmark:
 - Production home now uses a single visible horizontal rail across hero, trust/principle surface, and footer on desktop; mobile content/footer rails also match.
 - Desktop hero target is live at 220px with a larger primary search treatment; production smoke and overflow checks pass.
 - This UI polish task is closed in production. Active promotion remains paused until the remaining home UI review is finished.
+
+
+## 37. 2026-09-26 — home card / recommendation hierarchy production complete
+
+- Home recommendation and full-list sections now have clearer editorial separation in production.
+- Featured cards use stronger event-title/date hierarchy while desktop 4-column and mobile 2-column layouts remain intact.
+- Production smoke and desktop/mobile overflow checks pass.
+- This bounded UI task is closed. Promotion remains paused while the remaining home UI review continues.
