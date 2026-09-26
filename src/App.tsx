@@ -43,6 +43,7 @@ import { selectProgramOccurrenceGroup } from "../shared/program-occurrence-selec
 import { deriveEventDetailInfo } from "../shared/event-derived-info";
 import { nearbyDetailEvents, similarDetailEvents } from "../shared/detail-exploration";
 import { formatProgramTime } from "../shared/event-program-time";
+import { decodeEventPathId, validEventId } from "../shared/event-id";
 import {
   formatOperatingHours,
   selectOperatingHours,
@@ -516,14 +517,8 @@ function DetailExploreCard({ event, nearby = false }: { event: EventItem; nearby
   );
 }
 function eventIdFromPath(pathname: string) {
-  const match = /^\/events\/([^/]{1,240})$/.exec(pathname);
-  if (!match) return null;
-  try {
-    const id = decodeURIComponent(match[1]);
-    return /^[a-zA-Z0-9_-]{1,80}$/.test(id) ? id : null;
-  } catch {
-    return null;
-  }
+  const match = /^\/events\/([^/]+)$/.exec(pathname);
+  return match ? decodeEventPathId(match[1]) : null;
 }
 export default function App() {
   const initialParams = useRef(
@@ -564,11 +559,8 @@ export default function App() {
   const initialPathEvent = useRef(
     typeof window === "undefined" ? null : eventIdFromPath(window.location.pathname),
   ).current;
-  const initialQueryEvent = /^[a-zA-Z0-9_-]{1,80}$/.test(
-    initialParams.get("event") ?? "",
-  )
-    ? initialParams.get("event")!
-    : null;
+  const queryEvent = initialParams.get("event") ?? "";
+  const initialQueryEvent = validEventId(queryEvent) ? queryEvent : null;
   const initialEvent = initialPathEvent ?? initialQueryEvent;
   const [period, setPeriod] = useState<Period>(
     initialPeriod === "today" ||
@@ -826,7 +818,7 @@ export default function App() {
     const controller = new AbortController();
     setDetail(null);
     setDetailError("");
-    fetch("/api/events/" + selected, { signal: controller.signal })
+    fetch("/api/events/" + encodeURIComponent(selected), { signal: controller.signal })
       .then(readApi<Detail>)
       .then((body) => {
         setDetail(body);
