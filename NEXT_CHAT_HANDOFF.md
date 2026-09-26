@@ -1229,3 +1229,16 @@ UI 기준:
 - Production sitemap contains `https://galteum.com/weekend/seoul`.
 - SEO 2차 pilot landing task is fully closed through production verification.
 - Expansion to additional regional/period landing pages remains gated on pilot indexing/traffic evidence; do not mass-generate similar pages yet.
+
+
+## 2026-09-26 — pre-promotion production QA completed: 2 blockers found
+
+- 홍보 전 production 실사용 QA를 임시 PR #32에서 read-only로 실행했고, PR은 결과 수집 후 merge 없이 closed 처리했다. main/production 데이터에는 영향 없음.
+- 표본: production event pool 78 unique 중 30건, 15개 region 분산 표본. today/weekend/next-weekend를 섞어 검사.
+- 30/30 detail API는 정상 응답했고 목록↔상세 핵심 필드 불일치는 없었다.
+- 공식/근거 source URL은 30/30 HTTP reachable. 정적 HTML에서 제목/날짜/장소 content signal이 잡힌 것은 21/30; 나머지 9건의 no-content-signal은 JS rendering/목록형 페이지일 수 있어 heuristic warning이며 데이터 오류로 단정하지 않는다.
+- Warning 1건은 `2026 수원화성 미디어아트`의 event.checked_at이 약 149h old. 별도 freshness 검토 필요.
+- 실제 promotion blocker #1: `서울함공원 한가위 특별행사`는 detail API 200 및 공식 source content signal 정상인데 public canonical `/events/:id` 페이지가 HTTP 404. ID가 URL 문자를 포함하는 municipal ID라 Static Assets/SEO shell path 처리 회귀가 의심된다.
+- 실제 promotion blocker #2: mobile 390px에서 production event grid가 document width를 432px까지 밀어 오른쪽 42px overflow. offender는 `.event-card/.card-button/.scene` 2열 카드(각 약 220px). 상세 dialog 자체는 5/5 HTTP 200, primary facts/source row 정상, dialog horizontal overflow 없음.
+- 따라서 현재 verdict는 `NOT_PROMOTION_READY`. 본격 홍보 전 위 2개 blocker를 각각 bounded fix로 닫고 동일 production QA를 다시 통과시켜야 한다.
+- 다음 bounded task 우선순위: municipal URL형 ID의 public detail 404 수정 → regression test → CI → deploy → affected URL production 200/canonical 확인. 그 다음 mobile 390px event-grid overflow 수정.
