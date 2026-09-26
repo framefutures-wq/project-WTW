@@ -283,7 +283,8 @@ async function seoHtml(
   event: SeoEvent | null,
   landing = seoLandingForPath(new URL(request.url).pathname),
 ) {
-  const asset = await env.ASSETS.fetch(request);
+  const shellRequest = new Request(new URL("/", request.url), request);
+  const asset = await env.ASSETS.fetch(shellRequest);
   const contentType = asset.headers.get("Content-Type") ?? "";
   if (!contentType.includes("text/html")) return asset;
   const headers = new Headers(asset.headers);
