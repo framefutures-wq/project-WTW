@@ -1283,3 +1283,18 @@ UI 기준:
 - Promotion blocker #2 is fully closed in production.
 - Promotion blocker #1 was already closed in production with HTTP 200 + correct canonical for the encoded Seoul Hangang municipal event detail.
 - Therefore the two concrete blockers found by the 30-event pre-promotion QA are both closed. A final read-only promotion QA rerun is the remaining gate before starting broad promotion.
+
+
+## 2026-09-26 — final promotion-readiness QA passed
+
+- Final read-only production QA rerun completed via temporary PR #35; PR was closed without merge and made no production writes.
+- Sample: 30 production events across 15 regions, using today/weekend/next-weekend pools.
+- Result:
+  - critical_events: 0
+  - mobile_checks: 6
+  - mobile_failures: 0
+  - verdict: `PROMOTION_READY_WITH_REVIEW`
+- The previously failing `서울함공원 한가위 특별행사` now passes public detail/canonical validation in the sampled run.
+- 390px mobile detail/landing checks passed; no promotion-blocking horizontal overflow remained.
+- Warnings: 17 total. Sixteen were `source_fetch_error` from the GitHub runner while probing external official pages; these are treated as external-network/probe warnings, not confirmed event-data defects. One warning was `2026 수원화성 미디어아트` with event.checked_at roughly 150h old and remains a freshness item for routine monitoring.
+- Promotion readiness gate is now passed for broad promotion, with normal post-launch monitoring required. SEO/indexing and the Sep 27 municipal all-35 natural-run verification remain separate lanes.
