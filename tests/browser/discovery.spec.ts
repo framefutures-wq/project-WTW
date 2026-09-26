@@ -249,6 +249,46 @@ test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정�
   ).toBe(true);
 });
 
+test("홈 벤치마크 정리는 추천 박스를 걷어내고 카드 메타를 한 줄로 유지한다", async ({ page }) => {
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.goto("/");
+  await expect(page.locator(".featured-events")).toBeVisible();
+
+  const featured = await page.locator(".featured-events").evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      paddingTop: parseFloat(style.paddingTop),
+      borderTopWidth: parseFloat(style.borderTopWidth),
+      borderRadius: parseFloat(style.borderRadius),
+      backgroundColor: style.backgroundColor,
+    };
+  });
+  expect(featured.paddingTop).toBe(0);
+  expect(featured.borderTopWidth).toBe(0);
+  expect(featured.borderRadius).toBe(0);
+  expect(featured.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+
+  await expect(page.getByRole("heading", { name: "먼저 볼 곳" })).toBeVisible();
+  await expect(page.getByText("이번 주말 먼저 볼 곳", { exact: true })).toHaveCount(0);
+
+  const firstCard = page.locator(".event-card").first();
+  await expect(firstCard.locator(".venue")).toHaveCount(0);
+  const meta = firstCard.locator(".card-meta");
+  await expect(meta).toBeVisible();
+  expect(
+    await meta.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+  ).toBe(true);
+
+  const accent = await page.locator(".hero-search-submit").evaluate((el) =>
+    getComputedStyle(el).backgroundColor,
+  );
+  expect(accent).toBe("rgb(244, 90, 42)");
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
 test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toHaveCount(0);
