@@ -1529,3 +1529,16 @@ UI 기준:
   - first card location line combines region + venue
 - Mobile direct verification script failed before assertions because `document.querySelector('.featured-grid')` was null when `getComputedStyle` ran. This is a verification-script timing issue, not evidence of a production UI failure; UI browser smoke #117 had already passed mobile coverage before merge.
 - Run one short mobile production check that waits for `.featured-grid` before reading computed styles, then close this bounded task if 2 columns / 14px title / no horizontal overflow pass.
+
+
+## 2026-09-26 — benchmark-informed home visual production verification complete
+
+- Production Worker `0e30b84c-3549-4fac-b1cd-d6f7e93b8582` remains live with the benchmark-informed home visual cleanup.
+- Desktop direct verification had already passed.
+- Final mobile 390x844 direct verification PASS:
+  - viewport = 390
+  - document scrollWidth = 390
+  - featured grid = 2 columns
+  - featured card title = 14px
+- Therefore the benchmark-informed home palette / hierarchy bounded task is fully closed in production.
+- No redeploy is required for this documentation-only closure.
