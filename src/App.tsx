@@ -34,7 +34,6 @@ import {
   type Tag,
   validDate,
 } from "../shared/domain";
-import { USER_CONTENT_FILTERS } from "../shared/content-filters";
 import { seoLandingForPath } from "../shared/seo-landings";
 import { recommendationReasonLabel } from "../shared/recommendation-ranking";
 import { REGION_OPTIONS, regionLabel } from "../shared/region-options";
@@ -633,7 +632,7 @@ export default function App() {
     resultsRef = useRef<HTMLElement | null>(null),
     heroRef = useRef<HTMLElement | null>(null),
     regionFilterRef = useRef<HTMLSelectElement | null>(null),
-    contentFilterRef = useRef<HTMLDivElement | null>(null),
+    themeFilterRef = useRef<HTMLDivElement | null>(null),
     advancedFiltersRef = useRef<HTMLDetailsElement | null>(null),
     batchProgress = useRef(
       new Map<number, { loadedPages: number; scrollY: number }>(),
@@ -1172,10 +1171,8 @@ export default function App() {
     }
   }
   function focusFilter(target: "region" | "theme") {
-    if (target === "theme" && advancedFiltersRef.current)
-      advancedFiltersRef.current.open = true;
     const element =
-      target === "region" ? regionFilterRef.current : contentFilterRef.current;
+      target === "region" ? regionFilterRef.current : themeFilterRef.current;
     element?.scrollIntoView({ behavior: "smooth", block: "center" });
     if (target === "region") element?.focus();
     else
@@ -1290,7 +1287,6 @@ export default function App() {
     customRange ? selectedRangeLabel : null,
     region ? regionLabel(region) : null,
     audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null,
-    theme ? THEMES[theme as keyof typeof THEMES] : null,
     query ? `검색: ${query}` : null,
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
@@ -1529,7 +1525,7 @@ export default function App() {
             </div>
             <p>관심 있는 주제를 누르면 바로 골라드려요.</p>
           </div>
-          <div className="quick-category-grid">
+          <div className="quick-category-grid" ref={themeFilterRef} tabIndex={-1}>
             {QUICK_CATEGORIES.map((category) => (
               <button
                 key={category.value || "all"}
@@ -1721,7 +1717,6 @@ export default function App() {
               className="advanced-filters"
               open={Boolean(
                 audience ||
-                  theme ||
                   geoError ||
                   location ||
                   pushState === "subscribed",
@@ -1732,7 +1727,7 @@ export default function App() {
                   <SlidersHorizontal size={16} />
                   세부 필터
                 </span>
-                <small>누구와 · 주제 · 알림</small>
+                <small>누구와 · 알림</small>
               </summary>
               <div className="advanced-filter-body">
                 <div className="filter-row">
@@ -1753,30 +1748,6 @@ export default function App() {
                           change(setAudience, audience === v ? "" : v, "audience")
                         }
                         aria-pressed={audience === v}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="filter-row">
-                  <span className="filter-label">무엇을</span>
-                  <div className="chips" ref={contentFilterRef} tabIndex={-1}>
-                    <button
-                      className={!theme ? "chip chosen" : "chip"}
-                      onClick={() => change(setTheme, "", "theme")}
-                      aria-pressed={!theme}
-                    >
-                      모두
-                    </button>
-                    {USER_CONTENT_FILTERS.map(({ queryValue: v, label }) => (
-                      <button
-                        key={v}
-                        className={theme === v ? "chip chosen" : "chip"}
-                        onClick={() =>
-                          change(setTheme, theme === v ? "" : v, "theme")
-                        }
-                        aria-pressed={theme === v}
                       >
                         {label}
                       </button>
