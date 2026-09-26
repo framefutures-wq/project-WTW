@@ -232,8 +232,11 @@ async function mobileQa(sample) {
     for (const event of sample.slice(0, 5)) {
       const path = `/events/${encodeURIComponent(event.id)}`;
       const response = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 30000 });
-      await page.locator('dialog[aria-label="행사 상세 정보"]').waitFor({ state: "visible", timeout: 20000 });
-      const result = await page.locator('dialog[aria-label="행사 상세 정보"]').evaluate((dialog) => ({
+      const dialog = page.locator('dialog[aria-label="행사 상세 정보"]');
+      await dialog.waitFor({ state: "visible", timeout: 20000 });
+      await dialog.locator(".detail-primary-facts").waitFor({ state: "visible", timeout: 20000 });
+      await dialog.locator(".detail-source-row").waitFor({ state: "attached", timeout: 20000 });
+      const result = await dialog.evaluate((dialog) => ({
         dialog_width: dialog.getBoundingClientRect().width,
         viewport_width: innerWidth,
         dialog_overflow: dialog.scrollWidth > dialog.clientWidth,
@@ -257,11 +260,30 @@ async function mobileQa(sample) {
     }
     const landingResponse = await page.goto(`${BASE}/weekend/seoul`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.locator(".event-card").first().waitFor({ state: "visible", timeout: 20000 });
-    const landing = await page.evaluate(() => ({
-      overflow: document.documentElement.scrollWidth > innerWidth,
-      region: document.querySelector('select[aria-label="지역"]')?.value ?? null,
-      cards: document.querySelectorAll(".event-card").length,
-    }));
+    const landing = await page.evaluate(() => {
+      const offenders = [...document.querySelectorAll("body *")]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName,
+            className: element.className || "",
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+          };
+        })
+        .filter((item) => item.right > innerWidth + 1 || item.left < -1)
+        .sort((a, b) => Math.max(b.right - innerWidth, -b.left) - Math.max(a.right - innerWidth, -a.left))
+        .slice(0, 8);
+      return {
+        overflow: document.documentElement.scrollWidth > innerWidth,
+        scroll_width: document.documentElement.scrollWidth,
+        viewport_width: innerWidth,
+        region: document.querySelector('select[aria-label="지역"]')?.value ?? null,
+        cards: document.querySelectorAll(".event-card").length,
+        offenders,
+      };
+    });
     checks.push({
       id: "seo-landing",
       title: "서울 이번 주말 행사",
