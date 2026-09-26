@@ -10,8 +10,10 @@ test("public detail hides raw evidence and only links verified official pages", 
   assert.doesNotMatch(app, /TourAPI 원문 보기/);
   assert.doesNotMatch(app, /정보 확인 근거/);
   assert.doesNotMatch(app, /detail\.evidence\.map/);
-  assert.match(app, /hasOfficialSource\(detail\.event\)/);
-  assert.match(app, /detail\.event\.trust_source_url/);
+  assert.match(app, /detailOfficialUrl\(/);
+  assert.match(app, /detailMapAction\(/);
+  assert.match(app, /detail-official-link-top/);
+  assert.match(app, /detail-map-link/);
 });
 
 test("unknown optional rows are hidden while visit-critical status remains visible", () => {
@@ -98,9 +100,9 @@ test("detail uses encoded event ids for API and canonical paths while accepting 
   assert.match(app, /detailUrl\.searchParams\.get\("event"\) === selected/);
 });
 
-test("detail prefers a verified organizer or municipality enrichment page", () => {
-  assert.match(app, /officialDetailSource/);
-  assert.match(app, /detail\.enrichment\.source_kind/);
-  assert.match(app, /detail\.enrichment\.source_priority <= 2/);
-  assert.match(app, /officialDetailSource\(detail\) \?\?/);
+test("detail delegates official-page and map actions to deterministic helpers", () => {
+  assert.match(app, /detailOfficialUrl\(\s*detail\.event,\s*detail\.enrichment/);
+  assert.match(app, /detailMapAction\(detail\.event\)/);
+  assert.match(app, /mapAction\.href/);
+  assert.match(app, /mapAction\.label/);
 });
