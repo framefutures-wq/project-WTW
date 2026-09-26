@@ -1,5 +1,6 @@
+import { decodeEventPathId, validEventId } from "../shared/event-id";
+
 export const CANONICAL_ORIGIN = "https://galteum.com";
-const EVENT_ID = /^[A-Za-z0-9_-]{1,80}$/;
 
 export type SeoEvent = {
   id: string;
@@ -17,16 +18,11 @@ export type SeoEvent = {
 };
 
 export function validSeoEventId(value: string): boolean {
-  return EVENT_ID.test(value);
+  return validEventId(value);
 }
 
 export function decodeSeoEventId(value: string): string | null {
-  try {
-    const decoded = decodeURIComponent(value);
-    return validSeoEventId(decoded) ? decoded : null;
-  } catch {
-    return null;
-  }
+  return decodeEventPathId(value);
 }
 
 export function eventCanonicalUrl(id: string): string {
