@@ -1275,9 +1275,22 @@ export default function App() {
   ].filter(Boolean) as string[];
   const renderEventCard = (event: EventItem) => (
     <article className="event-card" key={event.id}>
-      <button
+      <a
         className="card-button"
-        onClick={() => setSelected(event.id)}
+        href={`/events/${encodeURIComponent(event.id)}`}
+        onClick={(clickEvent) => {
+          if (
+            clickEvent.defaultPrevented ||
+            clickEvent.button !== 0 ||
+            clickEvent.metaKey ||
+            clickEvent.ctrlKey ||
+            clickEvent.shiftKey ||
+            clickEvent.altKey
+          )
+            return;
+          clickEvent.preventDefault();
+          setSelected(event.id);
+        }}
         aria-label={`${event.title} 상세 보기`}
       >
         <Scene event={event} />
@@ -1343,7 +1356,7 @@ export default function App() {
             <ArrowRight size={17} />
           </div>
         </div>
-      </button>
+      </a>
     </article>
   );
   const close = () => {
