@@ -51,6 +51,9 @@ test("morning production SQL stays bounded to deployed municipal sources", () =>
   }
   assert(state.includes("municipal_candidate_state"));
   assert(published.includes("published_or_revalidated"));
+  assert(published.includes("municipal_candidate_state"));
+  assert(published.includes("events.id=state.candidate_id"));
+  assert.doesNotMatch(published, /\b(?:LIKE|GLOB)\b/i);
   assert(backlog.includes("tourapi_detail_state"));
   assert(backlog.includes("retry_due"));
 });
