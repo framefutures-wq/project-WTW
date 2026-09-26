@@ -1362,3 +1362,21 @@ UI 기준:
 - Do not start active promotion yet.
 - Immediate priority is UI polish/review on current production before traffic acquisition resumes.
 - When UI work restarts, inspect current production/code state and follow `docs/UI_V2_DIRECTION.md`; do not reopen already-completed UI v2 work unless there is a concrete regression or a newly identified visual/UX issue.
+
+
+## 2026-09-26 — home hierarchy + horizontal rail fix merged / production pending
+
+- User reopened home UI polish after production screenshot review and explicitly identified top/bottom width mismatch.
+- Root cause confirmed in CSS: header/main use the current 1280px layout system while legacy footer still used `max-width:1112px` (plus separate narrow-screen margins), producing a visibly shorter footer rail.
+- PR #37 `style: strengthen home hierarchy and align layout rails` merged as `16a458b42c07efc5d62ad539c4bb7fd5397e16b7`.
+- Changes are deliberately bounded to home hierarchy/layout:
+  - footer surface aligns to the hero/content visible rail on desktop and main content rail on mobile;
+  - slightly larger brand/header presence;
+  - hero increased from the compressed ~188px treatment to a ~220px desktop target;
+  - headline/search field/CTA enlarged so search reads as the primary action;
+  - quick-category row given more breathing room while keeping the same information architecture;
+  - existing warm ivory / charcoal / orange system, 4-column desktop cards, 2-column mobile cards, filters, APIs and data behavior preserved.
+- Regression coverage added for desktop hero sizing, desktop hero↔principle↔footer rail equality, mobile principle↔footer rail equality, and existing overflow behavior.
+- UI browser smoke #107 SUCCESS; Project checks #630 SUCCESS.
+- No D1/API/SEO route/municipal/detail-page change.
+- Production deploy and public desktop/mobile visual verification are still required before this UI task is closed.
