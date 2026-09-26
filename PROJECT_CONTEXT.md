@@ -719,3 +719,12 @@ UI benchmark:
 - 390px mobile event grid: verified no horizontal document overflow (`scrollWidth=390`) and all cards within viewport.
 - Production smoke passed after both fixes.
 - Broad promotion is no longer blocked by those defects, but the promotion-readiness gate should be closed with one final read-only QA rerun before traffic is actively pushed.
+
+
+## 32. 2026-09-26 — promotion readiness gate passed
+
+- Final production QA rerun after the two blocker fixes passed the launch gate: 30 events / 15 regions, `critical_events=0`, `mobile_failures=0`.
+- Operational verdict: `PROMOTION_READY_WITH_REVIEW`.
+- The 17 warnings are not launch blockers: 16 are external official-source fetch failures from the GitHub runner and 1 is an approximately 150h-old `checked_at` freshness warning for `2026 수원화성 미디어아트`.
+- Broad promotion may start. Continue normal monitoring for freshness, source availability, indexing, and user-reported data issues.
+- This does not replace the independent municipal 35-source natural-run verification planned after the 2026-09-27 10:00 KST base Cron.
