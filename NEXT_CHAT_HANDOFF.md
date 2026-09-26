@@ -1205,3 +1205,14 @@ UI 기준:
 - No municipal ingestion, D1 schema/data, Cron, Registry, collector, event API contract change.
 - Frontend/Worker/SEO runtime change이므로 authenticated Codespaces에서 verified production deploy + smoke가 필요하다.
 - Municipal 35-source natural validation은 독립적으로 2026-09-27 10:00 KST checkpoint를 유지한다.
+
+
+## 2026-09-26 — Seoul weekend SEO landing deployed
+
+- SEO 2차 pilot landing이 authenticated Codespaces에서 production에 verified deploy됐다.
+- Deploy main: `e8ce8b2507622bf3749df97e1cfdf0d499c5ecc4`.
+- Production Worker version: `380b70e2-1b23-4565-947b-a09d29399a06`.
+- Production smoke PASS: D1 연결, 날짜 구간, 필터, 반려동물, 거리순, 페이지, 상세, 취소 제외, 입력 검증, SQL 바인딩, Static Assets, SPA 정상.
+- Pilot URL은 `/weekend/seoul`; 일반 faceted query URL은 계속 홈 canonical 통합 정책을 유지한다.
+- Municipal ingestion/D1/Cron/Registry에는 변경 없음.
+- External fetch 도구에서는 galteum.com 직접 응답 검증이 차단되어 있어, production-specific SEO head/sitemap 최종 확인은 Codespaces에서 curl로 확인한다.
