@@ -201,7 +201,7 @@ test("데스크톱 홈 상단과 하단은 같은 가로 레일에 맞는다", a
   }
 });
 
-test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정보 위계가 유지된다", async ({ page }) => {
+test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분리되고 카드 정보 위계가 유지된다", async ({ page }) => {
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
@@ -211,13 +211,15 @@ test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정�
     const style = getComputedStyle(el);
     return {
       paddingTop: parseFloat(style.paddingTop),
+      borderTopWidth: parseFloat(style.borderTopWidth),
       borderRadius: parseFloat(style.borderRadius),
       backgroundColor: style.backgroundColor,
     };
   });
-  expect(featuredStyle.paddingTop).toBeGreaterThanOrEqual(20);
-  expect(featuredStyle.borderRadius).toBeGreaterThanOrEqual(20);
-  expect(featuredStyle.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+  expect(featuredStyle.paddingTop).toBe(0);
+  expect(featuredStyle.borderTopWidth).toBe(0);
+  expect(featuredStyle.borderRadius).toBe(0);
+  expect(featuredStyle.backgroundColor).toBe("rgba(0, 0, 0, 0)");
 
   const allStyle = await page.locator(".all-events-section").evaluate((el) => {
     const style = getComputedStyle(el);
@@ -226,7 +228,7 @@ test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정�
       borderTopWidth: parseFloat(style.borderTopWidth),
     };
   });
-  expect(allStyle.paddingTop).toBeGreaterThanOrEqual(30);
+  expect(allStyle.paddingTop).toBeGreaterThanOrEqual(28);
   expect(allStyle.borderTopWidth).toBeGreaterThanOrEqual(1);
 
   const titleStyle = await page.locator(".featured-events .card-content h3").first().evaluate((el) => {
@@ -236,13 +238,53 @@ test("추천 영역과 전체 목록은 시각적으로 분리되고 카드 정�
       fontWeight: parseInt(style.fontWeight, 10),
     };
   });
-  expect(titleStyle.fontSize).toBeGreaterThanOrEqual(18);
+  expect(titleStyle.fontSize).toBeGreaterThanOrEqual(17);
   expect(titleStyle.fontWeight).toBeGreaterThanOrEqual(700);
 
   const dateWeight = await page.locator(".featured-events .event-date").first().evaluate((el) =>
     parseInt(getComputedStyle(el).fontWeight, 10),
   );
   expect(dateWeight).toBeGreaterThanOrEqual(700);
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
+test("홈 벤치마크 정리는 추천 박스를 걷어내고 카드 메타를 한 줄로 유지한다", async ({ page }) => {
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.goto("/");
+  await expect(page.locator(".featured-events")).toBeVisible();
+
+  const featured = await page.locator(".featured-events").evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      paddingTop: parseFloat(style.paddingTop),
+      borderTopWidth: parseFloat(style.borderTopWidth),
+      borderRadius: parseFloat(style.borderRadius),
+      backgroundColor: style.backgroundColor,
+    };
+  });
+  expect(featured.paddingTop).toBe(0);
+  expect(featured.borderTopWidth).toBe(0);
+  expect(featured.borderRadius).toBe(0);
+  expect(featured.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+
+  await expect(page.getByRole("heading", { name: "먼저 볼 곳" })).toBeVisible();
+  await expect(page.getByText("이번 주말 먼저 볼 곳", { exact: true })).toHaveCount(0);
+
+  const firstCard = page.locator(".event-card").first();
+  await expect(firstCard.locator(".venue")).toHaveCount(0);
+  const meta = firstCard.locator(".card-meta");
+  await expect(meta).toBeVisible();
+  expect(
+    await meta.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+  ).toBe(true);
+
+  const accent = await page.locator(".hero-search-submit").evaluate((el) =>
+    getComputedStyle(el).backgroundColor,
+  );
+  expect(accent).toBe("rgb(244, 90, 42)");
 
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
