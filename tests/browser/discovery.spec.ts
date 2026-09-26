@@ -344,6 +344,41 @@ test("모바일 추천 카드 위계는 2열과 가로 넘침을 깨지 않는�
   ).toBe(true);
 });
 
+test("하단 신뢰영역과 footer는 밝은 브랜드 마감으로 이어지고 준비중 문구가 없다", async ({ page }) => {
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.goto("/");
+  await expect(page.locator(".principle")).toBeVisible();
+  await expect(page.locator("footer")).toBeVisible();
+  await expect(page.getByText("운영 준비 중", { exact: false })).toHaveCount(0);
+
+  const styles = await page.evaluate(() => {
+    const principle = document.querySelector(".principle");
+    const footer = document.querySelector("footer");
+    const brand = document.querySelector(".footer-brand");
+    if (!principle || !footer || !brand) return null;
+    const ps = getComputedStyle(principle);
+    const fs = getComputedStyle(footer);
+    const bs = getComputedStyle(brand);
+    return {
+      principleBg: ps.backgroundColor,
+      principleRadius: parseFloat(ps.borderRadius),
+      footerBg: fs.backgroundColor,
+      footerRadius: parseFloat(fs.borderTopLeftRadius),
+      footerColor: fs.color,
+      brandWeight: parseInt(bs.fontWeight, 10),
+    };
+  });
+
+  expect(styles).not.toBeNull();
+  expect(styles!.principleRadius).toBeGreaterThanOrEqual(20);
+  expect(styles!.footerRadius).toBeGreaterThanOrEqual(20);
+  expect(styles!.footerBg).not.toBe("rgb(17, 24, 32)");
+  expect(styles!.brandWeight).toBeGreaterThanOrEqual(800);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
 test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 눌리지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 800 });
   await page.goto("/");
