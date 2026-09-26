@@ -792,3 +792,11 @@ UI benchmark:
 - Sparse-result exploration and footer finishing are also live; the production 공연 query currently returns 4 official matches and the UI renders all 4 without imposing an artificial four-card cap.
 - Production smoke and desktop/mobile overflow checks pass.
 - This bounded UI cleanup task is closed. Promotion remains paused pending the user's final visual review of the production home.
+
+
+## 41. 2026-09-26 — benchmark-informed home visual production complete
+
+- Klook/Fever/GetYourGuide benchmark-informed home cleanup is live and verified in production.
+- Desktop and mobile direct checks pass with no horizontal overflow; mobile keeps 2-column cards and 14px featured-card titles.
+- The home now uses a neutral-first warm canvas, one vivid discovery orange (#F45A2A), lighter control chrome, unboxed featured content, reduced repeated editorial labels, compact card location meta, and restrained fallback graphics.
+- This bounded UI task is closed. Promotion remains paused until the user's next product/UI decision.
