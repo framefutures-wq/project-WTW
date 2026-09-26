@@ -328,7 +328,7 @@ export default {
       return textResponse(robotsTxt, "text/plain; charset=UTF-8", "public, max-age=86400");
     if (url.pathname === "/sitemap.xml")
       return textResponse(await publicSitemap(env), "application/xml; charset=UTF-8", "public, max-age=3600");
-    const eventPage = /^\/events\/([^/]{1,240})$/.exec(url.pathname);
+    const eventPage = /^\/events\/([^/]+)$/.exec(url.pathname);
     if (eventPage) {
       const eventId = decodeSeoEventId(eventPage[1]);
       if (!eventId)
@@ -655,14 +655,11 @@ export default {
           mode: env.APP_MODE,
         });
       }
-      const detail = /^\/api\/events\/([^/]{1,240})$/.exec(url.pathname);
+      const detail = /^\/api\/events\/([^/]+)$/.exec(url.pathname);
       if (detail) {
-        let eventId: string;
-        try {
-          eventId = decodeURIComponent(detail[1]);
-        } catch {
+        const eventId = decodeSeoEventId(detail[1]);
+        if (!eventId)
           return json({ error: "확인된 행사 정보를 찾을 수 없습니다." }, 404);
-        }
         const row = await env.DB.prepare(
           `${SELECT} WHERE e.id=? AND ${visibility(env)}`,
         )
