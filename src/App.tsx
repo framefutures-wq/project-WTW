@@ -2125,6 +2125,9 @@ export default function App() {
           갈틈
         </a>
         <span>오늘의 작은 발견 하나.</span>
+        <a className="footer-discovery" href="/weekend/seoul">
+          서울 이번 주말 행사
+        </a>
         <small>
           운영 준비 중 ·{" "}
           {mode === "sample" ? "샘플 데이터 모드" : "공식 출처 기반"}
