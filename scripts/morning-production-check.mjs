@@ -5,6 +5,7 @@ import {
   municipalStateSql,
   municipalPublishedSql,
   detailBacklogSql,
+  summarizeMunicipalSourceOutcomes,
 } from "./morning-production-check-lib.mjs";
 
 if (!process.argv.includes("--remote"))
@@ -76,13 +77,18 @@ const details = detailRuns.map((row) => ({
   ...row,
   message: safeJson(row.message),
 }));
+const municipalSourceOutcomes = summarizeMunicipalSourceOutcomes(baseMessage);
 
 const verdict =
   base.status !== "success"
     ? "BASE_NEEDS_ATTENTION"
-    : municipalState.some((row) => Number(row.observed) === 0)
-      ? "BASE_OK_MUNICIPAL_SOURCE_NOT_OBSERVED"
-      : "BASE_OK";
+    : municipalSourceOutcomes.missing.length > 0
+      ? "BASE_OK_MUNICIPAL_OUTCOMES_INCOMPLETE"
+      : municipalSourceOutcomes.error > 0
+        ? "BASE_OK_MUNICIPAL_SOURCE_ERRORS"
+        : municipalState.some((row) => Number(row.observed) === 0)
+          ? "BASE_OK_MUNICIPAL_SOURCE_NOT_OBSERVED"
+          : "BASE_OK";
 
 console.log(JSON.stringify({
   mode: "read-only",
@@ -97,6 +103,7 @@ console.log(JSON.stringify({
     stale_count: base.stale_count,
     message: baseMessage,
   },
+  municipal_source_outcomes: municipalSourceOutcomes,
   deployed_municipal_batch: {
     state: municipalState,
     published_or_revalidated: municipalPublished,
