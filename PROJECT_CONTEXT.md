@@ -672,3 +672,13 @@ UI benchmark:
 - 이번 +23 source는 아직 production에 배포하지 않았다. 여러 source를 끝까지 모은 뒤 deploy를 1회로 묶는 운영 원칙을 유지한다.
 - last-known production municipal hardening code는 `86163bcdfc2b67e52c3611f7676f946a632e23ed`, Worker version `5d02024b-3f76-4cdd-b751-c59d9e59e97d`. 실제 production이 이후 변경됐는지는 다음 세션 시작 시 재확인한다.
 - TourAPI recovery는 안정화됐고 municipal expansion과 독립적으로 동결한다. UI v2도 완료/동결 상태를 유지한다.
+
+## 27. 2026-09-26 — 전국 municipal READY queue 마감
+
+- latest official-source 재검증으로 남아 있던 영등포·목포·산청 3건의 이전 READY 판정을 보수적으로 재분류했다.
+  - 영등포: 기존 canonical endpoint 404 → WATCH.
+  - 목포: current 공식 calendar는 유지되지만 generic candidate core extraction 계약 미검증 → COLLECTOR_GAP.
+  - 산청: 공식 월별 table core는 충분하지만 `yyyymm` rolling-month collector 지원 필요 → COLLECTOR_GAP.
+- 결과적으로 municipal inventory의 UNREVIEWED는 0을 유지하고, **ONBOARDING_READY 중 Registry 미등록도 0**이 됐다.
+- Registry는 35 source. 이번 expansion 누적 신규 준비량은 +23 source이며 아직 production에 배포하지 않았다.
+- 다음 운영 단계는 누적 source 변경을 기존 Worker에 1회 배포하고 production source_outcomes/smoke를 확인하는 것. 신규 리소스·D1 파괴 변경은 필요 없다.
