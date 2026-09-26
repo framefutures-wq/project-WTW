@@ -1,4 +1,5 @@
 import { decodeEventPathId, validEventId } from "../shared/event-id";
+import { SEO_LANDINGS, type SeoLanding } from "../shared/seo-landings";
 
 export const CANONICAL_ORIGIN = "https://galteum.com";
 
@@ -72,6 +73,20 @@ function jsonForHtml(value: unknown) {
 
 type SeoHead = { title: string; description: string; canonical: string; extra: string };
 
+function landingHead(landing: SeoLanding): SeoHead {
+  return {
+    title: landing.title,
+    description: landing.description,
+    canonical: `${CANONICAL_ORIGIN}${landing.path}`,
+    extra: [
+      '<meta property="og:type" content="website" />',
+      `<meta property="og:title" content="${escapeHtml(landing.title)}" />`,
+      `<meta property="og:description" content="${escapeHtml(landing.description)}" />`,
+      `<meta property="og:url" content="${escapeHtml(`${CANONICAL_ORIGIN}${landing.path}`)}" />`,
+    ].join("\n    "),
+  };
+}
+
 function rootHead(): SeoHead {
   return {
     title: "갈틈 · 오늘 갈 만한 곳을 한눈에",
@@ -128,8 +143,12 @@ function eventHead(event: SeoEvent): SeoHead {
   };
 }
 
-export function renderSeoHtml(html: string, event: SeoEvent | null = null) {
-  const head = event ? eventHead(event) : rootHead();
+export function renderSeoHtml(
+  html: string,
+  event: SeoEvent | null = null,
+  landing: SeoLanding | null = null,
+) {
+  const head = event ? eventHead(event) : landing ? landingHead(landing) : rootHead();
   const base = html
     .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(head.title)}</title>`)
     .replace(
@@ -174,6 +193,13 @@ export function sitemapXml(events: SeoEvent[]) {
     "  <url>",
     `    <loc>${CANONICAL_ORIGIN}/</loc>`,
     "  </url>",
+    ...SEO_LANDINGS.map((landing) =>
+      [
+        "  <url>",
+        `    <loc>${xmlEscape(`${CANONICAL_ORIGIN}${landing.path}`)}</loc>`,
+        "  </url>",
+      ].join("\n"),
+    ),
     ...rows,
     "</urlset>",
   ].join("\n");

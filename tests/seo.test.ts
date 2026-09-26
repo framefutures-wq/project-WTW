@@ -117,6 +117,41 @@ test("encoded municipal ids with URL punctuation and Korean text work for detail
   }
 });
 
+test("Seoul weekend landing is self-canonical while faceted query URLs stay consolidated", async () => {
+  const { mf, env } = await setup();
+  try {
+    const landing = await worker.fetch(
+      new Request("https://galteum.com/weekend/seoul"),
+      env as never,
+    );
+    const landingBody = await landing.text();
+    assert.equal(landing.status, 200);
+    assert.match(
+      landingBody,
+      /<title>서울 이번 주말 행사·축제 \| 갈틈<\/title>/,
+    );
+    assert.match(
+      landingBody,
+      /<link rel="canonical" href="https:\/\/galteum\.com\/weekend\/seoul"/,
+    );
+    assert.match(
+      landingBody,
+      /서울에서 이번 주말 열리는 축제·지역행사·체험/,
+    );
+
+    const faceted = await worker.fetch(
+      new Request("https://galteum.com/?period=weekend&region=%EC%84%9C%EC%9A%B8"),
+      env as never,
+    );
+    assert.match(
+      await faceted.text(),
+      /<link rel="canonical" href="https:\/\/galteum\.com\/"/,
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
+
 test("root canonical, sitemap, robots, and event 404s follow the public visibility contract", async () => {
   const { mf, env } = await setup();
   try {
@@ -126,6 +161,7 @@ test("root canonical, sitemap, robots, and event 404s follow the public visibili
     const sitemapBody = await sitemap.text();
     assert.equal(sitemap.status, 200);
     assert.match(sitemap.headers.get("content-type") ?? "", /application\/xml/);
+    assert.match(sitemapBody, /https:\/\/galteum\.com\/weekend\/seoul/);
     assert.match(sitemapBody, /https:\/\/galteum\.com\/events\/seo-event_1/);
     assert.doesNotMatch(sitemapBody, /hidden/);
     const robots = await worker.fetch(new Request("https://galteum.com/robots.txt"), env as never);

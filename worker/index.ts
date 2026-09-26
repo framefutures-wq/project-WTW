@@ -40,6 +40,7 @@ import {
 } from "../shared/event-operating-hours";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 import { analyticsRuntimeConfig } from "../shared/analytics-config";
+import { seoLandingForPath } from "../shared/seo-landings";
 import { legacyHostRedirect } from "./host";
 import {
   decodeSeoEventId,
@@ -276,7 +277,12 @@ async function seoEvent(env: Env, eventId: string): Promise<SeoEvent | null> {
   return row ?? null;
 }
 
-async function seoHtml(request: Request, env: Env, event: SeoEvent | null) {
+async function seoHtml(
+  request: Request,
+  env: Env,
+  event: SeoEvent | null,
+  landing = seoLandingForPath(new URL(request.url).pathname),
+) {
   const asset = await env.ASSETS.fetch(request);
   const contentType = asset.headers.get("Content-Type") ?? "";
   if (!contentType.includes("text/html")) return asset;
@@ -286,7 +292,7 @@ async function seoHtml(request: Request, env: Env, event: SeoEvent | null) {
   headers.delete("Content-Length");
   headers.delete("Content-Encoding");
   headers.delete("ETag");
-  return new Response(renderSeoHtml(await asset.text(), event), {
+  return new Response(renderSeoHtml(await asset.text(), event, landing), {
     status: asset.status,
     statusText: asset.statusText,
     headers,
@@ -328,6 +334,8 @@ export default {
       return textResponse(robotsTxt, "text/plain; charset=UTF-8", "public, max-age=86400");
     if (url.pathname === "/sitemap.xml")
       return textResponse(await publicSitemap(env), "application/xml; charset=UTF-8", "public, max-age=3600");
+    const seoLanding = seoLandingForPath(url.pathname);
+    if (seoLanding) return seoHtml(request, env, null, seoLanding);
     const eventPage = /^\/events\/([^/]+)$/.exec(url.pathname);
     if (eventPage) {
       const eventId = decodeSeoEventId(eventPage[1]);

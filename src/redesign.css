@@ -846,6 +846,13 @@ footer small {
   color: #aeb5bc;
 }
 
+.footer-discovery {
+  color: #d8dde2;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* Detail: decision-first layout. */
 .detail-dialog {
   width: min(1040px, calc(100vw - 40px));
