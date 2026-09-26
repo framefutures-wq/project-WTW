@@ -1333,3 +1333,14 @@ UI 기준:
 - Regression coverage locks homepage, landing, event image, and image-less encoded municipal event fallback behavior.
 - No D1, ingestion, Cron, Registry, municipal source, or public API change.
 - Production deploy + direct verification of `/galteum-share.png` and page OG tags is still required before this promotion-share task is closed.
+
+
+## 2026-09-26 — social share preview production verification complete
+
+- Social share preview changes were deployed from main `c6216f810b61ed8ca9a80e1d759f0f566f40f8a9`.
+- Production Worker version: `1410e37d-27b5-40e2-a090-de61c4d20a8c`.
+- Production smoke PASS.
+- `https://galteum.com/galteum-share.png` returns HTTP 200 with `content-type: image/png`.
+- Homepage production HTML emits expected Open Graph metadata including title, description, site_name, 1200x630 share image, alt text, and `twitter:card=summary_large_image`.
+- `/weekend/seoul` production HTML emits the same complete social-preview image metadata with landing-specific title/description.
+- Social share preview bounded task is fully closed in production.
