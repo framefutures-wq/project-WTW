@@ -37,7 +37,9 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   const flowerData = await (await flowerResponse).json();
   expect(flowerData.total).toBe(1);
   await expect(page.locator(".event-card")).toHaveCount(1);
-  await page.getByRole("button", { name: "가을빛 꽃 산책 상세 보기" }).click();
+  const flowerCardLink = page.getByRole("link", { name: "가을빛 꽃 산책 상세 보기" });
+  await expect(flowerCardLink).toHaveAttribute("href", /^\/events\//);
+  await flowerCardLink.click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(
     page
@@ -149,7 +151,7 @@ test("데스크톱 스크롤 상단 탐색은 검색과 지역·카테고리가 
 
 test("상세는 핵심 일정·장소를 소개보다 먼저 보여준다", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".event-card").first().getByRole("button").click();
+  await page.locator(".event-card").first().getByRole("link").click();
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
   await expect(dialog.locator(".detail-primary-facts")).toBeVisible();
   await expect(dialog.locator(".detail-primary-fact").first()).toContainText("일정");
@@ -178,7 +180,7 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   await expect(page.locator(".region-quick-trigger")).not.toBeVisible();
   await expect(page.locator(".category-quick-trigger")).not.toBeVisible();
 
-  const firstCardButton = page.locator(".event-card").first().getByRole("button");
+  const firstCardButton = page.locator(".event-card").first().getByRole("link");
   await firstCardButton.click();
 
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
@@ -212,7 +214,7 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
 test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 눌리지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 800 });
   await page.goto("/");
-  await page.locator(".event-card").first().getByRole("button").click();
+  await page.locator(".event-card").first().getByRole("link").click();
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
   await expect(dialog).toBeVisible();
 
@@ -239,7 +241,7 @@ test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 �
 test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된다", async ({ page }) => {
   await page.setViewportSize({ width: 470, height: 760 });
   await page.goto("/");
-  await page.locator(".event-card").first().getByRole("button").click();
+  await page.locator(".event-card").first().getByRole("link").click();
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
   await expect(dialog).toBeVisible();
 
@@ -264,7 +266,7 @@ test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된�
 test("상세 대표이미지는 세로 포스터여도 과도하게 늘어나지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
-  await page.locator(".event-card").first().getByRole("button").click();
+  await page.locator(".event-card").first().getByRole("link").click();
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
   const scene = dialog.locator(".scene-detail");
   await expect(scene).toBeVisible();
@@ -279,7 +281,7 @@ test("상세 대표이미지는 세로 포스터여도 과도하게 늘어나지
 test("모바일 상세 대표이미지는 전체폭 4대3 프레임 안에서 표시된다", async ({ page }) => {
   await page.setViewportSize({ width: 470, height: 760 });
   await page.goto("/");
-  await page.locator(".event-card").first().getByRole("button").click();
+  await page.locator(".event-card").first().getByRole("link").click();
   const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
   const scene = dialog.locator(".scene-detail");
   const box = await scene.boundingBox();
