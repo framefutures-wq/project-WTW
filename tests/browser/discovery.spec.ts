@@ -291,6 +291,34 @@ test("홈 벤치마크 정리는 추천 박스를 걷어내고 카드 메타를 
   ).toBe(true);
 });
 
+test("홈 카테고리와 날짜 컨트롤은 보조 설명 없이 짧은 라벨만 유지한다", async ({ page }) => {
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.goto("/");
+
+  await expect(page.getByText("빠르게 둘러보기", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("관심 있는 주제를 누르면 바로 골라드려요.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("모든 행사", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("시장 · 푸드", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("지금 떠나볼까?", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("기다려온 쉬는 날", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("원하는 날을 골라요", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("누구와 · 알림", { exact: true })).toHaveCount(0);
+
+  const quickHeight = await page.locator(".quick-category").first().evaluate((el) =>
+    parseFloat(getComputedStyle(el).height),
+  );
+  expect(quickHeight).toBeLessThanOrEqual(50);
+
+  const periodHeight = await page.locator(".period").first().evaluate((el) =>
+    parseFloat(getComputedStyle(el).height),
+  );
+  expect(periodHeight).toBeLessThanOrEqual(44);
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
 test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByLabel("상단 행사 이름 또는 장소 검색")).toHaveCount(0);
