@@ -1298,3 +1298,12 @@ UI 기준:
 - 390px mobile detail/landing checks passed; no promotion-blocking horizontal overflow remained.
 - Warnings: 17 total. Sixteen were `source_fetch_error` from the GitHub runner while probing external official pages; these are treated as external-network/probe warnings, not confirmed event-data defects. One warning was `2026 수원화성 미디어아트` with event.checked_at roughly 150h old and remains a freshness item for routine monitoring.
 - Promotion readiness gate is now passed for broad promotion, with normal post-launch monitoring required. SEO/indexing and the Sep 27 municipal all-35 natural-run verification remain separate lanes.
+
+
+## 2026-09-26 — Search Console/indexing readiness audit
+
+- Public search probe for `site:galteum.com` returned no visible indexed results at audit time. This is not a definitive Search Console index verdict, but indicates no obvious public search presence yet.
+- Technical indexing prerequisites in production code are already present: canonical URLs, robots.txt with sitemap, sitemap.xml, crawlable home→detail links, Event JSON-LD, and one indexable pilot landing at `/weekend/seoul`.
+- Repository has Naver site verification meta but no Google site verification meta. This does not imply Search Console is unverified because a Google Domain property should normally be verified by DNS TXT/CNAME and does not require an HTML meta tag.
+- Next operational gate is Search Console account/property verification plus sitemap submission and URL Inspection for `/`, `/weekend/seoul`, and representative event detail URLs.
+- No code change is required before Search Console setup. Do not add a Google verification meta token unless the user chooses URL-prefix HTML-tag verification and provides the exact token.
