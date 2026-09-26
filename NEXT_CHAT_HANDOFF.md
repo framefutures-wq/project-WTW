@@ -1413,3 +1413,22 @@ UI 기준:
 - UI browser smoke #109 SUCCESS; Project checks #639 SUCCESS.
 - No D1/API/ingestion/municipal/SEO-route/detail-page changes.
 - Production deploy + desktop/mobile visual verification remain required before closing this bounded task.
+
+
+## 2026-09-26 — home card / section hierarchy production verification complete
+
+- Main `a44a0ab5618844eee5bfea3846f4ca4a8855f8a9` deployed to production.
+- Production Worker version: `04accdb5-c6da-4c35-8069-2249755d92aa`.
+- Production smoke PASS.
+- Desktop 1365px verification:
+  - document scrollWidth = viewport = 1365
+  - featured padding-top 22px / radius 22px / warm-white background live
+  - all-events padding-top 34px / divider 1px live
+  - featured card title 18px / weight 800
+  - date weight 750
+  - featured grid remains 4 columns
+- Mobile 390px verification:
+  - document scrollWidth = viewport = 390
+  - featured grid remains 2 columns
+  - featured card title size 14px
+- Therefore the home card/section hierarchy task is fully closed in production without layout regression.
