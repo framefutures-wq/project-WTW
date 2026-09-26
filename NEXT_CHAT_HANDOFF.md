@@ -1267,3 +1267,19 @@ UI 기준:
 - UI browser smoke SUCCESS and Project checks SUCCESS. PR #34 merged to main as `2d7affe25555e0205791d801785a07da404fd172`.
 - No D1, ingestion, Cron, Registry, collector, API, or SEO-route change.
 - Promotion blocker #2 still needs authenticated production deploy + smoke + direct 390px production verification before the promotion readiness gate can be re-evaluated.
+
+
+## 2026-09-26 — promotion blocker #2 production verification complete
+
+- PR #34 mobile event-grid overflow fix was deployed from main `5f9fc492aa9bf9592332c9df43518216416aabd3`.
+- Production Worker version: `c855645d-f173-41aa-9d3a-cfba2d264371`.
+- Production smoke PASS.
+- Direct 390x844 Playwright check on `https://galteum.com/weekend/seoul` returned:
+  - HTTP 200
+  - viewport 390
+  - document scrollWidth 390
+  - 12 event cards
+  - cardsFit=true
+- Promotion blocker #2 is fully closed in production.
+- Promotion blocker #1 was already closed in production with HTTP 200 + correct canonical for the encoded Seoul Hangang municipal event detail.
+- Therefore the two concrete blockers found by the 30-event pre-promotion QA are both closed. A final read-only promotion QA rerun is the remaining gate before starting broad promotion.
