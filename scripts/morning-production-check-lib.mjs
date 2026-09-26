@@ -93,13 +93,18 @@ export function municipalStateSql(startedAt) {
 export function municipalPublishedSql(startedAt) {
   assertIsoTimestamp(startedAt);
   return assertReadOnlySql(`
-    WITH registry(source_key) AS (VALUES ${registryValues()})
-    SELECT registry.source_key, COUNT(events.id) AS published_or_revalidated
+    WITH registry(source_key) AS (VALUES ${registryValues()}), published AS (
+      SELECT state.source_key, COUNT(events.id) AS published_or_revalidated
+      FROM municipal_candidate_state state
+      JOIN events ON events.id=state.candidate_id
+      WHERE state.source_key IN (SELECT source_key FROM registry)
+        AND julianday(events.updated_at)>=julianday('${startedAt}')
+      GROUP BY state.source_key
+    )
+    SELECT registry.source_key,
+      COALESCE(published.published_or_revalidated,0) AS published_or_revalidated
     FROM registry
-    LEFT JOIN events
-      ON events.primary_source_id LIKE 'municipal-source-municipal-' || registry.source_key || '-%'
-      AND julianday(events.updated_at)>=julianday('${startedAt}')
-    GROUP BY registry.source_key
+    LEFT JOIN published USING(source_key)
     ORDER BY registry.source_key
   `);
 }
