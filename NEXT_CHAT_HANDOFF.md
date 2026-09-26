@@ -1161,3 +1161,12 @@ UI 기준:
 - Regression coverage forbids LIKE/GLOB in this verifier query.
 - No Worker/runtime behavior, D1 schema/data, Cron, secrets, ingestion, or production deployment changed. No redeploy is required.
 - A verifier run on 2026-09-26 will still reflect the latest base run from 10:00 KST, which occurred before the +23 production deploy; therefore incomplete 35-source outcomes are expected until the 2026-09-27 10:00 KST natural base run.
+
+
+## 2026-09-26 — all-35 verifier compatibility confirmed against production D1
+
+- After PR #29, `npm run verify:morning:prod -- --remote` completed successfully against production D1; the prior `LIKE or GLOB pattern too complex` error is resolved.
+- The latest base run inspected was still 2026-09-26 10:01 KST (`2026-09-26T01:01:23.653Z`), which occurred before the +23 production deploy.
+- Therefore the all-source summary correctly reported expected 35 / reported 12 / ok 9 / error 3 / missing 23. The 23 missing keys are exactly the post-deploy batch and are not treated as current failures yet.
+- The three legacy sources 과천·하남·상주 remain explicit `source_error` in that pre-deploy base run.
+- Next decisive checkpoint remains the 2026-09-27 10:00 KST natural base run. After it finishes, rerun the same read-only verifier and classify only sources that are still error/missing/zero-observed in that new base.
