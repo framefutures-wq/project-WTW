@@ -1544,92 +1544,27 @@ UI 기준:
 - No redeploy is required for this documentation-only closure.
 
 
-## 2026-09-27 — home typography rhythm cleanup merged, production pending
+## 2026-09-27 — home typography rhythm production verification complete
 
-- Follow-up benchmarking against current Klook/Fever/GetYourGuide discovery/search pages showed another common pattern: category/date controls use short labels with minimal explanatory copy, letting content cards carry the page.
-- PR #43 `style: tighten home typography rhythm` merged as `e1c5dd92d7b52b28cf083e64a4ffd502326ea457`.
-- Changes are bounded to home control text density:
-  - removed `빠르게 둘러보기` kicker and explanatory sentence;
-  - quick-category cards now show symbol + category label only (no per-category hint line);
-  - date preset buttons now show icon + short label only (no explanatory subtitle);
-  - custom date button removed its helper subtitle;
-  - advanced-filter summary removed `누구와 · 알림` helper copy;
-  - desktop quick-category target reduced to 44px and date controls to ~40px while preserving tap/readability constraints;
-  - existing #F45A2A benchmark palette and all filter/data behavior remain unchanged.
-- First UI run failed only because an older regression still required >=46px category height; contract was updated to the new intentional 44px compact target.
-- Final UI browser smoke #122 SUCCESS; Project checks #693 SUCCESS.
-- Production deploy + desktop/mobile direct verification remain required before closing this bounded task.
-
-
-## 2026-09-27 — NEW CHAT RESUME CHECKPOINT (conversation limit handoff)
-
-**Resume trigger:** user will open a new chat and say `갈틈작업이어하자`.
-
-Before doing any work in the new chat, follow the project start rule exactly:
-1. read `AGENTS.md`
-2. read `PROJECT_CONTEXT.md`
-3. read `NEXT_CHAT_HANDOFF.md`
-4. read `docs/WORKING_RULES.md`
-5. because this is active UI work, read `docs/UI_V2_DIRECTION.md`
-6. then confirm latest `origin/main`, recent commit, working tree, and uncommitted changes.
-
-### Exact current state
-
-- Latest checked `origin/main`: `923472d65fa8a59acb1610f009b4cb9b48b60f15` at handoff time. Re-check in the new chat and trust newer main if it changed.
-- PR #43 `style: tighten home typography rhythm` is **MERGED**.
+- PR #43 `style: tighten home typography rhythm` is merged and production-closed.
   - merge commit: `e1c5dd92d7b52b28cf083e64a4ffd502326ea457`
-  - final branch head: `63119c928d65cb4f620891d072010674453e364c`
-  - UI browser smoke #122: **SUCCESS**
-  - Project checks #693: **SUCCESS**
-- PR #43 changes are **NOT YET CONFIRMED DEPLOYED TO PRODUCTION**. Do not call this task production-complete until deploy + public verification pass.
-- Previous production baseline is still the benchmark visual version from main `7bd0a2651dfa84f5dff102160a0c2c3fb1f3a259`, Worker `0e30b84c-3549-4fac-b1cd-d6f7e93b8582`, with desktop/mobile direct verification already passed.
+  - UI browser smoke #122: SUCCESS
+  - Project checks #693: SUCCESS
+- Production deployment used main `923472d65fa8a59acb1610f009b4cb9b48b60f15`.
+- Production Worker version: `77db54bf-267e-4eed-a4d5-a2f556ad1d86`.
+- Production smoke PASS.
+- Direct verification:
+  - desktop 1365px: `scrollWidth=1365`, quick category 44px, period 40px;
+  - mobile 390px: `scrollWidth=390`, quick category 50px, period 42px;
+  - removed quick/category/date/filter helper copy is absent;
+  - mobile featured grid remains 2 columns (`169px 169px`).
+- No D1, ingestion, municipal, SEO route, detail-page or API behavior changed.
+- Do not redeploy for this documentation-only closure.
 
-### What PR #43 changes
+### Current continuation point
 
-- Removes extra helper copy from home discovery controls after benchmarking current Klook/Fever/GetYourGuide patterns.
-- Quick category area:
-  - removes `빠르게 둘러보기` kicker
-  - removes explanatory sentence
-  - category tiles become symbol + short label only
-- Date controls:
-  - remove emotional/helper subtitles
-  - keep only `오늘 / 이번 주말 / 다음 주말 / 날짜 선택`
-- Advanced-filter summary:
-  - removes `누구와 · 알림` helper line
-- Density targets:
-  - desktop quick category ~44px
-  - desktop date controls ~40px
-  - mobile quick category ~50px
-  - mobile date controls ~42px
-- Existing benchmark palette remains unchanged:
-  - warm ivory neutral-first canvas
-  - discovery orange `#F45A2A`
-  - deep-green trust state
-- No D1, ingestion, municipal, SEO route, detail-page or API behavior change.
-
-### Immediate next bounded task
-
-**Deploy PR #43 main to production and verify only this typography/control-density change.**
-
-Do not start another UI redesign before this checkpoint is closed.
-Verification should cover at minimum:
-- production smoke PASS
-- desktop no horizontal overflow
-- mobile 390px no horizontal overflow
-- quick-category helper copy absent
-- date helper subtitles absent
-- advanced-filter helper line absent
-- quick-category / period controls remain readable and fit their rows
-- mobile card layout remains 2 columns
-
-After production verification passes:
-1. mark PR #43 typography-rhythm task production-complete in `NEXT_CHAT_HANDOFF.md` and `PROJECT_CONTEXT.md` if state changed;
-2. do **not** redeploy for docs-only closure;
-3. then ask for / inspect the new production screenshot and continue benchmark comparison only from remaining visible issues.
-
-### Independent lanes / do not lose
-
-- Active promotion remains **paused** until the user finishes UI review.
-- Sep 27 municipal all-35 natural-run checkpoint is an independent ingestion-ops lane and becomes due after 10:00 KST; it does not block UI or promotion readiness.
-- Do not repeat completed home tasks: shared rails, card hierarchy, trust/footer polish, duplicate-theme cleanup, benchmark palette cleanup are already production-closed.
+- Completed home tasks must not be repeated: shared rails, card/recommendation hierarchy, trust/footer polish, duplicate-theme cleanup, benchmark palette cleanup, and typography/control-density cleanup are all production-closed.
+- Active promotion remains paused until the user finishes the current UI review.
+- Do not start another speculative UI redesign. Continue UI work only from a new production screenshot or a concrete visible issue.
+- Independent lane: the 2026-09-27 municipal all-35 natural-run checkpoint becomes due after the 10:00 KST base Cron; it does not block the closed UI task.
 - Do not mass-create SEO landing pages or reopen TourAPI detail/recovery without new evidence.
