@@ -1170,3 +1170,13 @@ UI 기준:
 - Therefore the all-source summary correctly reported expected 35 / reported 12 / ok 9 / error 3 / missing 23. The 23 missing keys are exactly the post-deploy batch and are not treated as current failures yet.
 - The three legacy sources 과천·하남·상주 remain explicit `source_error` in that pre-deploy base run.
 - Next decisive checkpoint remains the 2026-09-27 10:00 KST natural base run. After it finishes, rerun the same read-only verifier and classify only sources that are still error/missing/zero-observed in that new base.
+
+
+## 2026-09-26 — SEO internal-link fix merged / production deploy checkpoint
+
+- SEO practical audit found the home event cards were button-only navigation, so crawlers had no ordinary internal `href` path from the home results to canonical event detail pages; discovery depended mostly on sitemap/JS.
+- PR #30 `fix: expose crawlable home event links` changed home event cards to canonical `/events/:id` anchors while preserving the existing SPA detail dialog for normal left-clicks. Modified clicks/new tabs follow the real detail URL.
+- Existing detail exploration cards were already canonical anchors; this closes the main home-to-detail internal-link gap without changing visual design.
+- Project checks and UI browser smoke both passed. PR #30 merged to main as `3de8d6f270cec27461d341a599d3a83aef787d32`.
+- No municipal ingestion, D1, Cron, Registry, API contract, or production data changed.
+- This frontend/runtime change still needs one verified production deploy and production smoke from the authenticated Codespaces environment before the SEO task is closed.
