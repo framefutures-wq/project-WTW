@@ -79,6 +79,23 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   });
   expect(errors).toEqual([]);
 });
+test("서울 이번 주말 SEO landing은 같은 필터 결과를 바로 보여준다", async ({ page }) => {
+  const responsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("period") === "weekend" &&
+      url.searchParams.get("region") === "서울"
+    );
+  });
+  await page.goto("/weekend/seoul");
+  await responsePromise;
+  await expect(page).toHaveURL(/\/weekend\/seoul$/);
+  await expect(page.getByLabel("지역", { exact: true })).toHaveValue("서울");
+  await expect(page.locator(".active-filter")).toContainText(["서울"]);
+  await expect(page.locator(".event-card").first()).toBeVisible();
+});
+
 test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, context }) => {
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: 37.5665, longitude: 126.978 });
