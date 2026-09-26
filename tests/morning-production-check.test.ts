@@ -41,5 +41,5 @@ test("source outcome summary reports ok, errors, and missing Registry sources", 
     { source: errorKey, candidates: 0, reason: "network_or_timeout" },
   ]);
   assert.equal(summary.missing.length, 33);
-  assert.ok(summary.missing.includes(productionMunicipalKeys.at(-1)));
+  assert.ok(summary.missing.includes(productionMunicipalKeys[productionMunicipalKeys.length - 1]));
 });
