@@ -1119,3 +1119,12 @@ UI 기준:
 - 누적 신규 +23 municipal source는 아직 production 미배포 상태다.
 - 다음 단계는 사용자 Codespaces/Cloudflare 인증 환경에서 기존 Worker `weekend-mwohae`에 production deploy 1회 수행 후 galteum.com smoke를 확인하는 것.
 - 신규 Cloudflare resource, D1 migration/write, Cron 변경, secret 변경은 필요 없다. 다음 자연 10:00 KST Cron에서 35 source의 `source_outcomes`를 read-only로 검증한다.
+
+
+## 2026-09-26 — municipal detail route hotfix merged
+
+- +23 municipal source production deployment itself succeeded; deployed Worker version before hotfix redeploy is `b722c4a5-70aa-43d3-ba70-3b0405c2ef0a`.
+- Post-deploy production smoke exposed a real municipal detail-route bug: event IDs containing URL punctuation/Korean text were passed to `/api/events/:id` without safe percent-encoding and some public detail routes rejected those IDs, causing 404 for affected municipal events.
+- PR #27 `fix: support municipal event ids in detail routes` passed both Project checks and UI browser smoke and was merged to main as `2033d54b457d4b190b1df66a1d0828bb2240e2b8`.
+- The fix changes URL encoding/decoding/validation and related tests only; it does not change D1 rows/schema, Cron, secrets, ingestion policy, or Cloudflare resources.
+- Next checkpoint: pull latest main in Codespaces, run one verified production redeploy, then run production smoke. If smoke passes, close the +23 deploy stabilization phase and wait for the next natural 10:00 KST Cron to validate all 35 Registry sources via `source_outcomes`.
