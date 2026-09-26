@@ -753,3 +753,10 @@ UI benchmark:
 - Active promotion is temporarily paused by user decision.
 - Current priority is production UI polish before resuming the 7-day Threads acquisition experiment.
 - Promotion-readiness technical gate remains passed; this pause is a product/UI quality decision, not a reliability rollback.
+
+
+## 36. 2026-09-26 — home hierarchy / shared rail production complete
+
+- Production home now uses a single visible horizontal rail across hero, trust/principle surface, and footer on desktop; mobile content/footer rails also match.
+- Desktop hero target is live at 220px with a larger primary search treatment; production smoke and overflow checks pass.
+- This UI polish task is closed in production. Active promotion remains paused until the remaining home UI review is finished.
