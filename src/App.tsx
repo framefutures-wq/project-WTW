@@ -1316,6 +1316,7 @@ export default function App() {
             <span>
               <MapPin size={13} />
               {event.region}
+              {event.venue ? ` · ${event.venue}` : ""}
             </span>
           </div>
           {sort === "recommended" &&
@@ -1331,7 +1332,6 @@ export default function App() {
               ) : null;
             })()}
           <h3>{event.title}</h3>
-          <p className="venue">{event.venue}</p>
           <p className="event-date">
             <CalendarDays size={14} />
             {formatEventDateLabel({
@@ -1870,7 +1870,7 @@ export default function App() {
           <div className="result-heading">
             <div>
               <span className="section-kicker">
-                {discoveryMode ? "갈틈 추천" : "찾은 행사"}
+                {discoveryMode ? "이번 주말" : "찾은 행사"}
               </span>
               <h2>
                 {discoveryMode ? "이번 주말, 여기 어때요?" : selectedRangeLabel}{" "}
@@ -1973,7 +1973,7 @@ export default function App() {
                 <div className="subsection-heading">
                   <div>
                     <span>갈틈 추천</span>
-                    <h3>이번 주말 먼저 볼 곳</h3>
+                    <h3>먼저 볼 곳</h3>
                   </div>
                   <p>사진부터 가볍게 둘러보세요.</p>
                 </div>
@@ -1986,7 +1986,7 @@ export default function App() {
               <section className="all-events-section" aria-label="더 둘러볼 행사">
                 <div className="subsection-heading">
                   <div>
-                    <span>더 보기</span>
+                    <span>전체 행사</span>
                     <h3>더 둘러보기</h3>
                   </div>
                   <p>{selectedRangeLabel}</p>
