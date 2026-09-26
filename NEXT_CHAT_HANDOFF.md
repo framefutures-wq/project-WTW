@@ -1253,3 +1253,17 @@ UI 기준:
 - No D1, ingestion, Cron, Registry, collector, or API contract changes.
 - Production deploy + direct verification of `서울함공원 한가위 특별행사` public URL (HTTP 200 + canonical) is still required before blocker #1 is closed.
 - Promotion blocker #2 remains: 390px mobile event-grid horizontal overflow (~42px).
+
+
+## 2026-09-26 — promotion blockers status: #1 production closed, #2 merged / deploy checkpoint
+
+- Promotion blocker #1 (`서울함공원 한가위 특별행사` encoded municipal public detail 404) is fully closed in production.
+  - deployed main: `b83c10bb68932cffa214a6d01d6aa294e8f543cc`
+  - production Worker: `41d96f2e-a713-49e2-aba2-b3fc3e358d40`
+  - production smoke PASS
+  - affected public detail URL returned HTTP 200 and emitted the correct percent-encoded canonical URL.
+- Promotion blocker #2 root cause: mobile two-column grid items kept intrinsic minimum width because `.event-card`/inner blocks used default min-width behavior; at 390px event cards expanded to ~220px and pushed document width to ~432px.
+- PR #34 `fix: prevent mobile event grid overflow` adds `min-width:0` to the event card shrink chain and a 390px `/weekend/seoul` browser regression requiring document width <= viewport and every event card inside the viewport.
+- UI browser smoke SUCCESS and Project checks SUCCESS. PR #34 merged to main as `2d7affe25555e0205791d801785a07da404fd172`.
+- No D1, ingestion, Cron, Registry, collector, API, or SEO-route change.
+- Promotion blocker #2 still needs authenticated production deploy + smoke + direct 390px production verification before the promotion readiness gate can be re-evaluated.
