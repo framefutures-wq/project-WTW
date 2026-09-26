@@ -1380,3 +1380,21 @@ UI 기준:
 - UI browser smoke #107 SUCCESS; Project checks #630 SUCCESS.
 - No D1/API/SEO route/municipal/detail-page change.
 - Production deploy and public desktop/mobile visual verification are still required before this UI task is closed.
+
+
+## 2026-09-26 — home hierarchy + horizontal rail production verification complete
+
+- Main `ae73de30adaa9d8b1d546e5ad959c503d67640a2` deployed to production.
+- Production Worker version: `000a38e2-dab1-49e1-bef7-e21f60ee0f87`.
+- Production smoke PASS.
+- Desktop 1365px verification:
+  - document scrollWidth = viewport = 1365
+  - hero = x 67 / width 1232 / height 220
+  - principle = x 67 / width 1232
+  - footer = x 67 / width 1232
+  - hero search = width 499 / height 52
+- Mobile 390px verification:
+  - document scrollWidth = viewport = 390
+  - principle = x 16 / width 358
+  - footer = x 16 / width 358
+- Therefore the user-reported top/bottom width mismatch is closed in production and the stronger first-screen hierarchy is live without horizontal overflow.
