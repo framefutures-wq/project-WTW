@@ -2129,8 +2129,8 @@ export default function App() {
           서울 이번 주말 행사
         </a>
         <small>
-          운영 준비 중 ·{" "}
           {mode === "sample" ? "샘플 데이터 모드" : "공식 출처 기반"}
+          {" · "}확인된 정보만 안내합니다.
         </small>
       </footer>
       <dialog
