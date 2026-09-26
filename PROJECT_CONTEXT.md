@@ -702,3 +702,11 @@ UI benchmark:
 - 홈에서 해당 landing으로 가는 crawlable footer anchor를 제공한다.
 - Pilot 성능/색인 상태를 확인한 뒤에만 다른 지역·기간 landing 확장을 결정한다. 비슷한 얇은 페이지를 대량 생성하지 않는다.
 - Municipal 35-source natural validation과는 독립적인 SEO lane으로 운영한다.
+
+
+## 30. 2026-09-26 — promotion readiness gate
+
+- 본격 홍보 전에는 production 실사용 QA를 통과해야 한다. 단순 smoke/CI 성공만으로 promotion-ready로 간주하지 않는다.
+- 2026-09-26 첫 production QA: 30 events / 15 regions. Detail API와 목록↔상세 데이터 계약은 전반적으로 안정적이었고 source URL 30/30 reachable.
+- Promotion blocker 두 개가 확인됐다: (1) URL 문자를 포함한 municipal event ID의 public detail page 404, (2) 390px mobile production event-grid의 약 42px horizontal overflow.
+- 두 blocker 수정 및 production 재검증 전에는 대규모 홍보를 시작하지 않는다. SEO/indexing 작업은 별도 lane으로 유지 가능하다.
