@@ -22,6 +22,7 @@ if (
   throw new Error("--limit must be an integer between 1 and 5000");
 const exampleLimit = Number(optionValue(args, "--examples") ?? "8");
 const includeAudited = args.includes("--include-audited");
+const summaryOnly = args.includes("--summary");
 if (!Number.isInteger(exampleLimit) || exampleLimit < 1 || exampleLimit > 25)
   throw new Error("--examples must be an integer between 1 and 25");
 
@@ -222,9 +223,13 @@ const output = {
   by_official_link_quality: report.by_official_link_quality,
   by_public_quality_risk: report.by_public_quality_risk,
   rollout: report.rollout,
-  examples: report.examples,
-  official_link_gaps,
-  public_quality_risks,
+  ...(!summaryOnly
+    ? {
+        examples: report.examples,
+        official_link_gaps,
+        public_quality_risks,
+      }
+    : {}),
   ...(includeAudited ? { audited: report.audited } : {}),
 };
 
