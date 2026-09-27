@@ -100,6 +100,81 @@ test("extracts explicit table labels and rejects off-site body images", () => {
   ]);
 });
 
+test("extracts current Suwon-style detail while rejecting generic site chrome", () => {
+  const html = `
+    <html>
+      <head>
+        <meta property="og:image" content="/inc/img/common/swcf_img.jpg">
+      </head>
+      <body>
+        <h1>수문장 마켓 페스티벌</h1>
+        <img src="/inc/img/common/all_menu_show.gif" alt="전체메뉴">
+        <img
+          src="/upload/event/sumunjang-poster.jpg"
+          alt="수원형 문화직거래 마켓 수문장 페스티벌 홍보 이미지"
+          width="900"
+          height="1200"
+        >
+        <table>
+          <tr><th>기간</th><td>2026-07-11 ~ 2026-10-31</td></tr>
+          <tr><th>시간</th><td>9월 16:00~21:00 / 10월 15:00~20:00</td></tr>
+          <tr><th>장소</th><td>화홍사랑채 앞 광장</td></tr>
+          <tr><th>이용료</th><td>무료</td></tr>
+          <tr><th>문의처</th><td>031-290-3583</td></tr>
+        </table>
+        <h2>행사개요</h2>
+        <p>매주 토요일, 우리 동네 로컬 크리에이터를 만나는 공식 문화 직거래 행사입니다.</p>
+      </body>
+    </html>
+  `;
+  const rich = extractMunicipalRichDetail(
+    "https://www.swcf.or.kr/?idx=3011&p=29_view",
+    html,
+  );
+
+  assert.match(rich.summary ?? "", /로컬 크리에이터/);
+  assert.deepEqual(
+    rich.operating_hours.map((row) => [row.start_time, row.end_time]),
+    [
+      ["16:00", "21:00"],
+      ["15:00", "20:00"],
+    ],
+  );
+  assert.equal(rich.price_text, "무료");
+  assert.equal(rich.contact_phone, "031-290-3583");
+  assert.deepEqual(rich.images.map((image) => image.url), [
+    "https://www.swcf.or.kr/upload/event/sumunjang-poster.jpg",
+  ]);
+});
+
+test("extracts Korean-hour ranges and time-bearing program lines from an exact Hangang page", () => {
+  const html = `
+    <h1>2026 차 없는 잠수교 뚜벅뚜벅 축제 (하반기)</h1>
+    <dl>
+      <dt>시간</dt><dd>14시~22시</dd>
+      <dt>이용요금</dt><dd>무료</dd>
+    </dl>
+    <h2>상세내용</h2>
+    <p>가을밤 한강에서 즐기는 차 없는 잠수교 축제입니다.</p>
+    <p>문화예술공연 1 19:30 ~ 20:30</p>
+    <p>드론 라이트 쇼 20:30 ~ 20:45</p>
+    <p>문화예술공연 2 20:45 ~ 21:15</p>
+  `;
+  const rich = extractMunicipalRichDetail(
+    "https://hangang.seoul.go.kr/www/eventMng/detail.do?evntSn=451",
+    html,
+  );
+
+  assert.deepEqual(
+    rich.operating_hours.map((row) => [row.start_time, row.end_time]),
+    [["14:00", "22:00"]],
+  );
+  assert.deepEqual(
+    rich.programs.map((program) => program.name),
+    ["문화예술공연 1", "드론 라이트 쇼", "문화예술공연 2"],
+  );
+});
+
 test("rich text removes scripts and preserves block boundaries", () => {
   assert.equal(
     municipalRichText(
