@@ -1620,4 +1620,10 @@ UI 기준:
 - Each shard has a bounded municipal external-fetch budget; publication mutation caps remain globally equivalent to the previous daily max 10 as 4 + 3 + 3.
 - Morning production verifier now aggregates municipal source outcomes across base and detail sync-run messages.
 - No new Cloudflare resource, cron trigger, D1 migration, UI or event truth policy change.
-- Production deploy is still required. Do not report the sharded behavior as live until deployment + smoke pass.
+- Production deployment completed from main `2b4be74ccf2132fa305775a4c392f0be80912abf`.
+- Production Worker version: `7303f5d9-fce0-4b4f-83b4-187d23517626`.
+- Production smoke PASS: D1, date ranges, filters, pets, distance sort, pagination, detail, cancellation exclusion, input validation, SQL binding, Static Assets and SPA.
+- The sharded behavior is now live in production.
+- This deployment happened after the Sep 27 10:00 and 11:00 KST shard windows, so Sep 27 cannot provide a complete post-fix 35-source natural-run proof even if the 11:45 shard runs.
+- First complete natural production checkpoint: Sep 28 after 11:45 KST. Run the read-only morning/production verifier after all three shard windows have completed.
+- Do not manually trigger municipal ingestion merely to backfill Sep 27; wait for the complete Sep 28 natural cycle unless a new concrete outage requires recovery.
