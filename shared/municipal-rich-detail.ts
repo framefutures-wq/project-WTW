@@ -62,9 +62,24 @@ const compact = (value: string) =>
   municipalRichText(value).replace(/\s+/g, " ").trim();
 
 const normalizedLabel = (value: string) =>
-  compact(value).replace(/[\s:：|·ㆍ]/g, "").toLocaleLowerCase();
+  value
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[\s:：|·ㆍ]/g, "")
+    .toLocaleLowerCase();
 
 type Pair = { label: string; value: string };
+type HeadingEntry = {
+  level: number;
+  title: string;
+  start: number;
+  end: number;
+};
+type RichParseContext = {
+  text: string;
+  pairs: Pair[];
+  headings: HeadingEntry[];
+};
 
 function explicitPairs(html: string): Pair[] {
   const pairs: Pair[] = [];
@@ -103,20 +118,15 @@ function explicitPairs(html: string): Pair[] {
   return pairs;
 }
 
-function firstPairValue(html: string, labels: readonly string[]) {
+function firstPairValue(context: RichParseContext, labels: readonly string[]) {
   const wanted = new Set(labels.map(normalizedLabel));
-  for (const pair of explicitPairs(html))
+  for (const pair of context.pairs)
     if (wanted.has(normalizedLabel(pair.label))) return pair.value;
   return null;
 }
 
 function headingEntries(html: string) {
-  const rows: Array<{
-    level: number;
-    title: string;
-    start: number;
-    end: number;
-  }> = [];
+  const rows: HeadingEntry[] = [];
   const re = /<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1\s*>/gi;
   for (const match of html.matchAll(re))
     rows.push({
@@ -133,10 +143,10 @@ const genericHeadings =
 
 function sectionText(
   html: string,
+  headings: readonly HeadingEntry[],
   titles: RegExp,
   minimumLength = 30,
 ): string | null {
-  const headings = headingEntries(html);
   for (let index = 0; index < headings.length; index += 1) {
     const heading = headings[index];
     if (!titles.test(heading.title)) continue;
@@ -176,9 +186,10 @@ function metaContent(html: string, key: string) {
   return null;
 }
 
-function extractSummary(html: string) {
+function extractSummary(html: string, context: RichParseContext) {
   const section = sectionText(
     html,
+    context.headings,
     /^(?:상세내용|상세 내용|행사소개|행사 소개|행사내용|행사 내용|행사개요|행사 개요|개요|주요내용|주요 내용|행사안내|행사 안내|소개)$/,
   );
   if (section) return section;
@@ -191,7 +202,7 @@ function normalizeTime(hour: string, minute: string) {
   return hour.padStart(2, "0") + ":" + minute.padStart(2, "0");
 }
 
-function extractOperatingHours(html: string): MunicipalRichHours[] {
+function extractOperatingHours(context: RichParseContext): MunicipalRichHours[] {
   const labels = [
     "시간",
     "행사시간",
@@ -201,12 +212,11 @@ function extractOperatingHours(html: string): MunicipalRichHours[] {
     "이용시간",
     "일시",
   ] as const;
-  const text = municipalRichText(html);
   const fallback =
     /(?:^|\n)\s*(?:시간|행사시간|운영시간|공연시간|관람시간|이용시간|일시)\s*[:：]?\s*([^\n]{1,240})/i.exec(
-      text,
+      context.text,
     )?.[1] ?? null;
-  const raw = firstPairValue(html, labels) ?? fallback;
+  const raw = firstPairValue(context, labels) ?? fallback;
   if (!raw) return [];
 
   const ranges = [
@@ -275,7 +285,7 @@ function extractOperatingHours(html: string): MunicipalRichHours[] {
     : [];
 }
 
-function extractPhone(html: string) {
+function extractPhone(context: RichParseContext) {
   const labels = [
     "문의처",
     "문의",
@@ -284,12 +294,11 @@ function extractPhone(html: string) {
     "대표전화",
     "문의전화",
   ] as const;
-  const text = municipalRichText(html);
   const fallback =
     /(?:^|\n)\s*(?:문의처|문의|전화|연락처|대표전화|문의전화)\s*[:：]?\s*([^\n]{1,160})/i.exec(
-      text,
+      context.text,
     )?.[1] ?? null;
-  const raw = firstPairValue(html, labels) ?? fallback;
+  const raw = firstPairValue(context, labels) ?? fallback;
   if (!raw) return null;
   const normal = /\b(?:02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4}\b/.exec(
     raw,
@@ -302,7 +311,7 @@ function extractPhone(html: string) {
 }
 
 
-function extractPrice(html: string) {
+function extractPrice(context: RichParseContext) {
   const labels = [
     "이용요금",
     "이용료",
@@ -313,12 +322,11 @@ function extractPrice(html: string) {
     "참가료",
     "비용",
   ] as const;
-  const text = municipalRichText(html);
   const fallback =
     /(?:^|\n)\s*(?:이용요금|이용료|요금|관람료|입장료|참가비|참가료|비용)\s*[:：]?\s*([^\n]{1,220})/i.exec(
-      text,
+      context.text,
     )?.[1] ?? null;
-  return firstPairValue(html, labels) ?? fallback;
+  return firstPairValue(context, labels) ?? fallback;
 }
 
 function absoluteHttps(pageUrl: string, raw: string) {
@@ -383,8 +391,11 @@ function programMarker(title: string) {
   );
 }
 
-function extractPrograms(html: string): MunicipalRichProgram[] {
-  const headings = headingEntries(html);
+function extractPrograms(
+  html: string,
+  context: RichParseContext,
+): MunicipalRichProgram[] {
+  const headings = context.headings;
   const output: MunicipalRichProgram[] = [];
   const seen = new Set<string>();
 
@@ -439,8 +450,7 @@ function extractPrograms(html: string): MunicipalRichProgram[] {
   }
 
   if (!output.length) {
-    const text = municipalRichText(html);
-    for (const line of text.split("\n").map((value) => value.trim())) {
+    for (const line of context.text.split("\n").map((value) => value.trim())) {
       if (!line || line.length > 180) continue;
       const schedule =
         line.match(
@@ -473,12 +483,20 @@ export function extractMunicipalRichDetail(
   pageUrl: string,
   html: string,
 ): MunicipalRichDetail {
+  // Rich municipal detail pages can be large. Build the expensive whole-page
+  // text/pair/heading views once and share them across field extractors instead
+  // of rescanning the same HTML for every field.
+  const context: RichParseContext = {
+    text: municipalRichText(html),
+    pairs: explicitPairs(html),
+    headings: headingEntries(html),
+  };
   return {
-    summary: extractSummary(html),
-    operating_hours: extractOperatingHours(html),
-    price_text: extractPrice(html),
-    contact_phone: extractPhone(html),
+    summary: extractSummary(html, context),
+    operating_hours: extractOperatingHours(context),
+    price_text: extractPrice(context),
+    contact_phone: extractPhone(context),
     images: extractImages(pageUrl, html),
-    programs: extractPrograms(html),
+    programs: extractPrograms(html, context),
   };
 }
