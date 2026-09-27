@@ -3894,3 +3894,181 @@ footer {
     padding: 11px 12px;
   }
 }
+
+/* Home cards v9: Korea Tourism-inspired poster-first editorial grid. */
+.featured-events {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.featured-events .subsection-heading,
+.all-events-section .subsection-heading {
+  margin-bottom: 18px;
+}
+
+.featured-events .subsection-heading span,
+.all-events-section .subsection-heading span {
+  color: #b84a24;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.featured-events .subsection-heading h3,
+.all-events-section .subsection-heading h3 {
+  margin-top: 4px;
+  color: #171a1d;
+  font-size: 24px;
+  letter-spacing: -1px;
+}
+
+.featured-events .subsection-heading p,
+.all-events-section .subsection-heading p {
+  color: #737b82;
+  font-size: 11px;
+}
+
+.event-grid,
+.featured-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 34px 18px;
+}
+
+.event-card {
+  min-width: 0;
+}
+
+.scene,
+.featured-grid .scene {
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  background: #f2f1ed;
+  outline: 1px solid rgba(23, 26, 29, 0.08);
+  outline-offset: -1px;
+  box-shadow: none;
+}
+
+.scene .scene-image {
+  width: 100%;
+  height: 100%;
+}
+
+.scene .scene-image-foreground {
+  object-fit: cover;
+  object-position: center;
+}
+
+.scene.scene-contain .scene-image-foreground {
+  object-fit: contain;
+  object-position: center;
+  background: #f2f1ed;
+}
+
+.event-card:hover .scene,
+.card-button:focus-visible .scene {
+  transform: none;
+  box-shadow: none;
+}
+
+.card-content {
+  padding: 9px 0 0;
+}
+
+.recommendation-reason {
+  margin-bottom: 5px;
+  color: #c85228;
+  font-size: 10px;
+}
+
+.card-content h3,
+.featured-events .card-content h3 {
+  margin: 0 0 6px;
+  color: #171a1d;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.45px;
+}
+
+.event-date {
+  margin: 0;
+  color: #727a82;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.card-meta {
+  display: none;
+}
+
+.card-bottom {
+  display: none !important;
+}
+
+.card-info-graphic {
+  inset: 0;
+  padding: 18px 14px;
+  justify-content: center;
+  gap: 8px;
+  background: #f4f2ed;
+  text-align: center;
+}
+
+.card-info-graphic::before,
+.card-info-graphic::after,
+.card-info-graphic-label,
+.card-info-graphic-brand {
+  display: none;
+}
+
+.card-info-graphic-facts {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.card-info-graphic-date {
+  color: #1d2329;
+  font-size: clamp(22px, 2vw, 31px);
+  letter-spacing: -0.05em;
+}
+
+.card-info-graphic-meta {
+  color: #69727a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.all-events-section {
+  padding-top: 30px;
+  border-top: 1px solid rgba(23, 26, 29, 0.12);
+}
+
+@media (max-width: 760px) {
+  .event-grid,
+  .featured-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 12px;
+  }
+
+  .scene,
+  .featured-grid .scene {
+    aspect-ratio: 3 / 4;
+    border-radius: 7px;
+  }
+
+  .featured-events .subsection-heading h3,
+  .all-events-section .subsection-heading h3 {
+    font-size: 21px;
+  }
+
+  .card-content h3,
+  .featured-events .card-content h3 {
+    font-size: 13px;
+  }
+
+  .event-date {
+    font-size: 9.5px;
+  }
+}
