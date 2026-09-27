@@ -1816,3 +1816,30 @@ UI 기준:
   2. deploy verified once and smoke;
   3. run `npm run municipal:once` once;
   4. paste the final JSON/progress output. If a shard transport fails, do not rerun all shards; use the printed shard number for targeted follow-up.
+
+
+## 2026-09-27 — manual municipal rehearsal completed; verifier-only follow-up
+
+- Production deploy succeeded before the rehearsal:
+  - Worker version `3c17c1fe-db35-4411-a4bd-2db4585b3c5d`
+  - production smoke PASS.
+- The shard-safe manual rehearsal itself completed all three Worker requests successfully:
+  - shard 0: 12 sources, rich_detail_persisted=3, source_errors=8
+  - shard 1: 12 sources, rich_detail_persisted=3, source_errors=9
+  - shard 2: 11 sources, rich_detail_persisted=2, source_errors=7
+  - total rich-detail persisted from returned shard summaries: 8
+- Do NOT rerun `npm run municipal:once` for this rehearsal. All three shard requests already returned success.
+- The command failed only after ingestion, during the post-run read-only D1 verification query:
+  - D1 error: `LIKE or GLOB pattern too complex`
+  - this was caused by the verifier's dynamic `LIKE` join, not by municipal ingestion.
+- PR #55 `fix: make municipal post-run verification read-only and D1-safe` merged as `91984f0250cbebfceb41984898eac44b6bb3ee80`.
+  - Project checks #843 SUCCESS.
+  - UI browser smoke #152 SUCCESS.
+- The dynamic LIKE join now uses `instr(...)=1`.
+- New read-only command: `npm run municipal:verify:manual -- --minutes=N`.
+  - no ingestion or production writes;
+  - reports recent 35-source observation coverage;
+  - recent municipal publish/revalidation counts;
+  - actual rich-detail-backed event rows;
+  - explicit Seoul Hangang `달빛 한가위 마당` row with summary/image/hours/programs/price/contact.
+- Next user action: pull latest main only (no deploy needed), then run `npm run municipal:verify:manual -- --minutes=60` and paste the JSON. Use that result to determine exactly which 24 source errors are expected zero-candidate/parser gaps versus real fetch/runtime failures and whether Seoul Hangang backfill is visible.
