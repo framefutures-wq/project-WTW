@@ -2031,3 +2031,18 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   4. add focused integration tests;
   5. do NOT mass-reclassify existing production rows yet;
   6. after that, build/read a production audit before any apply step.
+
+
+## 2026-09-27 — Phase 2 done; next = read-only legacy quality audit
+
+- PR #60 merged as `9998869fc23002327672c2adb712bf7606c219b6`.
+- Persistent PUBLIC/HOLD/EXCLUDE state, production visibility gating, source ingestion wiring, TourAPI post-detail re-evaluation, and push suppression are implemented and CI-green.
+- Existing rows are intentionally grandfathered as PUBLIC with null quality rule version.
+- Do NOT mass-reclassify legacy production rows yet.
+- Production migration/deploy is intentionally deferred until the audit rules are validated.
+- Next bounded task:
+  1. add a read-only production quality audit command;
+  2. report counts by proposed state/reason/source kind plus representative rows;
+  3. include official-link presence/quality signals;
+  4. make zero writes;
+  5. use actual audit output to tune `publish_quality_v1` before an apply/deploy task.
