@@ -384,7 +384,7 @@ function directDetailUrls(source: MunicipalSourceDefinition, html: string) {
     .map((value) => absolute(source.url, value))
     .filter((value): value is string => Boolean(value))
     .map((url) => ({ url, score: detailUrlScore(source, url) }))
-    .filter((item) => Number.isFinite(item.score) && item.score > 0)
+    .filter((item) => Number.isFinite(item.score) && item.score >= 16)
     .sort((a, b) => b.score - a.score || a.url.localeCompare(b.url));
 }
 
