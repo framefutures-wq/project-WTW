@@ -2196,3 +2196,14 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   `npm run official-links:resolve:tourapi-explicit -- --remote --apply`
 - This command only resolves the 38 explicit provider homepage signals through verified HTTPS. It must not classify the 27 OTHER_HTTPS_URL rows as official.
 - After the command, use the concise remaining-gap count to decide the next bounded task for the 27 evidence-classification cases.
+
+
+## 2026-09-27 — 20 more TourAPI official links recovered; 45 remain
+
+- Explicit legacy homepage production resolver result:
+  - scanned remaining gaps 65
+  - explicit candidates 38
+  - resolved HTTPS links 20 (14 HTTPS upgrades, 6 bare-host HTTPS)
+  - unresolved explicit candidates 18
+  - remaining TourAPI no-link rows 45
+- Do not re-run the same resolver as a discovery strategy; the next Phase 3 task should classify/verify the remaining evidence population, especially OTHER_HTTPS_URL, without guessing.
