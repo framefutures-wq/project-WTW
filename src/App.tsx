@@ -394,7 +394,7 @@ export function Scene({
         <EventImageLayers
           image={image}
           title={event.title}
-          backdrop={detail || fit === "contain"}
+          backdrop={detail}
           loading={detail ? "eager" : "lazy"}
           onImageLoad={(width, height) => setFit(cardImageFit(width, height))}
           onImageError={() => setImageFailed(true)}
@@ -1974,10 +1974,10 @@ export default function App() {
               <section className="featured-events" aria-label="먼저 둘러볼 행사">
                 <div className="subsection-heading">
                   <div>
-                    <span>갈틈 추천</span>
-                    <h3>먼저 볼 곳</h3>
+                    <span>이번 주말</span>
+                    <h3>전국의 축제 · 공연 · 행사</h3>
                   </div>
-                  <p>사진부터 가볍게 둘러보세요.</p>
+                  <p>포스터와 사진을 한눈에 둘러보세요.</p>
                 </div>
                 <div className="event-grid featured-grid">
               {featuredEvents.map((event) => (
@@ -1989,7 +1989,7 @@ export default function App() {
                 <div className="subsection-heading">
                   <div>
                     <span>전체 행사</span>
-                    <h3>더 둘러보기</h3>
+                    <h3>이번 주말 더 보기</h3>
                   </div>
                   <p>{selectedRangeLabel}</p>
                 </div>

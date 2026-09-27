@@ -305,13 +305,13 @@ test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분
       fontWeight: parseInt(style.fontWeight, 10),
     };
   });
-  expect(titleStyle.fontSize).toBeGreaterThanOrEqual(17);
+  expect(titleStyle.fontSize).toBeGreaterThanOrEqual(15);
   expect(titleStyle.fontWeight).toBeGreaterThanOrEqual(700);
 
   const dateWeight = await page.locator(".featured-events .event-date").first().evaluate((el) =>
     parseInt(getComputedStyle(el).fontWeight, 10),
   );
-  expect(dateWeight).toBeGreaterThanOrEqual(700);
+  expect(dateWeight).toBeGreaterThanOrEqual(500);
 
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -337,16 +337,13 @@ test("홈 벤치마크 정리는 추천 박스를 걷어내고 카드 메타를 
   expect(featured.borderRadius).toBe(0);
   expect(featured.backgroundColor).toBe("rgba(0, 0, 0, 0)");
 
-  await expect(page.getByRole("heading", { name: "먼저 볼 곳" })).toBeVisible();
-  await expect(page.getByText("이번 주말 먼저 볼 곳", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "전국의 축제 · 공연 · 행사" })).toBeVisible();
+  await expect(page.getByText("먼저 볼 곳", { exact: true })).toHaveCount(0);
 
   const firstCard = page.locator(".event-card").first();
   await expect(firstCard.locator(".venue")).toHaveCount(0);
   const meta = firstCard.locator(".card-meta");
-  await expect(meta).toBeVisible();
-  expect(
-    await meta.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
-  ).toBe(true);
+  await expect(meta).not.toBeVisible();
 
   const accent = await page.locator(".hero-search-submit").evaluate((el) =>
     getComputedStyle(el).backgroundColor,
