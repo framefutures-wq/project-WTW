@@ -885,3 +885,12 @@ UI benchmark:
 - A critical migration hazard was fixed before production deployment: improving `official_url` must not change an already-published municipal event into a new logical event.
 - Generic municipal detail-URL upgrades now reuse a legacy identity only for one unique exact same-source title/date/venue match; ambiguous cases remain fail-closed.
 - Rich-detail production deployment is still intentionally deferred until remaining candidate-positive/detail-link gaps, zero-candidate parser gaps, and source fetch failures are addressed.
+
+
+## 48. 2026-09-27 — manual municipal rehearsal safety hardened
+
+- The first shard-safe manual municipal rehearsal hit a client-side Node/Undici response-header timeout after production deploy/smoke succeeded; the exception does not prove the server-side shard succeeded or failed.
+- Manual one-shot transport now uses curl to tolerate long-running shard responses.
+- More importantly, existing municipal date/venue changes now require identical confirmation on a later Asia/Seoul calendar day. Re-running the same shard on the same day cannot count as the second core confirmation.
+- This closes the main safety risk of repeating a shard after an indeterminate manual transport failure while preserving idempotent rich-detail backfill for unchanged existing events.
+- Latest Worker code therefore requires one additional verified deploy before the next manual municipal rehearsal.
