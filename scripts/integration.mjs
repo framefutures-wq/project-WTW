@@ -470,6 +470,15 @@ try {
     (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='NEW_EVENT'").first()).n,
     1,
   );
+  assert.equal(
+    (await db.prepare("SELECT publish_quality_state state FROM events WHERE id='tourapi-101'").first()).state,
+    "HOLD",
+  );
+  // Simulate the post-detail promotion path covered by tourapi-detail unit tests:
+  // a sparse list record is hidden until event-specific official evidence arrives.
+  await db.prepare(
+    "UPDATE events SET publish_quality_state='PUBLIC',publish_quality_reason='explicit_public_event',publish_quality_rule_version='publish_quality_v2',publish_quality_checked_at=? WHERE id='tourapi-101'",
+  ).bind(now).run();
   await db.prepare(
     "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES('tourapi-101','tourapi-101-source','https://festival.example.org/tourapi-101',?)",
   ).bind(now).run();
