@@ -718,6 +718,7 @@ export async function runMunicipalAutonomous(
             coreValid &&
             !effectiveCandidate.parse_error &&
             !detailError &&
+            !changedExisting &&
             !coreConflict &&
             !detailCoreConflict,
         );
@@ -933,6 +934,12 @@ export async function runMunicipalAutonomous(
           venue: string;
           status: string;
         }>();
+      const changedExisting = Boolean(
+        existing &&
+          (existing.start_date !== effectiveCandidate.start_date ||
+            existing.end_date !== effectiveCandidate.end_date ||
+            existing.venue !== effectiveCandidate.venue),
+      );
       const candidateTemporal = temporal(effectiveCandidate, koreaToday);
       const coreValid = Boolean(
         effectiveCandidate.title &&
@@ -983,6 +990,28 @@ export async function runMunicipalAutonomous(
         summary.rows_written += write.rows;
         if (publicationMutation) publishMutations += 1;
       }
+
+      const safeExistingRichBackfill = Boolean(
+        existing &&
+          !changedExisting &&
+          gate.gate === "MAIN" &&
+          duplicateResult.decision === "NEW" &&
+          candidateTemporal !== "EXPIRED" &&
+          coreValid &&
+          !effectiveCandidate.parse_error &&
+          !detailError &&
+          !detailCoreConflict,
+      );
+      if (
+        richDetail &&
+        (decision.state === "AUTO_PUBLISH" || safeExistingRichBackfill)
+      )
+        await persistRichDetail({
+          eventId: row.candidate_id,
+          candidate: effectiveCandidate,
+          detail: richDetail,
+        });
+
       const saved = await saveState(
         env,
         effectiveCandidate,
@@ -1012,6 +1041,11 @@ export async function runMunicipalAutonomous(
     fetch_attempts: fetchBudget.used,
     fetch_budget: fetchBudget.limit,
     detail_fetches: detailFetches,
+    rich_detail_attempted: richDetailAttempted,
+    rich_detail_candidates: richDetailCandidates,
+    rich_detail_persisted: richDetailPersisted,
+    rich_detail_errors: richDetailErrors,
+    rich_detail_by_source: richDetailBySource,
     source_outcomes,
   };
   console.log("municipal_autonomous_summary", result);
