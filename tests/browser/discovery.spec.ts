@@ -634,7 +634,7 @@ test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된�
   expect(back!.width).toBeGreaterThan(dialogBox!.width * 0.75);
 });
 
-test("상세 대표이미지는 세로 포스터여도 과도하게 늘어나지 않는다", async ({ page }) => {
+test("데스크톱 상세 대표이미지는 얕은 전체폭 상단 배너로 표시된다", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
@@ -643,13 +643,12 @@ test("상세 대표이미지는 세로 포스터여도 과도하게 늘어나지
   await expect(scene).toBeVisible();
   const box = await scene.boundingBox();
   expect(box).not.toBeNull();
-  expect(box!.height).toBeLessThanOrEqual(360);
-  expect(box!.height).toBeGreaterThan(220);
-  expect(box!.width / box!.height).toBeGreaterThan(1.15);
-  expect(box!.width / box!.height).toBeLessThan(1.5);
+  expect(box!.height).toBeGreaterThanOrEqual(190);
+  expect(box!.height).toBeLessThanOrEqual(230);
+  expect(box!.width / box!.height).toBeGreaterThan(3.5);
 });
 
-test("모바일 상세 대표이미지는 전체폭 4대3 프레임 안에서 표시된다", async ({ page }) => {
+test("모바일 상세 대표이미지는 높이가 제한된 전체폭 상단 배너로 표시된다", async ({ page }) => {
   await page.setViewportSize({ width: 470, height: 760 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
@@ -657,6 +656,7 @@ test("모바일 상세 대표이미지는 전체폭 4대3 프레임 안에서 �
   const scene = dialog.locator(".scene-detail");
   const box = await scene.boundingBox();
   expect(box).not.toBeNull();
-  expect(box!.height).toBeLessThanOrEqual(300);
-  expect(box!.width / box!.height).toBeGreaterThan(1.15);
+  expect(box!.height).toBeGreaterThanOrEqual(180);
+  expect(box!.height).toBeLessThanOrEqual(220);
+  expect(box!.width / box!.height).toBeGreaterThan(1.8);
 });
