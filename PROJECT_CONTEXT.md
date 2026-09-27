@@ -905,3 +905,11 @@ UI benchmark:
   - hard cap unchanged at 35.
 - Detail caps increased to 24/24/22, but total external requests remain bounded by the same hard 35 cap.
 - This change targets fetch-budget starvation only. Genuine source-parser and network failures remain visible and must be triaged from the next full rehearsal output.
+
+
+## 50. 2026-09-27 — Seoul Hangang rich-detail production backfill confirmed
+
+- Fetch-fairness production behavior is now validated on shard 0: 11/12 sources observed with one residual source failure (`gyeonggi-과천`) under 26/35 external fetch attempts.
+- Seoul Hangang rich-detail backfill is confirmed in production D1 for `달빛 한가위 마당`: official detail URL, summary, image, two time rows, three programs, free price status and contact `120` are present while the legacy event identity is preserved.
+- The municipal rich-detail extraction/persistence pipeline is therefore proven end-to-end in production for at least Suwon, Goyang and Seoul Hangang on shard 0.
+- Remaining validation work is shard 1 + shard 2 targeted reruns, then residual source/parser triage.
