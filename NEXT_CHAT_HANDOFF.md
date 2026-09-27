@@ -1736,3 +1736,31 @@ UI 기준:
   2. existing sparse event rich backfill with `maxPublishMutations=0`.
 - PR #50 has NOT been deployed to the production Worker yet.
 - Next bounded task: rerun the 35-source read-only rich-detail audit against latest main to measure detail-link recovery and remaining source/fetch gaps, then fix the remaining source classes before one combined production deploy.
+
+
+## 2026-09-27 — municipal anchor-card detail links + identity bridge merged
+
+- Latest-main 35-source live read-only re-audit before this fix:
+  - RICH_DETAIL_UNHARVESTED 16
+  - LIST_RICHNESS_ONLY 14
+  - LIST_FETCH_FAILED 4
+  - DETAIL_FETCH_FAILED 1
+- PR #51 `fix: preserve municipal identity while discovering anchor detail cards` merged as `c7252e0358dc9a4b951854da09dac5eeb337ad96`.
+  - Project checks #808 SUCCESS.
+  - UI browser smoke #148 SUCCESS.
+- Generic municipal parser now scans self-contained outer `<a>` event cards in addition to list/card containers, core-dedupes nested candidates, and prefers the first-party detail URL over the source list URL.
+- Safety fix: when a generic event previously published under a list-URL-derived identity later gains a better detail URL, autonomous ingestion can reuse the existing event ID only for one unique exact same-source title/date/venue match. Ambiguous matches fail closed.
+  - Run summary exposes `identity_bridges`.
+  - Miniflare regression proves a legacy Seoul Hangang event receives rich-detail backfill under the old event ID instead of becoming a new duplicate/excluded row.
+- Feature-branch 35-source live read-only re-audit after the fix:
+  - RICH_DETAIL_UNHARVESTED 18
+  - LIST_RICHNESS_ONLY 13
+  - LIST_FETCH_FAILED 4
+  - no detail-fetch-failure bucket in that run.
+  - Confirmed code-caused recovery: `gyeonggi-평택` detail_targets 0 -> 2.
+  - `gyeongbuk-영주` also returned 2 detail targets in that run, but this was a transient network recovery rather than this code change.
+- Still candidate-positive but detail-target-zero: `hwaseong`, `bucheon`, `taebaek`, `gyeongbuk-상주`, `gyeonggi-여주`, `gyeongbuk-경산`, `busan-해운대`, `ulsan-jung`.
+- Still zero-candidate generic parser class: `seoul-gangnam`, `ulsan-북`, `gangwon-원주`, `gyeonggi-용인`, `gyeonggi-이천`.
+- Current observed list-fetch failures: `jeonnam-gwangju-곡성`, `daegu-서`, `gyeonggi-의정부`, `gyeongnam-거제`.
+- PR #49/#50/#51 rich-detail work is still NOT deployed to the production Worker. Final deployment remains deferred until remaining source classes are handled, then deploy once before the Sep 28 natural cycle.
+- Next bounded task: resolve the remaining candidate-positive/detail-target-zero class, starting with exact JS/form detail-link patterns such as Gyeongsan `goDetail(event, id)` and Yeoju form/view routing, while treating true list-only rich sources separately from real per-event detail sources.
