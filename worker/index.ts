@@ -889,7 +889,7 @@ export default {
         const contactPhone =
           contactSources.results
             .map((source) => municipalContactPhone(source.raw_payload))
-            .find((value): value is ContactPhone => Boolean(value)) ?? null;
+            .find((value) => value !== null) ?? null;
         const enrichment = await env.DB.prepare(
           `SELECT en.summary,s.url AS source_url,s.kind AS source_kind,s.priority AS source_priority FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=?`,
         )
