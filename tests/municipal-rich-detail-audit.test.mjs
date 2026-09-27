@@ -16,7 +16,7 @@ test("rich-detail audit detects the Seoul Hangang-style official detail signals"
         <dt>시간</dt><dd>2026. 9. 27.(일) 15:00~16:00, 17:00~18:00</dd>
         <dt>이용료</dt><dd>무료</dd>
         <dt>장소</dt><dd>반포한강공원 잠수교 달빛광장</dd>
-        <dt>문의</dt><dd>02-120</dd>
+        <dt>문의</dt><dd>120</dd>
       </dl>
       <h2>상세내용</h2>
       <p>6개국 전통 공연과 한복 대여, 전통놀이 체험 프로그램을 운영합니다.</p>
