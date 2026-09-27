@@ -97,10 +97,11 @@ test("production discovery shell and public endpoints are healthy", async ({
       const mediaBox = hasMediaPair ? await mediaPair.boundingBox() : sceneBox;
       expect(mediaBox).not.toBeNull();
       const mediaRatio = mediaBox!.width / mediaBox!.height;
-      expect(mediaBox!.height).toBeLessThanOrEqual(360);
-      expect(mediaBox!.height).toBeGreaterThan(220);
-      expect(mediaRatio).toBeGreaterThan(1.15);
-      expect(mediaRatio).toBeLessThan(1.5);
+      // Detail v3 intentionally uses a shallow full-width media strip so
+      // decision facts start higher in the dialog.
+      expect(mediaBox!.height).toBeGreaterThanOrEqual(190);
+      expect(mediaBox!.height).toBeLessThanOrEqual(230);
+      expect(mediaRatio).toBeGreaterThan(3.5);
     } else if (hasMediaPair) {
       expect(await pairedMedia.count()).toBe(2);
       const pairBox = await mediaPair.boundingBox();
@@ -110,13 +111,12 @@ test("production discovery shell and public endpoints are healthy", async ({
       expect(firstBox).not.toBeNull();
       expect(secondBox).not.toBeNull();
 
-      // Mobile two-image detail media intentionally stays in one compact row.
-      // Individual columns can be portrait-ish because the row uses an
-      // asymmetric 1.55fr/0.85fr split; the contract is on the combined media
-      // surface, not on each child button's aspect ratio.
-      expect(pairBox!.height).toBeGreaterThanOrEqual(220);
-      expect(pairBox!.height).toBeLessThanOrEqual(250);
-      expect(pairBox!.width / pairBox!.height).toBeGreaterThan(1.35);
+      // Mobile detail v3 keeps the two-image surface in one shallow row.
+      // Its height is viewport-bounded (54vw, capped at 220px); the contract
+      // remains on the combined surface rather than each asymmetric child.
+      expect(pairBox!.height).toBeGreaterThanOrEqual(180);
+      expect(pairBox!.height).toBeLessThanOrEqual(220);
+      expect(pairBox!.width / pairBox!.height).toBeGreaterThan(1.7);
       expect(Math.abs(firstBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
       expect(Math.abs(secondBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
       expect(firstBox!.x).toBeLessThan(secondBox!.x);
@@ -130,8 +130,9 @@ test("production discovery shell and public endpoints are healthy", async ({
       for (let index = 0; index < itemCount; index += 1) {
         const itemBox = await mediaItems.nth(index).boundingBox();
         expect(itemBox).not.toBeNull();
-        expect(itemBox!.height).toBeLessThanOrEqual(300);
-        expect(itemBox!.width / itemBox!.height).toBeGreaterThan(1.15);
+        expect(itemBox!.height).toBeGreaterThanOrEqual(180);
+        expect(itemBox!.height).toBeLessThanOrEqual(220);
+        expect(itemBox!.width / itemBox!.height).toBeGreaterThan(1.7);
       }
     }
 
