@@ -1889,3 +1889,38 @@ UI 기준:
   2. run `npm run municipal:once -- --shard=0`;
   3. paste the full output.
 - Same-day core-change confirmation remains protected, so this targeted shard 0 diagnostic rerun cannot confirm a pending date/venue mutation on the same Korea calendar day.
+
+
+## 2026-09-27 — shard 0 fairness rerun succeeded; Seoul Hangang backfill confirmed
+
+- Targeted manual rerun `npm run municipal:once -- --shard=0` completed successfully after fetch-fairness deployment.
+- Shard 0 result:
+  - 12 planned sources;
+  - source_errors=1;
+  - fetch_attempts=26 / fetch_budget=35;
+  - detail_fetches=24;
+  - identity_bridges=6;
+  - rich_detail_persisted=3;
+  - rich_detail_errors=0.
+- The fetch-fairness fix worked for shard 0 coverage:
+  - 11/12 sources observed successfully;
+  - only `gyeonggi-과천` remained source_error / unobserved.
+- Rich-detail persisted by source:
+  - `suwon`: 1;
+  - `goyang`: 1;
+  - `seoul-hangang`: 1.
+- Seoul Hangang `달빛 한가위 마당 (차없는 잠수교 뚜벅뚜벅 축제)` is now confirmed in production D1 with:
+  - official detail URL using `evntSn=462`;
+  - cost `free` / price_text `무료`;
+  - summary present;
+  - primary image present;
+  - 2 operating-hour rows;
+  - 3 program rows;
+  - contact phone `120`;
+  - legacy municipal event identity preserved.
+- Do NOT rerun shard 0 again for this rehearsal.
+- Next user action:
+  1. run shard 1 only;
+  2. if shard 1 succeeds, run shard 2 only;
+  3. then run the read-only `npm run municipal:verify:manual -- --minutes=180` to aggregate recent coverage across all three targeted shard runs.
+- After all three are verified, triage residual true source/parser failures beginning with `gyeonggi-과천`.
