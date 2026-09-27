@@ -193,3 +193,33 @@ test("audited official URL is eligible when no stored event link exists", async 
     await mf.dispose();
   }
 });
+
+
+test("generic homepage with title but no matching date or venue is quarantined", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    const result = await runOfficialDetailRecovery(
+      { DB } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      {
+        fetchPage: async (url) => ({
+          finalUrl: url,
+          html: `
+            <h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>
+            <meta property="og:image" content="/site/default-event.jpg">
+            <p>의정부시의 다양한 행사 소식을 안내합니다.</p>
+          `,
+        }),
+      },
+    );
+    assert.equal(result.insufficient_core_signal, 1);
+    assert.equal(result.recovered, 0);
+    const image = await DB.prepare(
+      "SELECT image_url FROM event_images WHERE event_id='event-1'",
+    ).first();
+    assert.equal(image, null);
+  } finally {
+    await mf.dispose();
+  }
+});

@@ -6,6 +6,7 @@ import {
 } from "../../shared/municipal-discovery";
 import {
   extractMunicipalRichDetail,
+  municipalRichText,
   type MunicipalRichDetail,
 } from "../../shared/municipal-rich-detail";
 import type { Env } from "../env";
@@ -40,6 +41,7 @@ export type OfficialDetailRecoveryResult = {
   detail_recovered: number;
   title_mismatch: number;
   core_conflict: number;
+  insufficient_core_signal: number;
   empty: number;
   fetch_failed: number;
 };
@@ -101,11 +103,9 @@ async function readBoundedHtml(response: Response) {
   return html;
 }
 
-export async function fetchOfficialDetailPage(
-  rawUrl: string,
+async function fetchOfficialDetailPageOnce(
+  initial: URL,
 ): Promise<RecoveryPage> {
-  const initial = safeOfficialUrl(rawUrl);
-  if (!initial) throw new Error("official_detail_invalid_url");
   const family = hostFamily(initial.hostname);
   let current = initial;
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect += 1) {
@@ -142,9 +142,42 @@ export async function fetchOfficialDetailPage(
       await response.body?.cancel();
       throw new Error("official_detail_too_large");
     }
-    return { html: await readBoundedHtml(response), finalUrl: current.toString() };
+    return {
+      html: await readBoundedHtml(response),
+      finalUrl: current.toString(),
+    };
   }
   throw new Error("official_detail_redirect_failed");
+}
+
+const retryableFetchFailure = (error: unknown) => {
+  if (error instanceof TypeError) return true;
+  const name =
+    error && typeof error === "object" && "name" in error
+      ? String((error as { name?: unknown }).name ?? "")
+      : "";
+  if (name === "AbortError" || name === "TimeoutError") return true;
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /official_detail_http_(?:429|5\d\d)$/.test(message);
+};
+
+export async function fetchOfficialDetailPage(
+  rawUrl: string,
+): Promise<RecoveryPage> {
+  const initial = safeOfficialUrl(rawUrl);
+  if (!initial) throw new Error("official_detail_invalid_url");
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await fetchOfficialDetailPageOnce(initial);
+    } catch (error) {
+      lastError = error;
+      if (attempt > 0 || !retryableFetchFailure(error)) throw error;
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("official_detail_fetch_failed");
 }
 
 function inferredSourceKind(row: RecoveryRow): SourceKind {
@@ -159,6 +192,31 @@ function inferredSourceKind(row: RecoveryRow): SourceKind {
   } catch {
     return "organizer";
   }
+}
+
+function normalizedCore(value: string) {
+  return value.replace(/[\s()\[\]{}.,·ㆍ:：/\\_-]+/g, "").toLowerCase();
+}
+
+function pageHasPositiveCoreSignal(row: RecoveryRow, html: string) {
+  const text = municipalRichText(html);
+  const normalized = normalizedCore(text);
+  const venue = normalizedCore(row.venue);
+  if (venue.length >= 2 && normalized.includes(venue)) return true;
+
+  for (const date of [row.start_date, row.end_date]) {
+    const [year, month, day] = date.split("-");
+    const monthNumber = String(Number(month));
+    const dayNumber = String(Number(day));
+    const signals = [
+      date,
+      `${year}.${monthNumber}.${dayNumber}`,
+      `${year}. ${monthNumber}. ${dayNumber}`,
+      `${year}년 ${monthNumber}월 ${dayNumber}일`,
+    ];
+    if (signals.some((signal) => text.includes(signal))) return true;
+  }
+  return false;
 }
 
 function fieldCount(detail: MunicipalRichDetail) {
@@ -316,6 +374,7 @@ export async function runOfficialDetailRecovery(
     detail_recovered: 0,
     title_mismatch: 0,
     core_conflict: 0,
+    insufficient_core_signal: 0,
     empty: 0,
     fetch_failed: 0,
   };
@@ -364,6 +423,17 @@ export async function runOfficialDetailRecovery(
     if (hasMunicipalDetailCoreConflict(candidate, page.html)) {
       result.core_conflict += 1;
       await markAttempt(env.DB, row, sourceKind, checkedAt, "core_conflict");
+      continue;
+    }
+    if (!pageHasPositiveCoreSignal(row, page.html)) {
+      result.insufficient_core_signal += 1;
+      await markAttempt(
+        env.DB,
+        row,
+        sourceKind,
+        checkedAt,
+        "insufficient_core_signal",
+      );
       continue;
     }
 

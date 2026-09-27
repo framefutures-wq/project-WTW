@@ -1,4 +1,6 @@
-import { extractOfficialPageImageCandidates } from "./official-page-image-candidates";\n\nexport type MunicipalRichHours = {
+import { extractOfficialPageImageCandidates } from "./official-page-image-candidates";
+
+export type MunicipalRichHours = {
   start_time: string;
   end_time: string | null;
   human_time_text: string;
