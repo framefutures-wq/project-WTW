@@ -103,13 +103,11 @@ export function buildLegacyPublishQualitySql(
     )
     .join(" ");
 
-  return `BEGIN TRANSACTION;
-UPDATE events
+  return `UPDATE events
 SET publish_quality_state = CASE id ${stateCase} ELSE publish_quality_state END,
     publish_quality_reason = CASE id ${reasonCase} ELSE publish_quality_reason END,
     publish_quality_rule_version = ${sqlString(PUBLISH_QUALITY_RULE_VERSION)},
     publish_quality_checked_at = ${sqlString(checkedAt)}
 WHERE publish_quality_rule_version IS NULL
-  AND id IN (${ids});
-COMMIT;`;
+  AND id IN (${ids});`;
 }
