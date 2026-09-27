@@ -2300,3 +2300,14 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - GitHub Project checks and UI browser smoke are green for that commit. Extraction behavior remains covered by the existing Suwon/Hangang regression tests.
 - This is `PAUSED_USER_ACTION` only because production deploy and remote D1/manual municipal execution require the authenticated Codespaces/Cloudflare environment.
 - Resume from latest main with: deploy the Worker, run only municipal shard 1, and only if shard 1 succeeds run shard 2; then run the read-only manual municipal verification. If shard 1 still returns 1102, stop there and preserve the error output for source-level isolation.
+
+## 2026-09-28 — municipal rich-detail production backfill completed after 1102 mitigation
+
+- Production deployment of the rich-detail parsing optimization succeeded, and the authenticated chained run reached the final read-only verifier. Because the commands were joined with `&&`, shard 1 and shard 2 both completed without another Cloudflare 1102.
+- Shard 0 was not rerun.
+- Shard 2 result: discovered 86, inserted 1, updated 5, source_errors 3, detail_fetches 22, rich_detail_attempted 6, rich_detail_candidates 6, rich_detail_persisted 4, rich_detail_errors 0.
+- Shard 2 rich-detail persistence: `busan-동` 2 and `gyeongbuk-경주` 2.
+- Shard 2 source failures were isolated, not fatal: `gyeongbuk-영주` source_error, `busan-해운대` HTTP 530, `gyeongnam-거제` HTTP 522.
+- The 60-minute production verification saw 24/35 registry sources. Missing observations were: `busan-해운대`, `daegu-서`, `gangwon-원주`, `gyeongbuk-영주`, `gyeonggi-과천`, `gyeonggi-용인`, `gyeonggi-이천`, `gyeongnam-거제`, `jeonnam-gwangju-곡성`, `seoul-gangnam`, `ulsan-북`.
+- Verified rich-detail examples now include Hangang, Busan Dong-gu, Gyeongju, Pyeongtaek and Goyang. The Hangang `달빛 한가위 마당` record has summary, official image, free price, two operating-hour rows, three programs and contact 120.
+- The 1102 mitigation task is complete. Next bounded task: isolate the missing-observation source failures without reopening the rich-detail extractor or rerunning successful shards wholesale.
