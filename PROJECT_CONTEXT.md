@@ -866,3 +866,14 @@ UI benchmark:
 - Existing detail tables are reused; no schema migration is needed.
 - Source precedence stays organizer priority 1 > municipality priority 2 > TourAPI priority 3.
 - Production ingestion remains frozen until the first complete Sep 28 post-sharding natural verification after 11:45 KST. The rich-detail foundation requires no Worker deploy until it is actually wired.
+
+
+## 46. 2026-09-27 — municipal rich-detail autonomous wiring complete in main
+
+- Municipal rich-detail extraction/persistence is now wired into the autonomous ingestion code on main.
+- It covers both newly published events and safe backfill of already-existing sparse municipal events.
+- Core publication safety remains unchanged: date/venue mutations still use the 4/3/3 shard caps and two-observation conflict rules.
+- Rich-detail backfill is supplemental only and may not bypass a pending core mutation.
+- Detail fetch budgets are unchanged because rich extraction reuses the already-fetched official detail HTML.
+- Morning production verification now aggregates rich-detail attempt/persist/error/by-source metrics across shard runs.
+- Production Worker deployment is intentionally deferred until the remaining 35-source audit/fetch gaps are fixed so the final pre-Sep-28 deployment can be done once.
