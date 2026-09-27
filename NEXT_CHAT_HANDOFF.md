@@ -2207,3 +2207,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   - unresolved explicit candidates 18
   - remaining TourAPI no-link rows 45
 - Do not re-run the same resolver as a discovery strategy; the next Phase 3 task should classify/verify the remaining evidence population, especially OTHER_HTTPS_URL, without guessing.
+
+
+## 2026-09-27 — 상세 top-media density v3 merged; production deploy pending
+
+- PR #82 merged green as `5227acf5996e58a6335618ee484ff63d3be2273b`.
+- Desktop detail now uses shallow full-width media on top, then dense core facts; programs use denser auto-fit columns.
+- Mobile keeps top media and single-column core facts with compact supporting facts.
+- Rich Hangang browser geometry regression plus full UI browser smoke and Project checks passed.
+- Production is not yet deployed from this merge. Next authenticated Codespaces step is a verified frontend/Worker deploy followed by production browser smoke; no D1 migration or ingestion run is needed.
