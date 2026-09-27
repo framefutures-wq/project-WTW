@@ -1,4 +1,4 @@
-export const PUBLISH_QUALITY_RULE_VERSION = "publish_quality_v1" as const;
+export const PUBLISH_QUALITY_RULE_VERSION = "publish_quality_v2" as const;
 
 export type PublishQualityState = "PUBLIC" | "HOLD" | "EXCLUDE";
 
@@ -11,6 +11,7 @@ export type PublishQualityInput = {
   address?: string | null;
   source_kind?: string | null;
   source_url?: string | null;
+  event_official_url?: string | null;
 };
 
 export type PublishQualityDecision = {
@@ -40,8 +41,11 @@ const NON_EVENT =
 const PUBLIC_EVENT =
   /축제|페스티벌|문화제|야행|미디어아트|불꽃|드론\s*(?:쇼|라이트쇼)|퍼레이드|야시장|특별전|기획전|전시|개인전|회원(?:작품)?전|아트페어|공연|콘서트|음악회|연주회|독주회|독창회|가요제|뮤지컬|연극|오페라|발레|무용|서커스|체험|박람회|플리마켓|마켓|야간개장|시즌\s*(?:행사|프로그램)|팝업/;
 
+const STRONG_SPECIAL_EVENT =
+  /축제|페스티벌|문화제|야행|미디어아트|불꽃|드론\s*(?:쇼|라이트쇼)|퍼레이드|야시장|특별전|기획전|아트페어|공연|콘서트|음악회|연주회|가요제|뮤지컬|연극|오페라|발레|서커스|박람회|플리마켓|팝업|야간개장|시즌\s*(?:행사|프로그램)/;
+
 const PERPETUAL =
-  /연중\s*(?:무휴|상시|운영)|365일|상시\s*(?:운영|개방|체험|프로그램)|매일\s*(?:운영|개방)|상설\s*(?:운영|체험|프로그램)/;
+  /연중\s*(?:무휴|상시|운영)|365일|상시\s*(?:운영|관람|전시|개방|체험|프로그램)|매일\s*(?:운영|관람|개방)|상설\s*(?:운영|관람|전시|개방|체험|프로그램)/;
 
 const FACILITY_LIKE =
   /수목원|박물관|미술관|전망대|공원|테마파크|체험장|관광지|시설|센터|전시관|기념관|휴양림|수련관/;
@@ -56,20 +60,30 @@ function validDate(value: string | null | undefined) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-function validOfficialSource(kind: string | null | undefined, url: string | null | undefined) {
-  if (!kind || !TRUSTED_SOURCE_KINDS.has(kind)) return false;
-  if (!url) return false;
+function validHttps(value: string | null | undefined) {
+  if (!value) return false;
   try {
-    return new URL(url).protocol === "https:";
+    return new URL(value).protocol === "https:";
   } catch {
     return false;
   }
+}
+
+function validOfficialSource(kind: string | null | undefined, url: string | null | undefined) {
+  return Boolean(kind && TRUSTED_SOURCE_KINDS.has(kind) && validHttps(url));
 }
 
 function durationDays(start: string, end: string) {
   const startMs = Date.parse(`${start}T00:00:00Z`);
   const endMs = Date.parse(`${end}T00:00:00Z`);
   return Math.floor((endMs - startMs) / 86_400_000) + 1;
+}
+
+function meaningfulDescription(value: string) {
+  return (
+    value.length >= 40 &&
+    !/^한국관광공사 TourAPI에 등록된 행사입니다/.test(value)
+  );
 }
 
 /**
@@ -113,19 +127,28 @@ export function decidePublishQuality(
       rule_version: PUBLISH_QUALITY_RULE_VERSION,
     };
 
+  const days = durationDays(start, end);
+  const hasMeaningfulDescription = meaningfulDescription(description);
+  const hasEventOfficialLink = validHttps(input.event_official_url);
   const explicitPublicEvent = PUBLIC_EVENT.test(text);
+  const strongSpecialEvent = STRONG_SPECIAL_EVENT.test(text);
 
-  if (NON_EVENT.test(text) && !explicitPublicEvent)
+  if (NON_EVENT.test(text) && !strongSpecialEvent)
     return {
       state: "EXCLUDE",
       reason: "explicit_non_event",
       rule_version: PUBLISH_QUALITY_RULE_VERSION,
     };
 
+  // A long-running facility entry remains a facility even if generic words
+  // like "전시" or "체험" appear in the title. A genuinely bounded special
+  // event (festival, special exhibition, performance, night opening, etc.)
+  // still passes below.
   if (
     PERPETUAL.test(text) &&
     FACILITY_LIKE.test(text) &&
-    !explicitPublicEvent
+    days > 120 &&
+    !strongSpecialEvent
   )
     return {
       state: "EXCLUDE",
@@ -133,23 +156,34 @@ export function decidePublishQuality(
       rule_version: PUBLISH_QUALITY_RULE_VERSION,
     };
 
-  if (explicitPublicEvent)
+  if (explicitPublicEvent) {
+    // TourAPI's list feed can expose only a title + generic provider sentence.
+    // That is enough to discover a candidate, but not enough to publish it.
+    // Promote once detail enrichment provides real descriptive content or an
+    // explicit event-specific official homepage.
+    if (
+      input.source_kind === "tourapi" &&
+      !hasMeaningfulDescription &&
+      !hasEventOfficialLink
+    )
+      return {
+        state: "HOLD",
+        reason: "insufficient_event_signal",
+        rule_version: PUBLISH_QUALITY_RULE_VERSION,
+      };
+
     return {
       state: "PUBLIC",
       reason: "explicit_public_event",
       rule_version: PUBLISH_QUALITY_RULE_VERSION,
     };
+  }
 
   // A bounded, official record can still be a real event even if its title
   // does not use one of the common event words. Keep the automatic path
   // conservative: short/medium windows with meaningful descriptive content
   // are public; sparse or very long ambiguous records wait for more evidence.
-  const days = durationDays(start, end);
-  const meaningfulDescription =
-    description.length >= 40 &&
-    !/^한국관광공사 TourAPI에 등록된 행사입니다/.test(description);
-
-  if (days <= 62 && meaningfulDescription)
+  if (days <= 62 && hasMeaningfulDescription)
     return {
       state: "PUBLIC",
       reason: "trusted_bounded_event",
