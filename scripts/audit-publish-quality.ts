@@ -59,6 +59,14 @@ function execute(sql: string) {
   return parsed[0]?.results ?? [];
 }
 
+function tableExists(name: string) {
+  const escaped = name.replaceAll("'", "''");
+  const rows = execute(
+    `SELECT 1 AS present FROM sqlite_master WHERE type='table' AND name='${escaped}' LIMIT 1`,
+  ) as Array<{ present: number }>;
+  return rows.length > 0;
+}
+
 const rows = execute(
   `SELECT
      e.id,
@@ -87,7 +95,7 @@ if (rows.length > requestedLimit)
     `audit result exceeds --limit=${requestedLimit}; narrow the target or explicitly raise the bound`,
   );
 
-const linkRows = execute(
+const auditedOfficialRows = execute(
   `SELECT
      a.event_id,
      CASE
@@ -109,8 +117,35 @@ const linkRows = execute(
    LIMIT ${Math.min(10000, requestedLimit * 5 + 1)}`,
 ) as Array<{ event_id: string; url: string | null; checked_at: string }>;
 
+const storedOfficialRows = tableExists("event_official_links")
+  ? (execute(
+      `SELECT
+         ol.event_id,
+         ol.url,
+         ol.checked_at,
+         s.priority AS source_priority
+       FROM event_official_links ol
+       JOIN events e ON e.id=ol.event_id
+       JOIN sources s ON s.id=ol.source_id
+       WHERE e.is_sample=0
+         AND e.verification='verified'
+         AND e.end_date>='${today}'
+         AND ol.url LIKE 'https://%'
+       ORDER BY ol.event_id,s.priority,ol.checked_at DESC
+       LIMIT ${Math.min(10000, requestedLimit * 5 + 1)}`,
+    ) as Array<{
+      event_id: string;
+      url: string | null;
+      checked_at: string;
+      source_priority: number;
+    }>)
+  : [];
+
 const latestOfficial = new Map<string, string>();
-for (const row of linkRows)
+for (const row of storedOfficialRows)
+  if (row.url && !latestOfficial.has(row.event_id))
+    latestOfficial.set(row.event_id, row.url);
+for (const row of auditedOfficialRows)
   if (row.url && !latestOfficial.has(row.event_id))
     latestOfficial.set(row.event_id, row.url);
 
@@ -136,19 +171,39 @@ const official_link_gaps = report.audited
     source_kind: row.source_kind ?? null,
     source_name: row.source_name ?? null,
     official_link_quality: row.official_link_quality,
+    public_quality_risk: row.public_quality_risk,
+  }));
+
+const public_quality_risks = report.audited
+  .filter((row) => row.public_quality_risk !== "NONE")
+  .slice(0, 30)
+  .map((row) => ({
+    id: row.id,
+    title: row.title,
+    region: row.region,
+    proposed_reason: row.proposed.reason,
+    source_kind: row.source_kind ?? null,
+    source_name: row.source_name ?? null,
+    official_link_quality: row.official_link_quality,
+    public_quality_risk: row.public_quality_risk,
   }));
 
 const output = {
   mode: remoteMode ? "remote-production-read-only" : "local-read-only",
   as_of_kst: today,
   writes: 0,
+  schema: {
+    event_official_links_present: tableExists("event_official_links"),
+  },
   scanned_current_or_future_verified_events: report.total,
   by_state: report.by_state,
   by_reason: report.by_reason,
   by_source_kind: report.by_source_kind,
   by_official_link_quality: report.by_official_link_quality,
+  by_public_quality_risk: report.by_public_quality_risk,
   examples: report.examples,
   official_link_gaps,
+  public_quality_risks,
 };
 
 console.log(JSON.stringify(output, null, 2));
