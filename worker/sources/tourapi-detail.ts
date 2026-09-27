@@ -210,7 +210,7 @@ async function saveSuccess(db: D1Database, candidate: Candidate, payload: Detail
   if (officialHomepage) {
     statements.push(
       db.prepare(
-        "INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,'official_url',?,?) ON CONFLICT(event_id,source_id,field) DO UPDATE SET excerpt=excluded.excerpt,checked_at=excluded.checked_at",
+        "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES(?,?,?,?) ON CONFLICT(event_id,source_id) DO UPDATE SET url=excluded.url,checked_at=excluded.checked_at",
       ).bind(candidate.id, sourceId, officialHomepage, checkedAt),
     );
     changed++;
