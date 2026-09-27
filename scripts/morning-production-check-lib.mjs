@@ -109,16 +109,19 @@ export function municipalPublishedSql(startedAt) {
   `);
 }
 
-export function summarizeMunicipalSourceOutcomes(message) {
-  const outcomes = Array.isArray(message?.municipal?.source_outcomes)
-    ? message.municipal.source_outcomes
-    : [];
+export function summarizeMunicipalSourceOutcomes(messages) {
+  const input = Array.isArray(messages) ? messages : [messages];
   const expected = new Set(PROD_MUNICIPAL_KEYS);
   const bySource = new Map();
-  for (const row of outcomes) {
-    if (!row || typeof row.source !== "string" || !expected.has(row.source))
-      continue;
-    bySource.set(row.source, row);
+  for (const message of input) {
+    const outcomes = Array.isArray(message?.municipal?.source_outcomes)
+      ? message.municipal.source_outcomes
+      : [];
+    for (const row of outcomes) {
+      if (!row || typeof row.source !== "string" || !expected.has(row.source))
+        continue;
+      bySource.set(row.source, row);
+    }
   }
   const missing = PROD_MUNICIPAL_KEYS.filter((key) => !bySource.has(key));
   const errors = PROD_MUNICIPAL_KEYS
