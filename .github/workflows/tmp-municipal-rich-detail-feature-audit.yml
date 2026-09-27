@@ -1,0 +1,23 @@
+name: Temporary municipal rich-detail feature audit
+
+on:
+  push:
+    branches:
+      - codex/municipal-anchor-card-detail-links-20260927
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run read-only rich-detail audit
+        run: npm run audit:municipal-rich-detail
