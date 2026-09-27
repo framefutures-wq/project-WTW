@@ -871,11 +871,21 @@ export default {
         const contactSource = await env.DB.prepare(
           `SELECT raw_payload
            FROM sources
-           WHERE id IN (?,?)
-           ORDER BY CASE WHEN id=? THEN 0 ELSE 1 END
+           WHERE id IN (?,?,?)
+           ORDER BY CASE
+             WHEN id=? THEN 0
+             WHEN id=? THEN 1
+             ELSE 2
+           END
            LIMIT 1`,
         )
-          .bind(`${row.id}-detail`, row.primary_source_id, `${row.id}-detail`)
+          .bind(
+            `official-detail-${row.id}`,
+            `${row.id}-detail`,
+            row.primary_source_id,
+            `official-detail-${row.id}`,
+            `${row.id}-detail`,
+          )
           .first<{ raw_payload: string | null }>();
         const contactPhone = municipalContactPhone(contactSource?.raw_payload);
         const enrichment = await env.DB.prepare(

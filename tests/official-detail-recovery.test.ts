@@ -73,7 +73,7 @@ test("exact official link self-heals poster and rich detail without source-speci
             <tr><th>문의처</th><td>031-828-0000</td></tr>
           </table>
           <h2>행사개요</h2>
-          <p>동오마을에서 열리는 공식 먹거리 축제입니다.</p>
+          <p>동오마을에서 지역 상인과 주민이 함께 참여해 먹거리와 체험을 즐기는 공식 먹거리 축제입니다.</p>
           <img data-src="/upload/event/food-festa-poster.jpg"
                width="900" height="1200" alt="2026 동오마을 푸드페스타 포스터">
         </body>

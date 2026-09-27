@@ -1,4 +1,4 @@
-export type MunicipalRichHours = {
+import { extractOfficialPageImageCandidates } from "./official-page-image-candidates";\n\nexport type MunicipalRichHours = {
   start_time: string;
   end_time: string | null;
   human_time_text: string;
@@ -371,6 +371,12 @@ function extractImages(pageUrl: string, html: string): MunicipalRichImage[] {
   };
 
   add(metaContent(html, "og:image"), null, true);
+
+  for (const candidate of extractOfficialPageImageCandidates(pageUrl, html, 10)) {
+    if (candidate.signal === "IMG") continue;
+    add(candidate.url, candidate.alt, true);
+    if (output.length >= 5) return output.slice(0, 5);
+  }
 
   for (const match of html.matchAll(/<img\b([^>]*)>/gi)) {
     const attrs = match[1];
