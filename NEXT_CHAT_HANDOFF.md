@@ -1568,3 +1568,35 @@ UI 기준:
 - Do not start another speculative UI redesign. Continue UI work only from a new production screenshot or a concrete visible issue.
 - Independent lane: the 2026-09-27 municipal all-35 natural-run checkpoint becomes due after the 10:00 KST base Cron; it does not block the closed UI task.
 - Do not mass-create SEO landing pages or reopen TourAPI detail/recovery without new evidence.
+
+
+## 2026-09-27 — detail audit / action + mobile media production complete
+
+- PR #44 `feat: add detail official and map actions` merged as `aff69ab3d8bcd9b021c8c5499bea1035953a7638`.
+  - UI browser smoke #125 SUCCESS.
+  - Project checks #708 SUCCESS.
+  - Production Worker after deploy: `24270b62-f774-4840-9e67-657a4adec715`.
+  - Suwon municipal and TourAPI representative details both verified with official CTA + Kakao Maps action and no desktop/mobile overflow.
+- PR #45 `style: compact mobile detail media` merged as `7cc160dfcb3321c587d3a7baa5021b91f5ce9e8e`.
+  - UI browser smoke #127 SUCCESS.
+  - Project checks #713 SUCCESS.
+  - Production Worker after deploy: `15322094-8285-4cfc-97f6-7e08be201119`.
+  - Production smoke PASS.
+  - `페인터즈` and `광안리 M 드론 라이트쇼` two-image details:
+    - desktop media height 341px;
+    - mobile 390px media height 250px;
+    - 2 columns / 2 image buttons;
+    - document and dialog overflow false;
+    - official CTA + map CTA retained.
+- Five-event detail audit conclusion:
+  - UI action and mobile media density issues are fixed and production-closed.
+  - Sparse municipal details with missing programs/hours/phone/price should be treated as enrichment/data coverage work, not filled with guessed UI content.
+  - Do not reopen detail layout without a new concrete production issue.
+
+### Current continuation point — 2026-09-27
+
+- Home UI tasks and the two detail UI follow-ups above are production-closed.
+- The independent municipal all-35 natural-run checkpoint is now due because the 10:00 KST base Cron window has passed.
+- Next bounded task should be read-only production verification of the latest 10:00 base run: 35 Registry source outcomes, observed counts, candidate/decision distribution, source errors, published/revalidated counts, and detail handoff/backlog.
+- Do not manually trigger ingestion unless the natural-run audit provides concrete evidence that recovery is required.
+- Active promotion remains paused until the user explicitly resumes it.
