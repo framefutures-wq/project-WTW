@@ -120,3 +120,55 @@ for (const key of ["gyeonggi-평택", "gyeonggi-여주", "gyeongbuk-경산"]) {
     }));
   }
 }
+
+
+{
+  const source = municipalSourceByKey("gyeongbuk-경산");
+  if (source) {
+    const response = await fetch(source.url, {
+      signal: AbortSignal.timeout(15000),
+      headers: { "user-agent": "GaltteumDetailScriptDebug/1.0 read-only" },
+    });
+    const html = await response.text();
+    const scripts = [...html.matchAll(/<script\\b[^>]*src=["']([^"']+)["'][^>]*>/gi)]
+      .map((match) => new URL(match[1], source.url).toString());
+    for (const url of scripts) {
+      try {
+        const js = await (await fetch(url, {
+          signal: AbortSignal.timeout(10000),
+          headers: { "user-agent": "GaltteumDetailScriptDebug/1.0 read-only" },
+        })).text();
+        const pos = js.indexOf("goDetail");
+        if (pos >= 0)
+          console.log(JSON.stringify({
+            script_source: "gyeongbuk-경산",
+            script_url: url,
+            go_detail_context: js.slice(Math.max(0, pos - 600), pos + 1400).replace(/\\s+/g, " "),
+          }));
+      } catch {}
+    }
+  }
+}
+
+{
+  const source = municipalSourceByKey("gyeonggi-여주");
+  if (source) {
+    const response = await fetch(source.url, {
+      signal: AbortSignal.timeout(15000),
+      headers: { "user-agent": "GaltteumYeojuDebug/1.0 read-only" },
+    });
+    const html = await response.text();
+    const found = [
+      ...html.matchAll(/(?:onclick|href)=["']([^"']*(?:view|View|detail|Detail|board)[^"']*)["']/gi),
+    ].map((match) => match[0].replace(/\\s+/g, " ").slice(0, 700));
+    const forms = [...html.matchAll(/<form\\b[\\s\\S]{0,5000}?<\\/form>/gi)]
+      .map((match) => match[0])
+      .filter((form) => /reserve\\/board|view|detail/i.test(form))
+      .map((form) => form.replace(/\\s+/g, " ").slice(0, 2200));
+    console.log(JSON.stringify({
+      script_source: "gyeonggi-여주",
+      detailish_attrs: [...new Set(found)].slice(0, 30),
+      forms: forms.slice(0, 4),
+    }));
+  }
+}
