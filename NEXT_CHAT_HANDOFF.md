@@ -2106,3 +2106,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Weekend discovery landings now cover all 17 public regions via `/weekend/<region-slug>`.
 - The internal `전남광주` transitional region is intentionally not exposed as a public SEO landing.
 - Production deployment remains coupled to the guarded discovery rollout; do not deploy separately just for this config-only SEO expansion.
+
+
+## 2026-09-27 — discovery rollout preflight fix merged
+
+- First guarded rollout stopped before migration/deploy because the preflight audit referenced migration-0022 quality columns before production had that migration.
+- PR #74 fixed the audit to support both pre-migration and migrated schemas and merged green as `c642303a4fb05221e6c757043895d323d28f8972`.
+- No production write occurred in the failed attempt.
+- Next authenticated Codespaces step: pull latest main, then rerun `npm run rollout:discovery:v1`.
+- Do not apply migrations or deploy separately; keep the guarded rollout path.
