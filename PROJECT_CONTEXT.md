@@ -1067,3 +1067,20 @@ UI benchmark:
 - CI Project checks PASS.
 - Production has NOT been migrated/deployed yet. Migration must be applied before deploying this Worker code.
 - Next bounded task: build a read-only quality audit that classifies the current production dataset without writing or changing visibility, then use that report to tune rules before any legacy mass reclassification.
+
+
+## 2026-09-27 — discovery-first Phase 3 tooling complete: read-only quality audit
+
+- PR #61 merged as `aef8b8baa3bb68813fd27e4fcfbd2784a0a10168`.
+- Added `npm run audit:publish-quality`.
+- Audit is bounded and zero-write:
+  - scans current/future verified non-sample events only;
+  - proposes PUBLIC/HOLD/EXCLUDE using the shared classifier;
+  - groups by state, reason, and source kind;
+  - reports representative HOLD/EXCLUDE rows;
+  - reports official-link coverage as first-party direct / discovered official / TourAPI-only / missing.
+- Production mode requires the existing explicit remote-read approval flag:
+  `npm run audit:publish-quality -- --remote --allow-expensive-remote-read`.
+- CI Project checks and UI browser smoke PASS.
+- Actual production audit has not been executed from this chat because Cloudflare D1 credentials/runtime are not available here.
+- This does not block independent official-link acquisition work; legacy mass reclassification remains blocked until the production audit is run and reviewed.
