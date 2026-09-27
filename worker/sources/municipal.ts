@@ -25,6 +25,7 @@ import {
   type AutonomousDecision,
 } from "../../shared/municipal-autonomous";
 import {
+  hasUnconfirmedMunicipalCoreChange,
   isMunicipalPublicationMutation,
   municipalPublishSlotAvailable,
 } from "../../shared/municipal-publication";
@@ -748,9 +749,15 @@ export async function runMunicipalAutonomous(
             existing.end_date !== effectiveCandidate.end_date ||
             existing.venue !== effectiveCandidate.venue),
         );
-        // A changed core payload needs two identical daily observations before it replaces last-known-good.
-        const coreConflict =
-          changedExisting && previous?.last_payload_hash !== payloadHash;
+        // A changed core payload needs the same value again on a later
+        // Korea calendar day. Same-day manual retries do not confirm it.
+        const coreConflict = hasUnconfirmedMunicipalCoreChange({
+          changedExisting,
+          previousPayloadHash: previous?.last_payload_hash,
+          payloadHash,
+          previousSeenAt: previous?.last_seen_at,
+          currentSeenAt: now,
+        });
         const candidateTemporal = temporal(effectiveCandidate, koreaToday);
         const coreValid = Boolean(
           effectiveCandidate.title &&
@@ -1040,6 +1047,13 @@ export async function runMunicipalAutonomous(
           effectiveCandidate.venue &&
           effectiveCandidate.official_url,
       );
+      const retryCoreConflict = hasUnconfirmedMunicipalCoreChange({
+        changedExisting,
+        previousPayloadHash: row.last_payload_hash,
+        payloadHash,
+        previousSeenAt: row.last_seen_at,
+        currentSeenAt: now,
+      });
       let decision = decideAutonomousMunicipal({
         gate: gate.gate,
         duplicate: duplicateResult.decision,
@@ -1048,7 +1062,7 @@ export async function runMunicipalAutonomous(
         coreValid,
         parserError: Boolean(effectiveCandidate.parse_error),
         detailError,
-        coreConflict: detailCoreConflict,
+        coreConflict: detailCoreConflict || retryCoreConflict,
       });
       const publicationMutation = isMunicipalPublicationMutation({
         existing,

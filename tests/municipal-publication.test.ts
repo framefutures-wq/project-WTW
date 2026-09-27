@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  hasUnconfirmedMunicipalCoreChange,
   isMunicipalPublicationMutation,
   municipalPublishSlotAvailable,
 } from "../shared/municipal-publication";
@@ -74,6 +75,53 @@ test("unchanged revalidation cannot starve later municipal mutations", () => {
       publishMutations: maxPublish,
       isMutation: true,
       maxPublish,
+    }),
+    false,
+  );
+});
+
+
+test("municipal core changes require an identical observation on a later Korea day", () => {
+  const base = {
+    changedExisting: true,
+    previousPayloadHash: "same",
+    payloadHash: "same",
+  };
+
+  assert.equal(
+    hasUnconfirmedMunicipalCoreChange({
+      ...base,
+      previousSeenAt: "2026-09-27T01:00:00.000Z",
+      currentSeenAt: "2026-09-27T05:00:00.000Z",
+    }),
+    true,
+  );
+
+  assert.equal(
+    hasUnconfirmedMunicipalCoreChange({
+      ...base,
+      previousSeenAt: "2026-09-27T01:00:00.000Z",
+      currentSeenAt: "2026-09-27T15:10:00.000Z",
+    }),
+    false,
+  );
+
+  assert.equal(
+    hasUnconfirmedMunicipalCoreChange({
+      ...base,
+      previousPayloadHash: "old",
+      previousSeenAt: "2026-09-26T01:00:00.000Z",
+      currentSeenAt: "2026-09-27T01:00:00.000Z",
+    }),
+    true,
+  );
+
+  assert.equal(
+    hasUnconfirmedMunicipalCoreChange({
+      ...base,
+      changedExisting: false,
+      previousSeenAt: null,
+      currentSeenAt: "2026-09-27T01:00:00.000Z",
     }),
     false,
   );
