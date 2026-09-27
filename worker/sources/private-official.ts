@@ -1,6 +1,7 @@
 import { PRIVATE_SOURCE_REGISTRY, canonicalPrivateIdentity, classifyDuplicate } from "../../shared/private-official-sources";
 import { KOREAN_FOLK_ADDRESS, KOREAN_FOLK_DISCOVERY_URL, KOREAN_FOLK_VENUE, KOREAN_FOLK_VENUE_URL, koreanFolkSelection, parseKoreanFolkDetail, parseKoreanFolkListing } from "../../shared/korean-folk-private-source";
 import { alertDedupeKey, alertId, scheduleChanged } from "../../shared/alert-engine";
+import { decidePublishQuality } from "../../shared/publish-quality";
 import type { Env } from "../env";
 
 export type PrivateSummary = Record<"AUTO_PUBLISH" | "AUTO_RETRY" | "AUTO_EXCLUDE" | "POLICY_SKIP" | "EXPIRED" | "discovered" | "inserted" | "updated" | "source_errors" | "rows_read" | "rows_written", number>;
@@ -17,12 +18,24 @@ async function official(url: string) {
   return response.text();
 }
 async function publish(env: Env, c: { id: string; title: string; startDate: string; endDate: string; description: string | null }, url: string, now: string, existing: { id: string; start_date: string; end_date: string } | null) {
+  const description =
+    c.description ?? "한국민속촌 공식 행사 안내를 바탕으로 등록된 행사입니다.";
+  const quality = decidePublishQuality({
+    title: c.title,
+    description,
+    start_date: c.startDate,
+    end_date: c.endDate,
+    venue: KOREAN_FOLK_VENUE,
+    address: KOREAN_FOLK_ADDRESS,
+    source_kind: "organizer",
+    source_url: url,
+  });
   const after = { start_date: c.startDate, end_date: c.endDate };
   const alert = !existing ? (() => { const key = alertDedupeKey("NEW_EVENT", c.id, after); return env.DB.prepare("INSERT OR IGNORE INTO alert_events(id,event_id,alert_type,dedupe_key,created_at,effective_at,before_json,after_json,source_id) VALUES(?,?,?,?,?,?,?,?,?)").bind(alertId(key), c.id, "NEW_EVENT", key, now, now, null, JSON.stringify(after), sourceId); })() : scheduleChanged(existing, after) ? (() => { const key = alertDedupeKey("SCHEDULE_CHANGED", c.id, after); return env.DB.prepare("INSERT OR IGNORE INTO alert_events(id,event_id,alert_type,dedupe_key,created_at,effective_at,before_json,after_json,source_id) VALUES(?,?,?,?,?,?,?,?,?)").bind(alertId(key), c.id, "SCHEDULE_CHANGED", key, now, now, JSON.stringify({ start_date: existing.start_date, end_date: existing.end_date }), JSON.stringify(after), sourceId); })() : null;
   const evidence = `${c.title} | ${c.startDate}~${c.endDate} | ${KOREAN_FOLK_VENUE}`;
   const result = await env.DB.batch([
     env.DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,?,?,?,?,?,NULL) ON CONFLICT(id) DO UPDATE SET name=excluded.name,url=excluded.url,fetched_at=excluded.fetched_at").bind(sourceId, "organizer", 1, "한국민속촌 공식 행사", KOREAN_FOLK_DISCOVERY_URL, now),
-    env.DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES(?,?,?,?,?,?,?,?,NULL,NULL,'unknown',NULL,'unknown','scheduled','verified',0,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,status='scheduled',verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.updated_at").bind(c.id, c.title, c.description ?? "한국민속촌 공식 행사 안내를 바탕으로 등록된 행사입니다.", "경기", KOREAN_FOLK_VENUE, KOREAN_FOLK_ADDRESS, c.startDate, c.endDate, sourceId, now, now),
+    env.DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at,updated_at,publish_quality_state,publish_quality_reason,publish_quality_rule_version,publish_quality_checked_at) VALUES(?,?,?,?,?,?,?,?,NULL,NULL,'unknown',NULL,'unknown','scheduled','verified',0,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,status='scheduled',verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.updated_at,publish_quality_state=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_state ELSE excluded.publish_quality_state END,publish_quality_reason=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_reason ELSE excluded.publish_quality_reason END,publish_quality_rule_version=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_rule_version ELSE excluded.publish_quality_rule_version END,publish_quality_checked_at=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_checked_at ELSE excluded.publish_quality_checked_at END").bind(c.id, c.title, description, "경기", KOREAN_FOLK_VENUE, KOREAN_FOLK_ADDRESS, c.startDate, c.endDate, sourceId, now, now, quality.state, quality.reason, quality.rule_version, now),
     ...["schedule", "venue", "status"].map((field) => env.DB.prepare("INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?,?,?) ON CONFLICT(event_id,source_id,field) DO UPDATE SET excerpt=excluded.excerpt,checked_at=excluded.checked_at").bind(c.id, sourceId, field, field === "venue" ? `${KOREAN_FOLK_VENUE} | ${KOREAN_FOLK_ADDRESS} | ${KOREAN_FOLK_VENUE_URL}` : evidence, now)),
     ...(alert ? [alert] : []),
   ]);
