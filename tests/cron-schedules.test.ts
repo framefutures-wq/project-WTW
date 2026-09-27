@@ -122,7 +122,7 @@ test("10:00 KST hands off to bounded detail immediately after base succeeds", as
   }
 });
 
-test("11:00 KST runs detail only after the same KST date base succeeds", async () => {
+test("11:00 KST runs municipal shard then detail after the same KST date base succeeds", async () => {
   const { mf, DB, env } = await setup();
   const calls: string[] = [];
   try {
@@ -137,7 +137,7 @@ test("11:00 KST runs detail only after the same KST date base succeeds", async (
       detailTime,
       dependencies(calls),
     );
-    assert.deepEqual(calls, ["detail"]);
+    assert.deepEqual(calls, ["municipal", "detail"]);
     const row = await DB.prepare(
       "SELECT provider,status,message FROM sync_runs WHERE provider='tourapi-detail'",
     ).first<{ provider: string; status: string; message: string }>();
@@ -165,7 +165,7 @@ test("retry recovery Cron runs detail with retry-due scope only", async () => {
       return { candidates: 0, requested: 0, attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, enriched: 0, empty: 0, failed: 0, failure_reasons: {}, failure_endpoints: {}, network_failure_subtypes: {}, failure_latency: {}, retry_rounds: {} };
     };
     await runScheduled(env as never, DETAIL_RETRY_RECOVERY_CRONS[0], new Date("2026-09-21T02:45:00.000Z"), deps);
-    assert.deepEqual(calls, ["detail-retry"]);
+    assert.deepEqual(calls, ["municipal", "detail-retry"]);
     assert.equal(scope, "retry_due");
     const row = await DB.prepare("SELECT message FROM sync_runs WHERE provider='tourapi-detail'").first<{ message: string }>();
     assert.equal(JSON.parse(row!.message).trigger, "retry_recovery");
@@ -195,7 +195,7 @@ for (const [name, status] of [
         detailTime,
         dependencies(calls),
       );
-      assert.deepEqual(calls, []);
+      assert.deepEqual(calls, ["municipal"]);
       const row = await DB.prepare(
         "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail'",
       ).first<{ status: string; message: string }>();
@@ -243,7 +243,7 @@ test("immediate detail failure stays isolated and the 11:00 watchdog can retry",
       detailTime,
       dependencies(watchdogCalls),
     );
-    assert.deepEqual(watchdogCalls, ["detail"]);
+    assert.deepEqual(watchdogCalls, ["municipal", "detail"]);
     const latest = await DB.prepare(
       "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid DESC LIMIT 1",
     ).first<{ status: string; message: string }>();
