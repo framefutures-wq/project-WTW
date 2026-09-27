@@ -2146,3 +2146,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - `verify:discovery:v1` now uses summary-only audit output.
 - `apply:publish-quality:v1` now prints only key before/after counts and rollout state; full audit data is still used internally for safety validation.
 - Next authenticated Codespaces step: pull latest main, then rerun the concise verification/apply commands. Do not paste or depend on the old truncated output.
+
+
+## 2026-09-27 — Phase 1/2 closed; Phase 3 official-link cleanup is next
+
+- Production verify passed on desktop and mobile.
+- Quality state is now stable at PUBLIC 241 / HOLD 17 / EXCLUDE 0.
+- `legacy_unversioned=0` and `proposed_visibility_changes=0`; no legacy cleanup write remains.
+- Treat Publish Quality Gate + initial production data cleanup as complete.
+- Official-link coverage is now the main quality bottleneck: EVENT_OFFICIAL_LINK 66 / FIRST_PARTY_SOURCE_ONLY 44 / TOURAPI_ONLY 148 / MISSING 0.
+- Next work must focus on exact official-link acquisition/backfill, starting with explicit URLs already present in persisted TourAPI detail payloads before attempting any broader discovery.
