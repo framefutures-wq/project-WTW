@@ -13,9 +13,19 @@ const config = parse(readFileSync("wrangler.production.jsonc", "utf8"));
 const tempConfig = resolve(tempDir, `municipal-once-${manualRunId}.jsonc`);
 
 const shardArg = process.argv.find((arg) => arg.startsWith("--shard="));
-const requestedShards = shardArg
-  ? [Number(shardArg.slice("--shard=".length))]
-  : [0, 1, 2];
+const sourceArg = process.argv.find((arg) => arg.startsWith("--source="));
+if (shardArg && sourceArg)
+  throw new Error("Use either --shard or --source, not both.");
+const requestedSource = sourceArg
+  ? sourceArg.slice("--source=".length).trim()
+  : null;
+if (sourceArg && !requestedSource)
+  throw new Error("Use --source=<registry-source-key>.");
+const requestedShards = requestedSource
+  ? []
+  : shardArg
+    ? [Number(shardArg.slice("--shard=".length))]
+    : [0, 1, 2];
 
 if (
   requestedShards.some(
@@ -49,7 +59,10 @@ const d1Read = (sql) => {
   return JSON.parse(output)[0]?.results ?? [];
 };
 
-const postShard = (url, shardIndex) => {
+const postShard = (url, shardIndex, sourceKey = null) => {
+  const targetHeaders = sourceKey
+    ? ["--header", `x-manual-municipal-source: ${encodeURIComponent(sourceKey)}`]
+    : ["--header", `x-manual-municipal-shard: ${shardIndex}`];
   const result = spawnSync(
     "curl",
     [
@@ -64,8 +77,7 @@ const postShard = (url, shardIndex) => {
       "POST",
       "--header",
       `x-manual-municipal-nonce: ${nonce}`,
-      "--header",
-      `x-manual-municipal-shard: ${shardIndex}`,
+      ...targetHeaders,
       url,
     ],
     {
@@ -73,6 +85,7 @@ const postShard = (url, shardIndex) => {
       maxBuffer: 8 * 1024 * 1024,
     },
   );
+  const targetLabel = sourceKey ? `source ${sourceKey}` : `shard ${shardIndex}`;
   if (result.status !== 0) {
     const stdout = (result.stdout || "").trim();
     const stderr = (result.stderr || "").trim();
@@ -85,7 +98,7 @@ const postShard = (url, shardIndex) => {
           (parsed.error.stack ? "\n" + parsed.error.stack : "");
     } catch {}
     throw new Error(
-      `one-shot shard ${shardIndex} transport failed` +
+      `one-shot ${targetLabel} transport failed` +
         (detail ? `:\n${detail}` : "") +
         (stderr ? `\n[curl] ${stderr}` : ""),
     );
@@ -94,7 +107,7 @@ const postShard = (url, shardIndex) => {
     const parsed = JSON.parse(result.stdout);
     if (parsed?.ok === false)
       throw new Error(
-        `one-shot shard ${shardIndex} failed: ${parsed.error?.message ?? "unknown"}`,
+        `one-shot ${targetLabel} failed: ${parsed.error?.message ?? "unknown"}`,
       );
     return parsed;
   } catch (error) {
@@ -104,7 +117,7 @@ const postShard = (url, shardIndex) => {
     )
       throw error;
     throw new Error(
-      `one-shot shard ${shardIndex} returned invalid JSON`,
+      `one-shot ${targetLabel} returned invalid JSON`,
     );
   }
 };
@@ -224,19 +237,37 @@ try {
 
   const shardResults = [];
   console.error(
-    `[municipal:once] manualRunId=${manualRunId} shards=${requestedShards.join(",")}`,
+    requestedSource
+      ? `[municipal:once] manualRunId=${manualRunId} source=${requestedSource}`
+      : `[municipal:once] manualRunId=${manualRunId} shards=${requestedShards.join(",")}`,
   );
-  for (const shardIndex of requestedShards) {
-    console.error(`[municipal:once] shard ${shardIndex} start`);
-    const result = postShard(url, shardIndex);
-    if (result.shardIndex !== shardIndex)
+  if (requestedSource) {
+    console.error(`[municipal:once] source ${requestedSource} start`);
+    const result = postShard(url, null, requestedSource);
+    if (
+      result.plan?.sourceKeys?.length !== 1 ||
+      result.plan.sourceKeys[0] !== requestedSource
+    )
       throw new Error(
-        `one-shot shard mismatch: requested ${shardIndex}, got ${result.shardIndex}`,
+        `one-shot source mismatch: requested ${requestedSource}`,
       );
     shardResults.push(result);
     console.error(
-      `[municipal:once] shard ${shardIndex} success sources=${result.plan?.sourceKeys?.length ?? 0} rich=${result.summary?.rich_detail_persisted ?? 0} errors=${result.summary?.source_errors ?? 0}`,
+      `[municipal:once] source ${requestedSource} success rich=${result.summary?.rich_detail_persisted ?? 0} errors=${result.summary?.source_errors ?? 0}`,
     );
+  } else {
+    for (const shardIndex of requestedShards) {
+      console.error(`[municipal:once] shard ${shardIndex} start`);
+      const result = postShard(url, shardIndex);
+      if (result.shardIndex !== shardIndex)
+        throw new Error(
+          `one-shot shard mismatch: requested ${shardIndex}, got ${result.shardIndex}`,
+        );
+      shardResults.push(result);
+      console.error(
+        `[municipal:once] shard ${shardIndex} success sources=${result.plan?.sourceKeys?.length ?? 0} rich=${result.summary?.rich_detail_persisted ?? 0} errors=${result.summary?.source_errors ?? 0}`,
+      );
+    }
   }
 
   const registrySourceCounts = new Set(
@@ -253,6 +284,7 @@ try {
 
   if (
     !shardArg &&
+    !sourceArg &&
     (uniqueRegistryKeys.length !== registrySourceCount ||
       registryKeys.length !== uniqueRegistryKeys.length)
   )
@@ -316,6 +348,7 @@ try {
       {
         manualRunId,
         requestedShards,
+        requestedSource,
         registrySourceCount,
         registryExpectedSourceKeys: uniqueRegistryKeys,
         shardResults: shardResults.map((shard) => ({

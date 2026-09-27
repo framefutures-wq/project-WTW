@@ -7,6 +7,8 @@ test("municipal one-shot is nonce-protected and requires an explicit production 
   assert.match(worker, /request\.method !== "POST"/);
   assert.match(worker, /x-manual-municipal-nonce/);
   assert.match(worker, /x-manual-municipal-shard/);
+  assert.match(worker, /x-manual-municipal-source/);
+  assert.match(worker, /decodeURIComponent\(rawSource\)/);
   assert.match(worker, /MUNICIPAL_DAILY_SHARD_COUNT/);
   assert.match(worker, /municipalRunPlan\(registryKeys, shardIndex\)/);
   assert.match(worker, /runMunicipalAutonomous\(env, plan\)/);
@@ -36,6 +38,10 @@ test("municipal one-shot defaults to three isolated shard requests and supports 
   const runner = readFileSync("scripts/run-municipal-once.mjs", "utf8");
   assert.match(runner, /: \[0, 1, 2\]/);
   assert.match(runner, /--shard=/);
+  assert.match(runner, /--source=/);
+  assert.match(runner, /requestedSource/);
+  assert.match(runner, /x-manual-municipal-source:/);
+  assert.match(runner, /encodeURIComponent\(sourceKey\)/);
   assert.match(runner, /for \(const shardIndex of requestedShards\)/);
   assert.match(runner, /postShard\(url, shardIndex\)/);
   assert.match(runner, /spawnSync\(\s*"curl"/);

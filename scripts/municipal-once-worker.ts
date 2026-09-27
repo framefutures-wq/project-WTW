@@ -21,22 +21,56 @@ export default {
       return new Response("Forbidden", { status: 403 });
 
     const rawShard = request.headers.get("x-manual-municipal-shard");
-    const shardIndex = Number(rawShard);
-    if (
-      rawShard === null ||
-      !Number.isInteger(shardIndex) ||
-      shardIndex < 0 ||
-      shardIndex >= MUNICIPAL_DAILY_SHARD_COUNT
-    )
-      return Response.json(
-        {
-          error: "invalid_shard",
-          shardCount: MUNICIPAL_DAILY_SHARD_COUNT,
-        },
-        { status: 400 },
-      );
+    const rawSource = request.headers.get("x-manual-municipal-source");
+    if (rawShard !== null && rawSource !== null)
+      return Response.json({ error: "ambiguous_manual_target" }, { status: 400 });
 
-    const plan = municipalRunPlan(registryKeys, shardIndex);
+    let sourceKey: string | null = null;
+    if (rawSource !== null) {
+      try {
+        sourceKey = decodeURIComponent(rawSource);
+      } catch {
+        return Response.json({ error: "invalid_source_encoding" }, { status: 400 });
+      }
+      if (!registryKeys.includes(sourceKey))
+        return Response.json(
+          { error: "invalid_source", sourceKey },
+          { status: 400 },
+        );
+    }
+
+    let shardIndex: number;
+    if (sourceKey) {
+      const matchedShard = Array.from(
+        { length: MUNICIPAL_DAILY_SHARD_COUNT },
+        (_, index) => index,
+      ).find((index) =>
+        municipalRunPlan(registryKeys, index).sourceKeys.includes(sourceKey!),
+      );
+      if (matchedShard === undefined)
+        return Response.json({ error: "source_shard_not_found" }, { status: 500 });
+      shardIndex = matchedShard;
+    } else {
+      shardIndex = Number(rawShard);
+      if (
+        rawShard === null ||
+        !Number.isInteger(shardIndex) ||
+        shardIndex < 0 ||
+        shardIndex >= MUNICIPAL_DAILY_SHARD_COUNT
+      )
+        return Response.json(
+          {
+            error: "invalid_shard",
+            shardCount: MUNICIPAL_DAILY_SHARD_COUNT,
+          },
+          { status: 400 },
+        );
+    }
+
+    const productionPlan = municipalRunPlan(registryKeys, shardIndex);
+    const plan = sourceKey
+      ? { ...productionPlan, sourceKeys: [sourceKey] }
+      : productionPlan;
     const startedAt = new Date().toISOString();
     try {
       const summary = await runMunicipalAutonomous(env, plan);
@@ -45,6 +79,7 @@ export default {
         startedAt,
         finishedAt: new Date().toISOString(),
         shardIndex,
+        sourceKey,
         shardCount: MUNICIPAL_DAILY_SHARD_COUNT,
         registrySourceCount: registryKeys.length,
         plan,
@@ -68,6 +103,7 @@ export default {
           startedAt,
           finishedAt: new Date().toISOString(),
           shardIndex,
+          sourceKey,
           shardCount: MUNICIPAL_DAILY_SHARD_COUNT,
           registrySourceCount: registryKeys.length,
           plan,
