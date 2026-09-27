@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("municipal rich detail is actually visible in the event modal", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 820 });
   const id = "municipal-seoul-hangang-ui";
   const image1 = "https://galteum.com/api/events/municipal-seoul-hangang-ui/image/1";
   const image2 = "https://galteum.com/api/events/municipal-seoul-hangang-ui/image/2";
@@ -180,4 +181,37 @@ test("municipal rich detail is actually visible in the event modal", async ({ pa
     images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
   );
   expect(loaded).toBe(true);
+
+  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
+  const dialogBox = await dialog.boundingBox();
+  const mediaBox = await media.boundingBox();
+  const summaryBox = await dialog.locator(".detail-summary-panel").boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(mediaBox).not.toBeNull();
+  expect(summaryBox).not.toBeNull();
+  expect(mediaBox!.y).toBeLessThan(summaryBox!.y);
+  expect(mediaBox!.height).toBeLessThanOrEqual(230);
+  expect(mediaBox!.width / dialogBox!.width).toBeGreaterThan(0.97);
+
+  const primaryFacts = dialog.locator(".detail-primary-fact");
+  await expect(primaryFacts).toHaveCount(2);
+  const dateBox = await primaryFacts.nth(0).boundingBox();
+  const locationBox = await primaryFacts.nth(1).boundingBox();
+  expect(dateBox).not.toBeNull();
+  expect(locationBox).not.toBeNull();
+  expect(Math.abs(dateBox!.y - locationBox!.y)).toBeLessThanOrEqual(2);
+  expect(dateBox!.x).toBeLessThan(locationBox!.x);
+
+  const programGrid = dialog.locator(".detail-program-list .detail-programs");
+  await expect(programGrid).toBeVisible();
+  const programColumns = await programGrid.evaluate((element) =>
+    getComputedStyle(element).gridTemplateColumns
+      .split(" ")
+      .filter(Boolean).length,
+  );
+  expect(programColumns).toBeGreaterThanOrEqual(3);
+
+  const firstProgram = await dialog.locator(".detail-program-card").first().boundingBox();
+  expect(firstProgram).not.toBeNull();
+  expect(firstProgram!.y - dialogBox!.y).toBeLessThan(720);
 });
