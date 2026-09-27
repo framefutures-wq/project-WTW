@@ -1649,3 +1649,33 @@ UI 기준:
 - No Worker deploy is required for this tooling-only change.
 - Current next bounded step: run the 35-source read-only audit and classify sources into common rich-detail patterns before implementing any extractor/storage changes.
 - Keep the municipal shard production behavior frozen until the first complete Sep 28 natural-cycle verification after 11:45 KST.
+
+
+## 2026-09-27 — municipal rich-detail foundation merged
+
+- The all-35 read-only rich-detail audit showed:
+  - 13 sources classified `RICH_DETAIL_UNHARVESTED` with representative first-party detail URLs successfully sampled;
+  - 18 sources classified `LIST_RICHNESS_ONLY`;
+  - 4 list fetch failures.
+- Important interpretation: `LIST_RICHNESS_ONLY` does not mean no detail page exists. The user-provided Seoul Hangang example has a rich per-event detail page but the current generic parser produced `detail_targets=0`, so this bucket can contain undiscovered detail pages and the audit undercounts the true rich-detail opportunity.
+- PR #48 `feat: add municipal rich-detail foundation` merged as `c998c417ce0cb461b3398434d339094c1dc71d6b`.
+  - UI browser smoke #137 SUCCESS.
+  - Project checks #753 SUCCESS.
+- Added a conservative common extractor for official municipal detail HTML:
+  - explicit summary section;
+  - explicit time ranges, including multiple intervals;
+  - explicit price labels;
+  - explicit contact values including short public-service numbers such as 120;
+  - official-page images with decorative-image filtering;
+  - heading-structured program items.
+- Added priority-safe persistence foundation using the existing detail schema:
+  - municipality priority 2 can replace TourAPI priority 3;
+  - organizer priority 1 remains protected;
+  - no new D1 table/migration.
+- This foundation is intentionally NOT wired into scheduled municipal ingestion yet, so production behavior and the Sep 28 natural shard verification condition remain unchanged.
+- No Worker deploy is required for PR #48.
+- Next bounded task after the Sep 28 shard verification:
+  1. wire the foundation into sources that already resolve first-party detail URLs;
+  2. separately add detail-link discovery/follow-up for Seoul Hangang and other `LIST_RICHNESS_ONLY` sources;
+  3. surface municipality contact payload in the detail API;
+  4. verify representative production details before broad rollout.
