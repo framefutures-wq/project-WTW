@@ -58,7 +58,8 @@
     "audit:publish-quality": "node --import tsx scripts/audit-publish-quality.ts",
     "rollout:discovery:v1": "node --import tsx scripts/rollout-discovery-v1.ts",
     "verify:discovery:v1": "TEST_BASE_URL=https://galteum.com TEST_OUTPUT_DIR=test-results/discovery-v1-production npm run test:ui:prod && node --import tsx scripts/audit-publish-quality.ts --remote --allow-expensive-remote-read --limit 5000 --examples 1 --summary",
-    "apply:publish-quality:v1": "node --import tsx scripts/apply-publish-quality-v1.ts"
+    "apply:publish-quality:v1": "node --import tsx scripts/apply-publish-quality-v1.ts",
+    "official-links:backfill:tourapi": "node --import tsx scripts/backfill-tourapi-official-links.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
