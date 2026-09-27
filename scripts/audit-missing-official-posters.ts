@@ -8,7 +8,8 @@ import {
 
 const args = process.argv.slice(2);
 if (!args.includes("--remote"))
-  throw new Error("usage: npm run images:audit:missing-posters -- --remote");
+  throw new Error("usage: npm run images:audit:missing-posters -- --remote [--summary]");
+const summaryOnly = args.includes("--summary");
 
 const DB = "weekend-mwohae-production";
 const CONFIG = "wrangler.production.jsonc";
@@ -211,7 +212,7 @@ for (const item of audited) {
   bySourceKind[item.source_kind] = (bySourceKind[item.source_kind] ?? 0) + 1;
 }
 
-console.log(JSON.stringify({
+const base = {
   mode: "remote-production-read-only",
   writes: 0,
   as_of_kst: today,
@@ -223,5 +224,29 @@ console.log(JSON.stringify({
     (byClassification.RAW_PAYLOAD_IMAGE ?? 0) +
     (byClassification.OFFICIAL_PAGE_IMAGE ?? 0) +
     (byClassification.FIRST_PARTY_SOURCE_PAGE_IMAGE ?? 0),
-  events: audited,
-}, null, 2));
+};
+
+const examples = Object.fromEntries(
+  Object.keys(byClassification).map((classification) => [
+    classification,
+    audited
+      .filter((item) => item.classification === classification)
+      .slice(0, 5)
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        source_kind: item.source_kind,
+        page_access_status: item.page_access_status,
+        raw_candidates: item.raw_candidates.slice(0, 1),
+        page_candidates: item.page_candidates.slice(0, 2),
+      })),
+  ]),
+);
+
+console.log(
+  JSON.stringify(
+    summaryOnly ? { ...base, examples } : { ...base, events: audited },
+    null,
+    2,
+  ),
+);
