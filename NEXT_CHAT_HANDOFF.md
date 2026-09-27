@@ -2240,3 +2240,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - PR #84 merged green as `9cbb37ecc1f12acd16cd3a361d06151bfa112b8d`.
 - Next authenticated Codespaces command after pulling latest main: `npm run official-links:audit:tourapi-other-https -- --remote`.
 - This is zero-write. Use its reachability/title-signal/domain-category output to decide which remaining URLs can become verified official links and which must stay unresolved.
+
+
+## 2026-09-27 — Korea Tourism-style poster-first home merged; deploy pending
+
+- PR #85 merged green as `3e1f656dda9a8f5b19bf3076574564fd5bc48b8d`.
+- Home cards are now portrait 3:4, preserve portrait/square posters in full, remove home blur backdrops, and simplify visible card metadata.
+- UI browser smoke + Project checks passed.
+- Production frontend deploy is still pending.
+- Next separate data-quality task: audit events where Galteum shows the no-image fallback but the official event/detail page actually contains a poster, then fix the ingestion/extractor path rather than decorating the fallback.
