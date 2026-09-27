@@ -89,7 +89,10 @@ export function auditPublishQualityRows(
   exampleLimit = 8,
 ) {
   const audited: AuditedPublishQualityRow[] = rows.map((row) => {
-    const proposed = decidePublishQuality(row);
+    const proposed = decidePublishQuality({
+      ...row,
+      event_official_url: row.discovered_official_url,
+    });
     const official_link_quality = officialLinkQuality(row);
     return {
       ...row,

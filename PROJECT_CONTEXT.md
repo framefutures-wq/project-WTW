@@ -1084,3 +1084,19 @@ UI benchmark:
 - CI Project checks and UI browser smoke PASS.
 - Actual production audit has not been executed from this chat because Cloudflare D1 credentials/runtime are not available here.
 - This does not block independent official-link acquisition work; legacy mass reclassification remains blocked until the production audit is run and reviewed.
+
+
+---
+
+## 2026-09-27 — Publish Quality Gate v2: sparse TourAPI hardening
+
+- Publish quality rule version advances to `publish_quality_v2`.
+- Sparse TourAPI list rows no longer become PUBLIC solely because their title contains words such as 축제/전시/회원전/체험.
+- A TourAPI row with only the generic provider sentence stays HOLD until detail enrichment supplies either:
+  - meaningful event-specific description; or
+  - a safe event-specific official homepage.
+- Long-running permanent facility entries such as year-round permanent exhibitions are EXCLUDE when they carry facility/perpetual signals and no strong bounded special-event signal.
+- Bounded special events (festival, special exhibition, performance, night opening, etc.) remain eligible even when they operate daily during the event period.
+- The read-only production audit now feeds discovered event-specific official links into the same classifier, so audit and ingestion decisions use the same evidence.
+- This change is intended to remove the exact class the user flagged: records that technically look event-like by title but are too thin to deserve public listing.
+- Legacy production rows are still not mass-reclassified until the read-only production audit is reviewed.

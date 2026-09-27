@@ -193,6 +193,7 @@ async function saveSuccess(db: D1Database, candidate: Candidate, payload: Detail
     address: candidate.address,
     source_kind: "tourapi",
     source_url: TOUR_API_DOC,
+    event_official_url: officialHomepage,
   });
   statements.push(
     db.prepare(
