@@ -76,8 +76,19 @@ export async function disableSubscription(env: Env, endpoint: string) {
 
 function preferenceColumn(type: string) { return type === "NEW_EVENT" ? "new_event" : type === "SCHEDULE_CHANGED" ? "schedule_changed" : "cancelled_or_postponed"; }
 async function queueAlert(env: Env, alert: { id: string; event_id: string; alert_type: string }) {
-  const event = await env.DB.prepare("SELECT region FROM events WHERE id=?").bind(alert.event_id).first<{ region: string }>();
+  const event = await env.DB.prepare(
+    "SELECT region,publish_quality_state FROM events WHERE id=?",
+  ).bind(alert.event_id).first<{
+    region: string;
+    publish_quality_state: "PUBLIC" | "HOLD" | "EXCLUDE";
+  }>();
   if (!event) return;
+  if (event.publish_quality_state !== "PUBLIC") {
+    await env.DB.prepare(
+      "UPDATE alert_events SET delivery_state='suppressed' WHERE id=? AND delivery_state='pending'",
+    ).bind(alert.id).run();
+    return;
+  }
   const rows = await env.DB.prepare(
     `SELECT ps.id FROM push_subscriptions ps JOIN push_preferences pp ON pp.subscription_id=ps.id
      WHERE ps.disabled_at IS NULL AND pp.${preferenceColumn(alert.alert_type)}=1
