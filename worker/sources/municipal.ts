@@ -91,6 +91,87 @@ const candidateId = (
   sourceId: string,
   _startDate: string | null,
 ) => `municipal-${source}-${sourceId}`;
+
+async function resolveImprovedGenericIdentity(
+  env: Env,
+  source: (typeof SOURCES)[number],
+  candidate: MunicipalCandidate,
+  mode: SourceCandidate["mode"],
+  provisionalId: string,
+) {
+  if (
+    mode !== "generic_html" ||
+    candidate.official_url === source.url ||
+    !candidate.start_date ||
+    !candidate.end_date ||
+    !candidate.venue
+  )
+    return { id: provisionalId, rows: 0, bridged: false };
+
+  const matches = await env.DB.prepare(
+    `WITH identity_matches(id,rank) AS (
+      SELECT id,0 FROM events WHERE id=?
+      UNION
+      SELECT candidate_id,0 FROM municipal_candidate_state WHERE candidate_id=?
+      UNION
+      SELECT id,1 FROM events
+       WHERE id LIKE ?
+         AND title=?
+         AND region=?
+         AND start_date=?
+         AND end_date=?
+         AND venue=?
+      UNION
+      SELECT candidate_id,1 FROM municipal_candidate_state
+       WHERE source_key=?
+         AND title_snapshot=?
+         AND start_date_snapshot=?
+         AND end_date_snapshot=?
+         AND venue_snapshot=?
+    )
+    SELECT id,MIN(rank) AS rank
+    FROM identity_matches
+    GROUP BY id
+    ORDER BY rank,id
+    LIMIT 3`,
+  )
+    .bind(
+      provisionalId,
+      provisionalId,
+      `municipal-${source.key}-%`,
+      candidate.title,
+      candidate.region,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+      source.key,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+    )
+    .all<{ id: string; rank: number }>();
+
+  const exact = matches.results.find((row) => Number(row.rank) === 0);
+  if (exact) return {
+    id: provisionalId,
+    rows: matches.meta.rows_read ?? 0,
+    bridged: false,
+  };
+
+  const legacy = matches.results.filter((row) => Number(row.rank) === 1);
+  return legacy.length === 1
+    ? {
+        id: legacy[0].id,
+        rows: matches.meta.rows_read ?? 0,
+        bridged: legacy[0].id !== provisionalId,
+      }
+    : {
+        id: provisionalId,
+        rows: matches.meta.rows_read ?? 0,
+        bridged: false,
+      };
+}
 const temporal = (candidate: MunicipalCandidate, current: string) =>
   !candidate.end_date || candidate.end_date < current
     ? "EXPIRED"
@@ -467,6 +548,7 @@ export async function runMunicipalAutonomous(
     processed = new Set<string>();
   let publishMutations = 0,
     detailFetches = 0,
+    identityBridges = 0,
     richDetailAttempted = 0,
     richDetailCandidates = 0,
     richDetailPersisted = 0,
@@ -538,11 +620,21 @@ export async function runMunicipalAutonomous(
           detailHtml,
         } = sourceCandidate;
         summary.discovered += 1;
-        const id = candidateId(
+        const provisionalId = candidateId(
           candidate.source,
           candidate.source_candidate_id,
           candidate.start_date,
         );
+        const identity = await resolveImprovedGenericIdentity(
+          env,
+          source,
+          candidate,
+          candidateMode,
+          provisionalId,
+        );
+        const id = identity.id;
+        summary.rows_read += identity.rows;
+        if (identity.bridged) identityBridges += 1;
         processed.add(id);
         const payloadHash = await hash({
           title: candidate.title,
@@ -1041,6 +1133,7 @@ export async function runMunicipalAutonomous(
     fetch_attempts: fetchBudget.used,
     fetch_budget: fetchBudget.limit,
     detail_fetches: detailFetches,
+    identity_bridges: identityBridges,
     rich_detail_attempted: richDetailAttempted,
     rich_detail_candidates: richDetailCandidates,
     rich_detail_persisted: richDetailPersisted,
