@@ -645,22 +645,33 @@ export function parseGenericMunicipalHtml(
   const document = html.replace(/<!--[\s\S]*?-->/g, "");
   const tableCandidates = tableRows(source, document);
   const listBlocks = elementBlocks(document, "li");
+  const anchorBlocks = elementBlocks(document, "a");
   const cardBlocks = [
     ...elementBlocks(document, "article", "(?:card|item|event)"),
     ...elementBlocks(document, "div", "(?:card|item|event)"),
     ...elementBlocks(document, "section", "(?:card|item|event)"),
   ];
-  const blockCandidates = [...listBlocks, ...cardBlocks]
+  const blockCandidates = [...listBlocks, ...anchorBlocks, ...cardBlocks]
     .map((block) => genericCandidateFromBlock(source, block))
     .filter((candidate): candidate is MunicipalCandidate => candidate !== null);
-  return [
-    ...new Map(
-      [...tableCandidates, ...blockCandidates].map((candidate) => [
-        candidate.source_candidate_id,
-        candidate,
-      ]),
-    ).values(),
-  ];
+  const all = [...tableCandidates, ...blockCandidates];
+  const byCore = new Map<string, MunicipalCandidate>();
+  for (const candidate of all) {
+    const coreKey = [
+      normalizeMunicipalTitle(candidate.title),
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue?.replace(/\\s+/g, "").toLowerCase(),
+    ].join("|");
+    const current = byCore.get(coreKey);
+    if (
+      !current ||
+      (current.official_url === source.url &&
+        candidate.official_url !== source.url)
+    )
+      byCore.set(coreKey, candidate);
+  }
+  return [...byCore.values()];
 }
 
 /**
