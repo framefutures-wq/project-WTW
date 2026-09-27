@@ -913,3 +913,14 @@ UI benchmark:
 - Seoul Hangang rich-detail backfill is confirmed in production D1 for `달빛 한가위 마당`: official detail URL, summary, image, two time rows, three programs, free price status and contact `120` are present while the legacy event identity is preserved.
 - The municipal rich-detail extraction/persistence pipeline is therefore proven end-to-end in production for at least Suwon, Goyang and Seoul Hangang on shard 0.
 - Remaining validation work is shard 1 + shard 2 targeted reruns, then residual source/parser triage.
+
+## 51. 2026-09-27 — municipal rich detail now reaches the visible detail UI in main
+
+- Production D1 rich-detail persistence was previously proven, but the visible detail UI still showed generic content because the detail API mixed decoded and encoded event IDs.
+- PR #58 fixes the public detail path end-to-end:
+  - decoded event ID for all detail tables;
+  - municipal contact support including 120;
+  - same-day multi-session operating hours;
+  - bounded municipality image proxy to avoid broken browser hotlinks.
+- Integration and Playwright browser regressions cover the Hangang-style legacy event ID and visible summary/programs/hours/contact/images.
+- Deployment is still required; no further municipal ingestion is required for the already-backfilled Hangang event.
