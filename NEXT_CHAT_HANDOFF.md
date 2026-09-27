@@ -1764,3 +1764,27 @@ UI 기준:
 - Current observed list-fetch failures: `jeonnam-gwangju-곡성`, `daegu-서`, `gyeonggi-의정부`, `gyeongnam-거제`.
 - PR #49/#50/#51 rich-detail work is still NOT deployed to the production Worker. Final deployment remains deferred until remaining source classes are handled, then deploy once before the Sep 28 natural cycle.
 - Next bounded task: resolve the remaining candidate-positive/detail-target-zero class, starting with exact JS/form detail-link patterns such as Gyeongsan `goDetail(event, id)` and Yeoju form/view routing, while treating true list-only rich sources separately from real per-event detail sources.
+
+
+## 2026-09-27 — shard-safe production municipal one-shot ready
+
+- PR #52 `fix: shard manual municipal one-shot like production` merged as `73b506eadc3f32582e495e3d2fcd988ac9d4228d`.
+- Project checks #822 SUCCESS.
+- `npm run municipal:once` no longer invokes all municipal sources in one Worker request.
+- Manual one-shot now uses the same production `municipalRunPlan` as Cron:
+  - shard 0: 12 sources / publish cap 4 / retry cap 4 / detail fetch cap 6 / external fetch cap 35;
+  - shard 1: 12 sources / publish cap 3 / retry cap 4 / detail fetch cap 4 / external fetch cap 35;
+  - shard 2: 11 sources / publish cap 3 / retry cap 4 / detail fetch cap 4 / external fetch cap 35.
+- The three shards run as three independent preview-Worker HTTP requests against the existing production D1 binding. TourAPI stays disabled.
+- Full-run mode validates that all 35 Registry source keys are covered exactly once with no overlap.
+- `npm run municipal:once -- --shard=0|1|2` supports targeted retry if one shard alone fails; there is no automatic shard retry.
+- After the run, the script performs read-only production D1 verification and prints:
+  - per-shard municipal summaries;
+  - aggregate discovered/inserted/updated/source-errors/detail-fetches;
+  - identity bridges;
+  - rich-detail attempted/candidate/persisted/errors/by-source;
+  - missing observed source keys;
+  - published/revalidated counts;
+  - actual rich-detail-backfilled event rows with summary/image/hours/programs/price/contact signals.
+- No production ingestion or Worker deploy has been executed by PR #52 itself.
+- PAUSED_USER_ACTION: in Codespaces with a clean tree, pull latest main, deploy once with `npm run deploy:verified`, run production smoke, then run `npm run municipal:once` exactly once. Paste the JSON result for analysis before retrying any shard.
