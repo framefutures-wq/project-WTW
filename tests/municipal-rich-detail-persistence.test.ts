@@ -27,7 +27,7 @@ async function setup() {
   return { mf, DB };
 }
 
-async function seedBase(DB, primarySource = "municipality") {
+async function seedBase(DB: D1Database, primarySource = "municipality") {
   await DB.prepare(
     "INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES('tour','tourapi',3,'TourAPI','https://example.com/tour','2026-09-27T00:00:00Z',NULL)",
   ).run();
