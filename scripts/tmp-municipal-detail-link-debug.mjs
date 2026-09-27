@@ -82,3 +82,41 @@ for (const key of keys) {
     }));
   }
 }
+
+
+for (const key of ["gyeonggi-평택", "gyeonggi-여주", "gyeongbuk-경산"]) {
+  const source = municipalSourceByKey(key);
+  if (!source) continue;
+  try {
+    const response = await fetch(source.url, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(15000),
+      headers: { "user-agent": "GaltteumDetailPatternDebug/1.0 read-only" },
+    });
+    const html = await response.text();
+    const patterns =
+      key === "gyeonggi-평택"
+        ? [/[^\n]{0,250}pfmcView\.do[^\n]{0,450}/gi]
+        : key === "gyeonggi-여주"
+          ? [/[^\n]{0,250}(?:reserve\/board|jnPrgReserveBoard|board\/1\/M)[^\n]{0,450}/gi]
+          : [
+              /function\s+goDetail[\s\S]{0,1000}/gi,
+              /[^\n]{0,250}goDetail\s*\([^\n]{0,450}/gi,
+              /[^\n]{0,250}performance[^\n]{0,450}/gi,
+            ];
+    const matches = patterns.flatMap((pattern) =>
+      [...html.matchAll(pattern)].map((match) =>
+        match[0].replace(/\s+/g, " ").slice(0, 900),
+      ),
+    );
+    console.log(JSON.stringify({
+      pattern_source: key,
+      matches: [...new Set(matches)].slice(0, 12),
+    }));
+  } catch (error) {
+    console.log(JSON.stringify({
+      pattern_source: key,
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
