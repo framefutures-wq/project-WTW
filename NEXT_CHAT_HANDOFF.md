@@ -1870,3 +1870,22 @@ UI 기준:
   2. deploy verified once + production smoke;
   3. run `npm run municipal:once` once (same-day core mutation safety is already hardened);
   4. paste the complete final JSON. Do not run the standalone verifier first because the one-shot now contains the fixed verifier and should complete end-to-end.
+
+
+## 2026-09-27 — shard 0 HTTP 500 diagnostic instrumentation merged
+
+- After deploying fetch-fairness Worker version `28f657b3-0434-4b9f-9a8f-c961213a388e`, production smoke passed.
+- The next full manual rehearsal stopped immediately at shard 0 with HTTP 500:
+  - `one-shot shard 0 transport failed: curl: (22) The requested URL returned error: 500`.
+- No shard 1/2 request was started in that attempt.
+- Do not rerun all shards yet.
+- PR #57 `chore: expose municipal shard 500 diagnostics` merged as `48c82f7d8816daa9588b68e74903658d5f41597b`.
+  - Project checks #865 SUCCESS.
+- Preview-worker manual shard execution now catches ordinary internal exceptions and returns structured JSON with message + short stack.
+- Codespaces runner now preserves the HTTP 500 response body instead of hiding it behind curl stderr.
+- This is diagnostic-only; no production Worker deploy is required.
+- Next user action:
+  1. clean-tree pull latest main only;
+  2. run `npm run municipal:once -- --shard=0`;
+  3. paste the full output.
+- Same-day core-change confirmation remains protected, so this targeted shard 0 diagnostic rerun cannot confirm a pending date/venue mutation on the same Korea calendar day.
