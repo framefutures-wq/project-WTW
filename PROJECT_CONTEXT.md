@@ -1115,3 +1115,13 @@ UI benchmark:
   - Project checks and UI browser smoke passed before merge.
 - Stale/conflicted PR #66 was closed as superseded by #72.
 - Production rollout itself is still pending because the current chat runtime does not have the authenticated Cloudflare/Codespaces execution environment. Do not claim migration/deploy/audit completion until `npm run rollout:discovery:v1` actually finishes in that environment.
+
+
+## 2026-09-27 — nationwide weekend SEO discovery landings merged
+
+- PR #73 merged as `1476844767dc6406d92901c54242d4c75afd86cf`.
+- The existing `/weekend/seoul` discovery landing pattern now covers the 17 public Korean regions.
+- Public SEO routes deliberately exclude the internal transitional `전남광주` value.
+- Landing metadata continues to drive canonical/OG/sitemap output and initializes the same weekend + region discovery state in the React app.
+- No ingestion, D1, recommendation ranking, or production visibility rule changed.
+- Project checks and UI browser smoke passed before merge.
