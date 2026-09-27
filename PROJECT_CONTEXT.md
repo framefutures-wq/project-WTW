@@ -1298,3 +1298,16 @@ UI benchmark:
 - Hangang rich-detail fixture로 media가 summary 위에 있고, media height가 bounded하며, 일정/장소가 같은 행, 프로그램 3열이 유지되는 browser geometry test를 추가했다.
 - UI browser smoke와 Project checks 모두 PASS.
 - GitHub main 반영 완료. **production Worker deploy는 아직 하지 않았으므로 galteum.com에는 아직 이전 상세 UI가 보인다.**
+
+
+## 2026-09-27 — 상세 UI v3 production 배포 완료, production smoke 계약 수정
+
+- 상세 UI v3는 production Worker version `33ecf8cd-a06d-469f-b958-7b5f14fe4892`로 배포 완료됐다.
+- 배포 자체와 production build는 성공했다.
+- 최초 `test:ui:prod` 실패는 실제 UI 회귀가 아니라, `production-smoke.spec.ts`가 이전 4:3-ish 상세 미디어 계약을 계속 검사한 stale assertion 때문이었다.
+  - desktop actual ratio 약 4.52는 새 full-width shallow media strip 설계와 일치한다.
+  - mobile pair height 약 210.6px는 새 `54vw`, max 220px 계약과 일치한다.
+- PR #83 merged green as `ab87de582e86033953514434ea22000046a083f4`.
+- production smoke assertions를 상세 v3 계약(PC 190~230px shallow banner, mobile 180~220px bounded banner)에 맞춰 수정했다.
+- UI browser smoke와 Project checks 모두 PASS.
+- PR #83은 test-only 변경이므로 추가 Worker 재배포는 필요 없다. production 재검증만 한 번 더 실행하면 상세 v3 작업을 닫을 수 있다.
