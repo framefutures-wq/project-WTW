@@ -100,6 +100,15 @@ function verifyProduction() {
   });
 }
 
+function applyLegacyQuality() {
+  const stdout = run(
+    "node",
+    ["--import", "tsx", "scripts/apply-publish-quality-v1.ts"],
+    { capture: true },
+  );
+  return JSON.parse(stdout);
+}
+
 function auditSummary(step: string, head: string, audit: ReturnType<typeof productionAudit>) {
   console.log(
     JSON.stringify(
@@ -130,5 +139,25 @@ applyMigrations();
 deploy();
 verifyProduction();
 
-const after = productionAudit();
+const applied = applyLegacyQuality();
+const after = {
+  report: applied.after_report,
+  validation: validateDiscoveryRolloutAudit(applied.after_report),
+};
+if (!after.validation.ok)
+  throw new Error(
+    `rollout post-apply audit failed: ${after.validation.blockers.join(", ")}`,
+  );
+
+console.log(
+  JSON.stringify(
+    {
+      step: "legacy-quality-applied",
+      applied_rows: applied.applied_rows,
+      visibility_changes: applied.visibility_changes,
+    },
+    null,
+    2,
+  ),
+);
 auditSummary("rollout-complete", head, after);
