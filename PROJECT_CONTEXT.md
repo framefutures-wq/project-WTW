@@ -853,3 +853,16 @@ UI benchmark:
 - No new Cloudflare resource, D1 migration, UI change, or event-truth relaxation was introduced.
 - Because this deployment happened after the Sep 27 10:00 and 11:00 KST shard windows, the first complete natural 35-source production verification is the Sep 28 cycle after the 11:45 KST shard completes.
 - Do not manually rerun municipal ingestion solely to fill the partial Sep 27 cycle; use the next full natural run unless new production evidence requires recovery.
+
+
+## 45. 2026-09-27 — municipal rich-detail gap confirmed / foundation ready
+
+- A 35-source read-only audit confirmed that municipal detail sparsity is structural, not isolated:
+  - 13 sources had sampled first-party detail pages with rich fields that Galtteum currently does not persist;
+  - 18 sources exposed rich list-page signals but no representative detail target through the current parser;
+  - 4 source list fetches failed during the audit.
+- The Seoul Hangang example proves the `LIST_RICHNESS_ONLY` bucket can still have a rich per-event detail page that the current generic parser fails to discover, so the true detail opportunity is larger than the 13 directly confirmed sources.
+- PR #48 merged a reusable municipal rich-detail extractor and priority-safe persistence foundation without wiring it into Cron.
+- Existing detail tables are reused; no schema migration is needed.
+- Source precedence stays organizer priority 1 > municipality priority 2 > TourAPI priority 3.
+- Production ingestion remains frozen until the first complete Sep 28 post-sharding natural verification after 11:45 KST. The rich-detail foundation requires no Worker deploy until it is actually wired.
