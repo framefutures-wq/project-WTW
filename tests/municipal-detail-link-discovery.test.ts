@@ -83,5 +83,5 @@ test("detail-link discovery rejects off-site, asset and download-only targets", 
     </div>
   `;
 
-  assert.equal(discoverMunicipalDetailUrl(source, html), source.url);
+  assert.equal(discoverMunicipalDetailUrl(source, html), null);
 });
