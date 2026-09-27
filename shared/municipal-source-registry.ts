@@ -32,6 +32,15 @@ export type MunicipalSourceDefinition = {
   listDetailFollowup?: {
     maxDetails: number;
   };
+  /**
+   * Optional deterministic fallback for list cards that expose only an event
+   * identifier through JS/data attributes instead of a normal detail href.
+   */
+  detailLinkTemplate?: {
+    path: string;
+    idParam: string;
+    fixedQuery?: Readonly<Record<string, string>>;
+  };
 };
 
 export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
@@ -105,6 +114,11 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list"],
     ingestion: "generic_fallback",
     genericAllowedCategories: ["축제", "문화예술", "공연"],
+    detailLinkTemplate: {
+      path: "/www/eventMng/detail.do",
+      idParam: "evntSn",
+      fixedQuery: { mid: "538", srchType: "list" },
+    },
   },
   {
     key: "daejeon-fvu",
