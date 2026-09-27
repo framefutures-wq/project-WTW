@@ -1627,3 +1627,25 @@ UI 기준:
 - This deployment happened after the Sep 27 10:00 and 11:00 KST shard windows, so Sep 27 cannot provide a complete post-fix 35-source natural-run proof even if the 11:45 shard runs.
 - First complete natural production checkpoint: Sep 28 after 11:45 KST. Run the read-only morning/production verifier after all three shard windows have completed.
 - Do not manually trigger municipal ingestion merely to backfill Sep 27; wait for the complete Sep 28 natural cycle unless a new concrete outage requires recovery.
+
+
+## 2026-09-27 — municipal rich-detail coverage audit tooling ready
+
+- User surfaced a Seoul Hangang event where the official detail page contains rich images, time, free/paid info, contact, intro and programs while Galtteum shows only sparse detail.
+- Code review confirmed this is not an isolated content shortage:
+  - 35 municipal Registry sources total;
+  - 19 use `generic_fallback`;
+  - 0 of those 19 currently opt into `listDetailFollowup`;
+  - current municipal publish path persists core event fields/evidence but does not populate the rich detail tables for images, operating hours, price/contact or programs.
+- PR #47 `chore: audit municipal rich-detail coverage` merged as `1d40214999b3d77db930e00ebc6e6b1f362b2550`.
+  - UI browser smoke #134 SUCCESS.
+  - Project checks #742 SUCCESS.
+- Added read-only command: `npm run audit:municipal-rich-detail`.
+  - Audits all 35 sources by default.
+  - Reads source list pages plus at most 2 first-party representative detail pages per source.
+  - Detects source signals for images, time, price, contact, intro and programs.
+  - Reports candidate snippet/image coverage plus rich fields currently unharvested.
+  - No D1 access, ingestion, publish or production mutation.
+- No Worker deploy is required for this tooling-only change.
+- Current next bounded step: run the 35-source read-only audit and classify sources into common rich-detail patterns before implementing any extractor/storage changes.
+- Keep the municipal shard production behavior frozen until the first complete Sep 28 natural-cycle verification after 11:45 KST.
