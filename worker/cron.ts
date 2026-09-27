@@ -9,6 +9,7 @@ import {
   type MunicipalRunPlan,
 } from "../shared/municipal-run-plan";
 import { runPrivateOfficialSources } from "./sources/private-official";
+import { runOfficialDetailRecovery } from "./sources/official-detail-recovery";
 import { processPushDeliveries } from "./push";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 const privateLkgClause = (alias: string) => {
@@ -39,6 +40,7 @@ export type ScheduledDependencies = {
   enrichTourApiDetails: typeof enrichTourApiDetails;
   runMunicipalAutonomous: typeof runMunicipalAutonomous;
   runPrivateOfficialSources: typeof runPrivateOfficialSources;
+  runOfficialDetailRecovery: typeof runOfficialDetailRecovery;
   processPushDeliveries: typeof processPushDeliveries;
 };
 const productionDependencies: ScheduledDependencies = {
@@ -46,6 +48,7 @@ const productionDependencies: ScheduledDependencies = {
   enrichTourApiDetails,
   runMunicipalAutonomous,
   runPrivateOfficialSources,
+  runOfficialDetailRecovery,
   processPushDeliveries,
 };
 function baseWindow(now: Date) {
@@ -115,6 +118,24 @@ export async function runBaseScheduled(
       scheduledMunicipalPlan(0),
     );
     const privateOfficial = await dependencies.runPrivateOfficialSources(env);
+    let officialDetailRecovery:
+      | Awaited<ReturnType<typeof runOfficialDetailRecovery>>
+      | { status: "failed"; reason: "subsystem_error" };
+    try {
+      officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
+        env,
+        now,
+      );
+    } catch (error) {
+      console.error("official_detail_recovery_failed", {
+        baseRunId: id,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      officialDetailRecovery = {
+        status: "failed",
+        reason: "subsystem_error",
+      };
+    }
     const baseStatus = imported ? "success" : "skipped";
     await env.DB.prepare(
       "UPDATE sync_runs SET status=?, finished_at=?,message=?,stale_count=? WHERE id=?",
@@ -126,6 +147,7 @@ export async function runBaseScheduled(
           tourapi: imported ?? tourApiReadiness(env),
           municipal,
           private: privateOfficial,
+          official_detail_recovery: officialDetailRecovery,
         }),
         results[1].meta.changes,
         id,
@@ -169,6 +191,20 @@ export async function runBaseScheduled(
           scheduledMunicipalPlan(0),
         ));
     const privateOfficial = await dependencies.runPrivateOfficialSources(env);
+    let officialDetailRecovery:
+      | Awaited<ReturnType<typeof runOfficialDetailRecovery>>
+      | { status: "failed"; reason: "subsystem_error" };
+    try {
+      officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
+        env,
+        now,
+      );
+    } catch {
+      officialDetailRecovery = {
+        status: "failed",
+        reason: "subsystem_error",
+      };
+    }
     const message =
       error instanceof Error && error.message.startsWith("TourAPI ")
         ? error.message
@@ -186,6 +222,7 @@ export async function runBaseScheduled(
           tourapi: message,
           municipal,
           private: privateOfficial,
+          official_detail_recovery: officialDetailRecovery,
         }),
         id,
       )

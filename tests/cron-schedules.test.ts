@@ -76,6 +76,21 @@ function dependencies(
       calls.push("private");
       return { imported: 0 } as never;
     },
+    runOfficialDetailRecovery: async () => {
+      calls.push("official-detail");
+      return {
+        candidates: 1,
+        attempted: 1,
+        fetched: 1,
+        recovered: 1,
+        images_recovered: 1,
+        detail_recovered: 1,
+        title_mismatch: 0,
+        core_conflict: 0,
+        empty: 0,
+        fetch_failed: 0,
+      };
+    },
     processPushDeliveries: async () => {
       calls.push("push");
       return { delivered: 0 } as never;
@@ -99,6 +114,7 @@ test("10:00 KST hands off to bounded detail immediately after base succeeds", as
       "tourapi",
       "municipal",
       "private",
+      "official-detail",
       "detail",
       "push",
     ]);

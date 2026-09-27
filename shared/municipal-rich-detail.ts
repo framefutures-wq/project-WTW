@@ -374,7 +374,11 @@ function extractImages(pageUrl: string, html: string): MunicipalRichImage[] {
 
   for (const match of html.matchAll(/<img\b([^>]*)>/gi)) {
     const attrs = match[1];
-    const src = /\bsrc=["']([^"']+)["']/i.exec(attrs)?.[1];
+    const src =
+      /\bsrc=["']([^"']+)["']/i.exec(attrs)?.[1] ??
+      /\bdata-src=["']([^"']+)["']/i.exec(attrs)?.[1] ??
+      /\bdata-original=["']([^"']+)["']/i.exec(attrs)?.[1] ??
+      /\bdata-lazy-src=["']([^"']+)["']/i.exec(attrs)?.[1];
     const alt = /\balt=["']([^"']*)["']/i.exec(attrs)?.[1] ?? null;
     const width = Number(/\bwidth=["']?(\d+)/i.exec(attrs)?.[1] ?? 0);
     const height = Number(/\bheight=["']?(\d+)/i.exec(attrs)?.[1] ?? 0);

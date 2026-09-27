@@ -17,10 +17,11 @@ export type MunicipalRichDetailPersistInput = {
   sourceUrl: string;
   checkedAt: string;
   detail: MunicipalRichDetail;
+  sourceKind?: "municipality" | "organizer";
 };
 
-const canReplace = (priority: number | null) =>
-  priority === null || priority >= 2;
+const canReplace = (priority: number | null, incomingPriority: number) =>
+  priority === null || priority >= incomingPriority;
 
 export function assessMunicipalPrice(
   value: string,
@@ -90,23 +91,38 @@ async function persistImages(
   let changed = 0;
   const currentPrimary = await db
     .prepare(
-      "SELECT image_status,source_type FROM event_images WHERE event_id=?",
+      "SELECT image_status,source_type,source_page_url FROM event_images WHERE event_id=?",
     )
     .bind(input.eventId)
-    .first<{ image_status: string; source_type: string | null }>();
+    .first<{
+      image_status: string;
+      source_type: string | null;
+      source_page_url: string | null;
+    }>();
 
+  const sourceKind = input.sourceKind ?? "municipality";
+  const sourcePriority = sourceKind === "organizer" ? 1 : 2;
+  const imagePriority = (sourceType: string | null) =>
+    sourceType === "organizer"
+      ? 1
+      : sourceType === "municipality"
+        ? 2
+        : sourceType === "tourapi"
+          ? 3
+          : 4;
   const primary = input.detail.images[0];
   if (
     !currentPrimary ||
     currentPrimary.image_status !== "ok" ||
-    currentPrimary.source_type === "tourapi"
+    currentPrimary.source_page_url === input.sourceUrl ||
+    imagePriority(currentPrimary.source_type) > sourcePriority
   ) {
     await db
       .prepare(
         `INSERT INTO event_images(
           event_id,image_url,source_type,source_page_url,is_primary,image_status,
           width,height,mime_type,last_checked_at,evidence_note
-        ) VALUES(?,?, 'municipality', ?,1,'ok',NULL,NULL,NULL,?,?)
+        ) VALUES(?,?, ?, ?,1,'ok',NULL,NULL,NULL,?,?)
         ON CONFLICT(event_id) DO UPDATE SET
           image_url=excluded.image_url,
           source_type=excluded.source_type,
@@ -115,14 +131,22 @@ async function persistImages(
           last_checked_at=excluded.last_checked_at,
           evidence_note=excluded.evidence_note
         WHERE event_images.image_status!='ok'
-           OR event_images.source_type='tourapi'`,
+           OR event_images.source_page_url=excluded.source_page_url
+           OR (CASE event_images.source_type
+                 WHEN 'organizer' THEN 1
+                 WHEN 'municipality' THEN 2
+                 WHEN 'tourapi' THEN 3
+                 ELSE 4
+               END) > ?`,
       )
       .bind(
         input.eventId,
         primary.url,
+        sourceKind,
         input.sourceUrl,
         input.checkedAt,
         excerpt("official_image", primary.alt ?? primary.url),
+        sourcePriority,
       )
       .run();
     changed += 1;
@@ -160,11 +184,12 @@ async function persistImages(
         `INSERT OR IGNORE INTO event_additional_images(
           event_id,image_url,source_type,source_page_url,sort_order,image_status,
           width,height,mime_type,last_checked_at,evidence_note
-        ) VALUES(?,?, 'municipality', ?,?,'ok',NULL,NULL,NULL,?,?)`,
+        ) VALUES(?,?, ?, ?,?,'ok',NULL,NULL,NULL,?,?)`,
       )
       .bind(
         input.eventId,
         image.url,
+        sourceKind,
         input.sourceUrl,
         slot,
         input.checkedAt,
@@ -181,6 +206,8 @@ export async function persistMunicipalRichDetail(
   input: MunicipalRichDetailPersistInput,
 ) {
   const priorities = await prioritySnapshot(db, input.eventId);
+  const sourceKind = input.sourceKind ?? "municipality";
+  const sourcePriority = sourceKind === "organizer" ? 1 : 2;
   const statements: D1PreparedStatement[] = [];
   let changed = 0;
 
@@ -189,7 +216,7 @@ export async function persistMunicipalRichDetail(
       .prepare(
         `INSERT INTO sources(
           id,kind,priority,name,url,fetched_at,raw_payload
-        ) VALUES(?, 'municipality', 2, ?, ?, ?, ?)
+        ) VALUES(?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           url=excluded.url,
           fetched_at=excluded.fetched_at,
@@ -197,6 +224,8 @@ export async function persistMunicipalRichDetail(
       )
       .bind(
         input.sourceId,
+        sourceKind,
+        sourcePriority,
         input.sourceName,
         input.sourceUrl,
         input.checkedAt,
@@ -209,7 +238,7 @@ export async function persistMunicipalRichDetail(
       ),
   );
 
-  if (input.detail.summary && canReplace(priorities.summary_priority)) {
+  if (input.detail.summary && canReplace(priorities.summary_priority, sourcePriority)) {
     statements.push(
       db
         .prepare(
@@ -224,7 +253,7 @@ export async function persistMunicipalRichDetail(
           WHERE (
             SELECT priority FROM sources
             WHERE id=event_enrichments.source_id
-          )>=2`,
+          )>=?`,
         )
         .bind(
           input.eventId,
@@ -232,12 +261,13 @@ export async function persistMunicipalRichDetail(
           input.sourceId,
           excerpt("official_summary", input.detail.summary),
           input.checkedAt,
+          sourcePriority,
         ),
     );
     changed += 1;
   }
 
-  if (input.detail.price_text && canReplace(priorities.price_priority)) {
+  if (input.detail.price_text && canReplace(priorities.price_priority, sourcePriority)) {
     const assessed = assessMunicipalPrice(
       input.detail.price_text,
       Number(input.startDate.slice(0, 4)),
@@ -277,17 +307,17 @@ export async function persistMunicipalRichDetail(
 
   if (
     input.detail.operating_hours.length &&
-    canReplace(priorities.hours_priority)
+    canReplace(priorities.hours_priority, sourcePriority)
   ) {
     statements.push(
       db
         .prepare(
           `DELETE FROM event_operating_hours
            WHERE event_id=? AND source_id IN (
-             SELECT id FROM sources WHERE priority>=2
+             SELECT id FROM sources WHERE priority>=?
            )`,
         )
-        .bind(input.eventId),
+        .bind(input.eventId, sourcePriority),
     );
     for (
       let index = 0;
@@ -320,16 +350,16 @@ export async function persistMunicipalRichDetail(
     changed += input.detail.operating_hours.length;
   }
 
-  if (input.detail.programs.length && canReplace(priorities.programs_priority)) {
+  if (input.detail.programs.length && canReplace(priorities.programs_priority, sourcePriority)) {
     statements.push(
       db
         .prepare(
           `DELETE FROM event_programs
            WHERE event_id=? AND source_id IN (
-             SELECT id FROM sources WHERE priority>=2
+             SELECT id FROM sources WHERE priority>=?
            )`,
         )
-        .bind(input.eventId),
+        .bind(input.eventId, sourcePriority),
     );
     for (let index = 0; index < input.detail.programs.length; index += 1) {
       const program = input.detail.programs[index];
