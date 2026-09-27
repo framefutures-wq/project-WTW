@@ -1,0 +1,23 @@
+name: Municipal rich-detail live audit
+
+on:
+  push:
+    branches:
+      - audit/municipal-rich-detail-live-20260927
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run 35-source read-only audit
+        run: npm run audit:municipal-rich-detail
