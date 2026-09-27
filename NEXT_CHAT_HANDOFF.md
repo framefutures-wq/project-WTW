@@ -1701,3 +1701,38 @@ UI 기준:
   - existing table/card generic extraction contracts remain intact.
 - This merge has NOT been deployed to the Worker yet. Keep production on the prior deployed version until the rich-detail ingestion wiring is complete, then deploy the combined change once before the Sep 28 natural cycle.
 - Next bounded task: wire the already-merged municipal rich-detail extractor/persistence foundation into the autonomous municipal path for both NEW and already-existing municipal events, with shard/fetch budgets preserved. Do not make enrichment depend only on `duplicateResult.decision === NEW`; existing sparse events must be eligible for bounded official detail refresh/backfill.
+
+
+## 2026-09-27 — municipal rich-detail ingestion wired
+
+- PR #50 `feat: wire municipal rich-detail ingestion` merged as `6e2d1bb164d2a7dcd04125c7fc28f1bbb16b4df9`.
+- Project checks #789 SUCCESS.
+- Autonomous municipal ingestion now reuses the same bounded official detail fetch to extract/persist:
+  - summary;
+  - operating hours;
+  - explicit price;
+  - contact;
+  - official images;
+  - structured programs.
+- New municipal events persist rich detail immediately after core publication.
+- Existing sparse municipal events may receive rich-detail-only backfill even when the core publish mutation circuit breaker is full, but only when:
+  - the event already exists under the same municipal identity;
+  - date/venue are unchanged;
+  - gate is MAIN and duplicate decision is NEW for that same ID;
+  - detail/title/core checks pass;
+  - the event is not expired.
+- Date/venue mutations still obey the existing 4/3/3 shard publication caps; rich backfill never bypasses a pending core change.
+- Retry recovery now follows a newly discovered first-party detail URL instead of reusing list HTML when a detail URL becomes available.
+- Existing `maxDetailFetches` and `maxExternalFetches` remain unchanged; rich extraction does not add a second detail request.
+- Run summary now exposes:
+  - `rich_detail_attempted`
+  - `rich_detail_candidates`
+  - `rich_detail_persisted`
+  - `rich_detail_errors`
+  - `rich_detail_by_source`
+- Read-only morning verifier aggregates those rich-detail metrics across all shard messages.
+- Miniflare D1 regression covers both:
+  1. new event publish + rich detail;
+  2. existing sparse event rich backfill with `maxPublishMutations=0`.
+- PR #50 has NOT been deployed to the production Worker yet.
+- Next bounded task: rerun the 35-source read-only rich-detail audit against latest main to measure detail-link recovery and remaining source/fetch gaps, then fix the remaining source classes before one combined production deploy.
