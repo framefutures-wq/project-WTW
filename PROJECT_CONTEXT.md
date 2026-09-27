@@ -894,3 +894,14 @@ UI benchmark:
 - More importantly, existing municipal date/venue changes now require identical confirmation on a later Asia/Seoul calendar day. Re-running the same shard on the same day cannot count as the second core confirmation.
 - This closes the main safety risk of repeating a shard after an indeterminate manual transport failure while preserving idempotent rich-detail backfill for unchanged existing events.
 - Latest Worker code therefore requires one additional verified deploy before the next manual municipal rehearsal.
+
+
+## 49. 2026-09-27 — municipal shard fetch fairness added
+
+- Manual production rehearsal proved the rich-detail path can persist official data, but only 11/35 sources recorded a fresh observation in the verification window and Seoul Hangang remained sparse.
+- The 35-fetch shard budget is now allocated fairly across sources instead of being first-come-first-served:
+  - rolling per-source window 3;
+  - reserve 2 attempts for each later source;
+  - hard cap unchanged at 35.
+- Detail caps increased to 24/24/22, but total external requests remain bounded by the same hard 35 cap.
+- This change targets fetch-budget starvation only. Genuine source-parser and network failures remain visible and must be triaged from the next full rehearsal output.
