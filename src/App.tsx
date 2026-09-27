@@ -46,6 +46,7 @@ import { nearbyDetailEvents, similarDetailEvents } from "../shared/detail-explor
 import { formatProgramTime } from "../shared/event-program-time";
 import { decodeEventPathId, validEventId } from "../shared/event-id";
 import {
+  formatOperatingHours,
   formatOperatingHoursForRange,
   type EventOperatingHours,
 } from "../shared/event-operating-hours";
