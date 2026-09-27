@@ -2086,3 +2086,15 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The read-only production audit now feeds discovered event-specific official links into the same classifier, so audit and ingestion decisions use the same evidence.
 - This change is intended to remove the exact class the user flagged: records that technically look event-like by title but are too thin to deserve public listing.
 - Legacy production rows are still not mass-reclassified until the read-only production audit is reviewed.
+
+
+## 2026-09-27 — guarded discovery rollout is merged; production execution remains the only rollout boundary
+
+- Latest main: `74e3504386c54fca25ac59c78575b04783ba1d80`.
+- PR #71 added rollout-delta visibility to the zero-write quality audit and merged green.
+- PR #72 rebuilt the guarded rollout helper on latest main and merged green.
+- Use `npm run rollout:discovery:v1` from a clean, authenticated Codespaces/main checkout for the production rollout.
+- The helper performs: preflight remote audit → fail-closed validation → D1 migrations → verified deploy → production smoke/UI tests → post-deploy audit.
+- It intentionally performs zero legacy mass-reclassification writes.
+- Do not ask the user to decide routine implementation details; continue independent code phases where production credentials are not required.
+- Do not claim production quality-gate rollout complete until the guarded command succeeds.
