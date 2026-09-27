@@ -2216,3 +2216,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Mobile keeps top media and single-column core facts with compact supporting facts.
 - Rich Hangang browser geometry regression plus full UI browser smoke and Project checks passed.
 - Production is not yet deployed from this merge. Next authenticated Codespaces step is a verified frontend/Worker deploy followed by production browser smoke; no D1 migration or ingestion run is needed.
+
+
+## 2026-09-27 — 상세 v3 production smoke stale contract fixed
+
+- Detail v3 production deploy succeeded as Worker version `33ecf8cd-a06d-469f-b958-7b5f14fe4892`.
+- The first production smoke failed only because it still expected the previous 4:3-ish media layout.
+- PR #83 merged green as `ab87de582e86033953514434ea22000046a083f4`; production smoke now asserts the new shallow full-width media contract.
+- No redeploy is needed for PR #83 because it changes tests only.
+- Next authenticated Codespaces action: pull latest main and rerun only `TEST_BASE_URL=https://galteum.com TEST_OUTPUT_DIR=test-results/detail-v3-production npm run test:ui:prod`. If both desktop/mobile pass, close the detail v3 UI task and resume Phase 3 remaining official-link work.
