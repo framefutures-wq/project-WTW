@@ -101,13 +101,30 @@ test("production discovery shell and public endpoints are healthy", async ({
       expect(mediaBox!.height).toBeGreaterThan(220);
       expect(mediaRatio).toBeGreaterThan(1.15);
       expect(mediaRatio).toBeLessThan(1.5);
+    } else if (hasMediaPair) {
+      expect(await pairedMedia.count()).toBe(2);
+      const pairBox = await mediaPair.boundingBox();
+      const firstBox = await pairedMedia.nth(0).boundingBox();
+      const secondBox = await pairedMedia.nth(1).boundingBox();
+      expect(pairBox).not.toBeNull();
+      expect(firstBox).not.toBeNull();
+      expect(secondBox).not.toBeNull();
+
+      // Mobile two-image detail media intentionally stays in one compact row.
+      // Individual columns can be portrait-ish because the row uses an
+      // asymmetric 1.55fr/0.85fr split; the contract is on the combined media
+      // surface, not on each child button's aspect ratio.
+      expect(pairBox!.height).toBeGreaterThanOrEqual(220);
+      expect(pairBox!.height).toBeLessThanOrEqual(250);
+      expect(pairBox!.width / pairBox!.height).toBeGreaterThan(1.35);
+      expect(Math.abs(firstBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
+      expect(Math.abs(secondBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
+      expect(firstBox!.x).toBeLessThan(secondBox!.x);
+      expect(firstBox!.width).toBeGreaterThan(secondBox!.width);
     } else {
-      const mediaItems = hasMediaPair
-        ? pairedMedia
-        : page.locator(
-            ".detail-dialog .detail-media, .detail-dialog .scene-detail",
-          );
-      if (hasMediaPair) expect(await pairedMedia.count()).toBe(2);
+      const mediaItems = page.locator(
+        ".detail-dialog .detail-media, .detail-dialog .scene-detail",
+      );
       const itemCount = await mediaItems.count();
       expect(itemCount).toBeGreaterThan(0);
       for (let index = 0; index < itemCount; index += 1) {
