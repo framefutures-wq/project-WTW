@@ -179,7 +179,7 @@ function metaContent(html: string, key: string) {
 function extractSummary(html: string) {
   const section = sectionText(
     html,
-    /^(?:상세내용|상세 내용|행사소개|행사 소개|행사내용|행사 내용|소개)$/,
+    /^(?:상세내용|상세 내용|행사소개|행사 소개|행사내용|행사 내용|행사개요|행사 개요|개요|주요내용|주요 내용|행사안내|행사 안내|소개)$/,
   );
   if (section) return section;
   const meta =
@@ -192,15 +192,23 @@ function normalizeTime(hour: string, minute: string) {
 }
 
 function extractOperatingHours(html: string): MunicipalRichHours[] {
-  const raw = firstPairValue(html, [
+  const labels = [
     "시간",
     "행사시간",
     "운영시간",
     "공연시간",
     "관람시간",
+    "이용시간",
     "일시",
-  ]);
+  ] as const;
+  const text = municipalRichText(html);
+  const fallback =
+    /(?:^|\n)\s*(?:시간|행사시간|운영시간|공연시간|관람시간|이용시간|일시)\s*[:：]?\s*([^\n]{1,240})/i.exec(
+      text,
+    )?.[1] ?? null;
+  const raw = firstPairValue(html, labels) ?? fallback;
   if (!raw) return [];
+
   const ranges = [
     ...raw.matchAll(
       /(?:^|[^0-9])([01]?\d|2[0-3]):([0-5]\d)\s*(?:~|∼|～|-)\s*([01]?\d|2[0-3]):([0-5]\d)/g,
@@ -212,6 +220,46 @@ function extractOperatingHours(html: string): MunicipalRichHours[] {
       end_time: normalizeTime(match[3], match[4]),
       human_time_text: raw.slice(0, 240),
     }));
+
+  const korean = [
+    ...raw.matchAll(
+      /(?:(오전|오후)\s*)?(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?\s*(?:~|∼|～|-)\s*(?:(오전|오후)\s*)?(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?/g,
+    ),
+  ];
+  if (korean.length)
+    return korean.slice(0, 6).flatMap((match) => {
+      const convert = (
+        period: string | undefined,
+        hourText: string,
+        minuteText?: string,
+      ) => {
+        let hour = Number(hourText);
+        const minute = Number(minuteText ?? "0");
+        if (period === "오후" && hour < 12) hour += 12;
+        if (period === "오전" && hour === 12) hour = 0;
+        if (
+          !Number.isInteger(hour) ||
+          hour < 0 ||
+          hour > 23 ||
+          !Number.isInteger(minute) ||
+          minute < 0 ||
+          minute > 59
+        )
+          return null;
+        return normalizeTime(String(hour), String(minute));
+      };
+      const start = convert(match[1], match[2], match[3]);
+      const end = convert(match[4] ?? match[1], match[5], match[6]);
+      return start && end
+        ? [
+            {
+              start_time: start,
+              end_time: end,
+              human_time_text: raw.slice(0, 240),
+            },
+          ]
+        : [];
+    });
 
   const single = /(?:^|[^0-9])([01]?\d|2[0-3]):([0-5]\d)(?:[^0-9]|$)/.exec(
     raw,
@@ -228,20 +276,49 @@ function extractOperatingHours(html: string): MunicipalRichHours[] {
 }
 
 function extractPhone(html: string) {
-  const raw = firstPairValue(html, [
+  const labels = [
     "문의처",
     "문의",
     "전화",
     "연락처",
     "대표전화",
-  ]);
+    "문의전화",
+  ] as const;
+  const text = municipalRichText(html);
+  const fallback =
+    /(?:^|\n)\s*(?:문의처|문의|전화|연락처|대표전화|문의전화)\s*[:：]?\s*([^\n]{1,160})/i.exec(
+      text,
+    )?.[1] ?? null;
+  const raw = firstPairValue(html, labels) ?? fallback;
   if (!raw) return null;
   const normal = /\b(?:02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4}\b/.exec(
     raw,
   )?.[0];
   if (normal) return normal.replace(/[.\s]+/g, "-");
+  const mobile = /\b01[016789][-.\s]?\d{3,4}[-.\s]?\d{4}\b/.exec(raw)?.[0];
+  if (mobile) return mobile.replace(/[.\s]+/g, "-");
   const short = /(?:^|\s)(\d{3,4})(?:\s|$)/.exec(raw)?.[1];
   return short ?? null;
+}
+
+
+function extractPrice(html: string) {
+  const labels = [
+    "이용요금",
+    "이용료",
+    "요금",
+    "관람료",
+    "입장료",
+    "참가비",
+    "참가료",
+    "비용",
+  ] as const;
+  const text = municipalRichText(html);
+  const fallback =
+    /(?:^|\n)\s*(?:이용요금|이용료|요금|관람료|입장료|참가비|참가료|비용)\s*[:：]?\s*([^\n]{1,220})/i.exec(
+      text,
+    )?.[1] ?? null;
+  return firstPairValue(html, labels) ?? fallback;
 }
 
 function absoluteHttps(pageUrl: string, raw: string) {
@@ -254,7 +331,7 @@ function absoluteHttps(pageUrl: string, raw: string) {
 }
 
 const decorativeImage =
-  /(?:^|[\/_-])(?:logo|icon|ico|sprite|spacer|blank|captcha|sns|facebook|instagram|youtube|naver|kakao)(?:[\/_\-.]|$)/i;
+  /(?:^|[\/_-])(?:logo|icon|ico|sprite|spacer|blank|captcha|sns|facebook|instagram|youtube|naver|kakao|favicon|noimg|no_image|default_img|all_menu|menu_show|btn)(?:[\/_\-.]|$)/i;
 
 function extractImages(pageUrl: string, html: string): MunicipalRichImage[] {
   const pageHost = new URL(pageUrl).hostname;
@@ -277,6 +354,7 @@ function extractImages(pageUrl: string, html: string): MunicipalRichImage[] {
       return;
     if (
       decorativeImage.test(parsed.pathname) ||
+      /\/inc\/img\/common\//i.test(parsed.pathname) ||
       (alt && decorativeImage.test(alt))
     )
       return;
@@ -356,6 +434,35 @@ function extractPrograms(html: string): MunicipalRichProgram[] {
       if (output.length >= 8) return output;
     }
   }
+
+  if (!output.length) {
+    const text = municipalRichText(html);
+    for (const line of text.split("\n").map((value) => value.trim())) {
+      if (!line || line.length > 180) continue;
+      const schedule =
+        line.match(
+          /(?:[01]?\d|2[0-3]):[0-5]\d(?:\s*(?:~|∼|～|-)\s*(?:[01]?\d|2[0-3]):[0-5]\d)?/g,
+        )?.join(", ") ?? null;
+      if (!schedule) continue;
+      const firstTime = line.search(/(?:[01]?\d|2[0-3]):[0-5]\d/);
+      const name = firstTime > 1 ? line.slice(0, firstTime).trim() : "";
+      if (
+        !name ||
+        name.length < 2 ||
+        name.length > 100 ||
+        genericHeadings.test(name) ||
+        seen.has(name)
+      )
+        continue;
+      seen.add(name);
+      output.push({
+        name: name.replace(/^[•·▪◦*\-–—\s]+/, ""),
+        description: line,
+        schedule_text: schedule,
+      });
+      if (output.length >= 8) break;
+    }
+  }
   return output;
 }
 
@@ -366,16 +473,7 @@ export function extractMunicipalRichDetail(
   return {
     summary: extractSummary(html),
     operating_hours: extractOperatingHours(html),
-    price_text: firstPairValue(html, [
-      "이용요금",
-      "이용료",
-      "요금",
-      "관람료",
-      "입장료",
-      "참가비",
-      "참가료",
-      "비용",
-    ]),
+    price_text: extractPrice(html),
     contact_phone: extractPhone(html),
     images: extractImages(pageUrl, html),
     programs: extractPrograms(html),
