@@ -1788,3 +1788,31 @@ UI 기준:
   - actual rich-detail-backfilled event rows with summary/image/hours/programs/price/contact signals.
 - No production ingestion or Worker deploy has been executed by PR #52 itself.
 - PAUSED_USER_ACTION: in Codespaces with a clean tree, pull latest main, deploy once with `npm run deploy:verified`, run production smoke, then run `npm run municipal:once` exactly once. Paste the JSON result for analysis before retrying any shard.
+
+
+## 2026-09-27 — manual municipal one-shot timeout + same-day safety fixed
+
+- User deployed rich-detail main successfully to production:
+  - Worker version: `8cbaae84-31fd-4081-972c-c9458c1737c4`
+  - production smoke PASS.
+- First `npm run municipal:once` did not return a shard result. Node 24/Undici failed with `UND_ERR_HEADERS_TIMEOUT` while waiting for response headers from the long-running preview Worker request.
+- Treat that attempt as indeterminate/partial; do not infer whether shard 0 completed from the client exception alone.
+- PR #53 `fix: avoid municipal one-shot headers timeout` merged as `697d29b573ef78ad9ed2d374edd453a8acb05d4a`.
+  - Project checks #828 SUCCESS.
+  - Manual shard transport now uses curl with a 14-minute max-time instead of Node fetch, avoiding the earlier headers-timeout failure mode.
+  - Runner prints manualRunId plus per-shard start/success progress so a later partial failure identifies exactly which shard returned.
+- While reviewing retry safety, a real core-confirmation bug was found:
+  - existing date/venue changes claimed to require a second daily observation, but the old implementation could treat an identical second run on the same Korea day as confirmation.
+  - this made a same-day manual retry unsafe after a transport failure.
+- PR #54 `fix: require next-day municipal core confirmation` merged as `3dec44fdd5245fc72ebc67f2e78e84da4d59bbdc`.
+  - Project checks #833 SUCCESS.
+  - UI browser smoke #150 SUCCESS.
+  - existing municipal core date/venue changes now require the same payload on a strictly later Asia/Seoul calendar day in both main flow and retry recovery.
+  - same-day manual reruns cannot confirm/publish a pending core mutation.
+  - unchanged-event revalidation and rich-detail-only backfill remain allowed.
+- PR #54 changes production Worker code, so the prior production version `8cbaae84-31fd-4081-972c-c9458c1737c4` is now behind main.
+- Next user action:
+  1. clean-tree pull latest main;
+  2. deploy verified once and smoke;
+  3. run `npm run municipal:once` once;
+  4. paste the final JSON/progress output. If a shard transport fails, do not rerun all shards; use the printed shard number for targeted follow-up.
