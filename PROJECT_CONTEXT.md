@@ -1387,3 +1387,21 @@ UI benchmark:
 - Worker with the persistence fix deployed successfully as version `fa102aad-b04e-4975-9fdf-85031fb907cf`.
 - Future TourAPI syncs now persist `firstimage` (fallback `firstimage2`) into `event_images` while preserving healthier non-TourAPI imagery.
 - Next image-quality work should focus on the single remaining TourAPI case plus municipality/organizer events whose official pages contain posters that are not yet captured.
+
+
+## 2026-09-27 — municipal detail source assumption corrected
+
+- Manual user inspection plus current official-page verification changed the default assumption: for the municipality sources checked, the needed visit-decision fields and poster generally exist on the official event detail page. Missing Galteum fields should therefore be treated first as **detail resolution/extraction failure**, not source scarcity.
+- Verified current examples:
+  - Seoul Hangang exact event detail exposes period, place, price, participation, official homepage and detailed schedules/program content.
+  - Suwon Culture Foundation exact event detail exposes event image, period, time, place, fee, organizer/contact and full event description.
+- The pipeline must keep the distinction `list page = discovery` / `exact event detail page = authoritative rich-detail source`.
+- PR #89 merged green as `25b3d3494071e83f404417acf27197a4e85ee091`.
+- Generic exact-detail extraction was broadened for current Korean municipal page shapes:
+  - summary headings now include event overview/major-content variants;
+  - Korean `14시~22시`-style hours are parsed;
+  - price/contact fall back to labeled text when table/dl pairs are absent;
+  - time-bearing program lines can become programs;
+  - generic site chrome/default/no-image/common-menu assets are excluded from event imagery.
+- Regression coverage modeled on current Suwon and Hangang detail shapes; UI browser smoke + Project checks PASS.
+- Next production step: deploy this extractor and run a bounded municipal one-shot to backfill existing current events from their exact official detail pages. Then re-audit detail completeness rather than assuming the source lacks data.
