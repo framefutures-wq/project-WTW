@@ -2046,3 +2046,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   3. include official-link presence/quality signals;
   4. make zero writes;
   5. use actual audit output to tune `publish_quality_v1` before an apply/deploy task.
+
+
+## 2026-09-27 — read-only quality audit command ready; legacy apply still blocked
+
+- PR #61 merged as `aef8b8baa3bb68813fd27e4fcfbd2784a0a10168`.
+- Read-only bounded production audit command is ready.
+- No production write/reclassification has happened.
+- Legacy quality apply must wait for one real production audit result.
+- Safe independent next task: improve exact official-link acquisition/storage for future/public events, especially TourAPI rows that currently have no `공식 안내 확인` action.
