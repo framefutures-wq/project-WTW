@@ -2098,3 +2098,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - It intentionally performs zero legacy mass-reclassification writes.
 - Do not ask the user to decide routine implementation details; continue independent code phases where production credentials are not required.
 - Do not claim production quality-gate rollout complete until the guarded command succeeds.
+
+
+## 2026-09-27 — regional weekend SEO expansion merged
+
+- PR #73 merged green as `1476844767dc6406d92901c54242d4c75afd86cf`.
+- Weekend discovery landings now cover all 17 public regions via `/weekend/<region-slug>`.
+- The internal `전남광주` transitional region is intentionally not exposed as a public SEO landing.
+- Production deployment remains coupled to the guarded discovery rollout; do not deploy separately just for this config-only SEO expansion.
