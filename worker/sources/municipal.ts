@@ -45,6 +45,7 @@ import {
   MUNICIPAL_MIN_FETCH_RESERVE_PER_SOURCE,
   municipalSourceFetchCeiling,
 } from "../../shared/municipal-fetch-budget";
+import { decidePublishQuality } from "../../shared/publish-quality";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
@@ -435,6 +436,18 @@ async function publish(
     status?: string | null;
   } | null,
 ) {
+  const description =
+    summaryText ?? "공식 지자체 행사 안내를 바탕으로 등록된 행사입니다.";
+  const quality = decidePublishQuality({
+    title: candidate.title,
+    description,
+    start_date: candidate.start_date,
+    end_date: candidate.end_date,
+    venue: candidate.venue,
+    address: candidate.venue,
+    source_kind: "municipality",
+    source_url: candidate.official_url,
+  });
   const sid = sourceId(id),
     evidence = `${candidate.title} | ${candidate.start_date}~${candidate.end_date} | ${candidate.venue}`;
   const after = {
@@ -495,11 +508,11 @@ async function publish(
       now,
     ),
     env.DB.prepare(
-      "INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES(?,?,?,?,?,?,?,?,NULL,NULL,'unknown',NULL,'unknown','scheduled','verified',0,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,status='scheduled',verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.updated_at",
+      "INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at,updated_at,publish_quality_state,publish_quality_reason,publish_quality_rule_version,publish_quality_checked_at) VALUES(?,?,?,?,?,?,?,?,NULL,NULL,'unknown',NULL,'unknown','scheduled','verified',0,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=excluded.venue,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,status='scheduled',verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.updated_at,publish_quality_state=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_state ELSE excluded.publish_quality_state END,publish_quality_reason=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_reason ELSE excluded.publish_quality_reason END,publish_quality_rule_version=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_rule_version ELSE excluded.publish_quality_rule_version END,publish_quality_checked_at=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_checked_at ELSE excluded.publish_quality_checked_at END",
     ).bind(
       id,
       candidate.title,
-      summaryText ?? "공식 지자체 행사 안내를 바탕으로 등록된 행사입니다.",
+      description,
       candidate.region,
       candidate.venue,
       candidate.venue,
@@ -507,6 +520,10 @@ async function publish(
       candidate.end_date,
       sid,
       now,
+      now,
+      quality.state,
+      quality.reason,
+      quality.rule_version,
       now,
     ),
     ...alertStatements,
