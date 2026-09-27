@@ -54,6 +54,13 @@ const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
   e.verification,e.is_sample,e.primary_source_id,e.checked_at`;
 const SELECT = `SELECT ${EVENT_FIELDS}, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
+  (SELECT ev.excerpt
+   FROM event_evidence ev
+   JOIN sources os ON os.id=ev.source_id
+   WHERE ev.event_id=e.id AND ev.field='official_url'
+     AND ev.excerpt LIKE 'https://%' AND os.kind!='sample'
+   ORDER BY os.priority ASC, ev.checked_at DESC
+   LIMIT 1) AS official_url,
   ts.trust_status, ts.checked_at AS trust_checked_at,
   ts.changed_fields AS trust_changed_fields,
   tsl.url AS trust_source_url, tsl.final_url AS trust_source_final_url,
@@ -192,6 +199,7 @@ function serialize(
     source_url: row.source_url as string | null,
     source_name: row.source_name as string | null,
     source_kind: row.source_kind as string | null,
+    official_url: row.official_url as string | null,
     trust_status:
       row.trust_status === "confirmed" ||
       row.trust_status === "needs_review" ||
