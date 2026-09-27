@@ -150,9 +150,9 @@ test("TourAPI detail maps only official summary, venue, whole-event hours, fee, 
     assert.equal(
       (
         await DB.prepare(
-          "SELECT excerpt FROM event_evidence WHERE event_id='tourapi-1' AND field='official_url'",
+          "SELECT url FROM event_official_links WHERE event_id='tourapi-1'",
         ).first<{ excerpt: string }>()
-      )?.excerpt,
+      )?.url,
       "https://festival.example.org/?a=1&b=2",
     );
     await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"));
