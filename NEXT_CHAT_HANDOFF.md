@@ -2127,3 +2127,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Final post-deploy audit did not execute because the old mobile test stopped the rollout.
 - Legacy rows are still grandfathered PUBLIC; the 17 proposed HOLD rows have not yet been written. Do not claim quality cleanup complete until a safe explicit legacy reclassification step is audited/applied.
 - Next authenticated Codespaces action should avoid unnecessary repeat migration work: pull latest main, run production browser verification with the corrected test, then run the remote zero-write quality audit and inspect HOLD examples before any legacy write.
+
+
+## 2026-09-27 — final guarded legacy quality rollout is ready
+
+- PR #77 merged green as `54ed53657b30a8bc3299f0f47b152c43b2e06452`.
+- The rollout now applies the already-audited legacy publish-quality transition only after production verification.
+- Safety gates: migrated schema required; complete audited set; grandfathered rows must be PUBLIC/unversioned; no EXCLUDE in the first legacy pass; <=50 and <=10% visibility changes.
+- Current measured production proposal is 258 rows total, 17 PUBLIC→HOLD, 0 EXCLUDE, so it is expected to pass.
+- The write versions all audited legacy rows with `publish_quality_v2`; post-check must show `legacy_unversioned=0` and `proposed_visibility_changes=0`.
+- Next authenticated Codespaces action: pull latest main and run `npm run rollout:discovery:v1` once more. This is now the intended completion path.
