@@ -830,3 +830,26 @@ UI benchmark:
   - Two-image detail examples (`페인터즈`, `광안리 M 드론 라이트쇼`): desktop media height 341px, mobile media height 250px, 2 columns, 2 image buttons, no overflow.
 - Sparse-detail content remains a data/enrichment concern, not a reason to add invented UI content.
 - Detail UI audit bounded tasks are closed in production.
+
+
+## 44. 2026-09-27 — municipal 35-source cron sharding production complete
+
+- Sep 27 natural-run audit found a deterministic failure boundary: first 9 Registry sources succeeded while the following 26 failed inside one scheduled Worker invocation.
+- Immediate read-only source diagnosis reached 22 of those 26 with HTTP 200 and valid parsing on many sources, supporting an invocation-level external-fetch exhaustion/starvation cause rather than a broad source outage.
+- PR #46 `fix: shard municipal ingestion across cron runs` merged as `9cabd7ec1f7327dc7d72c010c68942ead003e514`.
+- Final CI PASS:
+  - UI browser smoke #130.
+  - Project checks #729.
+- Production deployment baseline: main `2b4be74ccf2132fa305775a4c392f0be80912abf`.
+- Production Worker version: `7303f5d9-fce0-4b4f-83b4-187d23517626`.
+- Production smoke PASS.
+- Existing cron trigger set is unchanged.
+- Municipal 35-source daily orchestration is now deterministic across existing runs:
+  - 10:00 KST: shard 0;
+  - 11:00 KST: shard 1 alongside the detail watchdog;
+  - 11:45 KST: shard 2 alongside first detail retry recovery;
+  - assignment is 12 / 12 / 11 and each Registry source appears exactly once.
+- Each municipal shard has a bounded external-fetch budget. Daily publication mutation capacity remains globally equivalent to the previous cap as 4 + 3 + 3 = 10.
+- No new Cloudflare resource, D1 migration, UI change, or event-truth relaxation was introduced.
+- Because this deployment happened after the Sep 27 10:00 and 11:00 KST shard windows, the first complete natural 35-source production verification is the Sep 28 cycle after the 11:45 KST shard completes.
+- Do not manually rerun municipal ingestion solely to fill the partial Sep 27 cycle; use the next full natural run unless new production evidence requires recovery.
