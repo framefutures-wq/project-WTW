@@ -295,6 +295,7 @@ async function proxyEventImage(
           `SELECT image_url,source_page_url
            FROM event_images
            WHERE event_id=? AND is_primary=1 AND image_status='ok'
+             AND source_type='municipality'
            LIMIT 1`,
         )
           .bind(eventId)
@@ -303,6 +304,7 @@ async function proxyEventImage(
           `SELECT image_url,source_page_url
            FROM event_additional_images
            WHERE event_id=? AND sort_order=? AND image_status='ok'
+             AND source_type='municipality'
            LIMIT 1`,
         )
           .bind(eventId, sortOrder)
@@ -318,7 +320,10 @@ async function proxyEventImage(
   if (
     remote.protocol !== "https:" ||
     remote.username ||
-    remote.password
+    remote.password ||
+    remote.hostname === "localhost" ||
+    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(remote.hostname) ||
+    remote.hostname.startsWith("[")
   )
     return new Response("Not found", { status: 404 });
 
@@ -820,7 +825,10 @@ export default {
           items.findIndex((candidate) => candidate.image_url === image.image_url) === index,
         ).slice(0, 5).map((image) => ({
           ...image,
-          image_url: detailImageProxyUrl(url, eventId, Number(image.sort_order)),
+          image_url:
+            image.source_type === "municipality"
+              ? detailImageProxyUrl(url, eventId, Number(image.sort_order))
+              : image.image_url,
         }));
         const evidence = await env.DB.prepare(
           `SELECT ev.field,ev.excerpt,ev.checked_at,s.name,s.url,s.kind,s.priority
