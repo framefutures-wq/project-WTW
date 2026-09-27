@@ -471,7 +471,7 @@ try {
     1,
   );
   await db.prepare(
-    "INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES('tourapi-101','tourapi-101-source','official_url','https://festival.example.org/tourapi-101',?)",
+    "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES('tourapi-101','tourapi-101-source','https://festival.example.org/tourapi-101',?)",
   ).bind(now).run();
   const real = await get("/api/events/tourapi-101");
   assert.equal(real.event.is_sample, 0);
@@ -486,7 +486,7 @@ try {
     real.event.official_url,
     "https://festival.example.org/tourapi-101",
   );
-  assert.equal(real.evidence.length, 5);
+  assert.equal(real.evidence.length, 4);
   assert.equal(
     (
       await db
