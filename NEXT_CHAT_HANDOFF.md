@@ -2182,3 +2182,17 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   `npm run official-links:audit:tourapi -- --remote`
   after pulling latest main.
 - The audit is read-only and will split the 65 into safe resolver categories. Use that output to choose the next bounded Phase 3 task. Do not web-search all 65 indiscriminately and do not guess official URLs.
+
+
+## 2026-09-27 — resolve 38 explicit legacy TourAPI homepage gaps next
+
+- Production audit of the remaining 65 TourAPI no-link events:
+  - 31 EXPLICIT_HTTP_HOMEPAGE
+  - 7 EXPLICIT_BARE_HOST
+  - 27 OTHER_HTTPS_URL
+  - state split: PUBLIC 63 / HOLD 2
+- PR #81 merged green as `2deefb9c098d1f34fc70090a2cc2bbc847e98c40`.
+- Next authenticated Codespaces command after pulling latest main:
+  `npm run official-links:resolve:tourapi-explicit -- --remote --apply`
+- This command only resolves the 38 explicit provider homepage signals through verified HTTPS. It must not classify the 27 OTHER_HTTPS_URL rows as official.
+- After the command, use the concise remaining-gap count to decide the next bounded task for the 27 evidence-classification cases.
