@@ -388,6 +388,30 @@ function directDetailUrls(source: MunicipalSourceDefinition, html: string) {
     .sort((a, b) => b.score - a.score || a.url.localeCompare(b.url));
 }
 
+function firstSafeFirstPartyLink(
+  source: MunicipalSourceDefinition,
+  html: string,
+) {
+  const sourceUrl = new URL(source.url).toString();
+  for (const raw of rawDetailLinkValues(html)) {
+    const resolved = absolute(source.url, raw);
+    if (!resolved || !municipalSourceAllowsUrl(source, resolved)) continue;
+    try {
+      const url = new URL(resolved);
+      if (
+        url.toString() === sourceUrl ||
+        assetLikePath.test(url.pathname + url.search) ||
+        fileLikePath.test(url.pathname)
+      )
+        continue;
+      return url.toString();
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 function hasUnsafeExternalEventLink(
   source: MunicipalSourceDefinition,
   html: string,
@@ -450,6 +474,9 @@ export function discoverMunicipalDetailUrl(
     if (municipalSourceAllowsUrl(source, url.toString()))
       return url.toString();
   }
+
+  const firstParty = firstSafeFirstPartyLink(source, html);
+  if (firstParty) return firstParty;
   return hasUnsafeExternalEventLink(source, html) ? null : source.url;
 }
 
