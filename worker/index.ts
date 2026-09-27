@@ -616,10 +616,10 @@ export default {
         }
         if (f.q) {
           where.push(
-            "(e.title LIKE ? ESCAPE '\\' OR e.venue LIKE ? ESCAPE '\\')",
+            "(e.title LIKE ? ESCAPE '\\' OR e.venue LIKE ? ESCAPE '\\' OR e.address LIKE ? ESCAPE '\\')",
           );
           const escaped = f.q.replace(/[\\%_]/g, "\\$&");
-          binds.push(`%${escaped}%`, `%${escaped}%`);
+          binds.push(`%${escaped}%`, `%${escaped}%`, `%${escaped}%`);
         }
         const latitudeRadius = 200 / 111.32;
         const longitudeRadius = Math.min(
@@ -712,10 +712,10 @@ export default {
         }
         if (f.q) {
           where.push(
-            "(e.title LIKE ? ESCAPE '\\' OR e.venue LIKE ? ESCAPE '\\')",
+            "(e.title LIKE ? ESCAPE '\\' OR e.venue LIKE ? ESCAPE '\\' OR e.address LIKE ? ESCAPE '\\')",
           );
           const escaped = f.q.replace(/[\\%_]/g, "\\$&");
-          binds.push(`%${escaped}%`, `%${escaped}%`);
+          binds.push(`%${escaped}%`, `%${escaped}%`, `%${escaped}%`);
         }
         const whereSql = where.join(" AND ");
         if (f.sort === "distance") {

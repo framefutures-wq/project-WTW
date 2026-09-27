@@ -279,6 +279,12 @@ try {
   await fixture("nearby-second", { lat: 37.666, lng: 126.978 });
   await evidence("nearby-first", [...required, "coordinates"]);
   await evidence("nearby-second", [...required, "coordinates"]);
+  await db
+    .prepare("UPDATE events SET address='서울특별시 종로구 갈틈검색길 7' WHERE id='verified'")
+    .run();
+  await db
+    .prepare("UPDATE events SET address='서울특별시 중구 주변검색길 11' WHERE id='nearby-first'")
+    .run();
   const addDays = (date, days) => {
     const value = new Date(`${date}T00:00:00Z`);
     value.setUTCDate(value.getUTCDate() + days);
@@ -343,6 +349,10 @@ try {
     (await get("/api/events?period=today&region=서울&audience=kids")).total,
     1,
   );
+  assert.deepEqual(
+    (await get("/api/events?period=today&q=갈틈검색길")).events.map((event) => event.id),
+    ["verified"],
+  );
   const nearby = await post("/api/events/nearby", {
     lat: 37.566,
     lng: 126.978,
@@ -350,6 +360,18 @@ try {
     limit: 1,
   });
   assert.equal(nearby.events[0].id, "nearby-first");
+  assert.deepEqual(
+    (
+      await post("/api/events/nearby", {
+        lat: 37.566,
+        lng: 126.978,
+        period: "today",
+        q: "주변검색길",
+        limit: 10,
+      })
+    ).events.map((event) => event.id),
+    ["nearby-first"],
+  );
   const nearbyNext = await post("/api/events/nearby", {
     lat: 37.566,
     lng: 126.978,
