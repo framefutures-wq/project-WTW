@@ -2055,3 +2055,18 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - No production write/reclassification has happened.
 - Legacy quality apply must wait for one real production audit result.
 - Safe independent next task: improve exact official-link acquisition/storage for future/public events, especially TourAPI rows that currently have no `공식 안내 확인` action.
+
+
+## 2026-09-27 — Phase 3 official-link foundation merged; production rollout still pending
+
+- PR #62 merged as `09ea622f65dc937dea15b4384ff631460782427e`.
+- Project checks #951 SUCCESS and UI browser smoke #176 SUCCESS before merge.
+- TourAPI detail enrichment now extracts only explicit safe HTTPS homepage URLs from provider fields; it does not guess URLs and rejects provider/API-documentation hosts.
+- New additive migration `0023_event_official_links.sql` stores official-link provenance separately from the constrained `event_evidence.field` enum.
+- Public event detail API exposes `event.official_url` from:
+  1. stored official-link provenance, source-priority ordered;
+  2. verified successful official-source audit links as fallback.
+- The visible `공식 안내 확인` action prefers this evidence-backed URL before older fallbacks.
+- This code is merged but production migration/deploy/backfill has NOT been completed in this chat.
+- Legacy quality reclassification remains blocked until one real production read-only quality audit is reviewed.
+- Next safe code task: simplify the detail-page responsibility around concise core visit facts + a strong official handoff, without deleting existing rich-detail data.
