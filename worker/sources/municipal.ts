@@ -806,6 +806,7 @@ export async function runMunicipalAutonomous(
         image_candidate: null,
       };
       let detail: string;
+      let detailIsSpecific = false;
       let retryExtractionMode:
         | "registered"
         | "structured_event"
@@ -832,7 +833,26 @@ export async function runMunicipalAutonomous(
           continue;
         }
         candidate = refreshed.candidate;
-        detail = refreshed.pageHtml;
+        if (
+          retryExtractionMode === "structured_event" ||
+          retryExtractionMode === "pdf_text" ||
+          retryExtractionMode === "image_vision"
+        ) {
+          detail = refreshed.detailHtml ?? refreshed.pageHtml;
+        } else if (refreshed.detailHtml) {
+          detail = refreshed.detailHtml;
+          detailIsSpecific = true;
+        } else if (candidate.official_url !== source.url) {
+          if (!municipalSourceAllowsUrl(source, candidate.official_url))
+            throw new Error("detail_host_not_allowed");
+          if (detailFetches >= maxDetailFetches)
+            throw new Error("municipal_detail_fetch_budget_exhausted");
+          detailFetches += 1;
+          detail = await fetchHtml(candidate.official_url);
+          detailIsSpecific = true;
+        } else {
+          detail = refreshed.pageHtml;
+        }
       } else {
         if (!municipalSourceAllowsUrl(source, candidate.official_url))
           throw new Error("detail_host_not_allowed");
@@ -840,6 +860,7 @@ export async function runMunicipalAutonomous(
           throw new Error("municipal_detail_fetch_budget_exhausted");
         detailFetches += 1;
         detail = await fetchHtml(candidate.official_url);
+        detailIsSpecific = true;
       }
       const payloadHash = await hash({
         title: candidate.title,
