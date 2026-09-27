@@ -37,7 +37,11 @@ test("municipal one-shot defaults to three isolated shard requests and supports 
   assert.match(runner, /: \[0, 1, 2\]/);
   assert.match(runner, /--shard=/);
   assert.match(runner, /for \(const shardIndex of requestedShards\)/);
-  assert.match(runner, /"x-manual-municipal-shard": String\(shardIndex\)/);
+  assert.match(runner, /postShard\(url, shardIndex\)/);
+  assert.match(runner, /spawnSync\(\s*"curl"/);
+  assert.match(runner, /--max-time/);
+  assert.match(runner, /x-manual-municipal-shard:/);
+  assert.doesNotMatch(runner, /AbortSignal\.timeout\(14 \* 60_000\)/);
   assert.match(runner, /manual shard coverage mismatch/);
   assert.match(runner, /registrySourceCount/);
   assert.doesNotMatch(
