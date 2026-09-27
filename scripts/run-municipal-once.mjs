@@ -122,8 +122,11 @@ const eventSummarySql = (registryKeys, startedAt) => {
   return `
   WITH registry(source_key) AS (VALUES ${keyRows})
   SELECT registry.source_key, COUNT(events.id) AS published_or_revalidated
-  FROM registry LEFT JOIN events ON events.primary_source_id LIKE
-    'municipal-source-municipal-' || registry.source_key || '-%'
+  FROM registry LEFT JOIN events ON
+    instr(
+      events.primary_source_id,
+      'municipal-source-municipal-' || registry.source_key || '-'
+    ) = 1
     AND julianday(events.updated_at) >= julianday(${sqlQuote(startedAt)})
   GROUP BY registry.source_key ORDER BY registry.source_key`;
 };
