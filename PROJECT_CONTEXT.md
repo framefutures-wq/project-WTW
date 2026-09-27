@@ -1281,3 +1281,20 @@ UI benchmark:
 - TourAPI rows still without a stored official link: 45.
 - Some unresolved HTTP candidates reported `access_status=ok` but were intentionally not accepted because the final URL stayed HTTP rather than becoming HTTPS; this is expected safe behavior.
 - The 45 remaining rows consist of the unresolved explicit-homepage cases plus the previously separated OTHER_HTTPS_URL evidence cases. Do not treat arbitrary cached HTTPS URLs as official without a separate evidence-classification step.
+
+
+## 2026-09-27 — 상세 UI v3 top-media density 구현 완료
+
+- PR #82 merged green as `5227acf5996e58a6335618ee484ff63d3be2273b`.
+- 상세 데스크톱 기본 구조를 기존 `이미지 | 정보` 2열에서 **얕은 full-width 상단 미디어 + 고밀도 정보판**으로 변경했다.
+- 변경 범위는 UI/CSS와 회귀테스트뿐이며 ingestion/D1/publish-quality 로직은 건드리지 않았다.
+- 핵심 변화:
+  - 대표/추가 이미지를 상세 최상단 190~230px bounded media strip으로 이동;
+  - 행사명/상태/일정/장소/공식 CTA/운영시간·비용·문의를 미디어 바로 아래에 밀도 있게 배치;
+  - 데스크톱 일정·장소 2열;
+  - 프로그램 카드는 가용 폭에서 auto-fit으로 더 많이 한 행에 노출;
+  - 모바일은 top-media + 1열 core flow를 유지하되 supporting facts는 3열 compact layout;
+  - blur backdrop 강도를 낮춰 portrait 포스터의 흐릿한 면적을 줄임.
+- Hangang rich-detail fixture로 media가 summary 위에 있고, media height가 bounded하며, 일정/장소가 같은 행, 프로그램 3열이 유지되는 browser geometry test를 추가했다.
+- UI browser smoke와 Project checks 모두 PASS.
+- GitHub main 반영 완료. **production Worker deploy는 아직 하지 않았으므로 galteum.com에는 아직 이전 상세 UI가 보인다.**
