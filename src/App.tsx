@@ -47,7 +47,7 @@ import { formatProgramTime } from "../shared/event-program-time";
 import { decodeEventPathId, validEventId } from "../shared/event-id";
 import {
   formatOperatingHours,
-  selectOperatingHours,
+  formatOperatingHoursForRange,
   type EventOperatingHours,
 } from "../shared/event-operating-hours";
 import {
@@ -2137,11 +2137,9 @@ export default function App() {
         ) : detail ? (
           (() => {
             const location = locationLines(detail.event);
-            const operatingHours = formatOperatingHours(
-              selectOperatingHours(
-                detail.operating_hours,
-                eventDisplayRange,
-              ),
+            const operatingHours = formatOperatingHoursForRange(
+              detail.operating_hours,
+              eventDisplayRange,
             );
             const price = detail.event.price_text?.trim();
             const officialUrl = detailOfficialUrl(

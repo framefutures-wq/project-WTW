@@ -252,6 +252,120 @@ function parseOperatingHours(value: unknown): EventOperatingHours[] {
     return [];
   }
 }
+function detailImageProxyUrl(
+  requestUrl: URL,
+  eventId: string,
+  sortOrder: number,
+) {
+  return new URL(
+    `/api/events/${encodeURIComponent(eventId)}/image/${sortOrder}`,
+    requestUrl.origin,
+  ).toString();
+}
+
+function municipalContactPhone(rawPayload: string | null | undefined) {
+  if (!rawPayload) return null;
+  try {
+    const payload = JSON.parse(rawPayload) as {
+      tel?: unknown;
+      common?: { tel?: unknown };
+      intro?: { sponsor1tel?: unknown };
+      municipal_rich_detail?: { contact_phone?: unknown };
+    };
+    return normalizeOfficialPhone(
+      payload.municipal_rich_detail?.contact_phone ??
+        payload.common?.tel ??
+        payload.intro?.sponsor1tel ??
+        payload.tel,
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function proxyEventImage(
+  request: Request,
+  env: Env,
+  eventId: string,
+  sortOrder: number,
+) {
+  const image =
+    sortOrder === 1
+      ? await env.DB.prepare(
+          `SELECT image_url,source_page_url
+           FROM event_images
+           WHERE event_id=? AND is_primary=1 AND image_status='ok'
+             AND source_type='municipality'
+           LIMIT 1`,
+        )
+          .bind(eventId)
+          .first<{ image_url: string; source_page_url: string | null }>()
+      : await env.DB.prepare(
+          `SELECT image_url,source_page_url
+           FROM event_additional_images
+           WHERE event_id=? AND sort_order=? AND image_status='ok'
+             AND source_type='municipality'
+           LIMIT 1`,
+        )
+          .bind(eventId, sortOrder)
+          .first<{ image_url: string; source_page_url: string | null }>();
+  if (!image?.image_url) return new Response("Not found", { status: 404 });
+
+  let remote: URL;
+  try {
+    remote = new URL(image.image_url);
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+  if (
+    remote.protocol !== "https:" ||
+    remote.username ||
+    remote.password ||
+    remote.hostname === "localhost" ||
+    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(remote.hostname) ||
+    remote.hostname.startsWith("[")
+  )
+    return new Response("Not found", { status: 404 });
+
+  const headers = new Headers({
+    Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+  });
+  if (image.source_page_url) {
+    try {
+      const sourcePage = new URL(image.source_page_url);
+      if (sourcePage.protocol === "https:")
+        headers.set("Referer", sourcePage.toString());
+    } catch {}
+  }
+
+  const upstream = await fetch(remote.toString(), {
+    redirect: "follow",
+    headers,
+  });
+  if (!upstream.ok || !upstream.body)
+    return new Response("Not found", { status: 404 });
+
+  const contentType = upstream.headers.get("Content-Type") ?? "";
+  if (!contentType.toLowerCase().startsWith("image/"))
+    return new Response("Not found", { status: 404 });
+
+  const contentLength = Number(upstream.headers.get("Content-Length") ?? 0);
+  if (contentLength > 8 * 1024 * 1024)
+    return new Response("Image too large", { status: 413 });
+
+  const responseHeaders = new Headers({
+    "Content-Type": contentType,
+    "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+    "X-Content-Type-Options": "nosniff",
+  });
+  const etag = upstream.headers.get("ETag");
+  if (etag) responseHeaders.set("ETag", etag);
+  return new Response(upstream.body, {
+    status: 200,
+    headers: responseHeaders,
+  });
+}
+
 function json(data: unknown, status = 200) {
   return Response.json(data, {
     status,
@@ -423,6 +537,19 @@ export default {
           return json({ error: "구독 정보가 올바르지 않습니다." }, 400);
         await disableSubscription(env, endpoint);
         return json({ ok: true });
+      }
+      const imageRoute =
+        /^\/api\/events\/([^/]+)\/image\/([1-5])$/.exec(url.pathname);
+      if (imageRoute) {
+        const imageEventId = decodeSeoEventId(imageRoute[1]);
+        if (!imageEventId)
+          return new Response("Not found", { status: 404 });
+        return proxyEventImage(
+          request,
+          env,
+          imageEventId,
+          Number(imageRoute[2]),
+        );
       }
       if (url.pathname === "/api/meta")
         return json({
@@ -696,29 +823,33 @@ export default {
           ...additionalImages.results.map((image) => ({ ...image, is_primary: false })),
         ].filter((image, index, items) =>
           items.findIndex((candidate) => candidate.image_url === image.image_url) === index,
-        ).slice(0, 5);
+        ).slice(0, 5).map((image) => ({
+          ...image,
+          image_url:
+            image.source_type === "municipality"
+              ? detailImageProxyUrl(url, eventId, Number(image.sort_order))
+              : image.image_url,
+        }));
         const evidence = await env.DB.prepare(
           `SELECT ev.field,ev.excerpt,ev.checked_at,s.name,s.url,s.kind,s.priority
           FROM event_evidence ev JOIN sources s ON s.id=ev.source_id WHERE ev.event_id=? ORDER BY s.priority,ev.field`,
         )
-          .bind(detail[1])
+          .bind(eventId)
           .all();
         const contactSource = await env.DB.prepare(
-          "SELECT raw_payload FROM sources WHERE id IN (?,?) AND kind='tourapi' ORDER BY CASE WHEN id=? THEN 0 ELSE 1 END LIMIT 1",
+          `SELECT raw_payload
+           FROM sources
+           WHERE id IN (?,?)
+           ORDER BY CASE WHEN id=? THEN 0 ELSE 1 END
+           LIMIT 1`,
         )
           .bind(`${row.id}-detail`, row.primary_source_id, `${row.id}-detail`)
           .first<{ raw_payload: string | null }>();
-        let contactPhone = null;
-        try {
-          const payload = contactSource?.raw_payload ? JSON.parse(contactSource.raw_payload) as { tel?: unknown; common?: { tel?: unknown }; intro?: { sponsor1tel?: unknown } } : null;
-          contactPhone = normalizeOfficialPhone(payload?.common?.tel ?? payload?.intro?.sponsor1tel ?? payload?.tel);
-        } catch {
-          contactPhone = null;
-        }
+        const contactPhone = municipalContactPhone(contactSource?.raw_payload);
         const enrichment = await env.DB.prepare(
           `SELECT en.summary,s.url AS source_url,s.kind AS source_kind,s.priority AS source_priority FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=?`,
         )
-          .bind(detail[1])
+          .bind(eventId)
           .first<{
             summary: string;
             source_url: string;
@@ -728,17 +859,17 @@ export default {
         const highlights = await env.DB.prepare(
           `SELECT label,tag,featured FROM event_highlights WHERE event_id=? ORDER BY featured DESC,sort_order`,
         )
-          .bind(detail[1])
+          .bind(eventId)
           .all<{ label: string; tag: string | null; featured: number }>();
         const programs = await env.DB.prepare(
           `SELECT p.id,p.program_name,p.program_date,p.start_time,p.end_time,p.schedule_text,p.venue_name,p.description,p.featured,(SELECT json_group_array(tag) FROM event_program_tags WHERE program_id=p.id) AS tags FROM event_programs p WHERE p.event_id=? ORDER BY p.featured DESC,p.program_date,p.start_time,p.sort_order`,
         )
-          .bind(detail[1])
+          .bind(eventId)
           .all<Record<string, unknown>>();
         const occurrenceRows = await env.DB.prepare(
           `SELECT o.program_id,o.start_date,o.end_date,o.start_time,o.end_time,o.human_time_text,o.venue_name FROM event_program_occurrences o JOIN event_programs p ON p.id=o.program_id WHERE p.event_id=? ORDER BY o.start_date,o.start_time,o.sort_order`,
         )
-          .bind(detail[1])
+          .bind(eventId)
           .all<Record<string, unknown>>();
         const occurrencesByProgram = new Map<string, unknown[]>();
         for (const occurrence of occurrenceRows.results)

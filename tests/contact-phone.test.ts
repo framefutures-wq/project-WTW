@@ -19,3 +19,11 @@ test("does not make an action for ambiguous or malformed TourAPI phone values", 
   assert.equal(normalizeOfficialPhone("063-290-3976~8"), null);
   assert.equal(normalizeOfficialPhone("02-522-882"), null);
 });
+
+
+test("official public short contact numbers remain callable", () => {
+  assert.deepEqual(normalizeOfficialPhone("120"), {
+    display: "120",
+    href: "tel:120",
+  });
+});

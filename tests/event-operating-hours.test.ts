@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   classifyOperatingHoursEvidence,
   formatOperatingHours,
+  formatOperatingHoursForRange,
   selectOperatingHours,
   validOperatingTime,
   type EventOperatingHours,
@@ -64,4 +65,33 @@ test("same clock hours remain visible when a date has an optional human label", 
 test("program-only rows do not create an operating-hour card value", () => {
   assert.equal(classifyOperatingHoursEvidence("메인 공연 19:30"), "PROGRAM_ONLY");
   assert.equal(selectOperatingHours([], { start: "2026-09-20", end: "2026-09-20" }), null);
+});
+
+
+test("same-day multiple official sessions stay visible on detail", () => {
+  const rows = [
+    hours("2026-09-27", "2026-09-27", "15:00", "16:00"),
+    hours("2026-09-27", "2026-09-27", "17:00", "18:00"),
+  ];
+  assert.equal(
+    formatOperatingHoursForRange(rows, {
+      start: "2026-09-27",
+      end: "2026-09-27",
+    }),
+    "15:00 ~ 16:00 · 17:00 ~ 18:00",
+  );
+});
+
+test("different multi-day hours remain hidden instead of being flattened", () => {
+  const rows = [
+    hours("2026-09-27", "2026-09-27", "15:00", "16:00"),
+    hours("2026-09-28", "2026-09-28", "17:00", "18:00"),
+  ];
+  assert.equal(
+    formatOperatingHoursForRange(rows, {
+      start: "2026-09-27",
+      end: "2026-09-28",
+    }),
+    null,
+  );
 });
