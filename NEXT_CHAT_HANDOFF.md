@@ -1600,3 +1600,24 @@ UI 기준:
 - Next bounded task should be read-only production verification of the latest 10:00 base run: 35 Registry source outcomes, observed counts, candidate/decision distribution, source errors, published/revalidated counts, and detail handoff/backlog.
 - Do not manually trigger ingestion unless the natural-run audit provides concrete evidence that recovery is required.
 - Active promotion remains paused until the user explicitly resumes it.
+
+
+## 2026-09-27 — municipal 35-source natural-run root fix merged / production pending
+
+- Sep 27 10:00 KST natural run completed TourAPI successfully (214/214 detail backlog complete) but municipal source outcomes were 9 OK / 26 error.
+- Failure boundary was deterministic: the first 9 Registry sources succeeded and all following 26 failed in the same Worker invocation; the private official lane also reported a source error.
+- Immediate read-only direct diagnosis of those 26 later sources reached 22 with HTTP 200; many extracted valid candidates. This ruled out a broad 26-site outage and pointed to invocation-level external fetch exhaustion/starvation.
+- PR #46 `fix: shard municipal ingestion across cron runs` merged as `9cabd7ec1f7327dc7d72c010c68942ead003e514`.
+- Final CI:
+  - UI browser smoke #130 SUCCESS.
+  - Project checks #729 SUCCESS.
+- New orchestration uses the existing cron schedule only:
+  - 10:00 KST base: municipal shard 0;
+  - 11:00 KST detail watchdog: shard 1 + existing detail watchdog;
+  - 11:45 KST first detail retry: shard 2 + existing retry recovery;
+  - later detail retry crons remain detail-only.
+- 35 Registry sources are assigned exactly once per normal day as 12 / 12 / 11.
+- Each shard has a bounded municipal external-fetch budget; publication mutation caps remain globally equivalent to the previous daily max 10 as 4 + 3 + 3.
+- Morning production verifier now aggregates municipal source outcomes across base and detail sync-run messages.
+- No new Cloudflare resource, cron trigger, D1 migration, UI or event truth policy change.
+- Production deploy is still required. Do not report the sharded behavior as live until deployment + smoke pass.
