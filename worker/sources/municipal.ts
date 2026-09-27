@@ -566,6 +566,7 @@ export async function runMunicipalAutonomous(
         summary.rows_read += duplicateResult.rows;
         let detailError = false,
           detailCoreConflict = false,
+          richDetail: MunicipalRichDetail | null = null,
           enrichment: ReturnType<typeof createEnrichmentCandidate> | null =
             null;
         if (
@@ -601,7 +602,9 @@ export async function runMunicipalAutonomous(
                   ? pageHtml
                   : await (async () => {
                       if (detailFetches >= maxDetailFetches)
-                        throw new Error("municipal_detail_fetch_budget_exhausted");
+                        throw new Error(
+                          "municipal_detail_fetch_budget_exhausted",
+                        );
                       detailFetches += 1;
                       return fetchHtml(effectiveCandidate.official_url);
                     })());
@@ -613,6 +616,24 @@ export async function runMunicipalAutonomous(
               detailCoreConflict =
                 effectiveCandidate.official_url !== source.url &&
                 hasMunicipalDetailCoreConflict(effectiveCandidate, detail);
+
+              const isSpecificDetail =
+                Boolean(detailHtml) ||
+                effectiveCandidate.official_url !== source.url;
+              if (isSpecificDetail && !detailError && !detailCoreConflict) {
+                richDetailAttempted += 1;
+                try {
+                  richDetail = extractMunicipalRichDetail(
+                    effectiveCandidate.official_url,
+                    detail,
+                  );
+                  if (richDetailFieldCount(richDetail) > 0)
+                    richDetailCandidates += 1;
+                } catch {
+                  richDetailErrors += 1;
+                  richDetail = null;
+                }
+              }
             } catch {
               detailError = true;
             }
@@ -638,18 +659,20 @@ export async function runMunicipalAutonomous(
         // A changed core payload needs two identical daily observations before it replaces last-known-good.
         const coreConflict =
           changedExisting && previous?.last_payload_hash !== payloadHash;
-        let decision = decideAutonomousMunicipal({
-          gate: gate.gate,
-          duplicate: duplicateResult.decision,
-          temporal: temporal(effectiveCandidate, koreaToday),
-          trusted: true,
-          coreValid: Boolean(
-            effectiveCandidate.title &&
+        const candidateTemporal = temporal(effectiveCandidate, koreaToday);
+        const coreValid = Boolean(
+          effectiveCandidate.title &&
             effectiveCandidate.start_date &&
             effectiveCandidate.end_date &&
             effectiveCandidate.venue &&
             effectiveCandidate.official_url,
-          ),
+        );
+        let decision = decideAutonomousMunicipal({
+          gate: gate.gate,
+          duplicate: duplicateResult.decision,
+          temporal: candidateTemporal,
+          trusted: true,
+          coreValid,
           parserError: Boolean(effectiveCandidate.parse_error),
           detailError,
           coreConflict: coreConflict || detailCoreConflict,
