@@ -1330,3 +1330,19 @@ UI benchmark:
 - The audit extracts non-asset HTTPS URLs outside explicit homepage/provider fields, classifies social/ticket/map/general-web candidates, fetches them with the existing SSRF-safe loader, and reports reachability plus a conservative event-title signal.
 - It never writes D1 and never promotes an arbitrary HTTPS URL to official. The result is evidence for the next bounded resolver.
 - UI browser smoke and Project checks passed before merge.
+
+
+## 2026-09-27 — 홈 UI 벤치마크를 대한민국 구석구석 방향으로 전환
+
+- 사용자 시각 검토 결과 Fever식 상업/티켓 UI는 갈틈의 국내 공공행사 탐색 감성과 맞지 않는 것으로 결정했다.
+- PR #85 merged green as `3e1f656dda9a8f5b19bf3076574564fd5bc48b8d`.
+- 홈 카드 visual을 대한민국 구석구석 축제/행사 카드 흐름에 가깝게 조정했다.
+  - 4열 유지, 카드 media를 3:4 세로 편집형 프레임으로 변경.
+  - 세로/정방형 공식 포스터는 contain으로 원본 전체를 보여주고, blur backdrop을 제거.
+  - 일반 가로 사진은 동일한 세로 카드 리듬 안에서 cover 허용.
+  - 추천 카드의 과한 metadata/fallback 장식을 줄이고 이미지 → 행사명 → 날짜 중심으로 단순화.
+  - 추천 섹션 문구도 `전국의 축제 · 공연 · 행사` 중심으로 정리.
+- 이미지 없는 카드의 장식 fallback은 임시 안전장치일 뿐이며, 공식 상세/출처에 실제 포스터가 존재하는데 수집되지 않는 경우는 UI가 아니라 ingestion 품질 문제로 본다.
+- 다음 별도 bounded task는 **공식 페이지에는 포스터가 있는데 `event.image_url`이 비어 있는 행사들의 이미지 수집 누락 원인/보강**이다.
+- UI browser smoke와 Project checks 모두 PASS.
+- production deploy는 아직 하지 않았다.
