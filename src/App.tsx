@@ -134,13 +134,15 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "weekend", label: "이번 주말" },
   { value: "next-weekend", label: "다음 주말" },
 ];
-const QUICK_CATEGORIES = [
-  { value: "", label: "전체", symbol: "⌁" },
-  { value: "food", label: "먹거리", symbol: "◉" },
-  { value: "fireworks", label: "불꽃", symbol: "✦" },
-  { value: "flowers", label: "꽃", symbol: "✿" },
-  { value: "experience", label: "체험", symbol: "△" },
-  { value: "performance", label: "공연", symbol: "♫" },
+const QUICK_DISCOVERY = [
+  { kind: "all", value: "", label: "전체", symbol: "⌁" },
+  { kind: "audience", value: "kids", label: "아이와", symbol: "○" },
+  { kind: "audience", value: "couple", label: "데이트", symbol: "♡" },
+  { kind: "theme", value: "food", label: "먹거리", symbol: "◉" },
+  { kind: "theme", value: "flowers", label: "꽃", symbol: "✿" },
+  { kind: "theme", value: "experience", label: "체험", symbol: "△" },
+  { kind: "theme", value: "performance", label: "공연", symbol: "♫" },
+  { kind: "theme", value: "fireworks", label: "불꽃", symbol: "✦" },
 ] as const;
 const dateLabel = (date: string) => {
   const localDate = date.includes("T") ? koreaDate(new Date(date)) : date;
@@ -1281,7 +1283,9 @@ export default function App() {
   const activeFilterLabels = [
     customRange ? selectedRangeLabel : null,
     region ? regionLabel(region) : null,
-    audience ? AUDIENCES[audience as keyof typeof AUDIENCES] : null,
+    audience && audience !== "kids" && audience !== "couple"
+      ? AUDIENCES[audience as keyof typeof AUDIENCES]
+      : null,
     query ? `검색: ${query}` : null,
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
@@ -1517,29 +1521,46 @@ export default function App() {
             <h2>뭐 하고 싶어요?</h2>
           </div>
           <div className="quick-category-grid" ref={themeFilterRef} tabIndex={-1}>
-            {QUICK_CATEGORIES.map((category) => (
-              <button
-                key={category.value || "all"}
-                className={
-                  theme === category.value
-                    ? "quick-category active"
-                    : "quick-category"
-                }
-                onClick={() =>
-                  change(
-                    setTheme,
-                    theme === category.value && category.value ? "" : category.value,
-                    "theme",
-                  )
-                }
-                aria-pressed={theme === category.value}
-              >
-                <span className="quick-category-symbol" aria-hidden="true">
-                  {category.symbol}
-                </span>
-                <strong>{category.label}</strong>
-              </button>
-            ))}
+            {QUICK_DISCOVERY.map((category) => {
+              const isActive =
+                category.kind === "all"
+                  ? !theme && !audience
+                  : category.kind === "theme"
+                    ? theme === category.value
+                    : audience === category.value;
+              return (
+                <button
+                  key={`${category.kind}-${category.value || "all"}`}
+                  className={isActive ? "quick-category active" : "quick-category"}
+                  onClick={() => {
+                    if (category.kind === "all") {
+                      setTheme("");
+                      setAudience("");
+                      trackFilterApply("theme", "all");
+                      trackFilterApply("audience", "all");
+                    } else if (category.kind === "theme") {
+                      change(
+                        setTheme,
+                        theme === category.value ? "" : category.value,
+                        "theme",
+                      );
+                    } else {
+                      change(
+                        setAudience,
+                        audience === category.value ? "" : category.value,
+                        "audience",
+                      );
+                    }
+                  }}
+                  aria-pressed={isActive}
+                >
+                  <span className="quick-category-symbol" aria-hidden="true">
+                    {category.symbol}
+                  </span>
+                  <strong>{category.label}</strong>
+                </button>
+              );
+            })}
           </div>
         </section>
         <section className="discovery" aria-label="행사 검색 및 필터">
@@ -1698,7 +1719,7 @@ export default function App() {
               ref={advancedFiltersRef}
               className="advanced-filters"
               open={Boolean(
-                audience ||
+                (audience && audience !== "kids" && audience !== "couple") ||
                   geoError ||
                   location ||
                   pushState === "subscribed",
