@@ -75,3 +75,25 @@ test("rejects non-HTTPS and decorative image candidates", () => {
     { url: "https://example.org/assets/event.jpg", signal: "IMG", alt: null },
   ]);
 });
+
+test("extracts explicit poster image attachments from exact official pages", () => {
+  const html = `
+    <a href="/upload/2026-food-festa-poster.jpg">
+      2026 동오마을 푸드페스타 포스터.jpg
+    </a>
+    <a href="/upload/site-banner.jpg">홈페이지 배너</a>
+  `;
+  assert.deepEqual(
+    extractOfficialPageImageCandidates(
+      "https://ui4u.go.kr/portal/eventNoti/view.do?idx=2016",
+      html,
+    ),
+    [
+      {
+        url: "https://ui4u.go.kr/upload/2026-food-festa-poster.jpg",
+        signal: "ATTACHMENT_IMAGE",
+        alt: "2026 동오마을 푸드페스타 포스터.jpg",
+      },
+    ],
+  );
+});

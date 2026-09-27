@@ -1,6 +1,11 @@
 export type OfficialPageImageCandidate = {
   url: string;
-  signal: "OG_IMAGE" | "TWITTER_IMAGE" | "JSON_LD_IMAGE" | "IMG";
+  signal:
+    | "OG_IMAGE"
+    | "TWITTER_IMAGE"
+    | "JSON_LD_IMAGE"
+    | "ATTACHMENT_IMAGE"
+    | "IMG";
   alt: string | null;
 };
 
@@ -118,6 +123,30 @@ export function extractOfficialPageImageCandidates(
         if (output.length >= limit) return output;
       }
     } catch {}
+  }
+
+  const anchors = html.match(/<a\b[^>]*>[\s\S]*?<\/a>/gi) ?? [];
+  for (const tag of anchors) {
+    const href = attribute(tag, "href");
+    const label = decodeHtml(
+      tag.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+    );
+    const url = safeHttps(pageUrl, href);
+    if (!url || looksDecorative(url, label || null)) continue;
+    const path = new URL(url).pathname;
+    if (!/\.(?:avif|webp|png|jpe?g|gif)$/i.test(path)) continue;
+    if (
+      !/(?:포스터|poster|행사|축제|festival|event|공연|전시)/i.test(
+        `${label} ${decodeURIComponent(path)}`,
+      )
+    )
+      continue;
+    pushUnique(output, seen, {
+      url,
+      signal: "ATTACHMENT_IMAGE",
+      alt: label || null,
+    });
+    if (output.length >= limit) return output;
   }
 
   const images = html.match(/<img\b[^>]*>/gi) ?? [];
