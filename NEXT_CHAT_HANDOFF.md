@@ -2233,3 +2233,10 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Detail v3 UI task is closed.
 - Next work returns to Phase 3 official-link quality. Current remaining TourAPI no-link population is 45: 18 unresolved explicit legacy-homepage cases + 27 OTHER_HTTPS_URL evidence cases.
 - Do not rerun the same explicit resolver as a discovery strategy; classify the remaining evidence set next.
+
+
+## 2026-09-27 — audit the 27 OTHER_HTTPS TourAPI gaps next
+
+- PR #84 merged green as `9cbb37ecc1f12acd16cd3a361d06151bfa112b8d`.
+- Next authenticated Codespaces command after pulling latest main: `npm run official-links:audit:tourapi-other-https -- --remote`.
+- This is zero-write. Use its reachability/title-signal/domain-category output to decide which remaining URLs can become verified official links and which must stay unresolved.
