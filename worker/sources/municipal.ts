@@ -885,46 +885,71 @@ export async function runMunicipalAutonomous(
           row.candidate_id,
         );
       summary.rows_read += duplicateResult.rows;
-      const enrichment =
+      const structuredRetryDetail =
         retryExtractionMode === "structured_event" ||
         retryExtractionMode === "pdf_text" ||
-        retryExtractionMode === "image_vision"
-          ? {
-              summary: effectiveCandidate.snippet,
-              operating_hours: null,
-              programs: [],
-            }
-          : createEnrichmentCandidate(effectiveCandidate, detail);
+        retryExtractionMode === "image_vision";
+      const enrichment = structuredRetryDetail
+        ? {
+            summary: effectiveCandidate.snippet,
+            operating_hours: null,
+            programs: [],
+          }
+        : createEnrichmentCandidate(effectiveCandidate, detail);
+      const detailError = Boolean(enrichment.parse_error);
+      const detailCoreConflict =
+        detailIsSpecific &&
+        !structuredRetryDetail &&
+        hasMunicipalDetailCoreConflict(effectiveCandidate, detail);
+      let richDetail: MunicipalRichDetail | null = null;
+      if (
+        detailIsSpecific &&
+        !structuredRetryDetail &&
+        !detailError &&
+        !detailCoreConflict
+      ) {
+        richDetailAttempted += 1;
+        try {
+          richDetail = extractMunicipalRichDetail(
+            effectiveCandidate.official_url,
+            detail,
+          );
+          if (richDetailFieldCount(richDetail) > 0)
+            richDetailCandidates += 1;
+        } catch {
+          richDetailErrors += 1;
+          richDetail = null;
+        }
+      }
+
       const existing = await env.DB.prepare(
-        "SELECT id,start_date,end_date,status FROM events WHERE id=? LIMIT 1",
+        "SELECT id,start_date,end_date,venue,status FROM events WHERE id=? LIMIT 1",
       )
         .bind(row.candidate_id)
         .first<{
           id: string;
           start_date: string;
           end_date: string;
+          venue: string;
           status: string;
         }>();
-      let decision = decideAutonomousMunicipal({
-        gate: gate.gate,
-        duplicate: duplicateResult.decision,
-        temporal: temporal(effectiveCandidate, koreaToday),
-        trusted: true,
-        coreValid: Boolean(
-          effectiveCandidate.title &&
+      const candidateTemporal = temporal(effectiveCandidate, koreaToday);
+      const coreValid = Boolean(
+        effectiveCandidate.title &&
           effectiveCandidate.start_date &&
           effectiveCandidate.end_date &&
           effectiveCandidate.venue &&
           effectiveCandidate.official_url,
-        ),
+      );
+      let decision = decideAutonomousMunicipal({
+        gate: gate.gate,
+        duplicate: duplicateResult.decision,
+        temporal: candidateTemporal,
+        trusted: true,
+        coreValid,
         parserError: Boolean(effectiveCandidate.parse_error),
-        detailError: Boolean(enrichment.parse_error),
-        coreConflict:
-          effectiveCandidate.official_url !== source.url &&
-          retryExtractionMode !== "structured_event" &&
-          retryExtractionMode !== "pdf_text" &&
-          retryExtractionMode !== "image_vision" &&
-          hasMunicipalDetailCoreConflict(effectiveCandidate, detail),
+        detailError,
+        coreConflict: detailCoreConflict,
       });
       const publicationMutation = isMunicipalPublicationMutation({
         existing,
