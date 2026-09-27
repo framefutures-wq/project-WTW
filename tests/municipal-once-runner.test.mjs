@@ -28,6 +28,8 @@ test("municipal one-shot preserves production D1 and AI configuration while disa
   assert.match(runner, /--preview-alias/);
   assert.match(runner, /--remote/);
   assert.match(runner, /missingObservedSourceKeys/);
+  assert.match(runner, /richDetailBackfilledEvents/);
+  assert.match(runner, /municipal_rich_detail\.contact_phone/);
 });
 
 test("municipal one-shot defaults to three isolated shard requests and supports targeted retry", () => {
