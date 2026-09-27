@@ -90,7 +90,7 @@ function visibility(env: Env) {
   // No sample records can escape to production, even if its DB was accidentally seeded.
   return env.APP_MODE === "sample"
     ? "e.is_sample=1 AND e.verification='sample'"
-    : `e.is_sample=0 AND e.verification='verified' AND s.kind!='sample' AND s.url LIKE 'https://%'
+    : `e.is_sample=0 AND e.verification='verified' AND e.publish_quality_state='PUBLIC' AND s.kind!='sample' AND s.url LIKE 'https://%'
       AND (${LKG_PRIMARY_SOURCE} OR (e.checked_at >= ? AND e.checked_at <= ?))
       AND NOT EXISTS (SELECT 1 FROM (SELECT 'schedule' AS field UNION ALL SELECT 'venue' UNION ALL SELECT 'status') required
         WHERE NOT EXISTS (SELECT 1 FROM event_evidence ev JOIN sources es ON es.id=ev.source_id
