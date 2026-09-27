@@ -73,17 +73,36 @@ const postShard = (url, shardIndex) => {
       maxBuffer: 8 * 1024 * 1024,
     },
   );
-  if (result.status !== 0)
+  if (result.status !== 0) {
+    const stdout = (result.stdout || "").trim();
+    const stderr = (result.stderr || "").trim();
+    let detail = stdout;
+    try {
+      const parsed = stdout ? JSON.parse(stdout) : null;
+      if (parsed?.error?.message)
+        detail =
+          parsed.error.message +
+          (parsed.error.stack ? "\n" + parsed.error.stack : "");
+    } catch {}
     throw new Error(
-      `one-shot shard ${shardIndex} transport failed: ${(
-        result.stderr ||
-        result.stdout ||
-        "curl command failed"
-      ).trim()}`,
+      `one-shot shard ${shardIndex} transport failed` +
+        (detail ? `:\n${detail}` : "") +
+        (stderr ? `\n[curl] ${stderr}` : ""),
     );
+  }
   try {
-    return JSON.parse(result.stdout);
-  } catch {
+    const parsed = JSON.parse(result.stdout);
+    if (parsed?.ok === false)
+      throw new Error(
+        `one-shot shard ${shardIndex} failed: ${parsed.error?.message ?? "unknown"}`,
+      );
+    return parsed;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("one-shot shard ")
+    )
+      throw error;
     throw new Error(
       `one-shot shard ${shardIndex} returned invalid JSON`,
     );
