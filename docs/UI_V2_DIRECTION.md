@@ -272,3 +272,14 @@ Adaptive media:
 - 날짜 preset은 `오늘 / 이번 주말 / 다음 주말 / 날짜 선택`만 보여주고 감성 보조문구를 버튼 안에 반복하지 않는다.
 - 세부필터 summary는 `세부 필터`만 보이고 기능 설명은 펼친 내부에서 확인하게 한다.
 - 컴팩트화를 위해 데스크톱 quick category는 약 44px, 날짜 컨트롤은 약 40px 수준을 허용한다. 모바일은 각각 약 50px/42px로 터치 여유를 유지한다.
+
+
+## 16. 2026-09-27 상세 행동 / 모바일 2장 미디어 확정 기준
+
+- 상세 상단의 날짜·장소 다음에는 실제 방문 결정을 돕는 행동을 우선한다.
+- 공식 organizer/municipality source가 확인된 경우 상단 `공식 안내 확인` CTA를 노출한다. TourAPI API endpoint 자체를 공식 행사 페이지처럼 노출하지 않는다.
+- 검증 좌표가 있으면 Kakao Maps 목적지 길찾기, 좌표가 없으면 확인된 주소/장소 검색 링크를 제공한다.
+- 2장 adaptive media는 desktop에서 기존 main+secondary 구성을 유지하고, 390px 모바일에서는 두 이미지를 세로로 두 장 쌓지 않는다.
+- 모바일 2장 구성은 한 행의 2-column layout으로 유지하며 전체 media 높이는 약 220–250px 범위로 제한한다.
+- 0장/1장 fallback 정책과 4~5장 gallery 확장 조건은 기존 기준을 유지한다.
+- 정보가 빈약한 상세는 UI filler를 추가하지 않는다. 공식 source에 정보가 있는데 누락된 경우에만 enrichment/data coverage 문제로 처리한다.
