@@ -2,7 +2,7 @@ export const MUNICIPAL_DAILY_SHARD_COUNT = 3;
 
 const PUBLISH_MUTATION_CAPS = [4, 3, 3] as const;
 const RETRY_CANDIDATE_CAPS = [4, 4, 4] as const;
-const DETAIL_FETCH_CAPS = [6, 4, 4] as const;
+const DETAIL_FETCH_CAPS = [12, 12, 11] as const;
 const EXTERNAL_FETCH_CAP = 35;
 
 export type MunicipalRunPlan = {
