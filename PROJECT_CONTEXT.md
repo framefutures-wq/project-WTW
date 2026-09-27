@@ -1161,3 +1161,20 @@ UI benchmark:
 - The rollout then stopped in the mobile browser check. This was not an app rendering regression: the test incorrectly required each child of the intentional mobile two-image 1.55fr/0.85fr row to be landscape. The UI contract is on the combined 220–250px media row, not each child.
 - PR #75 fixed the production-smoke assertion to validate the combined mobile two-image row while preserving single-media landscape checks. It merged green as `99c67801e8339cdde2d70aade9b7cb7edaeee17d`.
 - Because the browser check stopped the command, the final post-deploy audit did not run. Existing legacy rows also remain grandfathered until an explicit safe reclassification step; migration defaults alone do not apply the 17 proposed HOLD changes.
+
+
+## 2026-09-27 — guarded legacy Publish Quality reclassification merged
+
+- PR #77 merged green as `54ed53657b30a8bc3299f0f47b152c43b2e06452`.
+- The guarded discovery rollout now completes the legacy quality transition after production verification.
+- It re-audits production, then only allows the first legacy rollout when:
+  - publish-quality schema is present,
+  - the audited row set is complete,
+  - grandfathered rows are still PUBLIC/unversioned,
+  - no legacy row is proposed EXCLUDE,
+  - visibility changes are <= 50 and <= 10% of legacy rows.
+- The current measured rollout (258 rows, 17 proposed HOLD, 0 EXCLUDE) is within those limits.
+- The apply step writes all audited legacy rows with `publish_quality_v2` in one atomic UPDATE, so unchanged PUBLIC rows are versioned too and future source refreshes can reclassify normally.
+- Post-write verification requires `legacy_unversioned=0` and `proposed_visibility_changes=0`, otherwise the rollout fails.
+- Project checks and UI browser smoke passed before merge.
+- Production write has not yet occurred for PR #77; authenticated Codespaces must pull latest main and rerun `npm run rollout:discovery:v1`.
