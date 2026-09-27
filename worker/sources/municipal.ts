@@ -40,6 +40,7 @@ import {
   type MunicipalRichDetail,
 } from "../../shared/municipal-rich-detail";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
+import { municipalSourceFetchCeiling } from "../../shared/municipal-fetch-budget";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
@@ -203,13 +204,17 @@ const emptySummary = (): Summary => ({
   rows_read: 0,
   rows_written: 0,
 });
-type MunicipalFetchBudget = { used: number; limit: number };
+type MunicipalFetchBudget = {
+  used: number;
+  limit: number;
+  activeLimit: number;
+};
 
 const budgetedFetch = async (
   url: string,
   budget: MunicipalFetchBudget,
 ) => {
-  if (budget.used >= budget.limit)
+  if (budget.used >= Math.min(budget.limit, budget.activeLimit))
     throw new Error("municipal_fetch_budget_exhausted");
   budget.used += 1;
   return fetch(url, {
@@ -534,6 +539,7 @@ export async function runMunicipalAutonomous(
     fetchBudget: MunicipalFetchBudget = {
       used: 0,
       limit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
+      activeLimit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
     },
     fetchResponse = (url: string) => officialResponse(url, fetchBudget),
     fetchHtml = async (url: string) => (await fetchResponse(url)).html,
@@ -591,7 +597,13 @@ export async function runMunicipalAutonomous(
       });
     }
   };
-  for (const source of selectedSources) {
+  for (let sourceIndex = 0; sourceIndex < selectedSources.length; sourceIndex += 1) {
+    const source = selectedSources[sourceIndex];
+    fetchBudget.activeLimit = municipalSourceFetchCeiling({
+      used: fetchBudget.used,
+      hardLimit: fetchBudget.limit,
+      remainingSources: selectedSources.length - sourceIndex - 1,
+    });
     try {
       const sourceCandidates = await collectSourceCandidates(
         env,
@@ -857,6 +869,7 @@ export async function runMunicipalAutonomous(
       });
     }
   }
+  fetchBudget.activeLimit = fetchBudget.limit;
   // Retry candidates are intentionally re-fetched from their minimal core snapshot even when absent from today's listing.
   const retrySourceKeys = selectedSources.map((source) => source.key);
   const retryPlaceholders = retrySourceKeys.map(() => "?").join(",");
@@ -1146,6 +1159,8 @@ export async function runMunicipalAutonomous(
     source_keys: selectedSources.map((source) => source.key),
     fetch_attempts: fetchBudget.used,
     fetch_budget: fetchBudget.limit,
+    source_fetch_window: 3,
+    source_fetch_reserve: 2,
     detail_fetches: detailFetches,
     identity_bridges: identityBridges,
     rich_detail_attempted: richDetailAttempted,
