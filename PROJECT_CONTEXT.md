@@ -1140,3 +1140,24 @@ UI benchmark:
 - Focused regression coverage added.
 - Project checks and UI browser smoke both passed before merge.
 - No production write occurred in the failed attempt. The next production step is to pull latest main and rerun the same single `npm run rollout:discovery:v1` command.
+
+
+## 2026-09-27 — discovery v1 deployed; mobile production smoke contract corrected
+
+- The guarded rollout reached production migration + deploy successfully.
+  - migration 0022 publish quality: applied
+  - migration 0023 event official links: applied
+  - Worker/assets deployed; version reported by Wrangler: `9149e746-9bb8-44ca-aff8-0439fb3cc5fa`
+  - generic production smoke passed
+  - desktop production browser smoke passed
+- Preflight production audit before the migration scanned 258 current/future verified events:
+  - proposed PUBLIC 241
+  - proposed HOLD 17
+  - proposed EXCLUDE 0
+  - exact event official link 66
+  - first-party source only 44
+  - TourAPI-only official-link gap 148
+  - proposed visibility changes 17
+- The rollout then stopped in the mobile browser check. This was not an app rendering regression: the test incorrectly required each child of the intentional mobile two-image 1.55fr/0.85fr row to be landscape. The UI contract is on the combined 220–250px media row, not each child.
+- PR #75 fixed the production-smoke assertion to validate the combined mobile two-image row while preserving single-media landscape checks. It merged green as `99c67801e8339cdde2d70aade9b7cb7edaeee17d`.
+- Because the browser check stopped the command, the final post-deploy audit did not run. Existing legacy rows also remain grandfathered until an explicit safe reclassification step; migration defaults alone do not apply the 17 proposed HOLD changes.
