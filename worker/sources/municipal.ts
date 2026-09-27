@@ -709,6 +709,28 @@ export async function runMunicipalAutonomous(
           summary.rows_written += write.rows;
           if (publicationMutation) publishMutations += 1;
         }
+
+        const safeExistingRichBackfill = Boolean(
+          existing &&
+            gate.gate === "MAIN" &&
+            duplicateResult.decision === "NEW" &&
+            candidateTemporal !== "EXPIRED" &&
+            coreValid &&
+            !effectiveCandidate.parse_error &&
+            !detailError &&
+            !coreConflict &&
+            !detailCoreConflict,
+        );
+        if (
+          richDetail &&
+          (decision.state === "AUTO_PUBLISH" || safeExistingRichBackfill)
+        )
+          await persistRichDetail({
+            eventId: id,
+            candidate: effectiveCandidate,
+            detail: richDetail,
+          });
+
         const saved = await saveState(
           env,
           effectiveCandidate,
