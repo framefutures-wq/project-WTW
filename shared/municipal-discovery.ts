@@ -1747,7 +1747,7 @@ export function parsePocheonHomepageEvents(html: string): MunicipalCandidate[] {
 
 export function parseGeojeMonthlyEvents(html: string): MunicipalCandidate[] {
   const sourceUrl =
-    "https://geoje.go.kr/board/list.geoje?boardId=FESTIVAL&contentsSid=8213&menuCd=DOM_000008504014001000";
+    "https://tour.geoje.go.kr/board/list.geoje?boardId=FESTIVAL&contentsSid=8213&menuCd=DOM_000008504014001000";
   const pageYear =
     /(?:^|[>\s])(20\d{2})년\s*\d{1,2}월\s*행사일정표/i.exec(html)?.[1] ??
     /(?:^|[>\s])(20\d{2})년\s*\d{1,2}월/i.exec(html)?.[1] ??
