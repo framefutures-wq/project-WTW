@@ -53,7 +53,8 @@
     "municipal:list-detail:probe": "node --import tsx scripts/municipal-list-detail-probe.mjs",
     "verify:morning:prod": "node scripts/morning-production-check.mjs",
     "diagnose:municipal:3": "node --import tsx scripts/municipal-source-diagnostic.mjs",
-    "audit:municipal-rich-detail": "node --import tsx scripts/audit-municipal-rich-detail.mjs"
+    "audit:municipal-rich-detail": "node --import tsx scripts/audit-municipal-rich-detail.mjs",
+    "municipal:verify:manual": "node scripts/verify-municipal-manual.mjs"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
