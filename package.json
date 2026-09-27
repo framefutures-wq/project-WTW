@@ -55,7 +55,8 @@
     "diagnose:municipal:3": "node --import tsx scripts/municipal-source-diagnostic.mjs",
     "audit:municipal-rich-detail": "node --import tsx scripts/audit-municipal-rich-detail.mjs",
     "municipal:verify:manual": "node scripts/verify-municipal-manual.mjs",
-    "audit:publish-quality": "node --import tsx scripts/audit-publish-quality.ts"
+    "audit:publish-quality": "node --import tsx scripts/audit-publish-quality.ts",
+    "rollout:discovery:v1": "node --import tsx scripts/rollout-discovery-v1.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
