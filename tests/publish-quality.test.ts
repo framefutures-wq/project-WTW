@@ -141,3 +141,57 @@ test("long ambiguous records are HOLD even with a trusted source", () => {
     },
   );
 });
+
+
+test("sparse TourAPI records stay HOLD even when the title looks like an event", () => {
+  assert.deepEqual(
+    decidePublishQuality({
+      ...base,
+      title: "제45회 파주미술협회 회원전",
+      description: "한국관광공사 TourAPI에 등록된 행사입니다.",
+      source_kind: "tourapi",
+      source_url: "https://www.data.go.kr/data/15101578/openapi.do",
+    }),
+    {
+      state: "HOLD",
+      reason: "insufficient_event_signal",
+      rule_version: PUBLISH_QUALITY_RULE_VERSION,
+    },
+  );
+});
+
+test("TourAPI detail can promote a sparse explicit event when an event-specific official link exists", () => {
+  assert.deepEqual(
+    decidePublishQuality({
+      ...base,
+      title: "제45회 파주미술협회 회원전",
+      description: "한국관광공사 TourAPI에 등록된 행사입니다.",
+      source_kind: "tourapi",
+      source_url: "https://www.data.go.kr/data/15101578/openapi.do",
+      event_official_url: "https://example.or.kr/events/45",
+    }),
+    {
+      state: "PUBLIC",
+      reason: "explicit_public_event",
+      rule_version: PUBLISH_QUALITY_RULE_VERSION,
+    },
+  );
+});
+
+test("long-running permanent exhibition facilities are EXCLUDE despite generic event words", () => {
+  assert.deepEqual(
+    decidePublishQuality({
+      ...base,
+      title: "시립박물관 상설 전시",
+      description: "박물관에서 연중 상설 전시를 운영합니다.",
+      start_date: "2026-01-01",
+      end_date: "2026-12-31",
+      venue: "시립박물관",
+    }),
+    {
+      state: "EXCLUDE",
+      reason: "perpetual_facility_or_program",
+      rule_version: PUBLISH_QUALITY_RULE_VERSION,
+    },
+  );
+});
