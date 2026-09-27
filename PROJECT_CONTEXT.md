@@ -1266,3 +1266,18 @@ UI benchmark:
   - batch writes and report remaining TourAPI official-link gaps.
 - Project checks and UI browser smoke passed before merge.
 - Production resolver execution is still pending.
+
+
+## 2026-09-27 — Phase 3 explicit legacy homepage resolver production result
+
+- Production resolver `official-links:resolve:tourapi-explicit -- --remote --apply` completed.
+- Remaining TourAPI no-link rows scanned: 65.
+- Explicit legacy homepage candidates: 38.
+- Verified HTTPS links recovered: 20.
+  - HTTPS upgrade: 14
+  - bare-host HTTPS: 6
+- HOLD→PUBLIC promotions: 0.
+- Explicit candidates still unresolved: 18.
+- TourAPI rows still without a stored official link: 45.
+- Some unresolved HTTP candidates reported `access_status=ok` but were intentionally not accepted because the final URL stayed HTTP rather than becoming HTTPS; this is expected safe behavior.
+- The 45 remaining rows consist of the unresolved explicit-homepage cases plus the previously separated OTHER_HTTPS_URL evidence cases. Do not treat arbitrary cached HTTPS URLs as official without a separate evidence-classification step.
