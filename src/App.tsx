@@ -42,6 +42,7 @@ import { cardImageFit, type ImageFit } from "../shared/image-fit";
 import { selectProgramOccurrenceGroup } from "../shared/program-occurrence-selection";
 import { deriveEventDetailInfo } from "../shared/event-derived-info";
 import { detailMapAction, detailOfficialUrl } from "../shared/detail-actions";
+import { eventDetailBrief } from "../shared/event-detail-brief";
 import { nearbyDetailEvents, similarDetailEvents } from "../shared/detail-exploration";
 import { formatProgramTime } from "../shared/event-program-time";
 import { decodeEventPathId, validEventId } from "../shared/event-id";
@@ -2147,9 +2148,10 @@ export default function App() {
               detail.enrichment,
             );
             const mapAction = detailMapAction(detail.event);
-            const description =
+            const rawDescription =
               detail.enrichment?.summary ??
               usefulDescription(detail.event.description);
+            const description = eventDetailBrief(rawDescription);
             const derivedInfo = deriveEventDetailInfo({
               startDate: detail.event.start_date,
               endDate: detail.event.end_date,
@@ -2379,10 +2381,15 @@ export default function App() {
                       </div>
                     </section>
                   ) : null}
-                  {description && (
+                  {description.text && (
                     <section className="detail-description detail-enrichment-summary">
                       <h3>행사 소개</h3>
-                      <p>{description}</p>
+                      <p>{description.text}</p>
+                      {description.truncated && officialUrl && (
+                        <p className="detail-official-note">
+                          세부 프로그램과 최신 운영 안내는 공식 페이지에서 확인해 주세요.
+                        </p>
+                      )}
                     </section>
                   )}
                   <div className="detail-tags detail-event-tags">
