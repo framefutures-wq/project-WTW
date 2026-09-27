@@ -2345,11 +2345,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   - exact event title plus positive date/venue evidence required;
   - core conflict/title mismatch quarantined;
   - shared rich-detail parser persists summary, hours, price, contact, programs and official images;
-  - OG/Twitter/JSON-LD/lazy images supported;
+  - OG/Twitter/JSON-LD/lazy images plus explicit poster image attachments supported;
   - organizer/municipality priority preserved.
 - It runs automatically during the 10:00 KST base pass, isolated from base success.
 - Added bounded authenticated one-shot: `npm run official-detail:once -- --passes=8 --limit=12` for the existing backlog.
-- Implementation commits span `07664203`, `6f2a42ab`, `af0371ef`, `ac4c7776`, `aaadc8aa`, `d3a73b83`, `a3b8ffae`, `439dd2799`.
+- Implementation commits span `07664203`, `6f2a42ab`, `af0371ef`, `ac4c7776`, `aaadc8aa`, `d3a73b83`, `a3b8ffae`, `439dd2799`, `8ccb66c4`.
 - Latest Project checks PASS. Earlier intermediate failures were caught and corrected before production; do not deploy an earlier commit.
 - Next and only remaining step for this bounded task is production evidence:
   1. pull latest main;

@@ -1431,5 +1431,5 @@ UI benchmark:
 - Image extraction now also consumes OG/Twitter/JSON-LD image candidates and lazy image attributes in addition to ordinary `img src`.
 - Organizer exact-detail evidence can persist at priority 1; municipality at priority 2. Lower-priority TourAPI media/detail may be replaced, while stronger official evidence is not downgraded.
 - A bounded authenticated backfill command is available: `npm run official-detail:once -- --passes=<1..10> --limit=<1..20>`.
-- Code through `439dd2799d5d49b2257da51d84f59de2105a487c` has Project checks PASS. Production deploy/backfill and the post-backfill missing-poster audit are still pending.
+- Code through `8ccb66c44c9ac1f024129c03bf4647c3293a7690` has Project checks PASS. Exact-page poster attachments (`*.jpg/png/webp/...` links with event/poster semantics) are also recovered, covering official pages that expose posters as attachments rather than ordinary inline images. Production deploy/backfill and the post-backfill missing-poster audit are still pending.
 - Active priority remains image/detail completeness. The unrelated Yeongju/Geoje/Haeundae source-observation failures are deferred until this bounded task is closed.
