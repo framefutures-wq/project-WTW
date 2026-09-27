@@ -188,7 +188,7 @@ function extractSummary(html: string) {
 }
 
 function normalizeTime(hour: string, minute: string) {
-  return hour.padStart(2, "0") + ":" + minute;
+  return hour.padStart(2, "0") + ":" + minute.padStart(2, "0");
 }
 
 function extractOperatingHours(html: string): MunicipalRichHours[] {
@@ -410,6 +410,9 @@ function extractPrograms(html: string): MunicipalRichProgram[] {
         name.length < 2 ||
         name.length > 100 ||
         genericHeadings.test(name) ||
+        /^(?:시간|운영\s*시간|행사\s*시간|공연\s*시간|관람\s*시간|이용\s*시간|기간|일시|차량\s*통제)$/u.test(
+          name,
+        ) ||
         seen.has(name)
       )
         continue;
