@@ -460,6 +460,7 @@ test("Busan Dong-gu parser reads nested gallery cards without mixing child list 
 test("Yeongju parser deduplicates repeated calendar-day appearances by mon_uid", () => {
   const source = municipalSourceByKey("gyeongbuk-영주");
   assert(source);
+  assert.deepEqual(source.healthMarkers, ["문화달력", "mon_uid"]);
   const result = extractMunicipalCandidates(
     source,
     readFileSync("fixtures/municipal-discovery-yeongju.html", "utf8"),
@@ -711,6 +712,7 @@ test("Pocheon homepage parser keeps only cards with explicit first-party core", 
 test("Geoje parser binds two-digit row years only to the explicit page year", () => {
   const source = municipalSourceByKey("gyeongnam-거제");
   assert(source);
+  assert.equal(new URL(source.url).hostname, "tour.geoje.go.kr");
   const result = extractMunicipalCandidates(
     source,
     readFileSync("fixtures/municipal-discovery-geoje.html", "utf8"),
@@ -723,6 +725,7 @@ test("Geoje parser binds two-digit row years only to the explicit page year", ()
       candidate.end_date,
       candidate.venue,
       candidate.category,
+      new URL(candidate.official_url).hostname,
     ]),
     [
       [
@@ -731,6 +734,7 @@ test("Geoje parser binds two-digit row years only to the explicit page year", ()
         "2026-08-22",
         "거제문화예술회관 소극장",
         "공연",
+        "tour.geoje.go.kr",
       ],
       [
         "2026 블루거제 페스티벌",
@@ -738,6 +742,7 @@ test("Geoje parser binds two-digit row years only to the explicit page year", ()
         "2026-08-01",
         "거제문화예술회관 야외공연장",
         "축제",
+        "tour.geoje.go.kr",
       ],
     ],
   );
