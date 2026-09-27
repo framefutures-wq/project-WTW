@@ -1046,3 +1046,24 @@ UI benchmark:
 - This PR does not change D1 schema or production visibility yet. It establishes the common decision contract only.
 - CI: Project checks PASS; UI browser smoke PASS.
 - Next bounded task: integrate the quality state safely into storage/read paths with a backwards-compatible default, then audit existing production data before any mass reclassification.
+
+
+## 2026-09-27 — discovery-first Phase 2 complete: persistent publish quality state
+
+- PR #60 merged as `9998869fc23002327672c2adb712bf7606c219b6`.
+- Added migration `0022_publish_quality.sql`:
+  - `publish_quality_state`: `PUBLIC | HOLD | EXCLUDE`;
+  - reason / rule version / checked-at fields;
+  - existing rows default to `PUBLIC` and keep a null rule version, so they are grandfathered until a separate audit/apply task.
+- New/updated classifier-owned events now persist publish-quality decisions in:
+  - TourAPI base ingestion;
+  - TourAPI detail enrichment;
+  - municipal official ingestion;
+  - private official ingestion.
+- TourAPI HOLD rows can be promoted later when detail enrichment supplies enough official detail.
+- Production public read paths now require `publish_quality_state='PUBLIC'`; sample mode is unchanged.
+- Push delivery suppresses alerts for HOLD/EXCLUDE events so hidden events cannot trigger user notifications.
+- Integration coverage proves HOLD rows are hidden from list/detail reads and sparse TourAPI records persist as HOLD.
+- CI Project checks PASS.
+- Production has NOT been migrated/deployed yet. Migration must be applied before deploying this Worker code.
+- Next bounded task: build a read-only quality audit that classifies the current production dataset without writing or changing visibility, then use that report to tune rules before any legacy mass reclassification.
