@@ -73,3 +73,14 @@ test("municipal manual verification is read-only and avoids dynamic LIKE pattern
     /\b(?:INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER)\b/i,
   );
 });
+
+
+test("municipal one-shot preserves structured preview-worker failure details", () => {
+  const worker = readFileSync("scripts/municipal-once-worker.ts", "utf8");
+  const runner = readFileSync("scripts/run-municipal-once.mjs", "utf8");
+
+  assert.match(worker, /manual_municipal_shard_failed/);
+  assert.match(worker, /error: \{\s*message,\s*stack/);
+  assert.match(runner, /parsed\?\.error\?\.message/);
+  assert.match(runner, /\[curl\]/);
+});
