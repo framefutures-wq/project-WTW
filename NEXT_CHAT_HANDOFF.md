@@ -2249,3 +2249,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - UI browser smoke + Project checks passed.
 - Production frontend deploy is still pending.
 - Next separate data-quality task: audit events where Galteum shows the no-image fallback but the official event/detail page actually contains a poster, then fix the ingestion/extractor path rather than decorating the fallback.
+
+
+## 2026-09-27 — home production PASS; run missing-poster audit next
+
+- Poster-first home is live on production Worker `48eed064-5c7b-4345-8f58-735e4215b381`.
+- Production smoke: desktop PASS / mobile PASS.
+- PR #86 merged green as `a854191150258d974bba09242971cbd2b555ed3c`.
+- Next authenticated Codespaces command after pulling main: `npm run images:audit:missing-posters -- --remote`.
+- This audit is zero-write and is specifically for the observed case where Galteum shows a no-image fallback although the official event/detail page appears to contain a poster.
+- Use its `by_classification`, `recoverable_from_existing_evidence`, and per-event candidate output to choose the next ingestion fix.
