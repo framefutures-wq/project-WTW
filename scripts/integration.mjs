@@ -542,7 +542,7 @@ try {
     {
       publish_quality_state: "HOLD",
       publish_quality_reason: "insufficient_event_signal",
-      publish_quality_rule_version: "publish_quality_v1",
+      publish_quality_rule_version: "publish_quality_v2",
     },
   );
   await get("/api/events/tourapi-105", 404);
