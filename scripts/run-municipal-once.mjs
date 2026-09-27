@@ -87,6 +87,38 @@ const eventSummarySql = (registryKeys, startedAt) => {
   GROUP BY registry.source_key ORDER BY registry.source_key`;
 };
 
+const richDetailVerificationSql = (startedAt) => `
+  SELECT
+    e.id,
+    e.title,
+    e.region,
+    e.start_date,
+    e.end_date,
+    e.cost,
+    e.price_text,
+    s.url AS source_url,
+    CASE WHEN en.summary IS NOT NULL AND length(trim(en.summary)) > 0
+      THEN 1 ELSE 0 END AS has_summary,
+    CASE WHEN img.image_status='ok' AND img.image_url IS NOT NULL
+      THEN 1 ELSE 0 END AS has_image,
+    (SELECT COUNT(*) FROM event_operating_hours oh
+      WHERE oh.event_id=e.id) AS hours_count,
+    (SELECT COUNT(*) FROM event_programs p
+      WHERE p.event_id=e.id) AS programs_count,
+    json_extract(
+      s.raw_payload,
+      '$.municipal_rich_detail.contact_phone'
+    ) AS contact_phone
+  FROM sources s
+  JOIN events e ON e.primary_source_id=s.id
+  LEFT JOIN event_enrichments en ON en.event_id=e.id
+  LEFT JOIN event_images img ON img.event_id=e.id
+  WHERE s.kind='municipality'
+    AND s.raw_payload IS NOT NULL
+    AND julianday(s.fetched_at) >= julianday(${sqlQuote(startedAt)})
+  ORDER BY e.region,e.start_date,e.title
+`;
+
 try {
   mkdirSync(tempDir, { recursive: true });
   writeFileSync(
@@ -179,22 +211,67 @@ try {
   const publishedOrRevalidatedBySource = d1Read(
     eventSummarySql(uniqueRegistryKeys, startedAt),
   );
+  const richDetailBackfilledEvents = d1Read(
+    richDetailVerificationSql(startedAt),
+  );
+
+  const aggregate = shardResults.reduce(
+    (total, shard) => {
+      const summary = shard.summary ?? {};
+      for (const key of [
+        "discovered",
+        "inserted",
+        "updated",
+        "source_errors",
+        "detail_fetches",
+        "identity_bridges",
+        "rich_detail_attempted",
+        "rich_detail_candidates",
+        "rich_detail_persisted",
+        "rich_detail_errors",
+      ])
+        total[key] += Number(summary[key] ?? 0);
+      for (const [source, count] of Object.entries(
+        summary.rich_detail_by_source ?? {},
+      ))
+        total.rich_detail_by_source[source] =
+          (total.rich_detail_by_source[source] ?? 0) + Number(count ?? 0);
+      return total;
+    },
+    {
+      discovered: 0,
+      inserted: 0,
+      updated: 0,
+      source_errors: 0,
+      detail_fetches: 0,
+      identity_bridges: 0,
+      rich_detail_attempted: 0,
+      rich_detail_candidates: 0,
+      rich_detail_persisted: 0,
+      rich_detail_errors: 0,
+      rich_detail_by_source: {},
+    },
+  );
 
   console.log(
     JSON.stringify(
       {
         manualRunId,
-        alias,
-        url,
         requestedShards,
         registrySourceCount,
         registryExpectedSourceKeys: uniqueRegistryKeys,
-        shardResults,
+        shardResults: shardResults.map((shard) => ({
+          shardIndex: shard.shardIndex,
+          plan: shard.plan,
+          summary: shard.summary,
+        })),
+        aggregate,
         stateBySource,
         missingObservedSourceKeys: stateBySource
           .filter((row) => !Number(row.observed))
           .map((row) => row.source_key),
         publishedOrRevalidatedBySource,
+        richDetailBackfilledEvents,
       },
       null,
       2,
