@@ -138,6 +138,7 @@ const QUICK_DISCOVERY = [
   { kind: "all", value: "", label: "전체", symbol: "⌁" },
   { kind: "audience", value: "kids", label: "아이와", symbol: "○" },
   { kind: "audience", value: "couple", label: "데이트", symbol: "♡" },
+  { kind: "cost", value: "free", label: "무료", symbol: "₩" },
   { kind: "theme", value: "food", label: "먹거리", symbol: "◉" },
   { kind: "theme", value: "flowers", label: "꽃", symbol: "✿" },
   { kind: "theme", value: "experience", label: "체험", symbol: "△" },
@@ -558,6 +559,11 @@ export default function App() {
   )
     ? initialParams.get("theme")!
     : "";
+  const initialCost = ["free", "paid", "unknown"].includes(
+    initialParams.get("cost") ?? "",
+  )
+    ? initialParams.get("cost")!
+    : "";
   const initialPathEvent = useRef(
     typeof window === "undefined" ? null : eventIdFromPath(window.location.pathname),
   ).current;
@@ -583,7 +589,8 @@ export default function App() {
     useState<DateRange | null>(null);
   const [region, setRegion] = useState(initialRegion),
     [audience, setAudience] = useState(initialAudience),
-    [theme, setTheme] = useState(initialTheme);
+    [theme, setTheme] = useState(initialTheme),
+    [cost, setCost] = useState(initialCost);
   const [search, setSearch] = useState(initialParams.get("q") ?? ""),
     [query, setQuery] = useState(initialParams.get("q") ?? "");
   const [sort, setSort] = useState(
@@ -714,6 +721,7 @@ export default function App() {
       region,
       audience,
       theme,
+      cost,
     }))
       if (value) params.set(key, value);
     if (sort !== "recommended" && !location) params.set("sort", sort);
@@ -725,6 +733,7 @@ export default function App() {
       region === currentLanding.region &&
       !audience &&
       !theme &&
+      !cost &&
       !query &&
       sort === "recommended" &&
       !location;
@@ -738,7 +747,7 @@ export default function App() {
       "",
       next ? `/?${next}` : "/",
     );
-  }, [period, customRange, region, audience, theme, query, sort, selected]);
+  }, [period, customRange, region, audience, theme, cost, query, sort, selected]);
   const requestParams = (requestedPage: number, includeTotal = true) => {
     const params = new URLSearchParams({
       period: customRange ? "custom" : period,
@@ -758,6 +767,7 @@ export default function App() {
       region,
       audience,
       theme,
+      cost,
       q: query,
     }))
       if (value) params.set(key, value);
@@ -821,6 +831,7 @@ export default function App() {
     region,
     audience,
     theme,
+    cost,
     query,
     sort,
     location,
@@ -950,6 +961,7 @@ export default function App() {
     setRegion("");
     setAudience("");
     setTheme("");
+    setCost("");
     setSearch("");
     setQuery("");
     setLocation(null);
@@ -1032,7 +1044,7 @@ export default function App() {
   const change = (
     fn: (v: string) => void,
     value: string,
-    filterType?: "region" | "audience" | "theme" | "sort",
+    filterType?: "region" | "audience" | "theme" | "cost" | "sort",
   ) => {
     fn(value);
     if (filterType) trackFilterApply(filterType, value || "all");
@@ -1255,7 +1267,7 @@ export default function App() {
     }
   }
   const active = Boolean(
-    customRange || region || audience || theme || query || location,
+    customRange || region || audience || theme || cost || query || location,
   );
   const selectedRangeLabel = customRange
     ? customRange.start === customRange.end
@@ -1524,10 +1536,12 @@ export default function App() {
             {QUICK_DISCOVERY.map((category) => {
               const isActive =
                 category.kind === "all"
-                  ? !theme && !audience
+                  ? !theme && !audience && !cost
                   : category.kind === "theme"
                     ? theme === category.value
-                    : audience === category.value;
+                    : category.kind === "cost"
+                      ? cost === category.value
+                      : audience === category.value;
               return (
                 <button
                   key={`${category.kind}-${category.value || "all"}`}
@@ -1536,13 +1550,21 @@ export default function App() {
                     if (category.kind === "all") {
                       setTheme("");
                       setAudience("");
+                      setCost("");
                       trackFilterApply("theme", "all");
                       trackFilterApply("audience", "all");
+                      trackFilterApply("cost", "all");
                     } else if (category.kind === "theme") {
                       change(
                         setTheme,
                         theme === category.value ? "" : category.value,
                         "theme",
+                      );
+                    } else if (category.kind === "cost") {
+                      change(
+                        setCost,
+                        cost === category.value ? "" : category.value,
+                        "cost",
                       );
                     } else {
                       change(
