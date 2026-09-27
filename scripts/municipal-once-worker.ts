@@ -38,16 +38,46 @@ export default {
 
     const plan = municipalRunPlan(registryKeys, shardIndex);
     const startedAt = new Date().toISOString();
-    const summary = await runMunicipalAutonomous(env, plan);
-
-    return Response.json({
-      startedAt,
-      finishedAt: new Date().toISOString(),
-      shardIndex,
-      shardCount: MUNICIPAL_DAILY_SHARD_COUNT,
-      registrySourceCount: registryKeys.length,
-      plan,
-      summary,
-    });
+    try {
+      const summary = await runMunicipalAutonomous(env, plan);
+      return Response.json({
+        ok: true,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        shardIndex,
+        shardCount: MUNICIPAL_DAILY_SHARD_COUNT,
+        registrySourceCount: registryKeys.length,
+        plan,
+        summary,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error ?? "unknown");
+      const stack =
+        error instanceof Error && error.stack
+          ? error.stack.split("\n").slice(0, 12).join("\n")
+          : null;
+      console.error("manual_municipal_shard_failed", {
+        shardIndex,
+        message,
+        stack,
+      });
+      return Response.json(
+        {
+          ok: false,
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          shardIndex,
+          shardCount: MUNICIPAL_DAILY_SHARD_COUNT,
+          registrySourceCount: registryKeys.length,
+          plan,
+          error: {
+            message,
+            stack,
+          },
+        },
+        { status: 500 },
+      );
+    }
   },
 };
