@@ -811,3 +811,22 @@ UI benchmark:
 - Mobile 390px direct verification: no horizontal overflow, quick category 50px, period control 42px, removed helper copy absent, featured grid remains 2 columns (`169px 169px`).
 - No data, API, ingestion, SEO or detail behavior changed.
 - This bounded UI task is closed. Do not redeploy for documentation-only closure; further UI work should start only from a new production screenshot / concrete visible issue.
+
+
+## 43. 2026-09-27 — detail action + mobile media production complete
+
+- Production detail audit of five representative events found two actionable UI gaps: municipality primary official sources could miss the top official CTA, and two-image mobile detail media stacked to about 528px.
+- PR #44 added deterministic detail actions:
+  - organizer/municipality official source fallback for the top official CTA;
+  - Kakao Maps action using verified coordinates when available, otherwise confirmed address/venue search;
+  - TourAPI API URLs are not exposed as public official CTAs.
+- PR #45 compacted two-image mobile media to a side-by-side 2-column layout capped at 220–250px while preserving desktop behavior.
+- Production code baseline: `7cc160dfcb3321c587d3a7baa5021b91f5ce9e8e`.
+- Production Worker version: `15322094-8285-4cfc-97f6-7e08be201119`.
+- Production smoke PASS.
+- Direct production verification:
+  - Suwon municipal detail: official CTA + Kakao Maps action present on desktop/mobile, no overflow.
+  - TourAPI detail: official CTA + coordinate-based Kakao Maps directions present on desktop/mobile, no overflow.
+  - Two-image detail examples (`페인터즈`, `광안리 M 드론 라이트쇼`): desktop media height 341px, mobile media height 250px, 2 columns, 2 image buttons, no overflow.
+- Sparse-detail content remains a data/enrichment concern, not a reason to add invented UI content.
+- Detail UI audit bounded tasks are closed in production.
