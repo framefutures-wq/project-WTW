@@ -1,7 +1,11 @@
-export const CARD_IMAGE_RATIO = 16 / 10;
+export const CARD_IMAGE_RATIO = 3 / 4;
 export type ImageFit = "cover" | "contain";
 
-/** Keep cover for ordinary photos; preserve posters and panoramas once cover would hide over 35%. */
+/**
+ * Home cards use a portrait editorial frame.
+ * Preserve portrait/square poster artwork in full; crop ordinary landscape
+ * photography into the same frame so the grid keeps one consistent rhythm.
+ */
 export function cardImageFit(
   width: number,
   height: number,
@@ -16,10 +20,7 @@ export function cardImageFit(
     containerRatio <= 0
   )
     return "cover";
+
   const sourceRatio = width / height;
-  const visibleFraction = Math.min(
-    sourceRatio / containerRatio,
-    containerRatio / sourceRatio,
-  );
-  return visibleFraction < 0.65 ? "contain" : "cover";
+  return sourceRatio <= 1.05 ? "contain" : "cover";
 }
