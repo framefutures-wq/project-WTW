@@ -151,7 +151,7 @@ test("TourAPI detail maps only official summary, venue, whole-event hours, fee, 
       (
         await DB.prepare(
           "SELECT url FROM event_official_links WHERE event_id='tourapi-1'",
-        ).first<{ excerpt: string }>()
+        ).first<{ url: string }>()
       )?.url,
       "https://festival.example.org/?a=1&b=2",
     );
