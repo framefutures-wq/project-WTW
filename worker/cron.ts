@@ -3,6 +3,11 @@ import type { Env } from "./env";
 import { tourApiReadiness, syncTourApi } from "./sources/tourapi";
 import { enrichTourApiDetails } from "./sources/tourapi-detail";
 import { runMunicipalAutonomous } from "./sources/municipal";
+import { MUNICIPAL_SOURCE_REGISTRY } from "../shared/municipal-source-registry";
+import {
+  municipalRunPlan,
+  type MunicipalRunPlan,
+} from "../shared/municipal-run-plan";
 import { runPrivateOfficialSources } from "./sources/private-official";
 import { processPushDeliveries } from "./push";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
@@ -22,6 +27,12 @@ export const DETAIL_SYNC_CRON = "0 2 * * *";
 // 11:45 / 13:50 / 17:55 KST: each leaves room after the preceding bounded pass
 // for the 30m → 2h → 4h retry schedule, without polling candidates that are not due.
 export const DETAIL_RETRY_RECOVERY_CRONS = ["45 2 * * *", "50 4 * * *", "55 8 * * *"] as const;
+
+const MUNICIPAL_SOURCE_KEYS = MUNICIPAL_SOURCE_REGISTRY.map(
+  (source) => source.key,
+);
+const scheduledMunicipalPlan = (shardIndex: number) =>
+  municipalRunPlan(MUNICIPAL_SOURCE_KEYS, shardIndex);
 
 export type ScheduledDependencies = {
   syncTourApi: typeof syncTourApi;
@@ -99,7 +110,10 @@ export async function runBaseScheduled(
     ]);
     const imported = await dependencies.syncTourApi(env, id);
     municipalAttempted = true;
-    const municipal = await dependencies.runMunicipalAutonomous(env);
+    const municipal = await dependencies.runMunicipalAutonomous(
+      env,
+      scheduledMunicipalPlan(0),
+    );
     const privateOfficial = await dependencies.runPrivateOfficialSources(env);
     const baseStatus = imported ? "success" : "skipped";
     await env.DB.prepare(
@@ -150,7 +164,10 @@ export async function runBaseScheduled(
     const municipal = municipalAttempted
       ? { skipped: "already_attempted" }
       : ((municipalAttempted = true),
-        await dependencies.runMunicipalAutonomous(env));
+        await dependencies.runMunicipalAutonomous(
+          env,
+          scheduledMunicipalPlan(0),
+        ));
     const privateOfficial = await dependencies.runPrivateOfficialSources(env);
     const message =
       error instanceof Error && error.message.startsWith("TourAPI ")
@@ -194,7 +211,23 @@ export async function runDetailScheduled(
   dependencies = productionDependencies,
   trigger: "base_handoff" | "watchdog" | "retry_recovery" | "manual" = "watchdog",
   manualRunId?: string,
+  municipalPlan?: MunicipalRunPlan,
 ) {
+  let municipal:
+    | Awaited<ReturnType<typeof runMunicipalAutonomous>>
+    | { status: "failed"; reason: "subsystem_error" }
+    | null = null;
+  if (municipalPlan) {
+    try {
+      municipal = await dependencies.runMunicipalAutonomous(env, municipalPlan);
+    } catch (error) {
+      console.error("municipal_shard_failed", {
+        shardIndex: municipalPlan.shardIndex,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      municipal = { status: "failed", reason: "subsystem_error" };
+    }
+  }
   if (trigger === "manual" && manualRunId) {
     const existing = await env.DB.prepare(
       "SELECT status FROM sync_runs WHERE provider='tourapi-detail' AND json_extract(message,'$.manual_run_id')=? AND status IN ('running','success') LIMIT 1",
@@ -241,6 +274,7 @@ export async function runDetailScheduled(
           network_failure_subtypes: {},
           failure_latency: {},
           retry_rounds: {},
+          ...(municipal ? { municipal } : {}),
         }),
       )
       .run();
@@ -261,11 +295,19 @@ export async function runDetailScheduled(
     )
       .bind(
         new Date().toISOString(),
-        JSON.stringify({ trigger, base_run: base.id, ...(trigger === "manual" && manualRunId ? { manual_run_id: manualRunId } : {}), ...detail }),
+        JSON.stringify({
+          trigger,
+          base_run: base.id,
+          ...(trigger === "manual" && manualRunId
+            ? { manual_run_id: manualRunId }
+            : {}),
+          ...detail,
+          ...(municipal ? { municipal } : {}),
+        }),
         started,
       )
       .run();
-    return { id: started, status: "success", detail };
+    return { id: started, status: "success", detail, municipal };
   } catch (error) {
     console.error("tourapi_detail_subsystem_failed", {
       runId: started,
@@ -286,6 +328,7 @@ export async function runDetailScheduled(
           failed: 1,
           reason: "subsystem_error",
           retry_rounds: {},
+          ...(municipal ? { municipal } : {}),
         }),
         started,
       )
@@ -302,7 +345,23 @@ export async function runScheduled(
 ) {
   if (cron === BASE_SYNC_CRON) return runBaseScheduled(env, now, dependencies);
   if (cron === DETAIL_SYNC_CRON)
-    return runDetailScheduled(env, now, dependencies, "watchdog");
+    return runDetailScheduled(
+      env,
+      now,
+      dependencies,
+      "watchdog",
+      undefined,
+      scheduledMunicipalPlan(1),
+    );
+  if (cron === DETAIL_RETRY_RECOVERY_CRONS[0])
+    return runDetailScheduled(
+      env,
+      now,
+      dependencies,
+      "retry_recovery",
+      undefined,
+      scheduledMunicipalPlan(2),
+    );
   if ((DETAIL_RETRY_RECOVERY_CRONS as readonly string[]).includes(cron))
     return runDetailScheduled(env, now, dependencies, "retry_recovery");
   console.warn("unknown_scheduled_cron", { cron });
