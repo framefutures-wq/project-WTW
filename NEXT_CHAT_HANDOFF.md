@@ -1843,3 +1843,30 @@ UI 기준:
   - actual rich-detail-backed event rows;
   - explicit Seoul Hangang `달빛 한가위 마당` row with summary/image/hours/programs/price/contact.
 - Next user action: pull latest main only (no deploy needed), then run `npm run municipal:verify:manual -- --minutes=60` and paste the JSON. Use that result to determine exactly which 24 source errors are expected zero-candidate/parser gaps versus real fetch/runtime failures and whether Seoul Hangang backfill is visible.
+
+
+## 2026-09-27 — rich-detail fetch starvation diagnosed and fixed
+
+- Read-only manual-run verification after the successful 3-shard rehearsal showed:
+  - registrySourceCount=35;
+  - observedSourceCount=11;
+  - Seoul Hangang candidates were re-observed but its target event still had list URL only and no summary/image/hours/programs/price/contact.
+- The successful rich-detail rows were concentrated in a few sources (not evenly distributed), while shard summaries had source_errors 8/9/7.
+- Root issue: the shard hard external-fetch cap 35 was shared sequentially, so earlier sources and detail work could consume capacity needed by later sources.
+- PR #56 `fix: preserve municipal source coverage under rich-detail fetches` merged as `68e5dd83889ae5a1809ec98ad61cf9803493d2fd`.
+  - Project checks #857 SUCCESS.
+  - UI browser smoke #156 SUCCESS.
+- The hard external-fetch cap remains 35 per shard.
+- New fairness guard:
+  - each source gets a rolling max 3 external-fetch window;
+  - at least 2 external-fetch attempts are reserved for every later source;
+  - after the source pass, unused hard-cap capacity becomes available to retry recovery.
+- Detail-fetch caps are now 24/24/22 so rich detail can use up to roughly two detail requests per source while the hard 35-fetch cap and source-reserve guard still bound total external requests.
+- Run summaries now expose `source_fetch_window=3` and `source_fetch_reserve=2`.
+- This should reduce budget-caused source starvation, but it will not fix genuine zero-candidate parser sources or real network failures; those remain separate follow-up classes.
+- PR #56 changes production Worker code and is not yet deployed.
+- Next user action:
+  1. clean-tree pull latest main;
+  2. deploy verified once + production smoke;
+  3. run `npm run municipal:once` once (same-day core mutation safety is already hardened);
+  4. paste the complete final JSON. Do not run the standalone verifier first because the one-shot now contains the fixed verifier and should complete end-to-end.
