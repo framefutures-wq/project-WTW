@@ -79,6 +79,7 @@ try {
     detail_recovered: 0,
     title_mismatch: 0,
     core_conflict: 0,
+    insufficient_core_signal: 0,
     empty: 0,
     fetch_failed: 0,
   };
@@ -119,6 +120,7 @@ try {
       "detail_recovered",
       "title_mismatch",
       "core_conflict",
+      "insufficient_core_signal",
       "empty",
       "fetch_failed",
     ])

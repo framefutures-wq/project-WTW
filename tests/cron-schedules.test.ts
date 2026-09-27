@@ -87,6 +87,7 @@ function dependencies(
         detail_recovered: 1,
         title_mismatch: 0,
         core_conflict: 0,
+        insufficient_core_signal: 0,
         empty: 0,
         fetch_failed: 0,
       };
