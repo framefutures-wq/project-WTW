@@ -21,6 +21,18 @@ export type MunicipalRichDetailPersistInput = {
 const canReplace = (priority: number | null) =>
   priority === null || priority >= 2;
 
+export function assessMunicipalPrice(
+  value: string,
+  referenceYear: number,
+) {
+  const text = value.replace(/\s+/g, " ").trim();
+  if (/^무료$/u.test(text))
+    return { status: "free" as const, reason: "explicit_price_field_free" };
+  if (/^유료$/u.test(text))
+    return { status: "paid" as const, reason: "explicit_price_field_paid" };
+  return assessCost(text, referenceYear);
+}
+
 const excerpt = (field: string, value: string) =>
   (field + "=" + value).slice(0, 1000);
 
@@ -218,7 +230,7 @@ export async function persistMunicipalRichDetail(
   }
 
   if (input.detail.price_text && canReplace(priorities.price_priority)) {
-    const assessed = assessCost(
+    const assessed = assessMunicipalPrice(
       input.detail.price_text,
       Number(input.startDate.slice(0, 4)),
     );
