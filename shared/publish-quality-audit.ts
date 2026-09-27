@@ -13,7 +13,7 @@ export type PublishQualityAuditRow = PublishQualityInput & {
 };
 
 export type OfficialLinkQuality =
-  | "VERIFIED_EVENT_LINK"
+  | "EVENT_OFFICIAL_LINK"
   | "FIRST_PARTY_SOURCE_ONLY"
   | "TOURAPI_ONLY"
   | "MISSING";
@@ -54,7 +54,7 @@ function sparseDescription(value: string | null | undefined) {
 export function officialLinkQuality(
   row: PublishQualityAuditRow,
 ): OfficialLinkQuality {
-  if (isHttps(row.discovered_official_url)) return "VERIFIED_EVENT_LINK";
+  if (isHttps(row.discovered_official_url)) return "EVENT_OFFICIAL_LINK";
   if (
     ["organizer", "municipality"].includes(row.source_kind ?? "") &&
     isHttps(row.source_url)
@@ -110,7 +110,7 @@ export function auditPublishQualityRows(
   const by_reason: Record<string, number> = {};
   const by_source_kind: Record<string, Record<PublishQualityState, number>> = {};
   const by_official_link_quality: Record<OfficialLinkQuality, number> = {
-    VERIFIED_EVENT_LINK: 0,
+    EVENT_OFFICIAL_LINK: 0,
     FIRST_PARTY_SOURCE_ONLY: 0,
     TOURAPI_ONLY: 0,
     MISSING: 0,
