@@ -176,6 +176,24 @@ try {
   console.log(
     "PASS: 공식 출처 감사 migration, 복수 유형, 비교 근거 제약, 외래키, 기존 행사·공개 근거 불변",
   );
+  await fixture("quality-hold-hidden");
+  await evidence("quality-hold-hidden", required);
+  await db
+    .prepare(
+      "UPDATE events SET publish_quality_state='HOLD',publish_quality_reason='insufficient_event_signal',publish_quality_rule_version='publish_quality_v1',publish_quality_checked_at=? WHERE id='quality-hold-hidden'",
+    )
+    .bind(now)
+    .run();
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT publish_quality_state,publish_quality_rule_version FROM events WHERE id='verified'",
+        )
+        .first()
+    ).publish_quality_state,
+    "PUBLIC",
+  );
   await fixture("sample-hidden", { sample: true });
   await fixture("pending-hidden", { verification: "pending" });
   await evidence("pending-hidden", required);
@@ -348,6 +366,12 @@ try {
     1,
   );
   await get("/api/events/sample-hidden", 404);
+  await get("/api/events/quality-hold-hidden", 404);
+  assert(
+    !(await get("/api/events?period=today&limit=50")).events.some(
+      (e) => e.id === "quality-hold-hidden",
+    ),
+  );
   await get("/api/events/no-evidence-hidden", 404);
   await get("/api/events/tourapi-stale-hidden", 404);
   await get("/api/events/municipality-missing-evidence-hidden", 404);
@@ -402,7 +426,7 @@ try {
   const raw = {
     contentid: "101",
     contenttypeid: "15",
-    title: "TourAPI 계약 테스트 전용",
+    title: "TourAPI 계약 축제 테스트 전용",
     addr1: "합성 테스트 주소",
     lDongRegnCd: "11",
     eventstartdate: today.replaceAll("-", ""),
@@ -475,6 +499,33 @@ try {
       (e) => e.id === "tourapi-101",
     ),
   );
+  const ambiguousRaw = {
+    ...raw,
+    contentid: "105",
+    title: "가을 나들이",
+  };
+  const ambiguousEvent = adapter.mapFestival(
+    ambiguousRaw,
+    new Map([["11", "서울"]]),
+    now,
+  );
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    candidates: [{ event: ambiguousEvent, raw: ambiguousRaw }],
+  });
+  assert.deepEqual(
+    await db
+      .prepare(
+        "SELECT publish_quality_state,publish_quality_reason,publish_quality_rule_version FROM events WHERE id='tourapi-105'",
+      )
+      .first(),
+    {
+      publish_quality_state: "HOLD",
+      publish_quality_reason: "insufficient_event_signal",
+      publish_quality_rule_version: "publish_quality_v1",
+    },
+  );
+  await get("/api/events/tourapi-105", 404);
   const movedRaw = { ...raw, contentid: "104", eventstartdate: "20991010", eventenddate: "20991011" };
   const movedChecked = new Date().toISOString();
   await adapter.saveFestivalSnapshot(db, {

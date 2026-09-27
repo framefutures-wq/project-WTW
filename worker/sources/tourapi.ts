@@ -11,6 +11,7 @@ import {
   classifyCompanionSuitability,
   COMPANION_CLASSIFIER,
 } from "../../shared/companion-suitability";
+import { decidePublishQuality } from "../../shared/publish-quality";
 
 export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
@@ -462,6 +463,16 @@ export async function saveFestivalSnapshot(
   let statements: D1PreparedStatement[] = [];
   for (const [index, { event: e, raw }] of snapshot.candidates.entries()) {
     const source = `${e.id}-source`;
+    const quality = decidePublishQuality({
+      title: e.title,
+      description: e.description,
+      start_date: e.start_date,
+      end_date: e.end_date,
+      venue: e.venue,
+      address: e.address,
+      source_kind: "tourapi",
+      source_url: TOUR_API_DOC,
+    });
     const previous = await db.prepare(
       `SELECT e.*,s.raw_payload AS previous_raw FROM events e LEFT JOIN sources s ON s.id=e.primary_source_id WHERE e.id=?`,
     ).bind(e.id).first<Record<string, unknown> & { previous_raw: string | null }>();
@@ -513,9 +524,9 @@ export async function saveFestivalSnapshot(
     statements.push(
       db
         .prepare(
-          `INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at)
-      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'unknown',?,'verified',0,?,?)
-      ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='venue') THEN events.venue ELSE excluded.venue END,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,lat=excluded.lat,lng=excluded.lng,cost=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='price') THEN events.cost ELSE excluded.cost END,price_text=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='price') THEN events.price_text ELSE excluded.price_text END,pet_policy='unknown',status=excluded.status,verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.checked_at
+          `INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,lat,lng,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at,publish_quality_state,publish_quality_reason,publish_quality_rule_version,publish_quality_checked_at)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'unknown',?,'verified',0,?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,region=excluded.region,venue=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='venue') THEN events.venue ELSE excluded.venue END,address=excluded.address,start_date=excluded.start_date,end_date=excluded.end_date,lat=excluded.lat,lng=excluded.lng,cost=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='price') THEN events.cost ELSE excluded.cost END,price_text=CASE WHEN EXISTS (SELECT 1 FROM event_evidence WHERE event_id=events.id AND source_id=events.id || '-detail' AND field='price') THEN events.price_text ELSE excluded.price_text END,pet_policy='unknown',status=excluded.status,verification='verified',primary_source_id=excluded.primary_source_id,checked_at=excluded.checked_at,updated_at=excluded.checked_at,publish_quality_state=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_state ELSE excluded.publish_quality_state END,publish_quality_reason=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_reason ELSE excluded.publish_quality_reason END,publish_quality_rule_version=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_rule_version ELSE excluded.publish_quality_rule_version END,publish_quality_checked_at=CASE WHEN events.publish_quality_rule_version IS NULL THEN events.publish_quality_checked_at ELSE excluded.publish_quality_checked_at END
       WHERE events.primary_source_id=?`,
         )
         .bind(
@@ -533,6 +544,10 @@ export async function saveFestivalSnapshot(
           e.price_text,
           e.status,
           source,
+          snapshot.checkedAt,
+          quality.state,
+          quality.reason,
+          quality.rule_version,
           snapshot.checkedAt,
           source,
         ),
