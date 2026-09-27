@@ -314,6 +314,10 @@ try {
     assert.equal(r.status, status, path);
     return r.json();
   }
+  assert.equal(
+    (await get("/api/events/verified")).event.official_url,
+    "https://example.org/event",
+  );
   const data = await get("/api/events?period=today&limit=50");
   assert.deepEqual(data.events.map((e) => e.id).filter((id) => !id.startsWith("ranking-")).sort(), [
     "free-verified",
@@ -466,6 +470,9 @@ try {
     (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='NEW_EVENT'").first()).n,
     1,
   );
+  await db.prepare(
+    "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES('tourapi-101','tourapi-101-source','https://festival.example.org/tourapi-101',?)",
+  ).bind(now).run();
   const real = await get("/api/events/tourapi-101");
   assert.equal(real.event.is_sample, 0);
   assert.equal(real.event.status, "unknown");
@@ -475,6 +482,10 @@ try {
     href: "tel:0212345678",
   });
   assert.deepEqual(real.event.tags, []);
+  assert.equal(
+    real.event.official_url,
+    "https://festival.example.org/tourapi-101",
+  );
   assert.equal(real.evidence.length, 4);
   assert.equal(
     (

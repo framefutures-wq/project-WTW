@@ -55,6 +55,20 @@ test("공식 상세 URL은 enrichment를 우선하고 지자체 primary source�
   );
 });
 
+test("evidence-backed official URL은 TourAPI primary source보다 우선한다", () => {
+  assert.equal(
+    detailOfficialUrl(
+      event({
+        source_kind: "tourapi",
+        source_url: "https://apis.data.go.kr/example",
+        official_url: "https://festival.example.org/detail",
+      }),
+      null,
+    ),
+    "https://festival.example.org/detail",
+  );
+});
+
 test("TourAPI primary source만으로는 공식 안내 CTA를 만들지 않는다", () => {
   assert.equal(
     detailOfficialUrl(

@@ -19,6 +19,9 @@ export function detailOfficialUrl(
   event: EventItem,
   enrichment: EventDetailEnrichment | null,
 ) {
+  const evidenceBacked = safeHttpsUrl(event.official_url);
+  if (evidenceBacked) return evidenceBacked;
+
   if (
     enrichment &&
     ["organizer", "municipality"].includes(enrichment.source_kind) &&

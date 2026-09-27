@@ -28,6 +28,37 @@ class DetailEndpointFailure extends Error {
 function cleanText(value: unknown) { return text(value).replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>|<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/\s+/g, " ").trim(); }
 function usefulOverview(value: unknown) { const summary = cleanText(value); return summary && !summary.startsWith(GENERIC_DESCRIPTION) ? summary : null; }
 function wholeEventHours(value: unknown) { const match = cleanText(value).match(/^(?:운영시간\s*[:：]?\s*)?((?:[01]\d|2[0-3]):[0-5]\d)\s*(?:~|∼|-)\s*((?:[01]\d|2[0-3]):[0-5]\d)$/); return match ? { start: match[1], end: match[2] } : null; }
+const BLOCKED_OFFICIAL_LINK_HOSTS = [
+  "data.go.kr",
+  "apis.data.go.kr",
+  "api.visitkorea.or.kr",
+  "apis.visitkorea.or.kr",
+] as const;
+export function extractTourApiOfficialHomepage(...values: unknown[]) {
+  for (const value of values) {
+    const raw = String(value ?? "")
+      .replace(/&amp;/gi, "&")
+      .replace(/&#38;/gi, "&")
+      .trim();
+    if (!raw) continue;
+    const match = raw.match(/https:\/\/[^\s"'<>]+/i);
+    if (!match) continue;
+    try {
+      const url = new URL(match[0]);
+      const host = url.hostname.toLowerCase();
+      if (
+        BLOCKED_OFFICIAL_LINK_HOSTS.some(
+          (blocked) => host === blocked || host.endsWith(`.${blocked}`),
+        )
+      )
+        continue;
+      return url.toString();
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
 function stableProgram(row: TourApiRow, eventId: string) {
   const serial = text(row.serialnum); const name = cleanText(row.infoname); const description = cleanText(row.infotext);
   if (!/^\d{1,8}$/.test(serial) || !name || !description || /^(행사소개|행사내용|프로그램|기타)$/u.test(name) || cleanText(row.fldgubun) !== "프로그램") return null;
@@ -149,6 +180,10 @@ async function saveSuccess(db: D1Database, candidate: Candidate, payload: Detail
   const sourceId = detailSourceId(candidate.id); const contentId = candidate.id.slice("tourapi-".length);
   const statements: D1PreparedStatement[] = [db.prepare(`INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,'tourapi',3,'한국관광공사 TourAPI 상세',?,?,?) ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload`).bind(sourceId, TOUR_API_DOC, checkedAt, JSON.stringify(payload))];
   let changed = 0; const summary = usefulOverview(payload.common.overview);
+  const officialHomepage = extractTourApiOfficialHomepage(
+    payload.intro.eventhomepage,
+    payload.common.homepage,
+  );
   const quality = decidePublishQuality({
     title: candidate.title,
     description: summary ?? GENERIC_DESCRIPTION,
@@ -172,6 +207,14 @@ async function saveSuccess(db: D1Database, candidate: Candidate, payload: Detail
       candidate.id,
     ),
   );
+  if (officialHomepage) {
+    statements.push(
+      db.prepare(
+        "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES(?,?,?,?) ON CONFLICT(event_id,source_id) DO UPDATE SET url=excluded.url,checked_at=excluded.checked_at",
+      ).bind(candidate.id, sourceId, officialHomepage, checkedAt),
+    );
+    changed++;
+  }
   if (summary && allowed(candidate.summary_priority)) { statements.push(db.prepare(`INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(event_id) DO UPDATE SET summary=excluded.summary,source_id=excluded.source_id,evidence_excerpt=excluded.evidence_excerpt,updated_at=excluded.updated_at WHERE (SELECT priority FROM sources WHERE id=event_enrichments.source_id)>=3`).bind(candidate.id, summary, sourceId, excerpt("overview", summary), checkedAt)); changed++; }
   const venue = cleanText(payload.intro.eventplace);
   if (venue && candidate.venue === candidate.address && allowed(candidate.venue_priority)) { statements.push(db.prepare("UPDATE events SET venue=?,updated_at=? WHERE id=? AND venue=address").bind(venue, checkedAt, candidate.id)); statements.push(db.prepare("INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?,?,?) ON CONFLICT(event_id,source_id,field) DO UPDATE SET excerpt=excluded.excerpt,checked_at=excluded.checked_at").bind(candidate.id, sourceId, "venue", excerpt("eventplace", venue), checkedAt)); changed++; }

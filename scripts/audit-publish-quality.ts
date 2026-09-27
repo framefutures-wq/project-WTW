@@ -88,7 +88,14 @@ if (rows.length > requestedLimit)
   );
 
 const linkRows = execute(
-  `SELECT a.event_id,l.url,l.checked_at
+  `SELECT
+     a.event_id,
+     CASE
+       WHEN l.final_url LIKE 'https://%' THEN l.final_url
+       WHEN l.url LIKE 'https://%' THEN l.url
+       ELSE NULL
+     END AS url,
+     l.checked_at
    FROM official_source_audits a
    JOIN official_source_links l ON l.audit_id=a.id
    JOIN events e ON e.id=a.event_id
@@ -97,14 +104,14 @@ const linkRows = execute(
      AND e.end_date>='${today}'
      AND l.official=1
      AND l.access_status='ok'
-     AND l.url LIKE 'https://%'
+     AND (l.final_url LIKE 'https://%' OR l.url LIKE 'https://%')
    ORDER BY a.event_id,l.checked_at DESC
    LIMIT ${Math.min(10000, requestedLimit * 5 + 1)}`,
-) as Array<{ event_id: string; url: string; checked_at: string }>;
+) as Array<{ event_id: string; url: string | null; checked_at: string }>;
 
 const latestOfficial = new Map<string, string>();
 for (const row of linkRows)
-  if (!latestOfficial.has(row.event_id))
+  if (row.url && !latestOfficial.has(row.event_id))
     latestOfficial.set(row.event_id, row.url);
 
 const inputs = rows.map((row) => ({

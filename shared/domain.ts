@@ -58,6 +58,7 @@ export interface EventItem {
   source_url: string | null;
   source_name: string | null;
   source_kind: string | null;
+  official_url?: string | null;
   trust_status: TrustStatus | null;
   trust_checked_at: string | null;
   trust_source_url: string | null;

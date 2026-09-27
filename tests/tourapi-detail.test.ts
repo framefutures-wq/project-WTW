@@ -6,6 +6,7 @@ import {
   classifyDetailFailure,
   detailRetryAt,
   enrichTourApiDetails,
+  extractTourApiOfficialHomepage,
   failureLatencyBucket,
   selectTourApiDetailCandidates,
   selectTourApiDetailRetryCandidates,
@@ -75,6 +76,8 @@ function mockDetails() {
               playtime: "10:00~18:00",
               usetimefestival: "입장 무료",
               sponsor1tel: "02-123-4567",
+              eventhomepage:
+                '<a href="https://festival.example.org/?a=1&amp;b=2">공식 홈페이지</a>',
             }
           : {
               contentid: "1",
@@ -143,6 +146,14 @@ test("TourAPI detail maps only official summary, venue, whole-event hours, fee, 
         ).first<{ n: number }>()
       )?.n,
       1,
+    );
+    assert.equal(
+      (
+        await DB.prepare(
+          "SELECT url FROM event_official_links WHERE event_id='tourapi-1'",
+        ).first<{ url: string }>()
+      )?.url,
+      "https://festival.example.org/?a=1&b=2",
     );
     await enrichTourApiDetails(env as never, new Date("2026-09-21T00:00:00Z"));
     assert.equal(
@@ -288,6 +299,27 @@ test("retry-only detail recovery skips waiting failures and records its retry ro
     restore();
     await mf.dispose();
   }
+});
+
+test("TourAPI official homepage accepts only safe non-provider HTTPS URLs", () => {
+  assert.equal(
+    extractTourApiOfficialHomepage(
+      '<a href="https://festival.example.org/guide?x=1&amp;y=2">홈페이지</a>',
+    ),
+    "https://festival.example.org/guide?x=1&y=2",
+  );
+  assert.equal(
+    extractTourApiOfficialHomepage("http://festival.example.org/"),
+    null,
+  );
+  assert.equal(
+    extractTourApiOfficialHomepage("https://apis.data.go.kr/B551011/"),
+    null,
+  );
+  assert.equal(
+    extractTourApiOfficialHomepage("https://www.data.go.kr/data/15101578/openapi.do"),
+    null,
+  );
 });
 
 test("detail retry schedule uses a 30-minute first retry then bounded exponential backoff", () => {

@@ -192,6 +192,7 @@ function serialize(
     source_url: row.source_url as string | null,
     source_name: row.source_name as string | null,
     source_kind: row.source_kind as string | null,
+    official_url: row.official_url as string | null,
     trust_status:
       row.trust_status === "confirmed" ||
       row.trust_status === "needs_review" ||
@@ -835,7 +836,38 @@ export default {
           FROM event_evidence ev JOIN sources s ON s.id=ev.source_id WHERE ev.event_id=? ORDER BY s.priority,ev.field`,
         )
           .bind(eventId)
-          .all();
+          .all<Record<string, unknown>>();
+        const storedOfficialUrl = await env.DB.prepare(
+          `SELECT ol.url
+           FROM event_official_links ol
+           JOIN sources s ON s.id=ol.source_id
+           WHERE ol.event_id=?
+             AND ol.url LIKE 'https://%'
+           ORDER BY s.priority,ol.checked_at DESC
+           LIMIT 1`,
+        )
+          .bind(eventId)
+          .first<{ url: string | null }>();
+        const auditedOfficialUrl = storedOfficialUrl?.url
+          ? null
+          : await env.DB.prepare(
+              `SELECT CASE
+                 WHEN l.final_url LIKE 'https://%' THEN l.final_url
+                 WHEN l.url LIKE 'https://%' THEN l.url
+                 ELSE NULL
+               END AS url
+               FROM official_source_audits a
+               JOIN official_source_links l ON l.audit_id=a.id
+               WHERE a.event_id=?
+                 AND l.official=1
+                 AND l.access_status='ok'
+                 AND (l.final_url LIKE 'https://%' OR l.url LIKE 'https://%')
+               ORDER BY a.checked_at DESC,l.checked_at DESC
+               LIMIT 1`,
+            )
+              .bind(eventId)
+              .first<{ url: string | null }>();
+        row.official_url = storedOfficialUrl?.url ?? auditedOfficialUrl?.url ?? null;
         const contactSource = await env.DB.prepare(
           `SELECT raw_payload
            FROM sources
