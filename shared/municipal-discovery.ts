@@ -320,19 +320,170 @@ const categoryFromBlock = (html: string, text: string) =>
   definitionValue(html, ["행사종류", "행사유형", "분류"]) ??
   labeledValue(text, ["행사종류", "행사유형", "분류"]);
 
+const assetLikePath =
+  /\.(?:avif|gif|jpe?g|png|svg|webp|ico|pdf|zip)(?:$|[?#])/i;
+const fileLikePath =
+  /(?:\/|^)(?:file|files|download|down|attach|attachment|image|images)(?:\/|\.|$)/i;
+const detailLikeUrl =
+  /(?:detail|view|read|select[^/?#]*view|article|contents?)/i;
+const detailQuerySignal =
+  /(?:^|[?&])(?:id|idx|no|sn|seq|uid|event(?:id|sn)?|evntSn|articleNo|boardNo|bbsNo)=[^&]+/i;
+
+function detailUrlScore(source: MunicipalSourceDefinition, value: string) {
+  try {
+    const sourceUrl = new URL(source.url);
+    const url = new URL(value, source.url);
+    if (!municipalSourceAllowsUrl(source, url.toString())) return -Infinity;
+    if (url.toString() === sourceUrl.toString()) return -Infinity;
+    if (assetLikePath.test(url.pathname + url.search)) return -Infinity;
+    let score = 0;
+    const target = url.pathname + url.search;
+    if (detailLikeUrl.test(target)) score += 30;
+    if (detailQuerySignal.test(url.search)) score += 18;
+    if (/\b(?:mode|type|p)=(?:view|detail)\b/i.test(url.search)) score += 16;
+    if (/\b(?:list|index)(?:\.|\/|$)/i.test(url.pathname)) score -= 12;
+    if (fileLikePath.test(url.pathname)) score -= 40;
+    if (url.pathname !== sourceUrl.pathname) score += 6;
+    if (url.search !== sourceUrl.search) score += 4;
+    return score;
+  } catch {
+    return -Infinity;
+  }
+}
+
+const looksLikeUrlValue = (value: string) =>
+  /^(?:https?:\/\/|\/|\.{1,2}\/|\?)/i.test(value) ||
+  /^[A-Za-z0-9_./-]+\.(?:do|jsp|php|html?)(?:[?#]|$)/i.test(value);
+
+function rawDetailLinkValues(html: string) {
+  const rawValues: string[] = [];
+  for (const match of html.matchAll(
+    /\b(?:href|data-href|data-url|data-link)=["']([^"']+)["']/gi,
+  ))
+    rawValues.push(clean(match[1]));
+  for (const match of html.matchAll(
+    /(?:location(?:\.href)?\s*=|window\.open\s*\()\s*["']([^"']+)["']/gi,
+  ))
+    rawValues.push(clean(match[1]));
+  for (const match of html.matchAll(
+    /["']([^"']*(?:detail|view|read)[^"']*)["']/gi,
+  )) {
+    const value = clean(match[1]);
+    if (looksLikeUrlValue(value)) rawValues.push(value);
+  }
+  return [...new Set(rawValues)].filter(
+    (value) =>
+      value &&
+      !/^(?:javascript:|#|mailto:|tel:)/i.test(value) &&
+      looksLikeUrlValue(value),
+  );
+}
+
+function directDetailUrls(source: MunicipalSourceDefinition, html: string) {
+  return rawDetailLinkValues(html)
+    .map((value) => absolute(source.url, value))
+    .filter((value): value is string => Boolean(value))
+    .map((url) => ({ url, score: detailUrlScore(source, url) }))
+    .filter((item) => Number.isFinite(item.score) && item.score >= 16)
+    .sort((a, b) => b.score - a.score || a.url.localeCompare(b.url));
+}
+
+function firstSafeFirstPartyLink(
+  source: MunicipalSourceDefinition,
+  html: string,
+) {
+  const sourceUrl = new URL(source.url).toString();
+  for (const raw of rawDetailLinkValues(html)) {
+    const resolved = absolute(source.url, raw);
+    if (!resolved || !municipalSourceAllowsUrl(source, resolved)) continue;
+    try {
+      const url = new URL(resolved);
+      if (
+        url.toString() === sourceUrl ||
+        assetLikePath.test(url.pathname + url.search) ||
+        fileLikePath.test(url.pathname)
+      )
+        continue;
+      return url.toString();
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function hasUnsafeExternalEventLink(
+  source: MunicipalSourceDefinition,
+  html: string,
+) {
+  for (const raw of rawDetailLinkValues(html)) {
+    const resolved = absolute(source.url, raw);
+    if (!resolved || municipalSourceAllowsUrl(source, resolved)) continue;
+    try {
+      const url = new URL(resolved);
+      if (
+        !assetLikePath.test(url.pathname + url.search) &&
+        !fileLikePath.test(url.pathname) &&
+        /(?:event|festival|concert|performance|show|detail|view|read)/i.test(
+          url.pathname + url.search,
+        )
+      )
+        return true;
+    } catch {
+      continue;
+    }
+  }
+  return false;
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^$()|[\]\\{}]/g, (match) => "\\" + match);
+}
+
+function templateDetailId(
+  source: MunicipalSourceDefinition,
+  html: string,
+) {
+  const template = source.detailLinkTemplate;
+  if (!template) return null;
+  const escaped = escapeRegex(template.idParam);
+  const explicit = new RegExp(
+    "(?:" + escaped + "|eventSn|eventId|evntSn)\\s*[:=]\\s*[\"']?([A-Za-z0-9_-]{1,80})",
+    "i",
+  ).exec(html)?.[1];
+  if (explicit) return explicit;
+  return /(?:detail|view|read)[A-Za-z0-9_]*\s*\(\s*["']?([A-Za-z0-9_-]{1,80})/i.exec(
+    html,
+  )?.[1] ?? null;
+}
+
+export function discoverMunicipalDetailUrl(
+  source: MunicipalSourceDefinition,
+  html: string,
+) {
+  const direct = directDetailUrls(source, html)[0]?.url;
+  if (direct) return direct;
+
+  const template = source.detailLinkTemplate;
+  const id = templateDetailId(source, html);
+  if (template && id) {
+    const url = new URL(template.path, source.url);
+    for (const [key, value] of Object.entries(template.fixedQuery ?? {}))
+      url.searchParams.set(key, value);
+    url.searchParams.set(template.idParam, id);
+    if (municipalSourceAllowsUrl(source, url.toString()))
+      return url.toString();
+  }
+
+  const firstParty = firstSafeFirstPartyLink(source, html);
+  if (firstParty) return firstParty;
+  return hasUnsafeExternalEventLink(source, html) ? null : source.url;
+}
+
 const officialUrlFromBlock = (
   source: MunicipalSourceDefinition,
   html: string,
-) => {
-  const rawHref = /<a\b[^>]*href=["']([^"']+)["']/i.exec(html)?.[1];
-  const href = rawHref ? clean(rawHref) : null;
-  if (!href) return source.url;
-  if (/^(?:javascript:|#)/i.test(href.trim())) return source.url;
-  const resolved = absolute(source.url, href);
-  return resolved && municipalSourceAllowsUrl(source, resolved)
-    ? resolved
-    : null;
-};
+) => discoverMunicipalDetailUrl(source, html);
 
 const genericCandidateFromBlock = (
   source: MunicipalSourceDefinition,
