@@ -62,6 +62,8 @@ test("public audit risk flags sparse or exact-link-poor public rows without chan
 
   const healthy = {
     ...base,
+    description:
+      "시민 누구나 참여 가능한 기간 한정 축제입니다. 공연과 체험 프로그램, 운영시간, 현장 이용 안내가 공식 행사 페이지에 자세히 제공됩니다. 가족과 친구가 함께 방문할 수 있습니다.",
     discovered_official_url: "https://festival.example.or.kr/",
   };
   assert.equal(
