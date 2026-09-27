@@ -661,14 +661,7 @@ export async function runMunicipalAutonomous(
   const retrySourceKeys = selectedSources.map((source) => source.key);
   const retryPlaceholders = retrySourceKeys.map(() => "?").join(",");
   const retries = await env.DB.prepare(
-    `SELECT candidate_id,source_key,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot,first_seen_at,last_seen_at,retry_until,last_payload_hash
-     FROM municipal_candidate_state
-     WHERE decision_state='AUTO_RETRY'
-       AND retry_until IS NOT NULL
-       AND retry_until>=?
-       AND source_key IN (${retryPlaceholders})
-     ORDER BY retry_until
-     LIMIT ?`,
+    `SELECT candidate_id,source_key,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot,first_seen_at,last_seen_at,retry_until,last_payload_hash FROM municipal_candidate_state WHERE decision_state='AUTO_RETRY' AND retry_until IS NOT NULL AND retry_until>=? AND source_key IN (${retryPlaceholders}) ORDER BY retry_until LIMIT ?`,
   )
     .bind(now, ...retrySourceKeys, maxRetryCandidates)
     .all<{
