@@ -837,13 +837,18 @@ export default {
         )
           .bind(eventId)
           .all<Record<string, unknown>>();
-        const evidenceOfficialUrl = evidence.results.find(
-          (item) =>
-            item.field === "official_url" &&
-            typeof item.excerpt === "string" &&
-            item.excerpt.startsWith("https://"),
-        )?.excerpt as string | undefined;
-        const auditedOfficialUrl = evidenceOfficialUrl
+        const storedOfficialUrl = await env.DB.prepare(
+          `SELECT ol.url
+           FROM event_official_links ol
+           JOIN sources s ON s.id=ol.source_id
+           WHERE ol.event_id=?
+             AND ol.url LIKE 'https://%'
+           ORDER BY s.priority,ol.checked_at DESC
+           LIMIT 1`,
+        )
+          .bind(eventId)
+          .first<{ url: string | null }>();
+        const auditedOfficialUrl = storedOfficialUrl?.url
           ? null
           : await env.DB.prepare(
               `SELECT CASE
@@ -862,7 +867,7 @@ export default {
             )
               .bind(eventId)
               .first<{ url: string | null }>();
-        row.official_url = evidenceOfficialUrl ?? auditedOfficialUrl?.url ?? null;
+        row.official_url = storedOfficialUrl?.url ?? auditedOfficialUrl?.url ?? null;
         const contactSource = await env.DB.prepare(
           `SELECT raw_payload
            FROM sources
