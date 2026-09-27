@@ -1360,3 +1360,17 @@ UI benchmark:
   - stored exact official event page metadata/JSON-LD/HTML images;
   - first-party municipality/organizer page when no event-specific official link exists.
 - It never writes D1. The next bounded task should use the production audit result to fix the relevant ingestion/extractor path, not improve the no-image decoration.
+
+
+## 2026-09-27 — TourAPI 대표이미지 누락 원인 확정 및 코드 수정
+
+- missing-poster audit 결과, 다수 TourAPI PUBLIC 행사에서 `event_images` primary row는 없지만 `sources.raw_payload.firstimage` / `firstimage2`에는 실제 이미지 URL이 존재했다.
+- 근본 원인: 현재 `worker/sources/tourapi.ts`는 TourAPI secondary image를 `event_additional_images`에 저장했지만 primary `event_images`를 쓰는 경로가 없었다.
+- PR #87 merged green as `679236342cd18ed8d0e449942fe2114482725f77`.
+- 수정 내용:
+  - shared TourAPI image selector 추가;
+  - sync 시 `firstimage` 우선, 없으면 `firstimage2`를 primary `event_images`에 저장;
+  - 건강한 municipality/organizer primary image는 TourAPI가 덮어쓰지 않음;
+  - 기존 PUBLIC current/future TourAPI 누락분을 raw payload에서 복구하는 bounded backfill command 추가: `npm run images:backfill:tourapi-primary -- --remote --apply`.
+- UI browser smoke + Project checks PASS.
+- 다음 단계는 production backfill 실행 후 홈에서 실제 no-image TourAPI 카드 감소를 검증하는 것. 지자체 이미지 누락은 별도 문제로 남는다.
