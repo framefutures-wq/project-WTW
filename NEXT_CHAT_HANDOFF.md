@@ -1950,3 +1950,23 @@ UI 기준:
 - Added browser coverage proving those fields are visibly rendered in the event detail UI and the two images actually load.
 - This PR changes production Worker/UI code and is NOT deployed yet.
 - Next user action: clean-tree pull latest main, `npm run deploy:verified`, production smoke, then open the same Hangang detail and verify summary/images/hours/programs/contact visually. No municipal ingestion rerun is required because D1 already contains the rich-detail rows.
+
+## 2026-09-27 — CRITICAL handoff: municipal rich-detail is still NOT finished in production UI
+
+- User reports the latest Hangang detail is still not satisfactorily resolved after the recent rich-detail/UI work.
+- Current visible state from the user's screenshot:
+  - operating hours, free price, contact 120, three program cards, and a long event introduction are now visible;
+  - the media area is still visually broken/incorrect: one side is blurred/placeholder-like and only one small official photo is visible;
+  - the event introduction is essentially a long flattened text dump with duplicated/poorly structured sections rather than a polished, structured detail experience;
+  - the official Hangang source page contains substantially richer structured content: poster, event metadata, multiple descriptive sections, program overview, separate experience/performance blocks, multiple official photos with captions, guidance, and map/location content;
+  - Galteum is still not reflecting that source richness or structure adequately.
+- Therefore PR #58 must NOT be treated as 'problem solved'. It only fixed part of the D1 -> API -> UI plumbing.
+- Do NOT resume the residual 11-source parser audit yet. The immediate priority is the single Hangang event production-detail parity problem.
+- Next bounded task in a new chat:
+  1. follow the project startup rules and inspect latest main + production state;
+  2. inspect the exact production API response for the Hangang event and the live image proxy responses;
+  3. compare the official Hangang detail page structure against what is stored in D1 and what the public API exposes;
+  4. identify exactly which source content is not extracted, which is stored but flattened, and which is stored/exposed but rendered poorly;
+  5. fix ONE bounded layer at a time, starting with the visible production gap rather than more ingestion breadth;
+  6. completion criterion is the actual production detail screen, not D1 persistence or unit tests alone.
+- Do not claim completion until the user-visible production page is visually verified against the official page.
