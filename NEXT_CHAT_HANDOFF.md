@@ -2070,3 +2070,19 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - This code is merged but production migration/deploy/backfill has NOT been completed in this chat.
 - Legacy quality reclassification remains blocked until one real production read-only quality audit is reviewed.
 - Next safe code task: simplify the detail-page responsibility around concise core visit facts + a strong official handoff, without deleting existing rich-detail data.
+
+
+---
+
+## 2026-09-27 — Publish Quality Gate v2: sparse TourAPI hardening
+
+- Publish quality rule version advances to `publish_quality_v2`.
+- Sparse TourAPI list rows no longer become PUBLIC solely because their title contains words such as 축제/전시/회원전/체험.
+- A TourAPI row with only the generic provider sentence stays HOLD until detail enrichment supplies either:
+  - meaningful event-specific description; or
+  - a safe event-specific official homepage.
+- Long-running permanent facility entries such as year-round permanent exhibitions are EXCLUDE when they carry facility/perpetual signals and no strong bounded special-event signal.
+- Bounded special events (festival, special exhibition, performance, night opening, etc.) remain eligible even when they operate daily during the event period.
+- The read-only production audit now feeds discovered event-specific official links into the same classifier, so audit and ingestion decisions use the same evidence.
+- This change is intended to remove the exact class the user flagged: records that technically look event-like by title but are too thin to deserve public listing.
+- Legacy production rows are still not mass-reclassified until the read-only production audit is reviewed.
