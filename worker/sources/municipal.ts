@@ -34,6 +34,11 @@ import {
   alertId,
   scheduleChanged,
 } from "../../shared/alert-engine";
+import {
+  extractMunicipalRichDetail,
+  type MunicipalRichDetail,
+} from "../../shared/municipal-rich-detail";
+import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
@@ -71,6 +76,15 @@ const hash = async (value: unknown) =>
     .map((n) => n.toString(16).padStart(2, "0"))
     .join("");
 const sourceId = (id: string) => `municipal-source-${id}`;
+const richDetailFieldCount = (detail: MunicipalRichDetail | null) =>
+  detail
+    ? Number(Boolean(detail.summary)) +
+      Number(detail.operating_hours.length > 0) +
+      Number(Boolean(detail.price_text)) +
+      Number(Boolean(detail.contact_phone)) +
+      Number(detail.images.length > 0) +
+      Number(detail.programs.length > 0)
+    : 0;
 // Durable municipal source IDs and Hwaseong's normalized canonical identity never include mutable dates.
 const candidateId = (
   source: string,
