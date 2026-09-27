@@ -2017,3 +2017,17 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Preserve existing rich-detail code/data; do not roll it back merely because product direction changed.
 - Do not continue broad rich-detail expansion or Hangang-specific parity patching unless a later bounded task explicitly requires it.
 - The next engineering task should start from the quality gate, not from another detail parser patch.
+
+
+## 2026-09-27 — Phase 1 done; next = backwards-compatible quality-state integration
+
+- Publish Quality Gate v1 is merged on main (PR #59, `365eebfc4bee85324125d1dd878b94369f1991d0`).
+- Common classifier is in `shared/publish-quality.ts`; tests are in `tests/publish-quality.test.ts`.
+- No production visibility changed yet and no D1 migration was added.
+- Next bounded task:
+  1. add backwards-compatible persistent quality state with existing rows defaulting PUBLIC;
+  2. wire new/updated TourAPI, municipal, and private-official events to store the classifier decision;
+  3. make public read paths honor PUBLIC only after migration exists, while preserving sample mode;
+  4. add focused integration tests;
+  5. do NOT mass-reclassify existing production rows yet;
+  6. after that, build/read a production audit before any apply step.
