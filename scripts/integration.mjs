@@ -575,9 +575,10 @@ try {
     ],
   });
   assert.equal(
-    (await get("/api/events/tourapi-101")).event.status,
+    (await db.prepare("SELECT status FROM events WHERE id='tourapi-101'").first()).status,
     "cancelled",
   );
+  await get("/api/events/tourapi-101", 404);
   assert.equal(
     (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='CANCELLED_OR_POSTPONED'").first()).n,
     1,
