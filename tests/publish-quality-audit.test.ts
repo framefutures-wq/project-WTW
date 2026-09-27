@@ -3,13 +3,16 @@ import test from "node:test";
 import {
   auditPublishQualityRows,
   officialLinkQuality,
+  publicQualityRisk,
   type PublishQualityAuditRow,
 } from "../shared/publish-quality-audit";
+import { decidePublishQuality } from "../shared/publish-quality";
 
 const base: PublishQualityAuditRow = {
   id: "event-1",
   title: "가을 축제",
-  description: "시민 누구나 참여 가능한 기간 한정 축제입니다.",
+  description:
+    "시민 누구나 참여 가능한 기간 한정 축제입니다. 공연과 체험 프로그램, 운영 안내를 공식 페이지에서 확인할 수 있습니다.",
   region: "서울",
   start_date: "2026-10-01",
   end_date: "2026-10-03",
@@ -21,8 +24,8 @@ const base: PublishQualityAuditRow = {
   discovered_official_url: null,
 };
 
-test("official link quality separates first-party, discovered and TourAPI-only sources", () => {
-  assert.equal(officialLinkQuality(base), "FIRST_PARTY_DIRECT");
+test("official link audit separates event links from source-level and TourAPI links", () => {
+  assert.equal(officialLinkQuality(base), "FIRST_PARTY_SOURCE_ONLY");
   assert.equal(
     officialLinkQuality({
       ...base,
@@ -30,7 +33,7 @@ test("official link quality separates first-party, discovered and TourAPI-only s
       source_url: "https://www.data.go.kr/data/15101578/openapi.do",
       discovered_official_url: "https://festival.example.or.kr/",
     }),
-    "DISCOVERED_OFFICIAL",
+    "EVENT_OFFICIAL_LINK",
   );
   assert.equal(
     officialLinkQuality({
@@ -43,9 +46,38 @@ test("official link quality separates first-party, discovered and TourAPI-only s
   );
 });
 
-test("audit groups proposed state, reason, source and representative examples without mutating rows", () => {
+test("public audit risk flags sparse or exact-link-poor public rows without changing publication state", () => {
+  const sparse = {
+    ...base,
+    description: "가을 축제입니다.",
+    source_kind: "tourapi",
+    source_url: "https://www.data.go.kr/data/15101578/openapi.do",
+  };
+  const decision = decidePublishQuality(sparse);
+  assert.equal(decision.state, "PUBLIC");
+  assert.equal(
+    publicQualityRisk(sparse, decision),
+    "PUBLIC_SPARSE_AND_LINK_GAP",
+  );
+
+  const healthy = {
+    ...base,
+    description:
+      "시민 누구나 참여 가능한 기간 한정 축제입니다. 공연과 체험 프로그램, 운영시간, 현장 이용 안내가 공식 행사 페이지에 자세히 제공됩니다. 가족과 친구가 함께 방문할 수 있습니다.",
+    discovered_official_url: "https://festival.example.or.kr/",
+  };
+  assert.equal(
+    publicQualityRisk(healthy, decidePublishQuality(healthy)),
+    "NONE",
+  );
+});
+
+test("audit groups proposed state, source, link quality and public risk without mutating rows", () => {
   const rows: PublishQualityAuditRow[] = [
-    base,
+    {
+      ...base,
+      discovered_official_url: "https://festival.example.or.kr/",
+    },
     {
       ...base,
       id: "hold",
@@ -62,26 +94,41 @@ test("audit groups proposed state, reason, source and representative examples wi
       title: "정규 강좌 수강생 모집",
       description: "매주 운영하는 평생학습 프로그램입니다.",
     },
+    {
+      ...base,
+      id: "sparse-public",
+      title: "봄 축제",
+      description: "봄 축제입니다.",
+      source_kind: "tourapi",
+      source_name: "한국관광공사 TourAPI",
+      source_url: "https://www.data.go.kr/data/15101578/openapi.do",
+    },
   ];
   const snapshot = structuredClone(rows);
   const report = auditPublishQualityRows(rows, 1);
 
-  assert.equal(report.total, 3);
-  assert.deepEqual(report.by_state, { PUBLIC: 1, HOLD: 1, EXCLUDE: 1 });
-  assert.equal(report.by_reason.explicit_public_event, 1);
+  assert.equal(report.total, 4);
+  assert.deepEqual(report.by_state, { PUBLIC: 2, HOLD: 1, EXCLUDE: 1 });
+  assert.equal(report.by_reason.explicit_public_event, 2);
   assert.equal(report.by_reason.insufficient_event_signal, 1);
   assert.equal(report.by_reason.explicit_non_event, 1);
   assert.deepEqual(report.by_source_kind.tourapi, {
-    PUBLIC: 0,
+    PUBLIC: 1,
     HOLD: 1,
     EXCLUDE: 0,
   });
-  assert.equal(report.by_official_link_quality.FIRST_PARTY_DIRECT, 2);
-  assert.equal(report.by_official_link_quality.TOURAPI_ONLY, 1);
+  assert.equal(report.by_official_link_quality.EVENT_OFFICIAL_LINK, 1);
+  assert.equal(report.by_official_link_quality.FIRST_PARTY_SOURCE_ONLY, 1);
+  assert.equal(report.by_official_link_quality.TOURAPI_ONLY, 2);
+  assert.equal(report.by_public_quality_risk.PUBLIC_SPARSE_AND_LINK_GAP, 1);
   assert.equal(
     report.examples["HOLD:insufficient_event_signal"][0].id,
     "hold",
   );
   assert.equal(report.examples["EXCLUDE:explicit_non_event"][0].id, "exclude");
+  assert.equal(
+    report.examples["RISK:PUBLIC_SPARSE_AND_LINK_GAP"][0].id,
+    "sparse-public",
+  );
   assert.deepEqual(rows, snapshot);
 });
