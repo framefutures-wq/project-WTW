@@ -466,7 +466,48 @@ export async function runMunicipalAutonomous(
     koreaToday = today(),
     processed = new Set<string>();
   let publishMutations = 0,
-    detailFetches = 0;
+    detailFetches = 0,
+    richDetailAttempted = 0,
+    richDetailCandidates = 0,
+    richDetailPersisted = 0,
+    richDetailErrors = 0;
+  const richDetailBySource: Record<string, number> = {};
+  const persistRichDetail = async ({
+    eventId,
+    candidate,
+    detail,
+  }: {
+    eventId: string;
+    candidate: MunicipalCandidate;
+    detail: MunicipalRichDetail | null;
+  }) => {
+    if (!detail || richDetailFieldCount(detail) === 0) return;
+    try {
+      await persistMunicipalRichDetail(env.DB, {
+        eventId,
+        startDate: candidate.start_date!,
+        endDate: candidate.end_date!,
+        sourceId: sourceId(eventId),
+        sourceName: `${candidate.source} 공식 행사 안내`,
+        sourceUrl: candidate.official_url,
+        checkedAt: now,
+        detail,
+      });
+      richDetailPersisted += 1;
+      richDetailBySource[candidate.source] =
+        (richDetailBySource[candidate.source] ?? 0) + 1;
+    } catch (error) {
+      richDetailErrors += 1;
+      console.error("municipal_rich_detail_failed", {
+        source: candidate.source,
+        event_id: eventId,
+        reason:
+          error instanceof Error && error.message
+            ? error.message.slice(0, 120)
+            : "rich_detail_persist_failed",
+      });
+    }
+  };
   for (const source of selectedSources) {
     try {
       const sourceCandidates = await collectSourceCandidates(
