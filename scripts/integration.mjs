@@ -314,6 +314,10 @@ try {
     assert.equal(r.status, status, path);
     return r.json();
   }
+  assert.equal(
+    (await get("/api/events/verified")).event.official_url,
+    "https://example.org/event",
+  );
   const data = await get("/api/events?period=today&limit=50");
   assert.deepEqual(data.events.map((e) => e.id).filter((id) => !id.startsWith("ranking-")).sort(), [
     "free-verified",
