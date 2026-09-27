@@ -21,3 +21,5 @@ jobs:
       - run: npm ci
       - name: Run 35-source read-only audit
         run: npm run audit:municipal-rich-detail
+      - name: Inspect unresolved detail-link patterns
+        run: node --import tsx scripts/tmp-municipal-detail-link-debug.mjs
