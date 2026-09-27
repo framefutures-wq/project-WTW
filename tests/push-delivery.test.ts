@@ -53,3 +53,40 @@ test("delivery queue matches scoped subscriptions once, handles dead endpoints a
     assert.equal((await DB.prepare("SELECT state,attempts FROM push_deliveries WHERE alert_id='a3'").first<{ state: string; attempts: number }>())?.state, "retry");
   } finally { globalThis.fetch = original; await mf.dispose(); }
 });
+
+
+test("non-public events are suppressed before push queueing", async () => {
+  const { mf, DB, env } = await setup();
+  const original = globalThis.fetch;
+  let fetchCalled = false;
+  try {
+    await addSubscription(env, "https://push.example.test/hold");
+    await DB.prepare(
+      "UPDATE events SET publish_quality_state='HOLD',publish_quality_reason='insufficient_event_signal',publish_quality_rule_version='publish_quality_v1' WHERE id='e'",
+    ).run();
+    await addAlert(DB, "hold-alert");
+    globalThis.fetch = (async () => {
+      fetchCalled = true;
+      return new Response("", { status: 201 });
+    }) as typeof fetch;
+    await processPushDeliveries(env as never);
+    assert.equal(fetchCalled, false);
+    assert.deepEqual(
+      await DB.prepare(
+        "SELECT delivery_state FROM alert_events WHERE id='hold-alert'",
+      ).first(),
+      { delivery_state: "suppressed" },
+    );
+    assert.equal(
+      (
+        await DB.prepare(
+          "SELECT count(*) AS n FROM push_deliveries WHERE alert_id='hold-alert'",
+        ).first<{ n: number }>()
+      )?.n,
+      0,
+    );
+  } finally {
+    globalThis.fetch = original;
+    await mf.dispose();
+  }
+});
