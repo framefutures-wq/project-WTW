@@ -1405,3 +1405,13 @@ UI benchmark:
   - generic site chrome/default/no-image/common-menu assets are excluded from event imagery.
 - Regression coverage modeled on current Suwon and Hangang detail shapes; UI browser smoke + Project checks PASS.
 - Next production step: deploy this extractor and run a bounded municipal one-shot to backfill existing current events from their exact official detail pages. Then re-audit detail completeness rather than assuming the source lacks data.
+
+
+## 2026-09-28 — municipal rich-detail v2 production backfill 완료
+
+- Exact official event detail 기반 rich-detail v2를 production에 반영했고, 최초 full manual backfill 중 shard 1에서 발생한 Cloudflare 1102는 repeated whole-page parsing을 page당 1회 context로 재사용하도록 줄여 해결했다.
+- 최적화 commit: `89c6faa8027efa36ce868e7c094dd2106bf0a6bb`; GitHub Project checks / UI browser smoke PASS.
+- shard 0은 기존 성공 결과를 보존했고, 최적화 배포 후 shard 1 → shard 2 → read-only verify 체인이 끝까지 완료되어 1102는 재발하지 않았다.
+- shard 2에서 rich detail 4건이 추가 저장됐고(`busan-동` 2, `gyeongbuk-경주` 2), rich-detail extraction error는 0이었다.
+- production 검증에서 실제 exact detail 기반 poster/summary/time/program/contact가 Hangang, Busan Dong-gu, Gyeongju, Pyeongtaek, Goyang 등에 저장된 것을 확인했다.
+- 남은 문제는 rich-detail parser 자체가 아니라 source별 관측 실패다. 최근 60분 기준 35 source 중 24 source가 관측됐고 11 source가 미관측이다. 성공한 전체 shard를 다시 돌리지 말고 실패 source만 별도 bounded diagnosis 대상으로 다룬다.
