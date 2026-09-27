@@ -1240,3 +1240,29 @@ UI benchmark:
   - no URL signal;
   - invalid cached detail payload.
 - This audit does not promote arbitrary URLs to official; it only identifies the next safe acquisition path.
+
+
+## 2026-09-27 — Phase 3 remaining TourAPI gap classified; explicit legacy homepage resolver merged
+
+- Read-only production audit after the 149-link cached-detail backfill found 65 TourAPI events still without a stored official link:
+  - PUBLIC 63
+  - HOLD 2
+- Remaining signal classes:
+  - EXPLICIT_HTTP_HOMEPAGE 31
+  - EXPLICIT_BARE_HOST 7
+  - OTHER_HTTPS_URL 27
+  - no NO_URL_SIGNAL / INVALID_DETAIL_PAYLOAD cases in this population
+- Interpretation:
+  - 38/65 have an explicit TourAPI homepage field that is legacy HTTP or bare-host and can be safely resolved/verified without guessing.
+  - 27/65 contain other HTTPS URL signals but must not be promoted to official automatically; they require a separate evidence/classification step.
+- PR #81 merged green as `2deefb9c098d1f34fc70090a2cc2bbc847e98c40`.
+- New guarded command: `npm run official-links:resolve:tourapi-explicit -- --remote --apply`.
+- Resolver behavior:
+  - HTTP homepage: try HTTPS upgrade first; if that fails, accept only an HTTP request that redirects to a healthy HTTPS final URL.
+  - bare-host homepage: try HTTPS only.
+  - reuse SSRF-safe page fetching; reject provider/API-documentation hosts.
+  - ignore unrelated cached URLs.
+  - block any PUBLIC visibility reduction or EXCLUDE transition.
+  - batch writes and report remaining TourAPI official-link gaps.
+- Project checks and UI browser smoke passed before merge.
+- Production resolver execution is still pending.
