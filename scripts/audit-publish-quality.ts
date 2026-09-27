@@ -21,6 +21,7 @@ if (
 )
   throw new Error("--limit must be an integer between 1 and 5000");
 const exampleLimit = Number(optionValue(args, "--examples") ?? "8");
+const includeAudited = args.includes("--include-audited");
 if (!Number.isInteger(exampleLimit) || exampleLimit < 1 || exampleLimit > 25)
   throw new Error("--examples must be an integer between 1 and 25");
 
@@ -224,6 +225,7 @@ const output = {
   examples: report.examples,
   official_link_gaps,
   public_quality_risks,
+  ...(includeAudited ? { audited: report.audited } : {}),
 };
 
 console.log(JSON.stringify(output, null, 2));
