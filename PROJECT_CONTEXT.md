@@ -877,3 +877,11 @@ UI benchmark:
 - Detail fetch budgets are unchanged because rich extraction reuses the already-fetched official detail HTML.
 - Morning production verification now aggregates rich-detail attempt/persist/error/by-source metrics across shard runs.
 - Production Worker deployment is intentionally deferred until the remaining 35-source audit/fetch gaps are fixed so the final pre-Sep-28 deployment can be done once.
+
+
+## 47. 2026-09-27 — municipal detail-link identity safety tightened
+
+- Live read-only validation confirmed generic outer-anchor card discovery can recover first-party event detail URLs; Pyeongtaek moved from 0 to 2 sampled detail targets.
+- A critical migration hazard was fixed before production deployment: improving `official_url` must not change an already-published municipal event into a new logical event.
+- Generic municipal detail-URL upgrades now reuse a legacy identity only for one unique exact same-source title/date/venue match; ambiguous cases remain fail-closed.
+- Rich-detail production deployment is still intentionally deferred until remaining candidate-positive/detail-link gaps, zero-candidate parser gaps, and source fetch failures are addressed.
