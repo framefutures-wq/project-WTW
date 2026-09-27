@@ -2321,3 +2321,15 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Commits: `bc67ac6` registry contract/Geoje URL, `471424d` Geoje parser base, `3c9fdff` regression assertions.
 - GitHub Project checks including `npm run check` and municipal inventory check PASS.
 - Production action still required: deploy latest main, rerun only shard 2, then read-only manual verify. Do not rerun shard 0 or shard 1.
+
+
+## 2026-09-28 — shard-2 retry still failed; exact-source retry support added
+
+- Production Worker version `2858aa87-a0e1-4b17-9e17-42f1f5f98123` deployed the previous shard-2 recovery attempt, but the subsequent shard-2 run still reported the same three failures: `gyeongbuk-영주` source_error, `busan-해운대` HTTP 530, `gyeongnam-거제` HTTP 522. Successful shard-2 sources remained healthy.
+- The 20-minute verifier after that run is not a whole-registry health result: only shard 2 was rerun in that window, so non-shard-2 rows showing observed=0 are expected and must not be treated as new regressions.
+- Re-checking the live official Yeongju site found the actual culture-calendar endpoint is `mnu_uid=10618`; the registry/parser had incorrectly retained `10617`. Both are now corrected.
+- Geoje's same official FESTIVAL page is reachable on `www.geoje.go.kr`; registry/parser canonical source changed from the Worker-failing `tour.geoje.go.kr` alias to the official `www.geoje.go.kr` host. This still needs Worker-environment proof.
+- Added nonce-protected manual `--source=<registry-source-key>` mode to `municipal:once`. It derives the source's production shard plan but executes only that one source, so failed sources can now be verified one at a time without rerunning successful shard peers. Production cron/shard architecture is unchanged.
+- Commits: `18b52545eac1b53412ea5c2547ada5bb3cfc9f98` plus follow-up `3605c1c081b8b7dc883d70144859f6c9ef12d526`.
+- GitHub Project checks PASS on the latest commit.
+- Next authenticated step is intentionally one source only: deploy latest main, then run `npm run municipal:once -- --source=gyeongbuk-영주`. Do not run Geoje or Haeundae until Yeongju result is closed.
