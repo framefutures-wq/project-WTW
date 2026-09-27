@@ -1200,3 +1200,22 @@ UI benchmark:
   - TourAPI-only 148
   - missing 0
 - Next priority is to reduce TourAPI-only gaps without guessing URLs or returning to broad rich-detail replication.
+
+
+## 2026-09-27 — Phase 3 starts: cached TourAPI official-link backfill merged
+
+- PR #79 merged green as `201f1df8a7cf8daa3638b288da1b1ed78125754a`.
+- This begins Phase 3 without broad web crawling.
+- New guarded command: `npm run official-links:backfill:tourapi -- --remote --apply`.
+- It only inspects already-persisted TourAPI detail payloads and accepts explicit provider homepage fields:
+  - `intro.eventhomepage` first;
+  - then `common.homepage`.
+- It does not guess URLs, rejects data.go/API-documentation hosts, and only stores HTTPS links.
+- Safety gates block any candidate that would:
+  - turn a current PUBLIC event into HOLD/EXCLUDE;
+  - create EXCLUDE;
+  - exceed bounded candidate volume.
+- Sparse HOLD rows may be promoted to PUBLIC when the cached detail payload contains an explicit event homepage.
+- Writes are batched and followed by verification that applied events no longer remain in the cached-detail link-gap set.
+- Project checks and UI browser smoke passed before merge.
+- Production backfill has not been run yet; its result will determine how much of the 148 TourAPI-only gap can be closed from already-cached official data before any broader discovery work.
