@@ -18,7 +18,7 @@ function displayKoreanPhone(digits: string) {
   return null;
 }
 
-/** TourAPI's tel field can contain labels, multiple numbers, or extensions. */
+/** Official tel fields can contain labels, multiple numbers, extensions, or civic short codes. */
 export function normalizeOfficialPhone(value: unknown): ContactPhone | null {
   if (typeof value !== "string") return null;
   const raw = value.trim();
@@ -29,6 +29,8 @@ export function normalizeOfficialPhone(value: unknown): ContactPhone | null {
     return display ? { display, href: `tel:${compact}` } : null;
   }
   if (!/^\d+$/.test(compact)) return null;
+  if (/^\d{3}$/.test(compact))
+    return { display: compact, href: `tel:${compact}` };
   const display = displayKoreanPhone(compact);
   return display ? { display, href: `tel:${compact}` } : null;
 }
