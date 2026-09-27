@@ -542,3 +542,51 @@ test("Seoul Hangang generic cards require an explicit festival, culture, or perf
     [["2026 한강 종이비행기 축제", "축제", hangang.url]],
   );
 });
+
+
+test("generic extractor reads an outer anchor event card and prefers its detail URL over the inner card copy", () => {
+  const result = extracted(`
+    <a class="ds-poster-card" href="/pfmc/pfmcView.do?pfmcSn=2607020005">
+      <div class="event-item">
+        <span class="category">공연</span>
+        <strong class="title">2026 마티네 콘서트 Ⅳ. 프랑스</strong>
+        <span class="date">2026.10.07 ~ 2026.10.07</span>
+        <span class="venue">북부문화예술회관 소공연장</span>
+      </div>
+    </a>
+  `);
+
+  assert.equal(result.mode, "generic_html");
+  assert.equal(result.candidates.length, 1);
+  assert.deepEqual(
+    {
+      title: result.candidates[0]?.title,
+      official_url: result.candidates[0]?.official_url,
+    },
+    {
+      title: "2026 마티네 콘서트 Ⅳ. 프랑스",
+      official_url:
+        "https://events.example.go.kr/pfmc/pfmcView.do?pfmcSn=2607020005",
+    },
+  );
+});
+
+test("generic extractor core-dedupes nested list and anchor candidates in favor of the specific detail URL", () => {
+  const result = extracted(`
+    <li>
+      <a href="/events/detail.do?eventSn=77">
+        <div class="event-item">
+          <strong class="title">가상구 가을축제</strong>
+          <span class="date">2026-10-24 ~ 2026-10-25</span>
+          <span class="venue">가상문화광장</span>
+        </div>
+      </a>
+    </li>
+  `);
+
+  assert.equal(result.candidates.length, 1);
+  assert.equal(
+    result.candidates[0]?.official_url,
+    "https://events.example.go.kr/events/detail.do?eventSn=77",
+  );
+});
