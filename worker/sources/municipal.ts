@@ -37,9 +37,21 @@ import {
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
-  MAX_PUBLISH = 10,
-  MAX_RETRY_PER_RUN = 25,
   RETRY_DAYS = 30;
+
+export type MunicipalAutonomousOptions = {
+  shardIndex?: number;
+  sourceKeys?: readonly string[];
+  maxPublishMutations?: number;
+  maxRetryCandidates?: number;
+  maxDetailFetches?: number;
+  maxExternalFetches?: number;
+};
+
+const DEFAULT_MAX_PUBLISH_MUTATIONS = 10;
+const DEFAULT_MAX_RETRY_CANDIDATES = 25;
+const DEFAULT_MAX_DETAIL_FETCHES = 25;
+const DEFAULT_MAX_EXTERNAL_FETCHES = 1000;
 const today = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",
@@ -95,9 +107,20 @@ const emptySummary = (): Summary => ({
   rows_read: 0,
   rows_written: 0,
 });
-async function official(url: string) {
-  return (await officialResponse(url)).html;
-}
+type MunicipalFetchBudget = { used: number; limit: number };
+
+const budgetedFetch = async (
+  url: string,
+  budget: MunicipalFetchBudget,
+) => {
+  if (budget.used >= budget.limit)
+    throw new Error("municipal_fetch_budget_exhausted");
+  budget.used += 1;
+  return fetch(url, {
+    signal: AbortSignal.timeout(20_000),
+    headers: { "user-agent": "WeekendMwohaeMunicipal/1.0" },
+  });
+};
 const retryableOfficialFetchError = (error: unknown) => {
   if (error instanceof TypeError) return true;
   const name =
@@ -110,20 +133,24 @@ const retryableOfficialFetchError = (error: unknown) => {
 };
 const municipalSourceFailureReason = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  if (message === "source_parse_zero_candidates") return message;
+  if (
+    message === "source_parse_zero_candidates" ||
+    message === "municipal_fetch_budget_exhausted"
+  )
+    return message;
   const http = /^official_http_(\d{3})$/.exec(message);
   if (http) return `official_http_${http[1]}`;
   if (retryableOfficialFetchError(error)) return "network_or_timeout";
   return "source_error";
 };
-async function officialResponse(url: string) {
+async function officialResponse(
+  url: string,
+  budget: MunicipalFetchBudget,
+) {
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(20_000),
-        headers: { "user-agent": "WeekendMwohaeMunicipal/1.0" },
-      });
+      const response = await budgetedFetch(url, budget);
       if (!response.ok) throw new Error(`official_http_${response.status}`);
       return { html: await response.text(), finalUrl: response.url };
     } catch (error) {
@@ -145,11 +172,13 @@ async function collectSourceCandidates(
   env: Env,
   source: (typeof SOURCES)[number],
   koreaToday: string,
+  fetchHtml: (url: string) => Promise<string>,
+  fetchResponse: (url: string) => Promise<{ html: string; finalUrl: string }>,
 ) {
   return fetchMunicipalSourcePages<SourceCandidate>(
     source,
     koreaToday,
-    official,
+    fetchHtml,
     async (pageHtml) => {
       const extraction = extractMunicipalCandidates(source, pageHtml);
       if (extraction.mode === "retry") {
@@ -184,7 +213,7 @@ async function collectSourceCandidates(
         source,
         extraction.partialCandidates,
         koreaToday,
-        officialResponse,
+        fetchResponse,
       );
       return [
         ...complete,
@@ -390,8 +419,29 @@ async function publish(
   };
 }
 
-export async function runMunicipalAutonomous(env: Env) {
-  const summary = emptySummary(),
+export async function runMunicipalAutonomous(
+  env: Env,
+  options: MunicipalAutonomousOptions = {},
+) {
+  const selectedSourceKeys = new Set(
+      options.sourceKeys ?? SOURCES.map((source) => source.key),
+    ),
+    selectedSources = SOURCES.filter((source) =>
+      selectedSourceKeys.has(source.key),
+    ),
+    maxPublishMutations =
+      options.maxPublishMutations ?? DEFAULT_MAX_PUBLISH_MUTATIONS,
+    maxRetryCandidates =
+      options.maxRetryCandidates ?? DEFAULT_MAX_RETRY_CANDIDATES,
+    maxDetailFetches =
+      options.maxDetailFetches ?? DEFAULT_MAX_DETAIL_FETCHES,
+    fetchBudget: MunicipalFetchBudget = {
+      used: 0,
+      limit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
+    },
+    fetchResponse = (url: string) => officialResponse(url, fetchBudget),
+    fetchHtml = async (url: string) => (await fetchResponse(url)).html,
+    summary = emptySummary(),
     source_outcomes: Array<{
       source: string;
       status: "ok" | "error";
@@ -401,13 +451,16 @@ export async function runMunicipalAutonomous(env: Env) {
     now = new Date().toISOString(),
     koreaToday = today(),
     processed = new Set<string>();
-  let publishMutations = 0;
-  for (const source of SOURCES) {
+  let publishMutations = 0,
+    detailFetches = 0;
+  for (const source of selectedSources) {
     try {
       const sourceCandidates = await collectSourceCandidates(
         env,
         source,
         koreaToday,
+        fetchHtml,
+        fetchResponse,
       );
       const candidates = source.pagination
         ? sourceCandidates.slice(0, MAX_PER_SOURCE)
@@ -491,7 +544,12 @@ export async function runMunicipalAutonomous(env: Env) {
                 detailHtml ??
                 (effectiveCandidate.official_url === source.url
                   ? pageHtml
-                  : await official(effectiveCandidate.official_url));
+                  : await (async () => {
+                      if (detailFetches >= maxDetailFetches)
+                        throw new Error("municipal_detail_fetch_budget_exhausted");
+                      detailFetches += 1;
+                      return fetchHtml(effectiveCandidate.official_url);
+                    })());
               enrichment = createEnrichmentCandidate(
                 effectiveCandidate,
                 detail,
@@ -551,7 +609,7 @@ export async function runMunicipalAutonomous(env: Env) {
           !municipalPublishSlotAvailable({
             publishMutations,
             isMutation: publicationMutation,
-            maxPublish: MAX_PUBLISH,
+            maxPublish: maxPublishMutations,
           })
         )
           decision = {
@@ -600,10 +658,12 @@ export async function runMunicipalAutonomous(env: Env) {
     }
   }
   // Retry candidates are intentionally re-fetched from their minimal core snapshot even when absent from today's listing.
+  const retrySourceKeys = selectedSources.map((source) => source.key);
+  const retryPlaceholders = retrySourceKeys.map(() => "?").join(",");
   const retries = await env.DB.prepare(
-    "SELECT candidate_id,source_key,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot,first_seen_at,last_seen_at,retry_until,last_payload_hash FROM municipal_candidate_state WHERE decision_state='AUTO_RETRY' AND retry_until IS NOT NULL AND retry_until>=? ORDER BY retry_until LIMIT ?",
+    `SELECT candidate_id,source_key,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot,first_seen_at,last_seen_at,retry_until,last_payload_hash FROM municipal_candidate_state WHERE decision_state='AUTO_RETRY' AND retry_until IS NOT NULL AND retry_until>=? AND source_key IN (${retryPlaceholders}) ORDER BY retry_until LIMIT ?`,
   )
-    .bind(now, MAX_RETRY_PER_RUN)
+    .bind(now, ...retrySourceKeys, maxRetryCandidates)
     .all<{
       candidate_id: string;
       source_key: MunicipalCandidate["source"];
@@ -657,6 +717,8 @@ export async function runMunicipalAutonomous(env: Env) {
           env,
           source,
           koreaToday,
+          fetchHtml,
+          fetchResponse,
         );
         const refreshed = refreshedCandidates.find(
           (item) =>
@@ -674,7 +736,10 @@ export async function runMunicipalAutonomous(env: Env) {
       } else {
         if (!municipalSourceAllowsUrl(source, candidate.official_url))
           throw new Error("detail_host_not_allowed");
-        detail = await official(candidate.official_url);
+        if (detailFetches >= maxDetailFetches)
+          throw new Error("municipal_detail_fetch_budget_exhausted");
+        detailFetches += 1;
+        detail = await fetchHtml(candidate.official_url);
       }
       const payloadHash = await hash({
         title: candidate.title,
@@ -750,7 +815,7 @@ export async function runMunicipalAutonomous(env: Env) {
         !municipalPublishSlotAvailable({
           publishMutations,
           isMutation: publicationMutation,
-          maxPublish: MAX_PUBLISH,
+          maxPublish: maxPublishMutations,
         })
       )
         decision = {
@@ -794,7 +859,15 @@ export async function runMunicipalAutonomous(env: Env) {
     .bind(now)
     .run();
   summary.rows_written += expiredRetries.meta.changes ?? 0;
-  const result = { ...summary, source_outcomes };
+  const result = {
+    ...summary,
+    shard_index: options.shardIndex ?? null,
+    source_keys: selectedSources.map((source) => source.key),
+    fetch_attempts: fetchBudget.used,
+    fetch_budget: fetchBudget.limit,
+    detail_fetches: detailFetches,
+    source_outcomes,
+  };
   console.log("municipal_autonomous_summary", result);
   return result;
 }
