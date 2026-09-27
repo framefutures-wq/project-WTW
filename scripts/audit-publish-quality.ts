@@ -51,9 +51,9 @@ function execute(sql: string) {
     maxBuffer: 16 * 1024 * 1024,
   });
   if (result.status !== 0) {
-    const stderr = result.stderr.trim().slice(0, 1000);
+    const diagnostic = (result.stderr || result.stdout).trim().slice(0, 2000);
     throw new Error(
-      `publish quality audit D1 read failed${stderr ? `: ${stderr}` : ""}`,
+      `publish quality audit D1 read failed${diagnostic ? `: ${diagnostic}` : ""}`,
     );
   }
   const parsed = JSON.parse(result.stdout);
