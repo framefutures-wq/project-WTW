@@ -92,3 +92,36 @@ test("source outcome summary reports ok, errors, and missing Registry sources", 
 test("morning production SQL rejects an invalid sync timestamp", () => {
   assert.throws(() => municipalStateSql("2026-09-25'; DELETE FROM events; --"));
 });
+
+
+test("source outcome summary merges municipal shard messages", () => {
+  const [first, second, third] = productionMunicipalKeys;
+  const summary = summarizeMunicipalSourceOutcomes([
+    {
+      municipal: {
+        source_outcomes: [{ source: first, status: "ok", candidates: 3 }],
+      },
+    },
+    {
+      municipal: {
+        source_outcomes: [
+          { source: second, status: "ok", candidates: 2 },
+          {
+            source: third,
+            status: "error",
+            candidates: 0,
+            reason: "network_or_timeout",
+          },
+        ],
+      },
+    },
+  ]);
+
+  assert.equal(summary.reported, 3);
+  assert.equal(summary.ok, 2);
+  assert.equal(summary.error, 1);
+  assert.equal(summary.missing.length, 32);
+  assert.deepEqual(summary.errors, [
+    { source: third, candidates: 0, reason: "network_or_timeout" },
+  ]);
+});
