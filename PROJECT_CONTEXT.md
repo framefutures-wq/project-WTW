@@ -1178,3 +1178,25 @@ UI benchmark:
 - Post-write verification requires `legacy_unversioned=0` and `proposed_visibility_changes=0`, otherwise the rollout fails.
 - Project checks and UI browser smoke passed before merge.
 - Production write has not yet occurred for PR #77; authenticated Codespaces must pull latest main and rerun `npm run rollout:discovery:v1`.
+
+
+## 2026-09-27 — discovery-first Phase 1/2 production rollout complete
+
+- Production verification completed successfully on desktop and mobile.
+- Current/future verified production set: 258 events.
+- Persisted publish quality state:
+  - PUBLIC 241
+  - HOLD 17
+  - EXCLUDE 0
+- Legacy transition is fully closed:
+  - `legacy_unversioned=0`
+  - `proposed_visibility_changes=0`
+  - current transitions are only `HOLD->HOLD 17` and `PUBLIC->PUBLIC 241`.
+- A follow-up `apply:publish-quality:v1` correctly performed zero writes because the legacy conversion had already been applied.
+- Phase 1 Publish Quality Gate and Phase 2 existing-data cleanup are therefore complete in production.
+- Remaining quality problem is Phase 3 official-link coverage:
+  - exact event official link 66
+  - first-party source only 44
+  - TourAPI-only 148
+  - missing 0
+- Next priority is to reduce TourAPI-only gaps without guessing URLs or returning to broad rich-detail replication.
