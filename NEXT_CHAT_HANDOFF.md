@@ -1970,3 +1970,50 @@ UI 기준:
   5. fix ONE bounded layer at a time, starting with the visible production gap rather than more ingestion breadth;
   6. completion criterion is the actual production detail screen, not D1 persistence or unit tests alone.
 - Do not claim completion until the user-visible production page is visually verified against the official page.
+
+
+---
+
+## 2026-09-27 — LATEST PRODUCT DECISION: discovery-first roadmap supersedes Hangang parity priority
+
+This section supersedes the prior instruction that Hangang rich-detail production parity is the immediate next task.
+
+### New product definition
+
+> **갈틈 = 전국에서 지금 갈 만한 행사를 가장 빨리 찾는 서비스**
+
+- Keep nationwide event coverage.
+- Do not make full official-site replication the core product requirement.
+- Galteum should own accurate core event facts + fast discovery + a reliable official-detail link.
+- Deep program/parking/transport/homepage replication is optional, not a publish prerequisite.
+
+### Immediate execution order
+
+1. Build **Publish Quality Gate**: PUBLIC / HOLD / EXCLUDE.
+2. Reclassify existing events with that gate; do not delete ambiguous but real events—HOLD them.
+3. Improve exact official-link discovery/validation so public events do not silently lack `공식 안내 확인`.
+4. Simplify/normalize the detail-page responsibility around accurate core facts and official-link handoff.
+5. Then improve discovery UX: today / this weekend / nearby / free / kids / date / night / indoor / festival / performance / experience.
+6. Recommendation, SEO, revisit features, then monetization.
+
+### Quality principles
+
+- Do not equate ingestion success with publish success.
+- Exclude obvious non-events: generic always-open facilities, ordinary perpetual programs with no event/season reason, recruitment notices, internal events, simple notices.
+- Time-limited special exhibitions, festivals, performances, seasonal/night openings, and scheduled recurring programs can still qualify even if they run daily during a bounded period.
+- A real event with insufficient official information should be HOLD, not necessarily deleted.
+- A public event should have a credible official source; missing official-link coverage is a quality defect.
+
+### No-human target
+
+Target **near-zero-human operations**:
+
+automatic collection → event classification → quality gate → official-link check → publish/hold/exclude → expiry/recheck → anomaly detection.
+
+Humans are not part of the normal approval loop; only unresolved exceptions should enter an exception queue.
+
+### Existing rich-detail work
+
+- Preserve existing rich-detail code/data; do not roll it back merely because product direction changed.
+- Do not continue broad rich-detail expansion or Hangang-specific parity patching unless a later bounded task explicitly requires it.
+- The next engineering task should start from the quality gate, not from another detail parser patch.
