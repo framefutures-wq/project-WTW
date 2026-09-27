@@ -39,7 +39,7 @@ export function detectRichDetailSignals(html) {
     price: /(?:무료|유료|입장료|이용료|관람료|참가비|체험비|\b\d{1,3}(?:,\d{3})+\s*원\b)/.test(text),
     phone:
       /(?:문의|전화|연락처|대표전화)/.test(text) &&
-      /\b0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}\b/.test(text),
+      /(?:\b0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}\b|(?:문의|전화|연락처|대표전화)\s*[:：|]?\s*\d{3,4}\b)/.test(text),
     intro:
       /(?:행사\s*소개|행사내용|상세\s*내용|주요\s*내용|소개)/.test(text) ||
       text.length >= 1200,
@@ -164,6 +164,11 @@ async function auditSource(source) {
         ...detailFields,
       ]),
     ];
+    const currentlyPersistedRichFields =
+      candidateSnippetCount > 0 ? ["intro"] : [];
+    const unharvestedFields = observedFields.filter(
+      (field) => !currentlyPersistedRichFields.includes(field),
+    );
     const detailFetchFailures = details.filter((row) => row.fetch_error).length;
 
     return {
@@ -184,6 +189,8 @@ async function auditSource(source) {
       list_signals: listSignals,
       detail_observed_fields: [...detailFields],
       observed_rich_fields: observedFields,
+      currently_persisted_rich_fields: currentlyPersistedRichFields,
+      unharvested_fields: unharvestedFields,
       classification: classifyRichDetailCoverage({
         detailSampleCount: details.length,
         detailFetchFailures,
@@ -251,6 +258,7 @@ async function main() {
       images: row.candidate_images ?? "",
       detail_targets: row.detail_targets ?? "",
       rich_fields: row.observed_rich_fields?.join(",") ?? "",
+      dropped: row.unharvested_fields?.join(",") ?? "",
       result: row.classification,
     })),
   );
