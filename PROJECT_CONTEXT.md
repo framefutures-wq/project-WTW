@@ -1219,3 +1219,24 @@ UI benchmark:
 - Writes are batched and followed by verification that applied events no longer remain in the cached-detail link-gap set.
 - Project checks and UI browser smoke passed before merge.
 - Production backfill has not been run yet; its result will determine how much of the 148 TourAPI-only gap can be closed from already-cached official data before any broader discovery work.
+
+
+## 2026-09-27 — Phase 3 progress: 149 cached TourAPI official links recovered
+
+- Production command `official-links:backfill:tourapi -- --remote --apply` completed successfully.
+- It scanned 214 current/future TourAPI events with cached detail and no stored official link.
+- Explicit official homepage fields recovered:
+  - candidates 149
+  - inserted/refreshed links 149
+  - HOLD→PUBLIC promotions 0
+- 65 TourAPI events with cached detail still have no stored official link.
+- This backfill stayed inside the Phase 3 safety contract: no guessed URLs, no broad crawl, no visibility reduction.
+- PR #80 merged green as `4a2168515dbe6cc29604aed21e77833ce016e600`.
+- New zero-write command `npm run official-links:audit:tourapi -- --remote` classifies the remaining TourAPI gap population into:
+  - explicit HTTP homepage;
+  - explicit bare-host homepage;
+  - other HTTPS URL signal;
+  - other HTTP URL signal;
+  - no URL signal;
+  - invalid cached detail payload.
+- This audit does not promote arbitrary URLs to official; it only identifies the next safe acquisition path.
