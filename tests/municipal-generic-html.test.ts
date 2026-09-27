@@ -166,7 +166,7 @@ test("generic HTML extractor reads explicit core from a card block", () => {
   );
 });
 
-test("generic extractor reads the bounded Gwacheon name/info card and keeps its list URL for a JavaScript detail link", () => {
+test("generic extractor reads the bounded Gwacheon name/info card and follows its first-party JavaScript detail link", () => {
   const source = genericSource(
     "gyeonggi-과천",
     "과천",
@@ -192,7 +192,7 @@ test("generic extractor reads the bounded Gwacheon name/info card and keeps its 
         "2026-10-02",
         "2026-10-02",
         "대극장",
-        source.url,
+        "https://www.gcart.or.kr/kr/concert/concertView.do?concertIdx=2001",
       ],
     ],
   );
