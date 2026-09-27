@@ -112,4 +112,9 @@ test("home keeps a dense four-column desktop grid and a safe mobile structure", 
   } else {
     expect(layout.columns).toBe(2);
   }
+
+  const firstScene = page.locator(".event-card .scene").first();
+  const sceneBox = await firstScene.boundingBox();
+  expect(sceneBox).not.toBeNull();
+  expect(sceneBox!.width / sceneBox!.height).toBeCloseTo(0.75, 1);
 });
