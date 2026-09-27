@@ -1,5 +1,6 @@
 import { koreaDate } from "../../shared/domain";
 import { assessCost } from "../../shared/cost-status";
+import { decidePublishQuality } from "../../shared/publish-quality";
 import { TOUR_API_DOC, TourApiNetworkError, text, tourApiRequest, type TourApiNetworkFailureSubtype, type TourApiRow } from "./tourapi";
 import type { Env } from "../env";
 
@@ -148,6 +149,29 @@ async function saveSuccess(db: D1Database, candidate: Candidate, payload: Detail
   const sourceId = detailSourceId(candidate.id); const contentId = candidate.id.slice("tourapi-".length);
   const statements: D1PreparedStatement[] = [db.prepare(`INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,'tourapi',3,'한국관광공사 TourAPI 상세',?,?,?) ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload`).bind(sourceId, TOUR_API_DOC, checkedAt, JSON.stringify(payload))];
   let changed = 0; const summary = usefulOverview(payload.common.overview);
+  const quality = decidePublishQuality({
+    title: candidate.title,
+    description: summary ?? GENERIC_DESCRIPTION,
+    start_date: candidate.start_date,
+    end_date: candidate.end_date,
+    venue: cleanText(payload.intro.eventplace) || candidate.venue,
+    address: candidate.address,
+    source_kind: "tourapi",
+    source_url: TOUR_API_DOC,
+  });
+  statements.push(
+    db.prepare(
+      `UPDATE events
+       SET publish_quality_state=?,publish_quality_reason=?,publish_quality_rule_version=?,publish_quality_checked_at=?
+       WHERE id=? AND publish_quality_rule_version IS NOT NULL`,
+    ).bind(
+      quality.state,
+      quality.reason,
+      quality.rule_version,
+      checkedAt,
+      candidate.id,
+    ),
+  );
   if (summary && allowed(candidate.summary_priority)) { statements.push(db.prepare(`INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(event_id) DO UPDATE SET summary=excluded.summary,source_id=excluded.source_id,evidence_excerpt=excluded.evidence_excerpt,updated_at=excluded.updated_at WHERE (SELECT priority FROM sources WHERE id=event_enrichments.source_id)>=3`).bind(candidate.id, summary, sourceId, excerpt("overview", summary), checkedAt)); changed++; }
   const venue = cleanText(payload.intro.eventplace);
   if (venue && candidate.venue === candidate.address && allowed(candidate.venue_priority)) { statements.push(db.prepare("UPDATE events SET venue=?,updated_at=? WHERE id=? AND venue=address").bind(venue, checkedAt, candidate.id)); statements.push(db.prepare("INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?,?,?) ON CONFLICT(event_id,source_id,field) DO UPDATE SET excerpt=excluded.excerpt,checked_at=excluded.checked_at").bind(candidate.id, sourceId, "venue", excerpt("eventplace", venue), checkedAt)); changed++; }
