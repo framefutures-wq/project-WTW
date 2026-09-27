@@ -2268,3 +2268,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - PR #87 merged green as `679236342cd18ed8d0e449942fe2114482725f77`.
 - Next authenticated Codespaces command after pulling main: `npm run images:backfill:tourapi-primary -- --remote --apply`.
 - After backfill, verify remaining TourAPI missing primary count and production home cards. Do not treat municipal first-party page icons/menu assets as posters; municipal poster recovery remains a separate bounded task.
+
+
+## 2026-09-27 — 45/46 TourAPI missing posters recovered in production
+
+- Production backfill result: scanned 46, recovered 45, remaining 1.
+- Worker image persistence fix deployed as `fa102aad-b04e-4975-9fdf-85031fb907cf`.
+- Do not spend more time on TourAPI poster fallback styling. The TourAPI root cause is fixed.
+- Next bounded image task: identify the one remaining TourAPI case and then municipality/organizer PUBLIC events whose official pages contain a real event poster but `event_images` is still missing/non-ok. Use official-page evidence and exclude logos/menu/icons/generic site artwork.
