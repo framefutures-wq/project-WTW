@@ -101,10 +101,12 @@ function verifyProduction() {
 }
 
 function applyLegacyQuality() {
-  const stdout = run("npm", ["run", "apply:publish-quality:v1"], {
-    capture: true,
-  });
-  return JSON.parse(stdout.slice(stdout.indexOf("{")));
+  const stdout = run(
+    "node",
+    ["--import", "tsx", "scripts/apply-publish-quality-v1.ts"],
+    { capture: true },
+  );
+  return JSON.parse(stdout);
 }
 
 function auditSummary(step: string, head: string, audit: ReturnType<typeof productionAudit>) {
