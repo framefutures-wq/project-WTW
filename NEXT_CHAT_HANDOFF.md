@@ -2259,3 +2259,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Next authenticated Codespaces command after pulling main: `npm run images:audit:missing-posters -- --remote`.
 - This audit is zero-write and is specifically for the observed case where Galteum shows a no-image fallback although the official event/detail page appears to contain a poster.
 - Use its `by_classification`, `recoverable_from_existing_evidence`, and per-event candidate output to choose the next ingestion fix.
+
+
+## 2026-09-27 — TourAPI no-image root cause fixed; production backfill next
+
+- Audit proved many TourAPI cards had `current_image_status=missing_row` while the raw source payload already contained `firstimage`/`firstimage2`.
+- Root cause was code, not source scarcity: TourAPI sync wrote secondary images but never persisted primary `event_images`.
+- PR #87 merged green as `679236342cd18ed8d0e449942fe2114482725f77`.
+- Next authenticated Codespaces command after pulling main: `npm run images:backfill:tourapi-primary -- --remote --apply`.
+- After backfill, verify remaining TourAPI missing primary count and production home cards. Do not treat municipal first-party page icons/menu assets as posters; municipal poster recovery remains a separate bounded task.
