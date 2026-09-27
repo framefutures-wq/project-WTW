@@ -376,19 +376,7 @@ function directDetailUrls(source: MunicipalSourceDefinition, html: string) {
 }
 
 function escapeRegex(value: string) {
-  return value.replace(/[.*+?^$()|[\]\\{}]/g, "\\const officialUrlFromBlock = (
-  source: MunicipalSourceDefinition,
-  html: string,
-) => {
-  const rawHref = /<a\b[^>]*href=["']([^"']+)["']/i.exec(html)?.[1];
-  const href = rawHref ? clean(rawHref) : null;
-  if (!href) return source.url;
-  if (/^(?:javascript:|#)/i.test(href.trim())) return source.url;
-  const resolved = absolute(source.url, href);
-  return resolved && municipalSourceAllowsUrl(source, resolved)
-    ? resolved
-    : null;
-};");
+  return value.replace(/[.*+?^$()|[\]\\{}]/g, (match) => "\\" + match);
 }
 
 function templateDetailId(
