@@ -91,27 +91,41 @@ if (!validation.ok)
   );
 
 const checkedAt = new Date().toISOString();
-for (const candidate of candidates) {
-  execute(
-    `INSERT INTO event_official_links(event_id,source_id,url,checked_at)
-     VALUES(
-       ${sqlString(candidate.event_id)},
-       ${sqlString(candidate.source_id)},
-       ${sqlString(candidate.url)},
-       ${sqlString(checkedAt)}
-     )
-     ON CONFLICT(event_id,source_id)
-     DO UPDATE SET url=excluded.url,checked_at=excluded.checked_at`,
-  );
+const chunkSize = 25;
+for (let index = 0; index < candidates.length; index += chunkSize) {
+  const chunk = candidates.slice(index, index + chunkSize);
+  const values = chunk
+    .map(
+      (candidate) =>
+        `(${sqlString(candidate.event_id)},${sqlString(candidate.source_id)},${sqlString(candidate.url)},${sqlString(checkedAt)})`,
+    )
+    .join(",");
+  const stateCase = chunk
+    .map(
+      (candidate) =>
+        `WHEN ${sqlString(candidate.event_id)} THEN ${sqlString(candidate.next_state)}`,
+    )
+    .join(" ");
+  const reasonCase = chunk
+    .map(
+      (candidate) =>
+        `WHEN ${sqlString(candidate.event_id)} THEN ${sqlString(candidate.next_reason)}`,
+    )
+    .join(" ");
+  const ids = chunk.map((candidate) => sqlString(candidate.event_id)).join(",");
 
   execute(
-    `UPDATE events
-     SET publish_quality_state=${sqlString(candidate.next_state)},
-         publish_quality_reason=${sqlString(candidate.next_reason)},
+    `INSERT INTO event_official_links(event_id,source_id,url,checked_at)
+     VALUES ${values}
+     ON CONFLICT(event_id,source_id)
+     DO UPDATE SET url=excluded.url,checked_at=excluded.checked_at;
+     UPDATE events
+     SET publish_quality_state=CASE id ${stateCase} ELSE publish_quality_state END,
+         publish_quality_reason=CASE id ${reasonCase} ELSE publish_quality_reason END,
          publish_quality_rule_version=${sqlString(PUBLISH_QUALITY_RULE_VERSION)},
          publish_quality_checked_at=${sqlString(checkedAt)}
-     WHERE id=${sqlString(candidate.event_id)}
-       AND publish_quality_state IN ('PUBLIC','HOLD')`,
+     WHERE id IN (${ids})
+       AND publish_quality_state IN ('PUBLIC','HOLD');`,
   );
 }
 
@@ -131,7 +145,7 @@ console.log(
       inserted_or_refreshed_links: candidates.length,
       hold_to_public_promotions: validation.promotions,
       remaining_cached_detail_link_gaps: afterRows.length,
-      writes: candidates.length * 2,
+      write_batches: Math.ceil(candidates.length / chunkSize),
     },
     null,
     2,
