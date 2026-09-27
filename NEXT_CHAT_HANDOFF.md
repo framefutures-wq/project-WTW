@@ -2167,3 +2167,18 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The command uses only explicit homepage fields already stored in TourAPI detail payloads; it does not guess/crawl.
 - It can safely promote HOLD→PUBLIC when the explicit homepage resolves the sparse TourAPI evidence gap, but blocks any PUBLIC hiding or EXCLUDE transition.
 - Use its concise output to measure how many of the 148 TourAPI-only link gaps were recoverable from cached detail. Then decide the next Phase 3 bounded task from the remaining gap population.
+
+
+## 2026-09-27 — 149 TourAPI official links recovered; audit the remaining 65
+
+- Cached-detail official-link backfill completed in production:
+  - scanned 214 TourAPI gaps with cached detail;
+  - 149 explicit official homepage candidates;
+  - 149 links inserted/refreshed;
+  - 0 HOLD→PUBLIC promotions;
+  - 65 cached-detail gaps remain.
+- PR #80 merged green as `4a2168515dbe6cc29604aed21e77833ce016e600`.
+- Next authenticated Codespaces command:
+  `npm run official-links:audit:tourapi -- --remote`
+  after pulling latest main.
+- The audit is read-only and will split the 65 into safe resolver categories. Use that output to choose the next bounded Phase 3 task. Do not web-search all 65 indiscriminately and do not guess official URLs.
