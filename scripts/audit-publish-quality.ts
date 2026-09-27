@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   auditPublishQualityRows,
+  publishQualityAuditProjection,
   type PublishQualityAuditRow,
 } from "../shared/publish-quality-audit";
 import {
@@ -78,21 +79,10 @@ function tableColumns(name: string) {
   );
 }
 
-const eventColumns = tableColumns("events");
-const qualityColumnsPresent = [
-  "publish_quality_state",
-  "publish_quality_reason",
-  "publish_quality_rule_version",
-  "publish_quality_checked_at",
-].every((column) => eventColumns.has(column));
-
-const currentQualityProjection = qualityColumnsPresent
-  ? `e.publish_quality_state AS current_publish_quality_state,
-     e.publish_quality_reason AS current_publish_quality_reason,
-     e.publish_quality_rule_version AS current_publish_quality_rule_version`
-  : `'PUBLIC' AS current_publish_quality_state,
-     NULL AS current_publish_quality_reason,
-     NULL AS current_publish_quality_rule_version`;
+const {
+  publishQualityColumnsPresent: qualityColumnsPresent,
+  sql: currentQualityProjection,
+} = publishQualityAuditProjection(tableColumns("events"));
 
 const rows = execute(
   `SELECT
