@@ -2137,3 +2137,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Current measured production proposal is 258 rows total, 17 PUBLIC→HOLD, 0 EXCLUDE, so it is expected to pass.
 - The write versions all audited legacy rows with `publish_quality_v2`; post-check must show `legacy_unversioned=0` and `proposed_visibility_changes=0`.
 - Next authenticated Codespaces action: pull latest main and run `npm run rollout:discovery:v1` once more. This is now the intended completion path.
+
+
+## 2026-09-27 — discovery verification/apply output shortened
+
+- User terminal scrollback lost the beginning of the quality audit because the commands printed very large JSON.
+- PR #78 merged green as `dbbab48e104022db5f437c612387322257559cc2`.
+- `verify:discovery:v1` now uses summary-only audit output.
+- `apply:publish-quality:v1` now prints only key before/after counts and rollout state; full audit data is still used internally for safety validation.
+- Next authenticated Codespaces step: pull latest main, then rerun the concise verification/apply commands. Do not paste or depend on the old truncated output.
