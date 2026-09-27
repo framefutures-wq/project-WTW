@@ -145,6 +145,36 @@ export function summarizeMunicipalSourceOutcomes(messages) {
   };
 }
 
+export function summarizeMunicipalRichDetail(messages) {
+  const input = Array.isArray(messages) ? messages : [messages];
+  const summary = {
+    attempted: 0,
+    candidates: 0,
+    persisted: 0,
+    errors: 0,
+    by_source: {},
+  };
+  for (const message of input) {
+    const municipal = message?.municipal;
+    if (!municipal || typeof municipal !== "object") continue;
+    summary.attempted += Number(municipal.rich_detail_attempted ?? 0);
+    summary.candidates += Number(municipal.rich_detail_candidates ?? 0);
+    summary.persisted += Number(municipal.rich_detail_persisted ?? 0);
+    summary.errors += Number(municipal.rich_detail_errors ?? 0);
+    const bySource =
+      municipal.rich_detail_by_source &&
+      typeof municipal.rich_detail_by_source === "object"
+        ? municipal.rich_detail_by_source
+        : {};
+    for (const [source, count] of Object.entries(bySource)) {
+      if (!PROD_MUNICIPAL_KEYS.includes(source)) continue;
+      summary.by_source[source] =
+        (summary.by_source[source] ?? 0) + Number(count ?? 0);
+    }
+  }
+  return summary;
+}
+
 export function detailBacklogSql() {
   return assertReadOnlySql(`
     WITH target AS (

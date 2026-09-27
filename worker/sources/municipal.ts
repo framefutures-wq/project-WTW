@@ -34,6 +34,11 @@ import {
   alertId,
   scheduleChanged,
 } from "../../shared/alert-engine";
+import {
+  extractMunicipalRichDetail,
+  type MunicipalRichDetail,
+} from "../../shared/municipal-rich-detail";
+import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
@@ -71,6 +76,15 @@ const hash = async (value: unknown) =>
     .map((n) => n.toString(16).padStart(2, "0"))
     .join("");
 const sourceId = (id: string) => `municipal-source-${id}`;
+const richDetailFieldCount = (detail: MunicipalRichDetail | null) =>
+  detail
+    ? Number(Boolean(detail.summary)) +
+      Number(detail.operating_hours.length > 0) +
+      Number(Boolean(detail.price_text)) +
+      Number(Boolean(detail.contact_phone)) +
+      Number(detail.images.length > 0) +
+      Number(detail.programs.length > 0)
+    : 0;
 // Durable municipal source IDs and Hwaseong's normalized canonical identity never include mutable dates.
 const candidateId = (
   source: string,
@@ -452,7 +466,48 @@ export async function runMunicipalAutonomous(
     koreaToday = today(),
     processed = new Set<string>();
   let publishMutations = 0,
-    detailFetches = 0;
+    detailFetches = 0,
+    richDetailAttempted = 0,
+    richDetailCandidates = 0,
+    richDetailPersisted = 0,
+    richDetailErrors = 0;
+  const richDetailBySource: Record<string, number> = {};
+  const persistRichDetail = async ({
+    eventId,
+    candidate,
+    detail,
+  }: {
+    eventId: string;
+    candidate: MunicipalCandidate;
+    detail: MunicipalRichDetail | null;
+  }) => {
+    if (!detail || richDetailFieldCount(detail) === 0) return;
+    try {
+      await persistMunicipalRichDetail(env.DB, {
+        eventId,
+        startDate: candidate.start_date!,
+        endDate: candidate.end_date!,
+        sourceId: sourceId(eventId),
+        sourceName: `${candidate.source} 공식 행사 안내`,
+        sourceUrl: candidate.official_url,
+        checkedAt: now,
+        detail,
+      });
+      richDetailPersisted += 1;
+      richDetailBySource[candidate.source] =
+        (richDetailBySource[candidate.source] ?? 0) + 1;
+    } catch (error) {
+      richDetailErrors += 1;
+      console.error("municipal_rich_detail_failed", {
+        source: candidate.source,
+        event_id: eventId,
+        reason:
+          error instanceof Error && error.message
+            ? error.message.slice(0, 120)
+            : "rich_detail_persist_failed",
+      });
+    }
+  };
   for (const source of selectedSources) {
     try {
       const sourceCandidates = await collectSourceCandidates(
@@ -511,6 +566,7 @@ export async function runMunicipalAutonomous(
         summary.rows_read += duplicateResult.rows;
         let detailError = false,
           detailCoreConflict = false,
+          richDetail: MunicipalRichDetail | null = null,
           enrichment: ReturnType<typeof createEnrichmentCandidate> | null =
             null;
         if (
@@ -546,7 +602,9 @@ export async function runMunicipalAutonomous(
                   ? pageHtml
                   : await (async () => {
                       if (detailFetches >= maxDetailFetches)
-                        throw new Error("municipal_detail_fetch_budget_exhausted");
+                        throw new Error(
+                          "municipal_detail_fetch_budget_exhausted",
+                        );
                       detailFetches += 1;
                       return fetchHtml(effectiveCandidate.official_url);
                     })());
@@ -558,6 +616,24 @@ export async function runMunicipalAutonomous(
               detailCoreConflict =
                 effectiveCandidate.official_url !== source.url &&
                 hasMunicipalDetailCoreConflict(effectiveCandidate, detail);
+
+              const isSpecificDetail =
+                Boolean(detailHtml) ||
+                effectiveCandidate.official_url !== source.url;
+              if (isSpecificDetail && !detailError && !detailCoreConflict) {
+                richDetailAttempted += 1;
+                try {
+                  richDetail = extractMunicipalRichDetail(
+                    effectiveCandidate.official_url,
+                    detail,
+                  );
+                  if (richDetailFieldCount(richDetail) > 0)
+                    richDetailCandidates += 1;
+                } catch {
+                  richDetailErrors += 1;
+                  richDetail = null;
+                }
+              }
             } catch {
               detailError = true;
             }
@@ -583,18 +659,20 @@ export async function runMunicipalAutonomous(
         // A changed core payload needs two identical daily observations before it replaces last-known-good.
         const coreConflict =
           changedExisting && previous?.last_payload_hash !== payloadHash;
-        let decision = decideAutonomousMunicipal({
-          gate: gate.gate,
-          duplicate: duplicateResult.decision,
-          temporal: temporal(effectiveCandidate, koreaToday),
-          trusted: true,
-          coreValid: Boolean(
-            effectiveCandidate.title &&
+        const candidateTemporal = temporal(effectiveCandidate, koreaToday);
+        const coreValid = Boolean(
+          effectiveCandidate.title &&
             effectiveCandidate.start_date &&
             effectiveCandidate.end_date &&
             effectiveCandidate.venue &&
             effectiveCandidate.official_url,
-          ),
+        );
+        let decision = decideAutonomousMunicipal({
+          gate: gate.gate,
+          duplicate: duplicateResult.decision,
+          temporal: candidateTemporal,
+          trusted: true,
+          coreValid,
           parserError: Boolean(effectiveCandidate.parse_error),
           detailError,
           coreConflict: coreConflict || detailCoreConflict,
@@ -631,6 +709,29 @@ export async function runMunicipalAutonomous(
           summary.rows_written += write.rows;
           if (publicationMutation) publishMutations += 1;
         }
+
+        const safeExistingRichBackfill = Boolean(
+          existing &&
+            gate.gate === "MAIN" &&
+            duplicateResult.decision === "NEW" &&
+            candidateTemporal !== "EXPIRED" &&
+            coreValid &&
+            !effectiveCandidate.parse_error &&
+            !detailError &&
+            !changedExisting &&
+            !coreConflict &&
+            !detailCoreConflict,
+        );
+        if (
+          richDetail &&
+          (decision.state === "AUTO_PUBLISH" || safeExistingRichBackfill)
+        )
+          await persistRichDetail({
+            eventId: id,
+            candidate: effectiveCandidate,
+            detail: richDetail,
+          });
+
         const saved = await saveState(
           env,
           effectiveCandidate,
@@ -706,6 +807,7 @@ export async function runMunicipalAutonomous(
         image_candidate: null,
       };
       let detail: string;
+      let detailIsSpecific = false;
       let retryExtractionMode:
         | "registered"
         | "structured_event"
@@ -732,7 +834,26 @@ export async function runMunicipalAutonomous(
           continue;
         }
         candidate = refreshed.candidate;
-        detail = refreshed.pageHtml;
+        if (
+          retryExtractionMode === "structured_event" ||
+          retryExtractionMode === "pdf_text" ||
+          retryExtractionMode === "image_vision"
+        ) {
+          detail = refreshed.detailHtml ?? refreshed.pageHtml;
+        } else if (refreshed.detailHtml) {
+          detail = refreshed.detailHtml;
+          detailIsSpecific = true;
+        } else if (candidate.official_url !== source.url) {
+          if (!municipalSourceAllowsUrl(source, candidate.official_url))
+            throw new Error("detail_host_not_allowed");
+          if (detailFetches >= maxDetailFetches)
+            throw new Error("municipal_detail_fetch_budget_exhausted");
+          detailFetches += 1;
+          detail = await fetchHtml(candidate.official_url);
+          detailIsSpecific = true;
+        } else {
+          detail = refreshed.pageHtml;
+        }
       } else {
         if (!municipalSourceAllowsUrl(source, candidate.official_url))
           throw new Error("detail_host_not_allowed");
@@ -740,6 +861,7 @@ export async function runMunicipalAutonomous(
           throw new Error("municipal_detail_fetch_budget_exhausted");
         detailFetches += 1;
         detail = await fetchHtml(candidate.official_url);
+        detailIsSpecific = true;
       }
       const payloadHash = await hash({
         title: candidate.title,
@@ -764,46 +886,77 @@ export async function runMunicipalAutonomous(
           row.candidate_id,
         );
       summary.rows_read += duplicateResult.rows;
-      const enrichment =
+      const structuredRetryDetail =
         retryExtractionMode === "structured_event" ||
         retryExtractionMode === "pdf_text" ||
-        retryExtractionMode === "image_vision"
-          ? {
-              summary: effectiveCandidate.snippet,
-              operating_hours: null,
-              programs: [],
-            }
-          : createEnrichmentCandidate(effectiveCandidate, detail);
+        retryExtractionMode === "image_vision";
+      const enrichment = structuredRetryDetail
+        ? {
+            summary: effectiveCandidate.snippet,
+            operating_hours: null,
+            programs: [],
+          }
+        : createEnrichmentCandidate(effectiveCandidate, detail);
+      const detailError = Boolean(enrichment.parse_error);
+      const detailCoreConflict =
+        detailIsSpecific &&
+        !structuredRetryDetail &&
+        hasMunicipalDetailCoreConflict(effectiveCandidate, detail);
+      let richDetail: MunicipalRichDetail | null = null;
+      if (
+        detailIsSpecific &&
+        !structuredRetryDetail &&
+        !detailError &&
+        !detailCoreConflict
+      ) {
+        richDetailAttempted += 1;
+        try {
+          richDetail = extractMunicipalRichDetail(
+            effectiveCandidate.official_url,
+            detail,
+          );
+          if (richDetailFieldCount(richDetail) > 0)
+            richDetailCandidates += 1;
+        } catch {
+          richDetailErrors += 1;
+          richDetail = null;
+        }
+      }
+
       const existing = await env.DB.prepare(
-        "SELECT id,start_date,end_date,status FROM events WHERE id=? LIMIT 1",
+        "SELECT id,start_date,end_date,venue,status FROM events WHERE id=? LIMIT 1",
       )
         .bind(row.candidate_id)
         .first<{
           id: string;
           start_date: string;
           end_date: string;
+          venue: string;
           status: string;
         }>();
-      let decision = decideAutonomousMunicipal({
-        gate: gate.gate,
-        duplicate: duplicateResult.decision,
-        temporal: temporal(effectiveCandidate, koreaToday),
-        trusted: true,
-        coreValid: Boolean(
-          effectiveCandidate.title &&
+      const changedExisting = Boolean(
+        existing &&
+          (existing.start_date !== effectiveCandidate.start_date ||
+            existing.end_date !== effectiveCandidate.end_date ||
+            existing.venue !== effectiveCandidate.venue),
+      );
+      const candidateTemporal = temporal(effectiveCandidate, koreaToday);
+      const coreValid = Boolean(
+        effectiveCandidate.title &&
           effectiveCandidate.start_date &&
           effectiveCandidate.end_date &&
           effectiveCandidate.venue &&
           effectiveCandidate.official_url,
-        ),
+      );
+      let decision = decideAutonomousMunicipal({
+        gate: gate.gate,
+        duplicate: duplicateResult.decision,
+        temporal: candidateTemporal,
+        trusted: true,
+        coreValid,
         parserError: Boolean(effectiveCandidate.parse_error),
-        detailError: Boolean(enrichment.parse_error),
-        coreConflict:
-          effectiveCandidate.official_url !== source.url &&
-          retryExtractionMode !== "structured_event" &&
-          retryExtractionMode !== "pdf_text" &&
-          retryExtractionMode !== "image_vision" &&
-          hasMunicipalDetailCoreConflict(effectiveCandidate, detail),
+        detailError,
+        coreConflict: detailCoreConflict,
       });
       const publicationMutation = isMunicipalPublicationMutation({
         existing,
@@ -837,6 +990,28 @@ export async function runMunicipalAutonomous(
         summary.rows_written += write.rows;
         if (publicationMutation) publishMutations += 1;
       }
+
+      const safeExistingRichBackfill = Boolean(
+        existing &&
+          !changedExisting &&
+          gate.gate === "MAIN" &&
+          duplicateResult.decision === "NEW" &&
+          candidateTemporal !== "EXPIRED" &&
+          coreValid &&
+          !effectiveCandidate.parse_error &&
+          !detailError &&
+          !detailCoreConflict,
+      );
+      if (
+        richDetail &&
+        (decision.state === "AUTO_PUBLISH" || safeExistingRichBackfill)
+      )
+        await persistRichDetail({
+          eventId: row.candidate_id,
+          candidate: effectiveCandidate,
+          detail: richDetail,
+        });
+
       const saved = await saveState(
         env,
         effectiveCandidate,
@@ -866,6 +1041,11 @@ export async function runMunicipalAutonomous(
     fetch_attempts: fetchBudget.used,
     fetch_budget: fetchBudget.limit,
     detail_fetches: detailFetches,
+    rich_detail_attempted: richDetailAttempted,
+    rich_detail_candidates: richDetailCandidates,
+    rich_detail_persisted: richDetailPersisted,
+    rich_detail_errors: richDetailErrors,
+    rich_detail_by_source: richDetailBySource,
     source_outcomes,
   };
   console.log("municipal_autonomous_summary", result);
