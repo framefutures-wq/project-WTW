@@ -88,3 +88,42 @@ export function classifyTourApiGapSignal(
   if (hasUrl(strings, "http")) return "OTHER_HTTP_URL";
   return "NO_URL_SIGNAL";
 }
+
+
+export type ExplicitHomepageCandidate = {
+  raw: string;
+  url: string;
+  kind: "http" | "bare_host";
+};
+
+function firstExplicitHomepageMatch(value: string): ExplicitHomepageCandidate | null {
+  const http = value.match(/http:\/\/[^\s"'<>]+/i);
+  if (http)
+    return {
+      raw: http[0],
+      url: http[0],
+      kind: "http",
+    };
+
+  const bare = value.match(
+    /(?:^|\s)((?:www\.)?(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"']*)?)/i,
+  );
+  if (!bare) return null;
+  return {
+    raw: bare[1],
+    url: `https://${bare[1]}`,
+    kind: "bare_host",
+  };
+}
+
+export function explicitHomepageCandidateFromStoredDetail(
+  rawPayload: string | null,
+): ExplicitHomepageCandidate | null {
+  const detail = payloadObject(rawPayload);
+  if (!detail) return null;
+  for (const value of explicitHomepageValues(detail)) {
+    const candidate = firstExplicitHomepageMatch(value);
+    if (candidate) return candidate;
+  }
+  return null;
+}

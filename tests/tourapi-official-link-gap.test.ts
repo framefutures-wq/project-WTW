@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classifyTourApiGapSignal } from "../shared/tourapi-official-link-gap";
+import {
+  classifyTourApiGapSignal,
+  explicitHomepageCandidateFromStoredDetail,
+} from "../shared/tourapi-official-link-gap";
 
 test("classifies explicit HTTP homepage before other URL noise", () => {
   assert.equal(
@@ -54,5 +57,52 @@ test("classifies no signal and invalid cached payload separately", () => {
       detail_raw_payload: "{bad",
     }),
     "INVALID_DETAIL_PAYLOAD",
+  );
+});
+
+
+test("extracts explicit HTTP homepage candidate without guessing", () => {
+  assert.deepEqual(
+    explicitHomepageCandidateFromStoredDetail(
+      JSON.stringify({
+        intro: {
+          eventhomepage:
+            '<a href="http://festival.example.org/2026">행사 홈페이지</a>',
+        },
+      }),
+    ),
+    {
+      raw: "http://festival.example.org/2026",
+      url: "http://festival.example.org/2026",
+      kind: "http",
+    },
+  );
+});
+
+test("extracts explicit bare-host homepage as HTTPS candidate", () => {
+  assert.deepEqual(
+    explicitHomepageCandidateFromStoredDetail(
+      JSON.stringify({
+        common: { homepage: "www.festival.example.org/guide" },
+      }),
+    ),
+    {
+      raw: "www.festival.example.org/guide",
+      url: "https://www.festival.example.org/guide",
+      kind: "bare_host",
+    },
+  );
+});
+
+test("does not manufacture a homepage from unrelated cached URLs", () => {
+  assert.equal(
+    explicitHomepageCandidateFromStoredDetail(
+      JSON.stringify({
+        common: { homepage: "" },
+        intro: { eventhomepage: "" },
+        info: [{ link: "https://ticket.example/product/1" }],
+      }),
+    ),
+    null,
   );
 });
