@@ -4,6 +4,7 @@ import {
   auditPublishQualityRows,
   officialLinkQuality,
   publicQualityRisk,
+  publishQualityAuditProjection,
   type PublishQualityAuditRow,
 } from "../shared/publish-quality-audit";
 import { decidePublishQuality } from "../shared/publish-quality";
@@ -148,4 +149,26 @@ test("audit groups proposed state, source, link quality and public risk without 
     "sparse-public",
   );
   assert.deepEqual(rows, snapshot);
+});
+
+
+test("pre-migration audit treats legacy rows as grandfathered PUBLIC without referencing missing columns", () => {
+  const legacy = publishQualityAuditProjection([
+    "id",
+    "title",
+    "verification",
+    "is_sample",
+  ]);
+  assert.equal(legacy.publishQualityColumnsPresent, false);
+  assert.match(legacy.sql, /'PUBLIC' AS current_publish_quality_state/);
+  assert.doesNotMatch(legacy.sql, /e\.publish_quality_state/);
+
+  const migrated = publishQualityAuditProjection([
+    "publish_quality_state",
+    "publish_quality_reason",
+    "publish_quality_rule_version",
+    "publish_quality_checked_at",
+  ]);
+  assert.equal(migrated.publishQualityColumnsPresent, true);
+  assert.match(migrated.sql, /e\.publish_quality_state/);
 });

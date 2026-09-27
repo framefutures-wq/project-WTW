@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   auditPublishQualityRows,
+  publishQualityAuditProjection,
   type PublishQualityAuditRow,
 } from "../shared/publish-quality-audit";
 import {
@@ -50,9 +51,9 @@ function execute(sql: string) {
     maxBuffer: 16 * 1024 * 1024,
   });
   if (result.status !== 0) {
-    const stderr = result.stderr.trim().slice(0, 1000);
+    const diagnostic = (result.stderr || result.stdout).trim().slice(0, 2000);
     throw new Error(
-      `publish quality audit D1 read failed${stderr ? `: ${stderr}` : ""}`,
+      `publish quality audit D1 read failed${diagnostic ? `: ${diagnostic}` : ""}`,
     );
   }
   const parsed = JSON.parse(result.stdout);
@@ -67,6 +68,22 @@ function tableExists(name: string) {
   return rows.length > 0;
 }
 
+function tableColumns(name: string) {
+  const escaped = name.replaceAll("'", "''");
+  return new Set(
+    (
+      execute(`PRAGMA table_info('${escaped}')`) as Array<{ name?: string }>
+    )
+      .map((row) => row.name)
+      .filter((value): value is string => Boolean(value)),
+  );
+}
+
+const {
+  publishQualityColumnsPresent: qualityColumnsPresent,
+  sql: currentQualityProjection,
+} = publishQualityAuditProjection(tableColumns("events"));
+
 const rows = execute(
   `SELECT
      e.id,
@@ -77,9 +94,7 @@ const rows = execute(
      e.address,
      e.start_date,
      e.end_date,
-     e.publish_quality_state AS current_publish_quality_state,
-     e.publish_quality_reason AS current_publish_quality_reason,
-     e.publish_quality_rule_version AS current_publish_quality_rule_version,
+     ${currentQualityProjection},
      s.kind AS source_kind,
      s.name AS source_name,
      s.url AS source_url
@@ -196,6 +211,7 @@ const output = {
   as_of_kst: today,
   writes: 0,
   schema: {
+    publish_quality_columns_present: qualityColumnsPresent,
     event_official_links_present: tableExists("event_official_links"),
   },
   scanned_current_or_future_verified_events: report.total,
