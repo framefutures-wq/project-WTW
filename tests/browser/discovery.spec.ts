@@ -129,6 +129,48 @@ test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합
   ).toHaveAttribute("aria-pressed", "true");
 });
 
+test("무료는 홈에서 한 번에 선택하고 다른 빠른 조건과 조합할 수 있다", async ({ page }) => {
+  await page.goto("/");
+
+  const freeResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/events" && url.searchParams.get("cost") === "free";
+  });
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "무료", exact: true })
+    .click();
+  await freeResponse;
+
+  await expect(
+    page.locator(".quick-category-grid").getByRole("button", { name: "무료", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL(/cost=free/);
+
+  const combinedResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("cost") === "free" &&
+      url.searchParams.get("audience") === "kids"
+    );
+  });
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "아이와", exact: true })
+    .click();
+  await combinedResponse;
+
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "전체", exact: true })
+    .click();
+  await expect(
+    page.locator(".quick-category-grid").getByRole("button", { name: "무료", exact: true }),
+  ).toHaveAttribute("aria-pressed", "false");
+  await expect(page).not.toHaveURL(/cost=free/);
+});
+
 test("빠른 카테고리는 세부필터를 자동으로 열거나 같은 주제를 중복 표시하지 않는다", async ({ page }) => {
   await page.goto("/");
   const advanced = page.locator(".advanced-filters");
