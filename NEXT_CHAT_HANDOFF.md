@@ -2156,3 +2156,14 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Treat Publish Quality Gate + initial production data cleanup as complete.
 - Official-link coverage is now the main quality bottleneck: EVENT_OFFICIAL_LINK 66 / FIRST_PARTY_SOURCE_ONLY 44 / TOURAPI_ONLY 148 / MISSING 0.
 - Next work must focus on exact official-link acquisition/backfill, starting with explicit URLs already present in persisted TourAPI detail payloads before attempting any broader discovery.
+
+
+## 2026-09-27 — Phase 3 cached TourAPI official-link backfill ready
+
+- PR #79 merged green as `201f1df8a7cf8daa3638b288da1b1ed78125754a`.
+- Next authenticated Codespaces command:
+  `npm run official-links:backfill:tourapi -- --remote --apply`
+  after pulling latest main.
+- The command uses only explicit homepage fields already stored in TourAPI detail payloads; it does not guess/crawl.
+- It can safely promote HOLD→PUBLIC when the explicit homepage resolves the sparse TourAPI evidence gap, but blocks any PUBLIC hiding or EXCLUDE transition.
+- Use its concise output to measure how many of the 148 TourAPI-only link gaps were recoverable from cached detail. Then decide the next Phase 3 bounded task from the remaining gap population.
