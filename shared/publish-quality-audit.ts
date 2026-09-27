@@ -15,6 +15,27 @@ export type PublishQualityAuditRow = PublishQualityInput & {
   current_publish_quality_rule_version?: string | null;
 };
 
+
+export function publishQualityAuditProjection(columns: Iterable<string>) {
+  const available = new Set(columns);
+  const publishQualityColumnsPresent = [
+    "publish_quality_state",
+    "publish_quality_reason",
+    "publish_quality_rule_version",
+    "publish_quality_checked_at",
+  ].every((column) => available.has(column));
+  return {
+    publishQualityColumnsPresent,
+    sql: publishQualityColumnsPresent
+      ? `e.publish_quality_state AS current_publish_quality_state,
+     e.publish_quality_reason AS current_publish_quality_reason,
+     e.publish_quality_rule_version AS current_publish_quality_rule_version`
+      : `'PUBLIC' AS current_publish_quality_state,
+     NULL AS current_publish_quality_reason,
+     NULL AS current_publish_quality_rule_version`,
+  };
+}
+
 export type OfficialLinkQuality =
   | "EVENT_OFFICIAL_LINK"
   | "FIRST_PARTY_SOURCE_ONLY"
