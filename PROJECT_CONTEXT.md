@@ -1311,3 +1311,12 @@ UI benchmark:
 - production smoke assertions를 상세 v3 계약(PC 190~230px shallow banner, mobile 180~220px bounded banner)에 맞춰 수정했다.
 - UI browser smoke와 Project checks 모두 PASS.
 - PR #83은 test-only 변경이므로 추가 Worker 재배포는 필요 없다. production 재검증만 한 번 더 실행하면 상세 v3 작업을 닫을 수 있다.
+
+
+## 2026-09-27 — 상세 UI v3 production verification complete
+
+- Production browser verification after the stale-contract fix passed on both desktop and mobile.
+- Command: `TEST_BASE_URL=https://galteum.com TEST_OUTPUT_DIR=test-results/detail-v3-production npm run test:ui:prod`.
+- Result: desktop PASS / mobile PASS (2/2).
+- Detail UI v3 is now considered production-complete: shallow full-width top media + dense decision facts is live and verified.
+- Resume Phase 3 official-link quality work from the remaining 45 TourAPI events without stored official links.
