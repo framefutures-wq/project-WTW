@@ -12,6 +12,7 @@ import {
   COMPANION_CLASSIFIER,
 } from "../../shared/companion-suitability";
 import { decidePublishQuality } from "../../shared/publish-quality";
+import { tourApiPrimaryImage, tourApiSecondaryImage } from "../../shared/tourapi-images";
 
 export const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 export const TOUR_API_DOC = "https://www.data.go.kr/data/15101578/openapi.do";
@@ -71,22 +72,7 @@ export function text(value: unknown): string {
       ? String(value)
       : "";
 }
-function validImageUrl(value: unknown) {
-  const url = text(value);
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:" && !/\b(?:logo|favicon|sprite|icon)\b/.test(parsed.pathname.toLowerCase())
-      ? parsed.toString()
-      : null;
-  } catch {
-    return null;
-  }
-}
-function tourApiSecondaryImage(raw: Row) {
-  const primary = validImageUrl(raw.firstimage) || validImageUrl(raw.firstimage2);
-  const secondary = validImageUrl(raw.firstimage2);
-  return primary && secondary && primary !== secondary ? secondary : null;
-}
+
 export function tourApiReadiness(env: Env) {
   if (env.TOUR_API_ENABLED !== "true") return "TourAPI 수집 비활성";
   if (!env.TOUR_API_KEY) return "TourAPI Secret 미설정: 수집하지 않았습니다.";
@@ -552,6 +538,31 @@ export async function saveFestivalSnapshot(
           source,
         ),
     );
+    const primaryImage = tourApiPrimaryImage(raw);
+    if (primaryImage)
+      statements.push(
+        db.prepare(
+          `INSERT INTO event_images(
+            event_id,image_url,source_type,source_page_url,is_primary,image_status,
+            width,height,mime_type,last_checked_at,evidence_note
+          ) VALUES(?,?,'tourapi',?,1,'ok',NULL,NULL,NULL,?,?)
+          ON CONFLICT(event_id) DO UPDATE SET
+            image_url=excluded.image_url,
+            source_type=excluded.source_type,
+            source_page_url=excluded.source_page_url,
+            image_status='ok',
+            last_checked_at=excluded.last_checked_at,
+            evidence_note=excluded.evidence_note
+          WHERE event_images.image_status!='ok'
+             OR event_images.source_type='tourapi'`,
+        ).bind(
+          e.id,
+          primaryImage,
+          TOUR_API_DOC,
+          snapshot.checkedAt,
+          raw.firstimage ? "sources.raw_payload.firstimage" : "sources.raw_payload.firstimage2",
+        ),
+      );
     // The event upsert must precede its foreign-keyed secondary image rows.
     // TourAPI owns only its secondary slot: it never overwrites another source.
     statements.push(

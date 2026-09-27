@@ -63,7 +63,8 @@
     "official-links:audit:tourapi": "node --import tsx scripts/audit-tourapi-official-link-gaps.ts",
     "official-links:resolve:tourapi-explicit": "node --import tsx scripts/resolve-tourapi-explicit-homepages.ts",
     "official-links:audit:tourapi-other-https": "node --import tsx scripts/audit-tourapi-other-https-evidence.ts",
-    "images:audit:missing-posters": "node --import tsx scripts/audit-missing-official-posters.ts"
+    "images:audit:missing-posters": "node --import tsx scripts/audit-missing-official-posters.ts",
+    "images:backfill:tourapi-primary": "node --import tsx scripts/backfill-tourapi-primary-images.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
