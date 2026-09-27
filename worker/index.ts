@@ -54,13 +54,28 @@ const EVENT_FIELDS = `e.id,e.title,e.description,e.region,e.venue,e.address,
   e.start_date,e.end_date,e.lat,e.lng,e.cost,e.price_text,e.pet_policy,e.status,
   e.verification,e.is_sample,e.primary_source_id,e.checked_at`;
 const SELECT = `SELECT ${EVENT_FIELDS}, s.url AS source_url, s.name AS source_name, s.kind AS source_kind,
-  (SELECT ev.excerpt
-   FROM event_evidence ev
-   JOIN sources os ON os.id=ev.source_id
-   WHERE ev.event_id=e.id AND ev.field='official_url'
-     AND ev.excerpt LIKE 'https://%' AND os.kind!='sample'
-   ORDER BY os.priority ASC, ev.checked_at DESC
-   LIMIT 1) AS official_url,
+  COALESCE(
+    (SELECT ev.excerpt
+     FROM event_evidence ev
+     JOIN sources os ON os.id=ev.source_id
+     WHERE ev.event_id=e.id AND ev.field='official_url'
+       AND ev.excerpt LIKE 'https://%' AND os.kind!='sample'
+     ORDER BY os.priority ASC, ev.checked_at DESC
+     LIMIT 1),
+    (SELECT CASE
+       WHEN osl.final_url LIKE 'https://%' THEN osl.final_url
+       WHEN osl.url LIKE 'https://%' THEN osl.url
+       ELSE NULL
+     END
+     FROM official_source_audits osa
+     JOIN official_source_links osl ON osl.audit_id=osa.id
+     WHERE osa.event_id=e.id
+       AND osl.official=1
+       AND osl.access_status='ok'
+       AND (osl.final_url LIKE 'https://%' OR osl.url LIKE 'https://%')
+     ORDER BY osa.checked_at DESC, osl.checked_at DESC
+     LIMIT 1)
+  ) AS official_url,
   ts.trust_status, ts.checked_at AS trust_checked_at,
   ts.changed_fields AS trust_changed_fields,
   tsl.url AS trust_source_url, tsl.final_url AS trust_source_final_url,
