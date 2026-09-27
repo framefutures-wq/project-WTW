@@ -14,7 +14,7 @@ type EventName =
   | "push_subscribe"
   | "push_unsubscribe"
   | "load_more";
-type FilterType = "period" | "region" | "audience" | "theme" | "sort";
+type FilterType = "period" | "region" | "audience" | "theme" | "cost" | "sort";
 type Gtag = (...args: unknown[]) => void;
 
 let initialization: Promise<AnalyticsRuntimeConfig> | null = null;
@@ -52,6 +52,7 @@ const allowedFilterValues: Record<string, readonly string[]> = {
   region: REGIONS,
   audience: Object.keys(AUDIENCES),
   theme: Object.keys(THEMES),
+  cost: ["free", "paid", "unknown"],
   sort: ["recommended", "date", "distance"],
 };
 export function buildAnalyticsPath(
