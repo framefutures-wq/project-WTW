@@ -2283,3 +2283,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - PR #88 merged green as `f2317800db2fcc7641685d8417c610d820ba7b3a`.
 - The existing missing-poster audit now supports `--summary` to avoid oversized Codespaces output.
 - Next command: `npm run images:audit:missing-posters -- --remote --summary` after pulling main.
+
+
+## 2026-09-27 — exact municipal detail extraction v2 merged; production backfill next
+
+- Treat list pages only as discovery surfaces. Exact official event detail pages are the authoritative source for poster, time, price, contact, summary and programs when available.
+- PR #89 merged green as `25b3d3494071e83f404417acf27197a4e85ee091`.
+- Extractor now handles Suwon/Hangang-style real page structures more completely and rejects common/default/menu/noimg assets.
+- Next authenticated Codespaces sequence: pull main, `npm run deploy:verified`, then run `npm run municipal:once` to backfill current municipal rich detail using the existing safe one-shot/shard machinery. After that run production UI smoke and a concise detail completeness check before further parser work.
