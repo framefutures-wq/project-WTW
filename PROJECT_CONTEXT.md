@@ -1320,3 +1320,13 @@ UI benchmark:
 - Result: desktop PASS / mobile PASS (2/2).
 - Detail UI v3 is now considered production-complete: shallow full-width top media + dense decision facts is live and verified.
 - Resume Phase 3 official-link quality work from the remaining 45 TourAPI events without stored official links.
+
+
+## 2026-09-27 — Phase 3 OTHER_HTTPS evidence audit merged
+
+- PR #84 merged green as `9cbb37ecc1f12acd16cd3a361d06151bfa112b8d`.
+- New read-only command: `npm run official-links:audit:tourapi-other-https -- --remote`.
+- Scope is only remaining TourAPI rows currently classified as `OTHER_HTTPS_URL`.
+- The audit extracts non-asset HTTPS URLs outside explicit homepage/provider fields, classifies social/ticket/map/general-web candidates, fetches them with the existing SSRF-safe loader, and reports reachability plus a conservative event-title signal.
+- It never writes D1 and never promotes an arbitrary HTTPS URL to official. The result is evidence for the next bounded resolver.
+- UI browser smoke and Project checks passed before merge.
