@@ -351,7 +351,11 @@ function detailUrlScore(source: MunicipalSourceDefinition, value: string) {
   }
 }
 
-function directDetailUrls(source: MunicipalSourceDefinition, html: string) {
+const looksLikeUrlValue = (value: string) =>
+  /^(?:https?:\/\/|\/|\.{1,2}\/|\?)/i.test(value) ||
+  /^[A-Za-z0-9_./-]+\.(?:do|jsp|php|html?)(?:[?#]|$)/i.test(value);
+
+function rawDetailLinkValues(html: string) {
   const rawValues: string[] = [];
   for (const match of html.matchAll(
     /\b(?:href|data-href|data-url|data-link)=["']([^"']+)["']/gi,
@@ -363,16 +367,49 @@ function directDetailUrls(source: MunicipalSourceDefinition, html: string) {
     rawValues.push(clean(match[1]));
   for (const match of html.matchAll(
     /["']([^"']*(?:detail|view|read)[^"']*)["']/gi,
-  ))
-    rawValues.push(clean(match[1]));
+  )) {
+    const value = clean(match[1]);
+    if (looksLikeUrlValue(value)) rawValues.push(value);
+  }
+  return [...new Set(rawValues)].filter(
+    (value) =>
+      value &&
+      !/^(?:javascript:|#|mailto:|tel:)/i.test(value) &&
+      looksLikeUrlValue(value),
+  );
+}
 
-  return [...new Set(rawValues)]
-    .filter((value) => value && !/^(?:javascript:|#|mailto:|tel:)/i.test(value))
+function directDetailUrls(source: MunicipalSourceDefinition, html: string) {
+  return rawDetailLinkValues(html)
     .map((value) => absolute(source.url, value))
     .filter((value): value is string => Boolean(value))
     .map((url) => ({ url, score: detailUrlScore(source, url) }))
     .filter((item) => Number.isFinite(item.score) && item.score > 0)
     .sort((a, b) => b.score - a.score || a.url.localeCompare(b.url));
+}
+
+function hasUnsafeExternalEventLink(
+  source: MunicipalSourceDefinition,
+  html: string,
+) {
+  for (const raw of rawDetailLinkValues(html)) {
+    const resolved = absolute(source.url, raw);
+    if (!resolved || municipalSourceAllowsUrl(source, resolved)) continue;
+    try {
+      const url = new URL(resolved);
+      if (
+        !assetLikePath.test(url.pathname + url.search) &&
+        !fileLikePath.test(url.pathname) &&
+        /(?:event|festival|concert|performance|show|detail|view|read)/i.test(
+          url.pathname + url.search,
+        )
+      )
+        return true;
+    } catch {
+      continue;
+    }
+  }
+  return false;
 }
 
 function escapeRegex(value: string) {
@@ -405,14 +442,15 @@ export function discoverMunicipalDetailUrl(
 
   const template = source.detailLinkTemplate;
   const id = templateDetailId(source, html);
-  if (!template || !id) return source.url;
-  const url = new URL(template.path, source.url);
-  for (const [key, value] of Object.entries(template.fixedQuery ?? {}))
-    url.searchParams.set(key, value);
-  url.searchParams.set(template.idParam, id);
-  return municipalSourceAllowsUrl(source, url.toString())
-    ? url.toString()
-    : source.url;
+  if (template && id) {
+    const url = new URL(template.path, source.url);
+    for (const [key, value] of Object.entries(template.fixedQuery ?? {}))
+      url.searchParams.set(key, value);
+    url.searchParams.set(template.idParam, id);
+    if (municipalSourceAllowsUrl(source, url.toString()))
+      return url.toString();
+  }
+  return hasUnsafeExternalEventLink(source, html) ? null : source.url;
 }
 
 const officialUrlFromBlock = (
