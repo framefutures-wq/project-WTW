@@ -1415,3 +1415,21 @@ UI benchmark:
 - shard 2에서 rich detail 4건이 추가 저장됐고(`busan-동` 2, `gyeongbuk-경주` 2), rich-detail extraction error는 0이었다.
 - production 검증에서 실제 exact detail 기반 poster/summary/time/program/contact가 Hangang, Busan Dong-gu, Gyeongju, Pyeongtaek, Goyang 등에 저장된 것을 확인했다.
 - 남은 문제는 rich-detail parser 자체가 아니라 source별 관측 실패다. 최근 60분 기준 35 source 중 24 source가 관측됐고 11 source가 미관측이다. 성공한 전체 shard를 다시 돌리지 말고 실패 source만 별도 bounded diagnosis 대상으로 다룬다.
+
+## 2026-09-28 — exact official detail self-healing layer implemented
+
+- A systemic image/detail gap was confirmed from the Uijeongbu `2026 동오마을 푸드페스타` case: Galteum could already open the exact official event page through `event_official_links`, while municipal rich-detail ingestion did not generically reuse that known exact URL. This allowed the UI to know the authoritative page while poster/summary/time/contact/program data remained sparse.
+- The fix is source-agnostic rather than city-specific. New `official-detail-recovery` selects current/future PUBLIC events with an already verified exact official URL from `event_official_links`, falling back to successful official-source audit links, then performs bounded safe fetch → event identity/core validation → shared rich-detail/image extraction → priority-aware persistence.
+- The recovery layer is now part of the 10:00 KST base ingestion as an isolated bounded subsystem. A recovery failure never turns a successful base ingestion into failure.
+- Safety contract:
+  - HTTPS only, bounded same-family redirects/body size/time;
+  - one bounded retry for network/timeout/429/5xx;
+  - page title must match the event and the page must also contain a positive date or venue signal;
+  - core conflicts are quarantined;
+  - no guessed facts or images;
+  - existing higher-priority official data is preserved.
+- Image extraction now also consumes OG/Twitter/JSON-LD image candidates and lazy image attributes in addition to ordinary `img src`.
+- Organizer exact-detail evidence can persist at priority 1; municipality at priority 2. Lower-priority TourAPI media/detail may be replaced, while stronger official evidence is not downgraded.
+- A bounded authenticated backfill command is available: `npm run official-detail:once -- --passes=<1..10> --limit=<1..20>`.
+- Code through `439dd2799d5d49b2257da51d84f59de2105a487c` has Project checks PASS. Production deploy/backfill and the post-backfill missing-poster audit are still pending.
+- Active priority remains image/detail completeness. The unrelated Yeongju/Geoje/Haeundae source-observation failures are deferred until this bounded task is closed.

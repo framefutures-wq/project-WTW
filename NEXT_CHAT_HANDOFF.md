@@ -2333,3 +2333,28 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Commits: `18b52545eac1b53412ea5c2547ada5bb3cfc9f98` plus follow-up `3605c1c081b8b7dc883d70144859f6c9ef12d526`.
 - GitHub Project checks PASS on the latest commit.
 - Next authenticated step is intentionally one source only: deploy latest main, then run `npm run municipal:once -- --source=gyeongbuk-영주`. Do not run Geoje or Haeundae until Yeongju result is closed.
+
+## 2026-09-28 — image/detail systemic fix green; production backfill pending
+
+- User-authorized priority is now the image/detail problem, not individual municipality source failures.
+- Root cause confirmed with Uijeongbu `제9회 동오마을축제 2026 동오마을 푸드페스타`: Galteum already had an exact official page URL usable by the UI, but the rich-detail/image pipeline did not have a shared path that reused those known official URLs across source types.
+- Implemented shared exact-official self-healing recovery:
+  - source: `event_official_links`, with verified official-audit fallback;
+  - current/future PUBLIC events with missing poster or sparse detail only;
+  - bounded safe HTTPS fetch and one retry for transient network/429/5xx;
+  - exact event title plus positive date/venue evidence required;
+  - core conflict/title mismatch quarantined;
+  - shared rich-detail parser persists summary, hours, price, contact, programs and official images;
+  - OG/Twitter/JSON-LD/lazy images supported;
+  - organizer/municipality priority preserved.
+- It runs automatically during the 10:00 KST base pass, isolated from base success.
+- Added bounded authenticated one-shot: `npm run official-detail:once -- --passes=8 --limit=12` for the existing backlog.
+- Implementation commits span `07664203`, `6f2a42ab`, `af0371ef`, `ac4c7776`, `aaadc8aa`, `d3a73b83`, `a3b8ffae`, `439dd2799`.
+- Latest Project checks PASS. Earlier intermediate failures were caught and corrected before production; do not deploy an earlier commit.
+- Next and only remaining step for this bounded task is production evidence:
+  1. pull latest main;
+  2. deploy verified Worker;
+  3. run the bounded official-detail backlog;
+  4. run `images:audit:missing-posters -- --remote --summary`;
+  5. verify the Uijeongbu example and quantify remaining image/detail gaps.
+- Do not resume Yeongju/Geoje/Haeundae diagnosis until this production image/detail verification is complete.
