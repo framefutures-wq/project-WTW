@@ -77,7 +77,10 @@ const details = detailRuns.map((row) => ({
   ...row,
   message: safeJson(row.message),
 }));
-const municipalSourceOutcomes = summarizeMunicipalSourceOutcomes(baseMessage);
+const municipalSourceOutcomes = summarizeMunicipalSourceOutcomes([
+  baseMessage,
+  ...details.map((row) => row.message),
+]);
 
 const verdict =
   base.status !== "success"
