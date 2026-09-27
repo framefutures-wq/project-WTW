@@ -13,6 +13,7 @@ export type MunicipalRichDetailPersistInput = {
   startDate: string;
   endDate: string;
   sourceId: string;
+  sourceName: string;
   sourceUrl: string;
   checkedAt: string;
   detail: MunicipalRichDetail;
@@ -186,18 +187,25 @@ export async function persistMunicipalRichDetail(
   statements.push(
     db
       .prepare(
-        `UPDATE sources
-         SET raw_payload=?
-         WHERE id=? AND kind='municipality'`,
+        `INSERT INTO sources(
+          id,kind,priority,name,url,fetched_at,raw_payload
+        ) VALUES(?, 'municipality', 2, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          url=excluded.url,
+          fetched_at=excluded.fetched_at,
+          raw_payload=excluded.raw_payload`,
       )
       .bind(
+        input.sourceId,
+        input.sourceName,
+        input.sourceUrl,
+        input.checkedAt,
         JSON.stringify({
           municipal_rich_detail: {
             contact_phone: input.detail.contact_phone,
             price_text: input.detail.price_text,
           },
         }),
-        input.sourceId,
       ),
   );
 
