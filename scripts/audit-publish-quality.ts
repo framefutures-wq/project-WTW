@@ -67,6 +67,33 @@ function tableExists(name: string) {
   return rows.length > 0;
 }
 
+function tableColumns(name: string) {
+  const escaped = name.replaceAll("'", "''");
+  return new Set(
+    (
+      execute(`PRAGMA table_info('${escaped}')`) as Array<{ name?: string }>
+    )
+      .map((row) => row.name)
+      .filter((value): value is string => Boolean(value)),
+  );
+}
+
+const eventColumns = tableColumns("events");
+const qualityColumnsPresent = [
+  "publish_quality_state",
+  "publish_quality_reason",
+  "publish_quality_rule_version",
+  "publish_quality_checked_at",
+].every((column) => eventColumns.has(column));
+
+const currentQualityProjection = qualityColumnsPresent
+  ? `e.publish_quality_state AS current_publish_quality_state,
+     e.publish_quality_reason AS current_publish_quality_reason,
+     e.publish_quality_rule_version AS current_publish_quality_rule_version`
+  : `'PUBLIC' AS current_publish_quality_state,
+     NULL AS current_publish_quality_reason,
+     NULL AS current_publish_quality_rule_version`;
+
 const rows = execute(
   `SELECT
      e.id,
@@ -77,9 +104,7 @@ const rows = execute(
      e.address,
      e.start_date,
      e.end_date,
-     e.publish_quality_state AS current_publish_quality_state,
-     e.publish_quality_reason AS current_publish_quality_reason,
-     e.publish_quality_rule_version AS current_publish_quality_rule_version,
+     ${currentQualityProjection},
      s.kind AS source_kind,
      s.name AS source_name,
      s.url AS source_url
@@ -196,6 +221,7 @@ const output = {
   as_of_kst: today,
   writes: 0,
   schema: {
+    publish_quality_columns_present: qualityColumnsPresent,
     event_official_links_present: tableExists("event_official_links"),
   },
   scanned_current_or_future_verified_events: report.total,
