@@ -40,7 +40,11 @@ import {
   type MunicipalRichDetail,
 } from "../../shared/municipal-rich-detail";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
-import { municipalSourceFetchCeiling } from "../../shared/municipal-fetch-budget";
+import {
+  MUNICIPAL_MAX_FETCHES_PER_SOURCE_WINDOW,
+  MUNICIPAL_MIN_FETCH_RESERVE_PER_SOURCE,
+  municipalSourceFetchCeiling,
+} from "../../shared/municipal-fetch-budget";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
@@ -1159,8 +1163,8 @@ export async function runMunicipalAutonomous(
     source_keys: selectedSources.map((source) => source.key),
     fetch_attempts: fetchBudget.used,
     fetch_budget: fetchBudget.limit,
-    source_fetch_window: 3,
-    source_fetch_reserve: 2,
+    source_fetch_window: MUNICIPAL_MAX_FETCHES_PER_SOURCE_WINDOW,
+    source_fetch_reserve: MUNICIPAL_MIN_FETCH_RESERVE_PER_SOURCE,
     detail_fetches: detailFetches,
     identity_bridges: identityBridges,
     rich_detail_attempted: richDetailAttempted,
