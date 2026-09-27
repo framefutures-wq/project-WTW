@@ -2225,3 +2225,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - PR #83 merged green as `ab87de582e86033953514434ea22000046a083f4`; production smoke now asserts the new shallow full-width media contract.
 - No redeploy is needed for PR #83 because it changes tests only.
 - Next authenticated Codespaces action: pull latest main and rerun only `TEST_BASE_URL=https://galteum.com TEST_OUTPUT_DIR=test-results/detail-v3-production npm run test:ui:prod`. If both desktop/mobile pass, close the detail v3 UI task and resume Phase 3 remaining official-link work.
+
+
+## 2026-09-27 — detail v3 closed in production; resume Phase 3 links
+
+- Final production smoke after PR #83 passed desktop and mobile (2/2).
+- Detail v3 UI task is closed.
+- Next work returns to Phase 3 official-link quality. Current remaining TourAPI no-link population is 45: 18 unresolved explicit legacy-homepage cases + 27 OTHER_HTTPS_URL evidence cases.
+- Do not rerun the same explicit resolver as a discovery strategy; classify the remaining evidence set next.
