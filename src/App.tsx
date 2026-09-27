@@ -954,7 +954,7 @@ export default function App() {
     setQuery("");
     setLocation(null);
     setGeoError("");
-    setSort("date");
+    setSort("recommended");
   }
   function openPicker() {
     const fallback = availableDateRange?.start ?? koreaDate();
@@ -1681,7 +1681,7 @@ export default function App() {
                   onChange={(e) => {
                     if (location) {
                       setLocation(null);
-                      setSort("date");
+                      setSort("recommended");
                     }
                     change(setRegion, e.target.value, "region");
                   }}
@@ -1699,7 +1699,7 @@ export default function App() {
                 onClick={() => {
                   if (location) {
                     setLocation(null);
-                    setSort("date");
+                    setSort("recommended");
                     return;
                   }
                   locate();
@@ -1768,7 +1768,7 @@ export default function App() {
                     <button
                       onClick={() => {
                         setLocation(null);
-                        setSort("date");
+                        setSort("recommended");
                       }}
                     >
                       위치 사용 해제

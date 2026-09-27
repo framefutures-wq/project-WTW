@@ -80,6 +80,24 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   });
   expect(errors).toEqual([]);
 });
+test("필터 초기화는 추천순 기본 탐색으로 돌아간다", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("정렬", { exact: true }).selectOption("date");
+  await page.getByLabel("지역", { exact: true }).selectOption("서울");
+  await expect(page).toHaveURL(/sort=date/);
+
+  await page
+    .getByRole("button", { name: "필터 초기화", exact: true })
+    .last()
+    .click();
+
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("recommended");
+  await expect(page).not.toHaveURL(/sort=date/);
+  await expect(
+    page.getByRole("heading", { name: "이번 주말, 여기 어때요?" }),
+  ).toBeVisible();
+});
+
 test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합할 수 있다", async ({ page }) => {
   await page.goto("/");
   const advanced = page.locator(".advanced-filters");
@@ -192,7 +210,7 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await expect(page.getByLabel("정렬: 가까운순")).toBeVisible();
   await expect(page.locator(".event-card").first()).toContainText("1km 미만");
   await page.getByRole("button", { name: "내 주변 해제" }).click();
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("date");
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("recommended");
   await expect(page.locator(".distance")).toHaveCount(0);
 });
 
