@@ -65,3 +65,32 @@ export function classifyOperatingHoursEvidence(
   if (eventWide && !programOnly) return "EVENT_WIDE";
   return "AMBIGUOUS";
 }
+
+
+export function formatOperatingHoursForRange(
+  rows: EventOperatingHours[],
+  selectedRange: DateRange,
+) {
+  const matching = rows.filter(
+    (row) =>
+      row.start_date <= selectedRange.end &&
+      row.end_date >= selectedRange.start,
+  );
+  if (!matching.length) return null;
+
+  const selected = selectOperatingHours(matching, selectedRange);
+  if (selected) return formatOperatingHours(selected);
+
+  const oneCalendarSpan = matching.every(
+    (row) =>
+      row.start_date === matching[0].start_date &&
+      row.end_date === matching[0].end_date,
+  );
+  if (!oneCalendarSpan) return null;
+
+  const labels = matching
+    .map((row) => formatOperatingHours(row))
+    .filter((value): value is string => Boolean(value));
+  const unique = [...new Set(labels)];
+  return unique.length ? unique.join(" · ") : null;
+}
