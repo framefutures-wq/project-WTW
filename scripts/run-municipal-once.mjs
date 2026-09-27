@@ -113,7 +113,7 @@ const postShard = (url, shardIndex, sourceKey = null) => {
   } catch (error) {
     if (
       error instanceof Error &&
-      error.message.startsWith("one-shot shard ")
+      error.message.startsWith("one-shot ")
     )
       throw error;
     throw new Error(
