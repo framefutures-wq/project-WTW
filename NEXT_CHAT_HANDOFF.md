@@ -2291,3 +2291,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - PR #89 merged green as `25b3d3494071e83f404417acf27197a4e85ee091`.
 - Extractor now handles Suwon/Hangang-style real page structures more completely and rejects common/default/menu/noimg assets.
 - Next authenticated Codespaces sequence: pull main, `npm run deploy:verified`, then run `npm run municipal:once` to backfill current municipal rich detail using the existing safe one-shot/shard machinery. After that run production UI smoke and a concise detail completeness check before further parser work.
+
+
+## 2026-09-28 — municipal rich-detail 1102 mitigation merged; production continuation needs Codespaces
+
+- Manual rich-detail backfill reached shard 0 successfully, then shard 1 failed with Cloudflare 1102 (Worker exceeded resource limits). Do not rerun shard 0.
+- Commit `89c6faa8027efa36ce868e7c094dd2106bf0a6bb` reduces repeated whole-page parsing in `shared/municipal-rich-detail.ts`: text, explicit label/value pairs, and heading indexes are built once per exact detail page and reused across summary/time/price/contact/program extraction.
+- GitHub Project checks and UI browser smoke are green for that commit. Extraction behavior remains covered by the existing Suwon/Hangang regression tests.
+- This is `PAUSED_USER_ACTION` only because production deploy and remote D1/manual municipal execution require the authenticated Codespaces/Cloudflare environment.
+- Resume from latest main with: deploy the Worker, run only municipal shard 1, and only if shard 1 succeeds run shard 2; then run the read-only manual municipal verification. If shard 1 still returns 1102, stop there and preserve the error output for source-level isolation.
