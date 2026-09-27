@@ -22,6 +22,9 @@ const base: PublishQualityAuditRow = {
   source_name: "서울 공식 행사",
   source_url: "https://example.go.kr/event/1",
   discovered_official_url: null,
+  current_publish_quality_state: "PUBLIC",
+  current_publish_quality_reason: null,
+  current_publish_quality_rule_version: null,
 };
 
 test("official link audit separates event links from source-level and TourAPI links", () => {
@@ -127,6 +130,14 @@ test("audit groups proposed state, source, link quality and public risk without 
   assert.equal(report.by_official_link_quality.TOURAPI_ONLY, 1);
   assert.equal(report.by_official_link_quality.MISSING, 1);
   assert.equal(report.by_public_quality_risk.PUBLIC_SPARSE_AND_LINK_GAP, 1);
+  assert.deepEqual(report.rollout.current_state, { PUBLIC: 4 });
+  assert.deepEqual(report.rollout.proposed_transitions, {
+    "PUBLIC->PUBLIC": 2,
+    "PUBLIC->HOLD": 1,
+    "PUBLIC->EXCLUDE": 1,
+  });
+  assert.equal(report.rollout.legacy_unversioned, 4);
+  assert.equal(report.rollout.proposed_visibility_changes, 2);
   assert.equal(
     report.examples["HOLD:insufficient_event_signal"][0].id,
     "hold",

@@ -10,6 +10,9 @@ export type PublishQualityAuditRow = PublishQualityInput & {
   region: string;
   source_name?: string | null;
   discovered_official_url?: string | null;
+  current_publish_quality_state?: PublishQualityState | null;
+  current_publish_quality_reason?: string | null;
+  current_publish_quality_rule_version?: string | null;
 };
 
 export type OfficialLinkQuality =
@@ -124,12 +127,22 @@ export function auditPublishQualityRows(
     PUBLIC_OFFICIAL_LINK_GAP: 0,
     PUBLIC_SPARSE_AND_LINK_GAP: 0,
   };
+  const current_state: Record<string, number> = {};
+  const proposed_transitions: Record<string, number> = {};
+  let legacy_unversioned = 0;
+  let proposed_visibility_changes = 0;
 
   for (const row of audited) {
     by_state[row.proposed.state] += 1;
     increment(by_reason, row.proposed.reason);
     by_official_link_quality[row.official_link_quality] += 1;
     by_public_quality_risk[row.public_quality_risk] += 1;
+    const current = row.current_publish_quality_state ?? "UNSET";
+    increment(current_state, current);
+    if (!row.current_publish_quality_rule_version) legacy_unversioned += 1;
+    const transition = `${current}->${row.proposed.state}`;
+    increment(proposed_transitions, transition);
+    if (current !== row.proposed.state) proposed_visibility_changes += 1;
     const source = row.source_kind ?? "unknown";
     by_source_kind[source] ??= { PUBLIC: 0, HOLD: 0, EXCLUDE: 0 };
     by_source_kind[source][row.proposed.state] += 1;
@@ -182,6 +195,12 @@ export function auditPublishQualityRows(
     by_source_kind,
     by_official_link_quality,
     by_public_quality_risk,
+    rollout: {
+      current_state,
+      proposed_transitions,
+      legacy_unversioned,
+      proposed_visibility_changes,
+    },
     examples,
     audited,
   };

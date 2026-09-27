@@ -77,6 +77,9 @@ const rows = execute(
      e.address,
      e.start_date,
      e.end_date,
+     e.publish_quality_state AS current_publish_quality_state,
+     e.publish_quality_reason AS current_publish_quality_reason,
+     e.publish_quality_rule_version AS current_publish_quality_rule_version,
      s.kind AS source_kind,
      s.name AS source_name,
      s.url AS source_url
@@ -201,6 +204,7 @@ const output = {
   by_source_kind: report.by_source_kind,
   by_official_link_quality: report.by_official_link_quality,
   by_public_quality_risk: report.by_public_quality_risk,
+  rollout: report.rollout,
   examples: report.examples,
   official_link_gaps,
   public_quality_risks,
