@@ -6,6 +6,7 @@ import {
   municipalPublishedSql,
   detailBacklogSql,
   summarizeMunicipalSourceOutcomes,
+  summarizeMunicipalRichDetail,
 } from "./morning-production-check-lib.mjs";
 
 if (!process.argv.includes("--remote"))
@@ -77,10 +78,14 @@ const details = detailRuns.map((row) => ({
   ...row,
   message: safeJson(row.message),
 }));
-const municipalSourceOutcomes = summarizeMunicipalSourceOutcomes([
+const municipalMessages = [
   baseMessage,
   ...details.map((row) => row.message),
-]);
+];
+const municipalSourceOutcomes =
+  summarizeMunicipalSourceOutcomes(municipalMessages);
+const municipalRichDetail =
+  summarizeMunicipalRichDetail(municipalMessages);
 
 const verdict =
   base.status !== "success"
@@ -107,6 +112,7 @@ console.log(JSON.stringify({
     message: baseMessage,
   },
   municipal_source_outcomes: municipalSourceOutcomes,
+  municipal_rich_detail: municipalRichDetail,
   deployed_municipal_batch: {
     state: municipalState,
     published_or_revalidated: municipalPublished,
