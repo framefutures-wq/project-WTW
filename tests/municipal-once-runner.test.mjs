@@ -49,3 +49,27 @@ test("municipal one-shot defaults to three isolated shard requests and supports 
     /const registryKeys = \["paju", "suwon", "goyang"/,
   );
 });
+
+
+test("municipal manual verification is read-only and avoids dynamic LIKE patterns", () => {
+  const runner = readFileSync("scripts/run-municipal-once.mjs", "utf8");
+  const verifier = readFileSync(
+    "scripts/verify-municipal-manual.mjs",
+    "utf8",
+  );
+
+  assert.doesNotMatch(
+    runner,
+    /events\.primary_source_id LIKE\s*\n?\s*['"]municipal-source-municipal-/,
+  );
+  assert.match(runner, /instr\(\s*events\.primary_source_id/);
+
+  assert.match(verifier, /mode: "read-only"/);
+  assert.match(verifier, /--remote/);
+  assert.match(verifier, /instr\(\s*events\.primary_source_id/);
+  assert.match(verifier, /달빛 한가위 마당/);
+  assert.doesNotMatch(
+    verifier,
+    /\b(?:INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER)\b/i,
+  );
+});
