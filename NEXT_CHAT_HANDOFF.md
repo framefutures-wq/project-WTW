@@ -2276,3 +2276,10 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Worker image persistence fix deployed as `fa102aad-b04e-4975-9fdf-85031fb907cf`.
 - Do not spend more time on TourAPI poster fallback styling. The TourAPI root cause is fixed.
 - Next bounded image task: identify the one remaining TourAPI case and then municipality/organizer PUBLIC events whose official pages contain a real event poster but `event_images` is still missing/non-ok. Use official-page evidence and exclude logos/menu/icons/generic site artwork.
+
+
+## 2026-09-27 — compact poster-gap audit command available
+
+- PR #88 merged green as `f2317800db2fcc7641685d8417c610d820ba7b3a`.
+- The existing missing-poster audit now supports `--summary` to avoid oversized Codespaces output.
+- Next command: `npm run images:audit:missing-posters -- --remote --summary` after pulling main.
