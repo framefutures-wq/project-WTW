@@ -2115,3 +2115,15 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - No production write occurred in the failed attempt.
 - Next authenticated Codespaces step: pull latest main, then rerun `npm run rollout:discovery:v1`.
 - Do not apply migrations or deploy separately; keep the guarded rollout path.
+
+
+## 2026-09-27 — production discovery v1 is deployed; final verification + legacy reclassification remain
+
+- Guarded rollout successfully applied migrations 0022/0023 and deployed production before stopping.
+- Preflight audit: 258 verified current/future events; proposed PUBLIC 241 / HOLD 17 / EXCLUDE 0; exact event official links 66; first-party-source-only 44; TourAPI-only link gaps 148.
+- Generic smoke and desktop production browser smoke passed.
+- Mobile browser failure was a stale test contract, not a confirmed UI defect: the test demanded landscape aspect on each child of the intentional asymmetric two-image mobile row.
+- PR #75 corrected that assertion and merged green as `99c67801e8339cdde2d70aade9b7cb7edaeee17d`.
+- Final post-deploy audit did not execute because the old mobile test stopped the rollout.
+- Legacy rows are still grandfathered PUBLIC; the 17 proposed HOLD rows have not yet been written. Do not claim quality cleanup complete until a safe explicit legacy reclassification step is audited/applied.
+- Next authenticated Codespaces action should avoid unnecessary repeat migration work: pull latest main, run production browser verification with the corrected test, then run the remote zero-write quality audit and inspect HOLD examples before any legacy write.
