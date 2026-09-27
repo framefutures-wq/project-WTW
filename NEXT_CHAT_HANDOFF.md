@@ -1679,3 +1679,25 @@ UI 기준:
   2. separately add detail-link discovery/follow-up for Seoul Hangang and other `LIST_RICHNESS_ONLY` sources;
   3. surface municipality contact payload in the detail API;
   4. verify representative production details before broad rollout.
+
+
+## 2026-09-27 — municipal detail-link discovery merged
+
+- PR #49 `feat: discover municipal event detail links safely` merged as `b867781ca69fb717eedbea6b41f1afc1709d43ed`.
+  - UI browser smoke #144 SUCCESS.
+  - Project checks #772 SUCCESS.
+- Generic municipal HTML no longer trusts only the first anchor in a card.
+  - It scores first-party detail/view links.
+  - It rejects off-site event targets, assets and download links.
+  - It preserves safe first-party card links as a conservative fallback.
+- Seoul Hangang now has a deterministic JS-only detail-link template:
+  - `/www/eventMng/detail.do`
+  - `evntSn`
+  - fixed query `mid=538&srchType=list`
+- Regression fixtures confirm:
+  - Seoul Hangang JS-only cards resolve to the first-party detail page;
+  - Gwacheon now resolves its existing first-party JavaScript detail URL;
+  - unsafe external/detail and file targets remain fail-closed;
+  - existing table/card generic extraction contracts remain intact.
+- This merge has NOT been deployed to the Worker yet. Keep production on the prior deployed version until the rich-detail ingestion wiring is complete, then deploy the combined change once before the Sep 28 natural cycle.
+- Next bounded task: wire the already-merged municipal rich-detail extractor/persistence foundation into the autonomous municipal path for both NEW and already-existing municipal events, with shard/fetch budgets preserved. Do not make enrichment depend only on `duplicateResult.decision === NEW`; existing sparse events must be eligible for bounded official detail refresh/backfill.
