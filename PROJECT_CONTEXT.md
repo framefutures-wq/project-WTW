@@ -1125,3 +1125,18 @@ UI benchmark:
 - Landing metadata continues to drive canonical/OG/sitemap output and initializes the same weekend + region discovery state in the React app.
 - No ingestion, D1, recommendation ranking, or production visibility rule changed.
 - Project checks and UI browser smoke passed before merge.
+
+
+## 2026-09-27 — discovery rollout preflight audit legacy-schema bug fixed
+
+- First production rollout attempt stopped safely before any migration or deploy.
+- Root cause: `rollout:discovery:v1` intentionally audits production before migrations, but `audit-publish-quality.ts` unconditionally selected the new `events.publish_quality_*` columns from migration 0022. On the still-unmigrated production D1, the read-only preflight therefore failed.
+- PR #74 merged as `c642303a4fb05221e6c757043895d323d28f8972`.
+- The quality audit is now schema-aware:
+  - before migration 0022, existing rows are modeled as their already-effective grandfathered `PUBLIC` state without referencing missing columns;
+  - after migration, the real persisted quality fields are used;
+  - missing `event_official_links` remains safely supported;
+  - D1 failure diagnostics now preserve stderr/stdout detail.
+- Focused regression coverage added.
+- Project checks and UI browser smoke both passed before merge.
+- No production write occurred in the failed attempt. The next production step is to pull latest main and rerun the same single `npm run rollout:discovery:v1` command.
