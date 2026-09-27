@@ -9,6 +9,7 @@ import {
   detailBacklogSql,
   productionMunicipalKeys,
   summarizeMunicipalSourceOutcomes,
+  summarizeMunicipalRichDetail,
 } from "../scripts/morning-production-check-lib.mjs";
 
 test("morning production check accepts SELECT/WITH and rejects mutations", () => {
@@ -124,4 +125,37 @@ test("source outcome summary merges municipal shard messages", () => {
   assert.deepEqual(summary.errors, [
     { source: third, candidates: 0, reason: "network_or_timeout" },
   ]);
+});
+
+
+test("morning production summary aggregates municipal rich-detail shard metrics", () => {
+  const [first, second] = productionMunicipalKeys;
+  const summary = summarizeMunicipalRichDetail([
+    {
+      municipal: {
+        rich_detail_attempted: 4,
+        rich_detail_candidates: 3,
+        rich_detail_persisted: 3,
+        rich_detail_errors: 1,
+        rich_detail_by_source: { [first]: 2, "not-registered": 9 },
+      },
+    },
+    {
+      municipal: {
+        rich_detail_attempted: 2,
+        rich_detail_candidates: 2,
+        rich_detail_persisted: 1,
+        rich_detail_errors: 0,
+        rich_detail_by_source: { [first]: 1, [second]: 1 },
+      },
+    },
+  ]);
+
+  assert.deepEqual(summary, {
+    attempted: 6,
+    candidates: 5,
+    persisted: 4,
+    errors: 1,
+    by_source: { [first]: 3, [second]: 1 },
+  });
 });
