@@ -1374,3 +1374,16 @@ UI benchmark:
   - 기존 PUBLIC current/future TourAPI 누락분을 raw payload에서 복구하는 bounded backfill command 추가: `npm run images:backfill:tourapi-primary -- --remote --apply`.
 - UI browser smoke + Project checks PASS.
 - 다음 단계는 production backfill 실행 후 홈에서 실제 no-image TourAPI 카드 감소를 검증하는 것. 지자체 이미지 누락은 별도 문제로 남는다.
+
+
+## 2026-09-27 — TourAPI primary-image backfill production result
+
+- Production backfill `images:backfill:tourapi-primary -- --remote --apply` completed successfully.
+- Missing TourAPI primary-image rows scanned: 46.
+- Recoverable directly from already-stored raw payload: 45.
+- Inserted/refreshed primary images: 45.
+- Remaining missing TourAPI primary image: 1.
+- This confirms the dominant no-image problem was our persistence bug, not source scarcity: 45/46 missing TourAPI cards already had usable image URLs in raw source data.
+- Worker with the persistence fix deployed successfully as version `fa102aad-b04e-4975-9fdf-85031fb907cf`.
+- Future TourAPI syncs now persist `firstimage` (fallback `firstimage2`) into `event_images` while preserving healthier non-TourAPI imagery.
+- Next image-quality work should focus on the single remaining TourAPI case plus municipality/organizer events whose official pages contain posters that are not yet captured.
