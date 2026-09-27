@@ -49,6 +49,47 @@ const d1Read = (sql) => {
   return JSON.parse(output)[0]?.results ?? [];
 };
 
+const postShard = (url, shardIndex) => {
+  const result = spawnSync(
+    "curl",
+    [
+      "--silent",
+      "--show-error",
+      "--fail-with-body",
+      "--connect-timeout",
+      "30",
+      "--max-time",
+      String(14 * 60),
+      "--request",
+      "POST",
+      "--header",
+      `x-manual-municipal-nonce: ${nonce}`,
+      "--header",
+      `x-manual-municipal-shard: ${shardIndex}`,
+      url,
+    ],
+    {
+      encoding: "utf8",
+      maxBuffer: 8 * 1024 * 1024,
+    },
+  );
+  if (result.status !== 0)
+    throw new Error(
+      `one-shot shard ${shardIndex} transport failed: ${(
+        result.stderr ||
+        result.stdout ||
+        "curl command failed"
+      ).trim()}`,
+    );
+  try {
+    return JSON.parse(result.stdout);
+  } catch {
+    throw new Error(
+      `one-shot shard ${shardIndex} returned invalid JSON`,
+    );
+  }
+};
+
 const sqlQuote = (value) => `'${String(value).replaceAll("'", "''")}'`;
 
 const stateSummarySql = (registryKeys, startedAt) => {
@@ -160,25 +201,20 @@ try {
     );
 
   const shardResults = [];
+  console.error(
+    `[municipal:once] manualRunId=${manualRunId} shards=${requestedShards.join(",")}`,
+  );
   for (const shardIndex of requestedShards) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "x-manual-municipal-nonce": nonce,
-        "x-manual-municipal-shard": String(shardIndex),
-      },
-      signal: AbortSignal.timeout(14 * 60_000),
-    });
-    if (!response.ok)
-      throw new Error(
-        `one-shot shard ${shardIndex} failed (${response.status})`,
-      );
-    const result = await response.json();
+    console.error(`[municipal:once] shard ${shardIndex} start`);
+    const result = postShard(url, shardIndex);
     if (result.shardIndex !== shardIndex)
       throw new Error(
         `one-shot shard mismatch: requested ${shardIndex}, got ${result.shardIndex}`,
       );
     shardResults.push(result);
+    console.error(
+      `[municipal:once] shard ${shardIndex} success sources=${result.plan?.sourceKeys?.length ?? 0} rich=${result.summary?.rich_detail_persisted ?? 0} errors=${result.summary?.source_errors ?? 0}`,
+    );
   }
 
   const registrySourceCounts = new Set(
