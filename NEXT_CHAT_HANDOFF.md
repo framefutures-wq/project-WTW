@@ -1924,3 +1924,29 @@ UI 기준:
   2. if shard 1 succeeds, run shard 2 only;
   3. then run the read-only `npm run municipal:verify:manual -- --minutes=180` to aggregate recent coverage across all three targeted shard runs.
 - After all three are verified, triage residual true source/parser failures beginning with `gyeonggi-과천`.
+
+## 2026-09-27 — municipal rich-detail UI plumbing fixed end-to-end
+
+- A production screenshot exposed that D1 rich-detail persistence alone did not make the visible event detail correct:
+  - summary still showed the generic base description;
+  - programs/contact were missing;
+  - two municipal images rendered broken;
+  - same-day multiple operating sessions were hidden.
+- Root causes in the public detail path:
+  1. `/api/events/:id` decoded the route to `eventId` for the base event row, but enrichment/evidence/highlight/program/occurrence queries still bound the encoded path segment (`detail[1]`), so legacy municipal IDs containing URL/date/title separators returned no rich detail.
+  2. contact lookup only handled TourAPI payload shapes and ignored `municipal_rich_detail.contact_phone`.
+  3. `selectOperatingHours` intentionally hid differing rows, which also hid legitimate same-day multi-session hours.
+  4. municipality image URLs were sent directly to the browser; official hotlink/thumbnail endpoints could fail visibly.
+- PR #58 `fix: connect municipal rich detail to the visible event detail UI` merged as `d244fe4e7b5e2aa41067def68e3bec1546fe15ff`.
+  - Project checks #886 SUCCESS.
+  - UI browser smoke #162 SUCCESS.
+- Fixes:
+  - all detail-table queries now bind decoded `eventId`;
+  - municipality contact payload is surfaced, including civic short code `120`;
+  - same-day multiple sessions render as one joined operating-hours label;
+  - municipality images are exposed through a bounded same-event Worker image proxy using the stored official image URL + source-page Referer, HTTPS/image-type checks and an 8 MiB declared-size guard;
+  - TourAPI/non-municipality images remain direct and unchanged.
+- Added integration coverage proving a Hangang-style encoded legacy ID goes D1 -> public detail API with summary, programs, two operating-hour rows, contact 120 and proxied images.
+- Added browser coverage proving those fields are visibly rendered in the event detail UI and the two images actually load.
+- This PR changes production Worker/UI code and is NOT deployed yet.
+- Next user action: clean-tree pull latest main, `npm run deploy:verified`, production smoke, then open the same Hangang detail and verify summary/images/hours/programs/contact visually. No municipal ingestion rerun is required because D1 already contains the rich-detail rows.
