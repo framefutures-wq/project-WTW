@@ -80,6 +80,55 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   });
   expect(errors).toEqual([]);
 });
+test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합할 수 있다", async ({ page }) => {
+  await page.goto("/");
+  const advanced = page.locator(".advanced-filters");
+  await expect(advanced).not.toHaveAttribute("open", "");
+
+  const kidsResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/events" && url.searchParams.get("audience") === "kids";
+  });
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "아이와", exact: true })
+    .click();
+  await kidsResponse;
+  await expect(advanced).not.toHaveAttribute("open", "");
+  await expect(
+    page.locator(".quick-category-grid").getByRole("button", { name: "아이와", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  const combinedResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("audience") === "kids" &&
+      url.searchParams.get("theme") === "performance"
+    );
+  });
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "공연", exact: true })
+    .click();
+  await combinedResponse;
+
+  await expect(
+    page.locator(".quick-category-grid").getByRole("button", { name: "공연", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.locator(".quick-category-grid").getByRole("button", { name: "아이와", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  await page
+    .locator(".quick-category-grid")
+    .getByRole("button", { name: "전체", exact: true })
+    .click();
+  await expect(
+    page.locator(".quick-category-grid").getByRole("button", { name: "전체", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
 test("빠른 카테고리는 세부필터를 자동으로 열거나 같은 주제를 중복 표시하지 않는다", async ({ page }) => {
   await page.goto("/");
   const advanced = page.locator(".advanced-filters");
