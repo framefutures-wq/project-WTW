@@ -466,6 +466,9 @@ try {
     (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='NEW_EVENT'").first()).n,
     1,
   );
+  await db.prepare(
+    "INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES('tourapi-101','tourapi-101-source','official_url','https://festival.example.org/tourapi-101',?)",
+  ).bind(now).run();
   const real = await get("/api/events/tourapi-101");
   assert.equal(real.event.is_sample, 0);
   assert.equal(real.event.status, "unknown");
@@ -475,7 +478,11 @@ try {
     href: "tel:0212345678",
   });
   assert.deepEqual(real.event.tags, []);
-  assert.equal(real.evidence.length, 4);
+  assert.equal(
+    real.event.official_url,
+    "https://festival.example.org/tourapi-101",
+  );
+  assert.equal(real.evidence.length, 5);
   assert.equal(
     (
       await db
