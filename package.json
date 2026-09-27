@@ -61,7 +61,8 @@
     "apply:publish-quality:v1": "node --import tsx scripts/apply-publish-quality-v1.ts",
     "official-links:backfill:tourapi": "node --import tsx scripts/backfill-tourapi-official-links.ts",
     "official-links:audit:tourapi": "node --import tsx scripts/audit-tourapi-official-link-gaps.ts",
-    "official-links:resolve:tourapi-explicit": "node --import tsx scripts/resolve-tourapi-explicit-homepages.ts"
+    "official-links:resolve:tourapi-explicit": "node --import tsx scripts/resolve-tourapi-explicit-homepages.ts",
+    "official-links:audit:tourapi-other-https": "node --import tsx scripts/audit-tourapi-other-https-evidence.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
