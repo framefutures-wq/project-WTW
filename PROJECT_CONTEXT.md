@@ -1346,3 +1346,17 @@ UI benchmark:
 - 다음 별도 bounded task는 **공식 페이지에는 포스터가 있는데 `event.image_url`이 비어 있는 행사들의 이미지 수집 누락 원인/보강**이다.
 - UI browser smoke와 Project checks 모두 PASS.
 - production deploy는 아직 하지 않았다.
+
+
+## 2026-09-27 — Korea Tourism-style home production verified; missing-poster audit ready
+
+- Home poster-first UI deployed to production as Worker version `48eed064-5c7b-4345-8f58-735e4215b381`.
+- Final production smoke passed desktop and mobile (2/2).
+- Home UI benchmark switch is therefore production-complete.
+- PR #86 merged green as `a854191150258d974bba09242971cbd2b555ed3c`.
+- New read-only command: `npm run images:audit:missing-posters -- --remote`.
+- The audit targets PUBLIC current/future events whose primary image row is missing/non-ok and classifies whether an image can be recovered from:
+  - existing raw source payload image fields;
+  - stored exact official event page metadata/JSON-LD/HTML images;
+  - first-party municipality/organizer page when no event-specific official link exists.
+- It never writes D1. The next bounded task should use the production audit result to fix the relevant ingestion/extractor path, not improve the no-image decoration.
