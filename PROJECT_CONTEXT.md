@@ -1100,3 +1100,18 @@ UI benchmark:
 - The read-only production audit now feeds discovered event-specific official links into the same classifier, so audit and ingestion decisions use the same evidence.
 - This change is intended to remove the exact class the user flagged: records that technically look event-like by title but are too thin to deserve public listing.
 - Legacy production rows are still not mass-reclassified until the read-only production audit is reviewed.
+
+
+## 2026-09-27 — discovery v1 guarded production rollout helper ready
+
+- PR #71 merged as `c7da50d515e26a9f39755b4c11b7fe52cc3040f3`.
+  - Read-only publish-quality audit now reports current persisted quality state, legacy unversioned counts, exact current→proposed transitions, and proposed visibility-change count.
+  - Project checks and UI browser smoke passed before merge.
+- PR #72 merged as `74e3504386c54fca25ac59c78575b04783ba1d80`.
+  - Added `npm run rollout:discovery:v1`, rebuilt on latest main.
+  - The command fails closed unless local main is clean and exactly matches origin/main.
+  - It runs the zero-write remote production quality audit first, blocks structurally invalid/catastrophic state or visibility deltas, applies pending D1 migrations, performs verified deploy, runs production smoke/browser checks, then re-runs the audit.
+  - It does **not** mass-reclassify legacy rows.
+  - Project checks and UI browser smoke passed before merge.
+- Stale/conflicted PR #66 was closed as superseded by #72.
+- Production rollout itself is still pending because the current chat runtime does not have the authenticated Cloudflare/Codespaces execution environment. Do not claim migration/deploy/audit completion until `npm run rollout:discovery:v1` actually finishes in that environment.
