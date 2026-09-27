@@ -2311,3 +2311,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The 60-minute production verification saw 24/35 registry sources. Missing observations were: `busan-해운대`, `daegu-서`, `gangwon-원주`, `gyeongbuk-영주`, `gyeonggi-과천`, `gyeonggi-용인`, `gyeonggi-이천`, `gyeongnam-거제`, `jeonnam-gwangju-곡성`, `seoul-gangnam`, `ulsan-북`.
 - Verified rich-detail examples now include Hangang, Busan Dong-gu, Gyeongju, Pyeongtaek and Goyang. The Hangang `달빛 한가위 마당` record has summary, official image, free price, two operating-hour rows, three programs and contact 120.
 - The 1102 mitigation task is complete. Next bounded task: isolate the missing-observation source failures without reopening the rich-detail extractor or rerunning successful shards wholesale.
+
+## 2026-09-28 — shard-2 source recovery patch green; production deploy/run pending
+
+- Follow-up on the three shard-2 source failures used current official pages only.
+- `gyeongbuk-영주`: the official culture calendar is reachable and still exposes current 2026 events/detail links, but the old `schedule_tit` health marker is no longer a reliable current-page contract. Registry health now uses `문화달력` + `mon_uid`, which is tied to the actual official detail links.
+- `gyeongnam-거제`: the previous root host returned HTTP 522 during Worker ingestion, while the official tourism host `tour.geoje.go.kr` exposes the same live FESTIVAL calendar. Registry + parser canonical base now use that official tourism host; candidate identity remains dataSid/title-date-venue based.
+- `busan-해운대`: the canonical official URL is still correct, but live access was intermittently unavailable and the previous Worker run returned HTTP 530. No speculative URL/parser change was made; retain retry behavior.
+- Commits: `bc67ac6` registry contract/Geoje URL, `471424d` Geoje parser base, `3c9fdff` regression assertions.
+- GitHub Project checks including `npm run check` and municipal inventory check PASS.
+- Production action still required: deploy latest main, rerun only shard 2, then read-only manual verify. Do not rerun shard 0 or shard 1.
