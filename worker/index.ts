@@ -868,7 +868,7 @@ export default {
               .bind(eventId)
               .first<{ url: string | null }>();
         row.official_url = storedOfficialUrl?.url ?? auditedOfficialUrl?.url ?? null;
-        const contactSource = await env.DB.prepare(
+        const contactSources = await env.DB.prepare(
           `SELECT raw_payload
            FROM sources
            WHERE id IN (?,?,?)
@@ -876,8 +876,7 @@ export default {
              WHEN id=? THEN 0
              WHEN id=? THEN 1
              ELSE 2
-           END
-           LIMIT 1`,
+           END`,
         )
           .bind(
             `official-detail-${row.id}`,
@@ -886,8 +885,11 @@ export default {
             `official-detail-${row.id}`,
             `${row.id}-detail`,
           )
-          .first<{ raw_payload: string | null }>();
-        const contactPhone = municipalContactPhone(contactSource?.raw_payload);
+          .all<{ raw_payload: string | null }>();
+        const contactPhone =
+          contactSources.results
+            .map((source) => municipalContactPhone(source.raw_payload))
+            .find((value): value is string => Boolean(value)) ?? null;
         const enrichment = await env.DB.prepare(
           `SELECT en.summary,s.url AS source_url,s.kind AS source_kind,s.priority AS source_priority FROM event_enrichments en JOIN sources s ON s.id=en.source_id WHERE en.event_id=?`,
         )

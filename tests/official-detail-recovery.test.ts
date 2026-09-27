@@ -148,3 +148,48 @@ test("title mismatch is quarantined and does not overwrite event detail", async 
     await mf.dispose();
   }
 });
+
+
+test("audited official URL is eligible when no stored event link exists", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      "DELETE FROM event_official_links WHERE event_id='event-1'",
+    ).run();
+    await DB.prepare(
+      `INSERT INTO official_source_audits(
+        id,run_id,event_id,origin_source_id,checked_at,baseline_json,
+        detail_json,url_inventory_json,candidate_status
+      ) VALUES(
+        'audit-1','run-1','event-1','municipality','2026-09-27T00:00:00Z',
+        '{}','{}','[]','candidates_found'
+      )`,
+    ).run();
+    await DB.prepare(
+      `INSERT INTO official_source_links(
+        id,audit_id,url,final_url,source_types,title,checked_at,http_status,
+        access_status,official,reason,excerpt,content_hash,provenance_json
+      ) VALUES(
+        'link-1','audit-1',
+        'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',
+        NULL,'["local_government"]','제9회 동오마을축제 2026 동오마을 푸드페스타',
+        '2026-09-27T00:00:00Z',200,'ok',1,'verified',
+        'official event page','hash','{}'
+      )`,
+    ).run();
+
+    const rows = await selectOfficialDetailRecoveryCandidates(
+      DB,
+      new Date("2026-09-28T01:00:00Z"),
+      10,
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(
+      rows[0]?.official_url,
+      "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016",
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
