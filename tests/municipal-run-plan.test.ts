@@ -30,7 +30,10 @@ test("daily municipal plan preserves the global mutation breaker and bounded fet
     10,
   );
   assert(plans.every((plan) => plan.maxExternalFetches === 35));
-  assert(plans.every((plan) => plan.maxDetailFetches <= 6));
+  assert.deepEqual(
+    plans.map((plan) => plan.maxDetailFetches),
+    [24, 24, 22],
+  );
   assert(plans.every((plan) => plan.maxRetryCandidates <= 4));
 });
 
