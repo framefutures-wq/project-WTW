@@ -1028,3 +1028,21 @@ UI benchmark:
 다만 한강 한 건의 공식페이지 parity를 계속 확장하는 작업은 **현재 최우선 과제에서 내린다**.
 새 로드맵에서는 먼저 Publish Quality Gate와 공식 링크 품질을 완성하고,
 향후 필요성이 검증된 범위에서만 rich-detail을 선택적으로 사용한다.
+
+
+## 2026-09-27 — discovery-first Phase 1 complete: Publish Quality Gate v1
+
+- PR #59 merged as `365eebfc4bee85324125d1dd878b94369f1991d0`.
+- Added provider-neutral deterministic classifier `shared/publish-quality.ts`.
+- Output states: `PUBLIC / HOLD / EXCLUDE`.
+- Current v1 behavior:
+  - HOLD missing core or missing/untrusted official source;
+  - EXCLUDE explicit non-events such as recruitment, regular classes, seminars, internal/admin events;
+  - EXCLUDE ordinary perpetual facility/program operation only when explicit perpetual + facility signals are both present and there is no special-event signal;
+  - PUBLIC explicit festival/performance/exhibition/experience/special-event signals;
+  - PUBLIC bounded official records with meaningful description;
+  - HOLD sparse/ambiguous records instead of guessing.
+- Bounded daily operation inside a finite special event remains PUBLIC; “매일 열린다” alone is not an exclusion rule.
+- This PR does not change D1 schema or production visibility yet. It establishes the common decision contract only.
+- CI: Project checks PASS; UI browser smoke PASS.
+- Next bounded task: integrate the quality state safely into storage/read paths with a backwards-compatible default, then audit existing production data before any mass reclassification.
