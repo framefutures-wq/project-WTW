@@ -2433,3 +2433,9 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Next bounded task: instrument Reader fallback execution so the source result exposes whether Reader was attempted, whether it returned, and the exact bounded failure reason/status. Then deploy and rerun ONLY `gyeonggi-의정부`. Use the result to repair the transport invocation or discard/replace Reader if it is unreachable from the Worker.
 - Success criterion remains unchanged: the existing food-festa event must end with exact `idx=2016` official URL plus a real poster image URL and official detail fields in D1.
 - Continue image/detail work only. Do not switch to other municipality source failures until this representative case is solved.
+
+## 2026-09-28 — Uijeongbu food-festa production presentation repaired
+
+- Production Worker `697cb518-3475-4074-9ea7-0d8abc8d8e60` now serves the exact official poster through `/api/events/:id/image/1` as `200 image/jpeg`; list and detail API records use that proxy for municipal primary images.
+- The summary extractor now requires an explicit event-content section, so site-wide meta descriptions do not become event copy. Event-wide `일시` lines become operating-hour evidence and are excluded from program cards; stale portal boilerplate/time-only program data is also hidden at the API boundary until the next normal official-detail refresh rewrites it.
+- Latest code: `4b984f3`. Target API confirms the official image proxy and no visible summary/program rows. Future visual QA should verify this event plus 회룡문화제/녹양평 문화축제 on desktop/mobile.

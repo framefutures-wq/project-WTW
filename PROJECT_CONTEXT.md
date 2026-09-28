@@ -1512,3 +1512,8 @@ UI benchmark:
 - Therefore the newly added Reader fallback did not produce usable source HTML in production. Do not assume Reader transport works merely because unit tests pass.
 - Next bounded task is diagnostic, not another blind parser/fetch rewrite: add explicit Reader-attempt outcome telemetry (attempted / success / HTTP/error reason / target URL class) to municipal source results, then rerun only Uijeongbu. Based on that evidence, fix the exact transport invocation or replace the fallback if the Reader endpoint is unusable from the Worker.
 - Image/detail completeness remains the active priority. Do not resume unrelated Yeongju/Geoje/Haeundae work.
+
+## 2026-09-28 — municipal official poster display hardening deployed
+
+- Municipal primary images in list and detail APIs now use the existing same-origin image proxy. The proxy sends the official-page referer/browser profile and safely recognizes `imgViewer.jsp?ext=...` binary responses as their declared image type.
+- Exact Uijeongbu food-festa proof: the proxy returned `200 image/jpeg`; stale municipal portal boilerplate and an event-wide time line were removed from the public detail response. This preserves the official image and avoids inventing summary/program data.
