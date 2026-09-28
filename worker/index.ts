@@ -32,6 +32,7 @@ import {
   COMPANION_RULE_VERSION,
 } from "../shared/companion-suitability";
 import { normalizeOfficialPhone } from "../shared/contact-phone";
+import { municipalEventTimeOnlyLabel } from "../shared/municipal-rich-detail";
 import { validProgramTime } from "../shared/event-program-time";
 import {
   selectOperatingHours,
@@ -306,6 +307,15 @@ function municipalContactPhone(rawPayload: string | null | undefined) {
   } catch {
     return null;
   }
+}
+
+function visibleMunicipalSummary(value: string, sourceKind: string) {
+  if (
+    sourceKind === "municipality" &&
+    /(?:열린\s*민원|시정\s*소식|각\s*분야별\s*정보)/u.test(value)
+  )
+    return null;
+  return value;
 }
 
 async function proxyEventImage(
@@ -986,16 +996,19 @@ export default {
                 venue: row.venue_name as string | null,
               };
             }),
-        }));
+        })).filter((program) => !municipalEventTimeOnlyLabel(program.name));
+        const visibleSummary = enrichment
+          ? visibleMunicipalSummary(enrichment.summary, enrichment.source_kind)
+          : null;
         return json({
           event: withMunicipalImageProxy(url, serialize(row)),
           images,
           evidence: evidence.results,
           contact_phone: contactPhone,
           operating_hours: parseOperatingHours(row.operating_hours_json),
-          enrichment: enrichment
+          enrichment: enrichment && (visibleSummary || highlights.results.length || programRows.length)
             ? {
-                summary: enrichment.summary,
+                summary: visibleSummary ?? "",
                 source_url: enrichment.source_url,
                 source_kind: enrichment.source_kind,
                 source_priority: enrichment.source_priority,
