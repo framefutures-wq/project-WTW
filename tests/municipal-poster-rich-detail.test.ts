@@ -97,6 +97,10 @@ test("poster program parser excludes OCR explanation fragments", () => {
     "댄스, 노래 등",
     "체험",
     "남녀노소 즐길 수",
+    "QR코드로 스탬프 인증하면 누구나 경품",
+    "지역화폐 소비혜택",
+    "축제 참여업소",
+    "랜덤 경품 이벤트",
   ].join("\n"));
-  assert.deepEqual(detail.programs.map(({ name }) => name), ["무대공연", "체험"]);
+  assert.deepEqual(detail.programs.map(({ name }) => name), ["무대공연", "체험", "지역화폐 소비혜택", "랜덤 경품 이벤트"]);
 });

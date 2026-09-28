@@ -92,7 +92,10 @@ export function parseMunicipalPosterRichDetail(text: string): MunicipalRichDetai
       continue;
     }
     if (!inPrograms) continue;
-    if (/^(?:주최|주관|후원|문의|장소|일\s*시|시간|행사\s*개요|오시는\s*길|QR)/u.test(line))
+    if (
+      /^(?:주최|주관|후원|문의|장소|일\s*시|시간|행사\s*개요|오시는\s*길)(?:\s|[:：]|$)/u.test(line) ||
+      /^QR(?:\s*코드)?\s*[:：]?$/u.test(line)
+    )
       break;
     if (
       line.length < 2 || line.length > 32 ||
