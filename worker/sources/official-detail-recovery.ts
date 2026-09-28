@@ -547,6 +547,110 @@ export async function selectOfficialDetailRecoveryCandidates(
 const POSTER_PARSER_VERSION = 5;
 const POSTER_FAILURE_RETRY_MS = 24 * 60 * 60 * 1000;
 
+type PosterOCRState = {
+  latest_attempt?: {
+    status: string;
+    attempted_at: string;
+    parser_version: number;
+    error?: string;
+  };
+  last_success?: {
+    poster_url: string;
+    transcription: string;
+    succeeded_at: string;
+  };
+};
+
+function readPosterOCRState(rawPayload: string | null, fetchedAt: string): PosterOCRState {
+  if (!rawPayload) return {};
+  try {
+    const value = JSON.parse(rawPayload) as Record<string, unknown>;
+    const state: PosterOCRState = {};
+    const latest = value.latest_attempt;
+    if (latest && typeof latest === "object") {
+      const attempt = latest as Record<string, unknown>;
+      if (typeof attempt.status === "string" && typeof attempt.attempted_at === "string")
+        state.latest_attempt = {
+          status: attempt.status,
+          attempted_at: attempt.attempted_at,
+          parser_version: typeof attempt.parser_version === "number" ? attempt.parser_version : POSTER_PARSER_VERSION,
+          ...(typeof attempt.error === "string" ? { error: attempt.error } : {}),
+        };
+    }
+    const success = value.last_success;
+    if (success && typeof success === "object") {
+      const item = success as Record<string, unknown>;
+      if (typeof item.poster_url === "string" && typeof item.transcription === "string" && typeof item.succeeded_at === "string")
+        state.last_success = {
+          poster_url: item.poster_url,
+          transcription: item.transcription,
+          succeeded_at: item.succeeded_at,
+        };
+    }
+    // Older deployments kept the last successful OCR at the payload root.
+    if (!state.last_success && value.status === "success" &&
+      typeof value.poster_url === "string" && typeof value.converted_text === "string" && value.converted_text.trim()) {
+      state.last_success = {
+        poster_url: value.poster_url,
+        transcription: value.converted_text,
+        succeeded_at: fetchedAt,
+      };
+    }
+    if (!state.latest_attempt && typeof value.status === "string")
+      state.latest_attempt = {
+        status: value.status,
+        attempted_at: fetchedAt,
+        parser_version: typeof value.version === "number" ? value.version : POSTER_PARSER_VERSION,
+        ...(typeof value.error === "string" ? { error: value.error } : {}),
+      };
+    return state;
+  } catch {
+    return {};
+  }
+}
+
+async function writePosterOCRState(
+  db: D1Database,
+  row: RecoveryRow,
+  attemptedAt: string,
+  posterUrl: string,
+  status: string,
+  options: { transcription?: string; error?: string } = {},
+) {
+  const id = `official-poster-${row.id}`;
+  const previous = await db.prepare("SELECT raw_payload,fetched_at FROM sources WHERE id=?")
+    .bind(id).first<{ raw_payload: string | null; fetched_at: string }>();
+  const state = readPosterOCRState(previous?.raw_payload ?? null, previous?.fetched_at ?? attemptedAt);
+  if (status === "success" && options.transcription) {
+    state.last_success = {
+      poster_url: posterUrl,
+      transcription: options.transcription,
+      succeeded_at: attemptedAt,
+    };
+  }
+  state.latest_attempt = {
+    status,
+    attempted_at: attemptedAt,
+    parser_version: POSTER_PARSER_VERSION,
+    ...(options.error ? { error: options.error.slice(0, 180) } : {}),
+  };
+  // Root fields retain compatibility with existing candidate selection and
+  // older readers; successful OCR remains available under last_success.
+  const payload = {
+    poster_url: posterUrl,
+    version: POSTER_PARSER_VERSION,
+    status,
+    ...(status === "success" && options.transcription ? { converted_text: options.transcription } : {}),
+    ...(options.error ? { error: options.error.slice(0, 180) } : {}),
+    ...state,
+  };
+  await db.prepare(
+    `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
+     VALUES(?, 'municipality', 2, '공식 포스터 판독 상태', ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload,url=excluded.url`,
+  ).bind(id, row.official_url, attemptedAt, JSON.stringify(payload)).run();
+}
+
 async function enrichFromVerifiedPoster(
   env: Env,
   row: RecoveryRow,
@@ -578,26 +682,20 @@ async function enrichFromVerifiedPoster(
   ).bind(stateId).first<{ raw_payload: string | null; fetched_at: string }>();
   if (previous?.raw_payload) {
     try {
-      const state = JSON.parse(previous.raw_payload) as {
-        poster_url?: string; version?: number; status?: string;
-      };
-      if (state.poster_url === poster.image_url && state.version === POSTER_PARSER_VERSION) {
-        if (state.status === "success" || state.status === "empty" || state.status === "core_mismatch")
+      const payload = JSON.parse(previous.raw_payload) as { poster_url?: string; version?: number; status?: string };
+      if (payload.poster_url === poster.image_url && payload.version === POSTER_PARSER_VERSION) {
+        if (payload.status === "success" || payload.status === "empty" || payload.status === "core_mismatch")
           return null;
         if (new Date(checkedAt).getTime() - new Date(previous.fetched_at).getTime() < POSTER_FAILURE_RETRY_MS)
           return null;
       }
     } catch {}
   }
-  const record = async (status: string, text?: string, error?: string) => env.DB.prepare(
-    `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
-     VALUES(?, 'municipality', 2, '공식 포스터 판독 상태', ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload,url=excluded.url`,
-  ).bind(stateId, row.official_url, checkedAt, JSON.stringify({
-    poster_url: poster.image_url, version: POSTER_PARSER_VERSION, status,
-    ...(text ? { converted_text: text } : {}),
-    ...(error ? { error: error.slice(0, 180) } : {}),
-  })).run();
+  const record = (status: string, text?: string, error?: string) =>
+    writePosterOCRState(env.DB, row, checkedAt, poster.image_url, status, {
+      ...(text ? { transcription: text } : {}),
+      ...(error ? { error } : {}),
+    });
   try {
     const image = new URL(poster.image_url);
     const extension = image.searchParams.get("ext")?.toLowerCase() || image.pathname.split(".").pop()?.toLowerCase();
@@ -637,14 +735,7 @@ async function enrichFromVerifiedPoster(
 }
 
 async function markPosterSuccess(db: D1Database, row: RecoveryRow, checkedAt: string, posterUrl: string, text: string) {
-  await db.prepare(
-    `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
-     VALUES(?, 'municipality', 2, '공식 포스터 판독 상태', ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload,url=excluded.url`,
-  ).bind(`official-poster-${row.id}`, row.official_url, checkedAt, JSON.stringify({
-    poster_url: posterUrl, version: POSTER_PARSER_VERSION, status: "success",
-    converted_text: text,
-  })).run();
+  await writePosterOCRState(db, row, checkedAt, posterUrl, "success", { transcription: text });
 }
 
 export async function runOfficialDetailRecovery(
