@@ -2358,3 +2358,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   4. run `images:audit:missing-posters -- --remote --summary`;
   5. verify the Uijeongbu example and quantify remaining image/detail gaps.
 - Do not resume Yeongju/Geoje/Haeundae diagnosis until this production image/detail verification is complete.
+
+## 2026-09-28 — production run analyzed; provenance bridge fix green
+
+- User production run on `c5de25b` succeeded in deploy but `official-detail:once` returned candidates=0/recovered=0.
+- The following audit found 23 missing municipality posters. Its reported 15 `FIRST_PARTY_SOURCE_PAGE_IMAGE` rows were misleading because examples were common/default site imagery or unrelated images from canonical list pages, not event-scoped poster evidence.
+- Root cause is now corrected in `d1507b2ff0f3b2535cc7882be860d1beb55b04a6`: exact municipal detail URLs already present in primary `sources.url` are eligible for recovery when they differ from the registry list URL; canonical list pages remain excluded. Future municipal detail runs also persist `event_official_links` so this bridge no longer disappears.
+- The missing-poster audit now distinguishes `FIRST_PARTY_SOURCE_PAGE_UNSCOPED_IMAGE` and does not count it as recoverable evidence. Common `inc/img/common`, `default_img`, `all_menu`, `menu_show`, noimg assets are filtered in the shared extractor.
+- Regression coverage added for exact-primary eligibility, list-page exclusion, persisted official links, and common/default image rejection. Project checks PASS.
+- Uijeongbu's two current missing-image rows were `PAGE_UNAVAILABLE/network_error` in the production audit. Do not invent images for them; re-evaluate only after official page access succeeds or another exact first-party detail source is verified.
+- Next authenticated production step: pull latest main, deploy verified Worker, run bounded `official-detail:once`, then rerun missing-poster summary. This is still the image/detail bounded task; do not switch back to Yeongju/Geoje/Haeundae yet.

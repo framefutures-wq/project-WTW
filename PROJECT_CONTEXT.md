@@ -1433,3 +1433,17 @@ UI benchmark:
 - A bounded authenticated backfill command is available: `npm run official-detail:once -- --passes=<1..10> --limit=<1..20>`.
 - Code through `8ccb66c44c9ac1f024129c03bf4647c3293a7690` has Project checks PASS. Exact-page poster attachments (`*.jpg/png/webp/...` links with event/poster semantics) are also recovered, covering official pages that expose posters as attachments rather than ordinary inline images. Production deploy/backfill and the post-backfill missing-poster audit are still pending.
 - Active priority remains image/detail completeness. The unrelated Yeongju/Geoje/Haeundae source-observation failures are deferred until this bounded task is closed.
+
+## 2026-09-28 — first production official-detail rollout exposed missing provenance bridge
+
+- Production deployed `c5de25b` as Worker version `fade4ab4-6ff7-425b-8ed2-c850144bb81c`.
+- The first bounded `official-detail:once -- --passes=8 --limit=12` found 0 candidates. The post-run missing-poster audit still found 23 PUBLIC current/future municipality events with no healthy primary image.
+- The audit originally labeled 15 rows `FIRST_PARTY_SOURCE_PAGE_IMAGE`, but examples proved those were not event-scoped evidence: Suwon returned shared `/inc/img/common/swcf_img.jpg`, while Hangang returned `default_img.jpg` plus an unrelated event image from a list page. Those 15 must not be counted as recoverable event posters.
+- Root cause: municipal ingestion already stored exact event-detail URLs in the event's primary `sources.url` for registered/detail-followup paths, but it did not persist them into `event_official_links`. The new recovery job only looked at `event_official_links` and official-source audits, so it could not see these existing exact municipal URLs.
+- Commit `d1507b2ff0f3b2535cc7882be860d1beb55b04a6` fixes the provenance bridge:
+  - recovery may use an existing municipal primary source URL only when it is demonstrably different from that source's canonical registry list URL and still passes the source allowlist;
+  - canonical list pages are never treated as exact recovery pages;
+  - future successful municipal detail ingestion persists `event_official_links`, including safe existing-event rich backfills;
+  - shared image extraction now rejects known common/default/menu assets consistently;
+  - missing-poster audit marks list/source-page images as unscoped and excludes them from `recoverable_from_existing_evidence`.
+- Project checks PASS for `d1507b2`. Production deploy + rerun of exact-detail recovery/audit is the next boundary.
