@@ -37,12 +37,7 @@ function safeHttps(baseUrl: string, raw: unknown) {
 }
 
 function attribute(tag: string, name: string) {
-  const escaped = name.replace(/[\\^$.*+?()[\]{}|]/g, "\\function attribute(tag: string, name: string) {
   const escaped = name.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
-  const quoted = new RegExp(`${escaped}\\s*=\\s*(['"])([\\s\\S]*?)\\1`, "i").exec(tag)?.[2];
-  if (quoted) return decodeHtml(quoted.trim());
-  return new RegExp(`${escaped}\\s*=\\s*([^\\s>]+)`, "i").exec(tag)?.[1]?.trim() ?? null;
-}");
   const quoted = new RegExp(
     `${escaped}\\s*=\\s*(['"])([\\s\\S]*?)\\1`,
     "i",
@@ -53,7 +48,6 @@ function attribute(tag: string, name: string) {
     null
   );
 }
-
 function pushUnique(
   output: OfficialPageImageCandidate[],
   seen: Set<string>,
