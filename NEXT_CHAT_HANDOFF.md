@@ -2458,3 +2458,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - D1 now persists seven programs: `떡볶이한판`, `무대공연`, `체험`, `QR코드로 이벤트 응모가 가능`, `지역화폐 소비혜택`, `랜덤 경품 이벤트`, `주최·주관 | 의정부도시공사 상권진흥센터 동투어 상인연합회`. The first label does not match requested spacing `떡볶이 한판`; QR text and organizer boilerplate are false program rows. Do not claim resolution.
 - Public API reflects those same seven rows and blank summary. Hours remain `12:00–19:00`; image is `200 image/jpeg`; `contact_phone` remains null.
 - Desktop and mobile pages both render the event and expose the QR and organizer rows. No second recovery was run. Next task is a bounded parser-output cleanup; do not repeat production recovery unless explicitly requested.
+
+## 2026-09-28 — parser cache reuse production verification
+
+- Deployed parser commit `2e5ab500782721eb49cfde823d5ea5758003a77f` as Worker version `5927b1df-5ccc-4b3d-ac02-fa837b3bcbcc`.
+- Ran exactly one target recovery: candidates=1, attempted=1, fetched=1, recovered=1, detail_recovered=1; Reader attempts=0. This was same-hash cache reuse: `last_success.succeeded_at` remained `2026-09-28T13:33:16.648Z`, hash remained `d15113163f94ec765e9c533163e4f82fc5cdbc5f11c6288784a9a78ec3e02280`, and code skips AI on cached results.
+- Production D1 and public API now expose exactly five programs: `떡볶이한판`, `무대공연`, `체험`, `지역화폐 소비혜택`, `랜덤 경품 이벤트`. QR instruction and organizer/footer rows are gone; no time-only rows. Summary remains blank.
+- Hours remain `12:00–19:00`; image status is `ok`; mobile showed the poster. Public API now displays contact `031-928-4964`.
+- Desktop and mobile both show the five clean programs and contact. Desktop detail hero poster appeared blank in the captured viewport while mobile showed it; one direct proxy request returned 404, so desktop image presentation needs a read-only follow-up check before claiming fully verified poster rendering. No additional recovery was run.

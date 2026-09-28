@@ -1532,3 +1532,9 @@ UI benchmark:
 - Production parser output contains the five intended program concepts but also persists QR instruction and organizer boilerplate as programs; `떡볶이한판` also differs from requested label `떡볶이 한판`. Public API exposes these rows, so the event does not meet the detail quality criteria.
 - Poster proxy returns `200 image/jpeg`, hours remain 12:00–19:00, summary is blank, and public `contact_phone` remains null. Desktop and mobile both show the QR/organizer false program rows.
 - Do not rerun production recovery for parser cleanup. The next work should be a bounded parser correction, followed by a separately authorized single target production validation.
+
+## 2026-09-28 — Uijeongbu parser cache reuse verified in production
+
+- Parser commit `2e5ab500782721eb49cfde823d5ea5758003a77f` deployed as Worker version `5927b1df-5ccc-4b3d-ac02-fa837b3bcbcc`; one target recovery reparsed the existing hash-matched transcription without AI and persisted exactly five valid programs.
+- QR instructions, organizer footer rows, and time-only program rows are absent. Operating hours remain 12:00–19:00, summary is blank, and API contact displays `031-928-4964`.
+- API image status is `ok` and mobile shows the poster. Desktop detail hero was blank in visual QA and one direct proxy request returned 404; verify desktop image delivery before treating presentation QA as fully complete.
