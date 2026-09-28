@@ -2396,3 +2396,14 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - `0e380ffe`: municipal source/detail fetches now use browser-compatible headers so the list refresh can discover/persist the exact URL even on sites that reject bot-style requests.
 - Project checks PASS.
 - Next authenticated boundary is one bounded production sequence only: deploy latest main → `municipal:once -- --source=gyeonggi-의정부` → `official-detail:once` → missing-poster audit → direct D1 verification of `동오마을`. Do not declare success until the D1 row has a real image URL and official detail fields.
+
+## 2026-09-28 — Uijeongbu 522 isolated; sibling-host production retry pending
+
+- Latest authenticated run proved `gyeonggi-의정부` fails at source fetch with `official_http_522` before parsing. `discovered=0`, `detail_fetches=0`, `rich_detail=0`; `official-detail:once` therefore had `candidates=0`. D1 still showed the food-festa event with canonical list URL, no stored official link, no image, no enrichment, hours=0, programs=0.
+- The exact-detail template itself is already correct; the blocker is the Worker network path to the bare host.
+- New code on main:
+  - `6133970b8c`: transient 429/5xx/network/timeout municipal fetches retry allowed sibling host such as `www.ui4u.go.kr`.
+  - `7cc1923bea`: once a sibling host works, reuse it for detail fetches in that run.
+  - `a7967e4557`: missing-poster audit uses the same fallback/browser request path.
+- Project checks PASS.
+- Next authenticated boundary: deploy latest main, run only `municipal:once -- --source=gyeonggi-의정부`, then `official-detail:once`, audit, and direct D1 verify. Success requires `official_url_snapshot`/stored link to resolve to the `idx=2016` detail page and real poster/detail fields to persist.

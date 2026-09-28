@@ -1474,3 +1474,12 @@ UI benchmark:
 - `0e380ffe7059caae0610b1a5ce7799cddc305bdb` also changes municipal list/detail HTTP requests to a normal Chrome-like browser request profile instead of the custom bot-style User-Agent. This allows the source refresh itself to reach sites that are browser-accessible but reject/flake on bot-looking requests.
 - Project checks PASS through `0e380ffe`.
 - Production proof still requires authenticated deploy + a source-specific Uijeongbu refresh followed by official-detail recovery and a direct D1 verification of the food-festa row.
+
+## 2026-09-28 — Uijeongbu production proved host-route failure; sibling-host fallback implemented
+
+- Production Worker `2807724f-45dc-4ef9-ab80-f5c4e0c8a8eb` deployed the exact-link/browser-header fixes, but source-specific `gyeonggi-의정부` still failed before parsing with `official_http_522` after 2 fetch attempts. No candidates were discovered, so the stored event remained pinned to the canonical list URL and the official-detail recovery still had 0 candidates.
+- This proves the remaining blocker is not HTML parsing or missing poster data: the Cloudflare Worker route to `ui4u.go.kr` is failing at HTTP 522 before the collector can read the list/detail page.
+- `6133970b8c` makes municipal fetch treat 429/5xx as transient and retry an allowed same-family sibling host (for example `ui4u.go.kr` -> `www.ui4u.go.kr`) instead of retrying the same failing host.
+- `7cc1923bea` remembers the working sibling host for the rest of the same municipal run, so once `www` succeeds the subsequent exact-detail fetch uses that host first instead of spending budget on the known failing route.
+- `a7967e4557` aligns the read-only missing-poster audit with the same sibling-host/browser fetch behavior, avoiding false PAGE_UNAVAILABLE classifications caused only by the first host route.
+- Project checks PASS for `a7967e4557`. Production redeploy + Uijeongbu source rerun is pending.
