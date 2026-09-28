@@ -1517,3 +1517,11 @@ UI benchmark:
 
 - Municipal primary images in list and detail APIs now use the existing same-origin image proxy. The proxy sends the official-page referer/browser profile and safely recognizes `imgViewer.jsp?ext=...` binary responses as their declared image type.
 - Exact Uijeongbu food-festa proof: the proxy returned `200 image/jpeg`; stale municipal portal boilerplate and an event-wide time line were removed from the public detail response. This preserves the official image and avoids inventing summary/program data.
+
+## 2026-09-28 — Uijeongbu production OCR reuse proof still incomplete
+
+- Latest production Worker version: `8e0c403c-6270-4477-9075-ac8d2e947239` (deployed from `b132a541d805db222207dc2dfbebfc8dff2b9d03`).
+- One explicitly bounded target recovery for the Uijeongbu food-festa event timed out: candidates=1, fetched=0, recovered=0; Reader returned HTTP 429 and 422. Do not repeat recovery until a new bounded production instruction.
+- Existing production D1 still has three program rows only (`떡볶이한판`, `무대공연`, `체험`); required `지역화폐 소비혜택` and `랜덤 경품 이벤트` are missing. Poster proxy is healthy (`200 image/jpeg`), hours are 12:00–19:00, but API contact is null and summary is blank.
+- Same-hash OCR cache reuse was not proven in production: current poster state has no `last_success`, hash, or transcription. AI inference start is not exposed by one-shot telemetry. Do not claim Uijeongbu detail resolution.
+- Next step is to diagnose the production timeout/transport boundary, then get explicit authorization for any further production recovery attempt.

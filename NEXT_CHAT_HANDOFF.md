@@ -2439,3 +2439,14 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Production Worker `697cb518-3475-4074-9ea7-0d8abc8d8e60` now serves the exact official poster through `/api/events/:id/image/1` as `200 image/jpeg`; list and detail API records use that proxy for municipal primary images.
 - The summary extractor now requires an explicit event-content section, so site-wide meta descriptions do not become event copy. Event-wide `일시` lines become operating-hour evidence and are excluded from program cards; stale portal boilerplate/time-only program data is also hidden at the API boundary until the next normal official-detail refresh rewrites it.
 - Latest code: `4b984f3`. Target API confirms the official image proxy and no visible summary/program rows. Future visual QA should verify this event plus 회룡문화제/녹양평 문화축제 on desktop/mobile.
+
+## 2026-09-28 — one-pass Uijeongbu poster OCR reuse production proof failed
+
+- Pulled `origin/main` at `b132a541d805db222207dc2dfbebfc8dff2b9d03` and deployed Worker version `8e0c403c-6270-4477-9075-ac8d2e947239`.
+- Read-only D1 lookup identified the exact event id `municipal-gyeonggi-의정부-https://ui4ugokr/portal/eventnoti/listdo?mid=0301170300|동오마을축제2026동오마을푸드페스타개최|2026-10-03|2026-10-03|동오마을공영주차장일원경전철동오역인근`.
+- Ran exactly one target-only `official-detail:once -- --passes=1 --event-id=...`: candidates=1, attempted=1, fetched=0, recovered=0, fetch_failed=1 (`timeout`); Reader attempted twice and failed with HTTP 429 and 422. Do not rerun or broaden recovery without a new explicit production instruction.
+- D1 poster state reports version 5, status `failed`, timeout error; no `last_success`, `poster_hash`, or transcription is present. The one-shot output does not instrument whether AI inference began, so AI call status is unknown and cache reuse did not occur.
+- Production programs remain `떡볶이한판`, `무대공연`, `체험`; required `지역화폐 소비혜택` and `랜덤 경품 이벤트` are absent (the first program also differs from requested spacing `떡볶이 한판`). Do not claim resolution.
+- Poster image proxy remains `200 image/jpeg` (203830 bytes); operating hours remain `2026-10-03 12:00–19:00`; public API returns `contact_phone: null`, blank summary, and no QR/time-only program rows.
+- Desktop and mobile production views were checked. Both show the poster, 12:00–19:00, and only the same three program rows; contact and two required programs are absent. API and proxy checks passed.
+- Next bounded task must diagnose the actual production timeout/transport boundary before any further target recovery. Preserve the single-attempt limit from this task; no automatic retries.
