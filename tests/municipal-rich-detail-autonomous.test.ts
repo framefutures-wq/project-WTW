@@ -155,6 +155,16 @@ async function assertRichRows(DB: D1Database) {
     JSON.parse(source!.raw_payload).municipal_rich_detail.contact_phone,
     "031-247-5615",
   );
+
+  const officialLink = await DB.prepare(
+    "SELECT url,source_id FROM event_official_links WHERE event_id=?",
+  )
+    .bind(EVENT_ID)
+    .first<{ url: string; source_id: string }>();
+  assert.deepEqual(officialLink, {
+    url: DETAIL_URL,
+    source_id: SOURCE_ID,
+  });
 }
 
 test("new municipal publication persists rich detail from the same bounded detail fetch", async () => {

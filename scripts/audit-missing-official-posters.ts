@@ -5,6 +5,10 @@ import {
   extractOfficialPageImageCandidates,
   extractRawPayloadImageCandidates,
 } from "../shared/official-page-image-candidates";
+import {
+  municipalSourceAllowsUrl,
+  municipalSourceByKey,
+} from "../shared/municipal-source-registry";
 
 const args = process.argv.slice(2);
 if (!args.includes("--remote"))
@@ -140,6 +144,7 @@ type Row = {
   image_url: string | null;
   image_status: string | null;
   official_url: string | null;
+  source_key: string | null;
 };
 
 const rows = execute(`
@@ -147,11 +152,13 @@ const rows = execute(`
     e.id, e.title, e.region, e.start_date, e.end_date,
     s.kind AS source_kind, s.url AS source_url, s.raw_payload AS source_raw_payload,
     ei.image_url, ei.image_status,
+    mcs.source_key,
     (SELECT ol.url FROM event_official_links ol
       WHERE ol.event_id=e.id ORDER BY ol.checked_at DESC LIMIT 1) AS official_url
   FROM events e
   JOIN sources s ON s.id=e.primary_source_id
   LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
+  LEFT JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
   WHERE e.is_sample=0
     AND e.verification='verified'
     AND e.publish_quality_state='PUBLIC'
@@ -167,12 +174,30 @@ if (rows.length > maxEvents)
 const audited = [];
 let fetches = 0;
 for (const row of rows) {
-  const rawCandidates = extractRawPayloadImageCandidates(parse(row.source_raw_payload) ?? {}, "source");
+  const rawCandidates = extractRawPayloadImageCandidates(
+    parse(row.source_raw_payload) ?? {},
+    "source",
+  );
+  const registrySource = row.source_key
+    ? municipalSourceByKey(row.source_key)
+    : null;
+  const exactPrimaryUrl =
+    row.source_kind === "organizer" && row.source_url.startsWith("https://")
+      ? row.source_url
+      : row.source_kind === "municipality" &&
+          registrySource &&
+          municipalSourceAllowsUrl(registrySource, row.source_url) &&
+          new URL(row.source_url).href !== new URL(registrySource.url).href
+        ? row.source_url
+        : null;
   const pageUrl =
     row.official_url ??
-    (["municipality", "organizer"].includes(row.source_kind) && row.source_url.startsWith("https://")
+    exactPrimaryUrl ??
+    (["municipality", "organizer"].includes(row.source_kind) &&
+    row.source_url.startsWith("https://")
       ? row.source_url
       : null);
+  const exactPage = Boolean(row.official_url || exactPrimaryUrl);
   let page = null;
   let pageCandidates = [];
   if (pageUrl && fetches < maxFetches) {
@@ -183,10 +208,10 @@ for (const row of rows) {
   }
   const classification = rawCandidates.length
     ? "RAW_PAYLOAD_IMAGE"
-    : pageCandidates.length && row.official_url
+    : pageCandidates.length && exactPage
       ? "OFFICIAL_PAGE_IMAGE"
       : pageCandidates.length
-        ? "FIRST_PARTY_SOURCE_PAGE_IMAGE"
+        ? "FIRST_PARTY_SOURCE_PAGE_UNSCOPED_IMAGE"
         : page && page.access_status !== "ok"
           ? "PAGE_UNAVAILABLE"
           : "NO_IMAGE_CANDIDATE";
@@ -198,6 +223,13 @@ for (const row of rows) {
     current_image_status: row.image_status ?? "missing_row",
     official_url: row.official_url,
     page_url: pageUrl,
+    page_scope: row.official_url
+      ? "stored_official_link"
+      : exactPrimaryUrl
+        ? "exact_primary_source"
+        : pageUrl
+          ? "unscoped_first_party_source"
+          : null,
     page_access_status: page?.access_status ?? null,
     classification,
     raw_candidates: rawCandidates.slice(0, 4),
@@ -222,8 +254,7 @@ const base = {
   by_classification: byClassification,
   recoverable_from_existing_evidence:
     (byClassification.RAW_PAYLOAD_IMAGE ?? 0) +
-    (byClassification.OFFICIAL_PAGE_IMAGE ?? 0) +
-    (byClassification.FIRST_PARTY_SOURCE_PAGE_IMAGE ?? 0),
+    (byClassification.OFFICIAL_PAGE_IMAGE ?? 0),
 };
 
 const examples = Object.fromEntries(

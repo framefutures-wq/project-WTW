@@ -9,6 +9,10 @@ import {
   municipalRichText,
   type MunicipalRichDetail,
 } from "../../shared/municipal-rich-detail";
+import {
+  municipalSourceAllowsUrl,
+  municipalSourceByKey,
+} from "../../shared/municipal-source-registry";
 import type { Env } from "../env";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 
@@ -29,6 +33,8 @@ type RecoveryRow = {
   link_source_id: string;
   link_source_kind: string;
   primary_source_kind: string;
+  source_key: string | null;
+  source_rank: number;
   image_missing: number;
 };
 
@@ -309,6 +315,19 @@ export async function selectOfficialDetailRecoveryCandidates(
          WHERE l.official=1
            AND l.access_status='ok'
            AND (l.final_url LIKE 'https://%' OR l.url LIKE 'https://%')
+         UNION ALL
+         SELECT
+           e.id AS event_id,
+           ps.url,
+           ps.id AS source_id,
+           ps.kind AS source_kind,
+           ps.priority AS source_priority,
+           ps.fetched_at AS checked_at,
+           2 AS source_rank
+         FROM events e
+         JOIN sources ps ON ps.id=e.primary_source_id
+         WHERE ps.kind IN ('municipality','organizer')
+           AND ps.url LIKE 'https://%'
        ),
        ranked AS (
          SELECT *,
@@ -324,6 +343,8 @@ export async function selectOfficialDetailRecoveryCandidates(
          r.source_id AS link_source_id,
          r.source_kind AS link_source_kind,
          ps.kind AS primary_source_kind,
+         mcs.source_key,
+         r.source_rank,
          CASE
            WHEN ei.event_id IS NULL OR ei.image_url IS NULL OR ei.image_status!='ok'
            THEN 1 ELSE 0
@@ -332,6 +353,7 @@ export async function selectOfficialDetailRecoveryCandidates(
        JOIN ranked r ON r.event_id=e.id AND r.rn=1
        JOIN sources ps ON ps.id=e.primary_source_id
        LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
+       LEFT JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
        LEFT JOIN sources attempt ON attempt.id='official-detail-' || e.id
        WHERE e.is_sample=0
          AND e.verification='verified'
@@ -350,9 +372,28 @@ export async function selectOfficialDetailRecoveryCandidates(
        ORDER BY image_missing DESC,e.start_date,e.id
        LIMIT ?`,
     )
-    .bind(today, retryBefore, Math.max(1, Math.min(40, limit)))
+    .bind(
+      today,
+      retryBefore,
+      Math.max(4, Math.min(160, limit * 4)),
+    )
     .all<RecoveryRow>();
-  return rows.results;
+
+  return rows.results
+    .filter((row) => {
+      if (row.source_rank < 2) return true;
+      if (row.link_source_kind === "organizer") return true;
+      if (!row.source_key) return false;
+      const source = municipalSourceByKey(row.source_key);
+      if (!source || !municipalSourceAllowsUrl(source, row.official_url))
+        return false;
+      try {
+        return new URL(row.official_url).href !== new URL(source.url).href;
+      } catch {
+        return false;
+      }
+    })
+    .slice(0, Math.max(1, Math.min(40, limit)));
 }
 
 export async function runOfficialDetailRecovery(
@@ -465,6 +506,15 @@ export async function runOfficialDetailRecovery(
       detail,
       sourceKind,
     });
+    await env.DB.prepare(
+      `INSERT INTO event_official_links(event_id,source_id,url,checked_at)
+       VALUES(?,?,?,?)
+       ON CONFLICT(event_id,source_id) DO UPDATE SET
+         url=excluded.url,
+         checked_at=excluded.checked_at`,
+    )
+      .bind(row.id, row.link_source_id, page.finalUrl, checkedAt)
+      .run();
     result.recovered += 1;
     if (row.image_missing && persisted.images > 0) result.images_recovered += 1;
     if (

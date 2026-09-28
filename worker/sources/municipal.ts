@@ -83,6 +83,16 @@ const hash = async (value: unknown) =>
     .map((n) => n.toString(16).padStart(2, "0"))
     .join("");
 const sourceId = (id: string) => `municipal-source-${id}`;
+const exactOfficialDetailUrl = (candidate: MunicipalCandidate) => {
+  const source = SOURCES.find((item) => item.key === candidate.source);
+  if (
+    !source ||
+    candidate.official_url === source.url ||
+    !municipalSourceAllowsUrl(source, candidate.official_url)
+  )
+    return null;
+  return candidate.official_url;
+};
 const richDetailFieldCount = (detail: MunicipalRichDetail | null) =>
   detail
     ? Number(Boolean(detail.summary)) +
@@ -532,6 +542,17 @@ async function publish(
         "INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?,?,?) ON CONFLICT(event_id,source_id,field) DO UPDATE SET excerpt=excluded.excerpt,checked_at=excluded.checked_at",
       ).bind(id, sid, field, evidence, now),
     ),
+    ...(exactOfficialDetailUrl(candidate)
+      ? [
+          env.DB.prepare(
+            `INSERT INTO event_official_links(event_id,source_id,url,checked_at)
+             VALUES(?,?,?,?)
+             ON CONFLICT(event_id,source_id) DO UPDATE SET
+               url=excluded.url,
+               checked_at=excluded.checked_at`,
+          ).bind(id, sid, exactOfficialDetailUrl(candidate), now),
+        ]
+      : []),
   ];
   const result = await env.DB.batch(statements);
   return {
@@ -603,6 +624,17 @@ export async function runMunicipalAutonomous(
         checkedAt: now,
         detail,
       });
+      const exactUrl = exactOfficialDetailUrl(candidate);
+      if (exactUrl)
+        await env.DB.prepare(
+          `INSERT INTO event_official_links(event_id,source_id,url,checked_at)
+           VALUES(?,?,?,?)
+           ON CONFLICT(event_id,source_id) DO UPDATE SET
+             url=excluded.url,
+             checked_at=excluded.checked_at`,
+        )
+          .bind(eventId, sourceId(eventId), exactUrl, now)
+          .run();
       richDetailPersisted += 1;
       richDetailBySource[candidate.source] =
         (richDetailBySource[candidate.source] ?? 0) + 1;

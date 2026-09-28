@@ -223,3 +223,77 @@ test("generic homepage with title but no matching date or venue is quarantined",
     await mf.dispose();
   }
 });
+
+
+test("exact primary municipal detail URL is eligible even before event_official_links exists", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      "DELETE FROM event_official_links WHERE event_id='event-1'",
+    ).run();
+    await DB.prepare(
+      "UPDATE sources SET url='https://www.swcf.or.kr/?p=29_view&idx=3011' WHERE id='municipality'",
+    ).run();
+    await DB.prepare(
+      `INSERT INTO municipal_candidate_state(
+        candidate_id,source_key,first_seen_at,last_seen_at,decision_state,
+        decision_reason,retry_until,last_payload_hash,source_candidate_id,
+        title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,
+        locality_snapshot,official_url_snapshot
+      ) VALUES(
+        'event-1','suwon','2026-09-27T00:00:00Z','2026-09-27T00:00:00Z',
+        'AUTO_PUBLISH','test',NULL,'hash','3011',
+        '제9회 동오마을축제 2026 동오마을 푸드페스타',
+        '2026-10-03','2026-10-03','동오마을 공영주차장','수원',
+        'https://www.swcf.or.kr/?p=29_view&idx=3011'
+      )`,
+    ).run();
+
+    const rows = await selectOfficialDetailRecoveryCandidates(
+      DB,
+      new Date("2026-09-28T01:00:00Z"),
+      10,
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.official_url, "https://www.swcf.or.kr/?p=29_view&idx=3011");
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("canonical municipal list page is not treated as an exact recovery page", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      "DELETE FROM event_official_links WHERE event_id='event-1'",
+    ).run();
+    await DB.prepare(
+      "UPDATE sources SET url='https://www.swcf.or.kr/?p=29' WHERE id='municipality'",
+    ).run();
+    await DB.prepare(
+      `INSERT INTO municipal_candidate_state(
+        candidate_id,source_key,first_seen_at,last_seen_at,decision_state,
+        decision_reason,retry_until,last_payload_hash,source_candidate_id,
+        title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,
+        locality_snapshot,official_url_snapshot
+      ) VALUES(
+        'event-1','suwon','2026-09-27T00:00:00Z','2026-09-27T00:00:00Z',
+        'AUTO_PUBLISH','test',NULL,'hash','3011',
+        '제9회 동오마을축제 2026 동오마을 푸드페스타',
+        '2026-10-03','2026-10-03','동오마을 공영주차장','수원',
+        'https://www.swcf.or.kr/?p=29'
+      )`,
+    ).run();
+
+    const rows = await selectOfficialDetailRecoveryCandidates(
+      DB,
+      new Date("2026-09-28T01:00:00Z"),
+      10,
+    );
+    assert.equal(rows.length, 0);
+  } finally {
+    await mf.dispose();
+  }
+});

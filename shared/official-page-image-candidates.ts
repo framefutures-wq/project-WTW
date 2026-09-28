@@ -55,7 +55,11 @@ function pushUnique(
 
 function looksDecorative(url: string, alt: string | null) {
   const haystack = `${url} ${alt ?? ""}`.toLowerCase();
-  return /(?:favicon|sprite|spacer|pixel|tracking|logo(?:[._/-]|$)|icon(?:[._/-]|$)|btn(?:[._/-]|$)|button(?:[._/-]|$)|arrow(?:[._/-]|$))/i.test(haystack);
+  return (
+    /(?:favicon|sprite|spacer|pixel|tracking|noimg|no_image|default_img|all_menu|menu_show|logo(?:[._/-]|$)|icon(?:[._/-]|$)|btn(?:[._/-]|$)|button(?:[._/-]|$)|arrow(?:[._/-]|$))/i.test(
+      haystack,
+    ) || /\/inc\/img\/common\//i.test(haystack)
+  );
 }
 
 function jsonLdImageValues(value: unknown, output: string[]) {

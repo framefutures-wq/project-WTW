@@ -97,3 +97,23 @@ test("extracts explicit poster image attachments from exact official pages", () 
     ],
   );
 });
+
+
+test("rejects common site chrome and default placeholder images", () => {
+  const html = `
+    <meta property="og:image" content="/inc/img/common/swcf_img.jpg">
+    <img src="/resources/zeroCMS/site/www/images/default_img.jpg">
+    <img src="/inc/img/common/all_menu_show.gif" alt="전체메뉴">
+    <img src="/uploads/current-event-poster.jpg" alt="행사 포스터">
+  `;
+  assert.deepEqual(
+    extractOfficialPageImageCandidates("https://example.org/event", html),
+    [
+      {
+        url: "https://example.org/uploads/current-event-poster.jpg",
+        signal: "IMG",
+        alt: "행사 포스터",
+      },
+    ],
+  );
+});
