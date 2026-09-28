@@ -86,3 +86,17 @@ test("poster details require verified date and title or venue, with time only in
     "떡볶이 한판", "무대공연", "체험", "지역화폐 소비혜택", "랜덤 경품 이벤트",
   ]);
 });
+
+test("poster program parser excludes OCR explanation fragments", () => {
+  const detail = parseMunicipalPosterRichDetail([
+    "주요 프로그램 안내",
+    "음식과 떡볶이의",
+    "만남",
+    "무대공연",
+    "무대에서 펼쳐지는",
+    "댄스, 노래 등",
+    "체험",
+    "남녀노소 즐길 수",
+  ].join("\n"));
+  assert.deepEqual(detail.programs.map(({ name }) => name), ["무대공연", "체험"]);
+});

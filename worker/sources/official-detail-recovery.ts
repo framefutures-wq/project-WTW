@@ -544,7 +544,7 @@ export async function selectOfficialDetailRecoveryCandidates(
   return [...unique.values()].slice(0, Math.max(1, Math.min(40, limit)));
 }
 
-const POSTER_PARSER_VERSION = 3;
+const POSTER_PARSER_VERSION = 4;
 const POSTER_FAILURE_RETRY_MS = 24 * 60 * 60 * 1000;
 
 async function enrichFromVerifiedPoster(

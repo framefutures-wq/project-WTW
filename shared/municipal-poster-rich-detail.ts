@@ -36,6 +36,16 @@ const lineText = (value: string) =>
     .replace(/\*\*/g, "")
     .trim();
 
+// OCR preserves poster layout as lines, so a program card's explanatory copy
+// can follow its heading without punctuation. Keep only concise title-like
+// lines and reject Korean connective/sentence fragments.
+const posterProgramProse = /(?:의|과|와|에서|으로|에게|하는|펼쳐지는|즐길\s*수|다채로운|풍성한|누구나|프로그램|참여업소|소비영수증|선착순|경품|볼거리|만남|인증하면|제출\s*시)$/u;
+
+const isExplicitPosterProgramName = (line: string) =>
+  !posterProgramProse.test(line) &&
+  !/[,:：]/u.test(line) &&
+  !/^\S+\s+(?:에서|으로|에게|하는|펼쳐지는|즐길|다채로운|풍성한|누구나)/u.test(line);
+
 export function parseMunicipalPosterRichDetail(text: string): MunicipalRichDetail {
   const lines = text.replace(/\r/g, "").split("\n").map(lineText).filter(Boolean);
   const result: MunicipalRichDetail = {
@@ -87,6 +97,7 @@ export function parseMunicipalPosterRichDetail(text: string): MunicipalRichDetai
     if (
       line.length < 2 || line.length > 32 ||
       /\d{1,2}:\d{2}|20\d{2}[.\/-]|[:：]|[.!。]/u.test(line) ||
+      !isExplicitPosterProgramName(line) ||
       seen.has(line)
     ) continue;
     seen.add(line);
