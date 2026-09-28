@@ -91,6 +91,10 @@ function dependencies(
         empty: 0,
         fetch_failed: 0,
         fetch_failure_reasons: {},
+        reader_attempts: 0,
+        reader_successes: 0,
+        reader_failures: 0,
+        reader_failure_reasons: {},
       };
     },
     processPushDeliveries: async () => {
