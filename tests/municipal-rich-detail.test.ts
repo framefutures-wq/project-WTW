@@ -175,6 +175,25 @@ test("extracts Korean-hour ranges and time-bearing program lines from an exact H
   );
 });
 
+test("does not turn site chrome or an event-wide date line into detail content", () => {
+  const rich = extractMunicipalRichDetail(
+    "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016",
+    `
+      <meta name="description" content="행복특별시 의정부입니다. 열린민원 서비스와 시정소식 각 분야별 정보를 제공합니다.">
+      <main>
+        <h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>
+        <p>□ 일 시: 2026. 10. 3.(토) 12:00 ~ 19:00</p>
+      </main>
+    `,
+  );
+
+  assert.equal(rich.summary, null);
+  assert.deepEqual(rich.operating_hours.map((row) => [row.start_time, row.end_time]), [
+    ["12:00", "19:00"],
+  ]);
+  assert.deepEqual(rich.programs, []);
+});
+
 test("rich text removes scripts and preserves block boundaries", () => {
   assert.equal(
     municipalRichText(

@@ -264,6 +264,19 @@ function detailImageProxyUrl(
   ).toString();
 }
 
+function withMunicipalImageProxy(requestUrl: URL, event: EventItem) {
+  if (
+    event.image_url &&
+    event.image_status === "ok" &&
+    event.image_source_type === "municipality"
+  )
+    return {
+      ...event,
+      image_url: detailImageProxyUrl(requestUrl, event.id, 1),
+    };
+  return event;
+}
+
 function municipalContactPhone(rawPayload: string | null | undefined) {
   if (!rawPayload) return null;
   try {
@@ -329,7 +342,11 @@ async function proxyEventImage(
     return new Response("Not found", { status: 404 });
 
   const headers = new Headers({
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
     Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.7,en;q=0.5",
+    "Cache-Control": "no-cache",
   });
   if (image.source_page_url) {
     try {
@@ -642,7 +659,7 @@ export default {
         const candidateLimited = results.length > CANDIDATE_LIMIT;
         const events = results
           .slice(0, CANDIDATE_LIMIT)
-          .map((row) => serialize(row, f.lat, f.lng, range))
+          .map((row) => withMunicipalImageProxy(url, serialize(row, f.lat, f.lng, range)))
           .filter(
             (event) => event.distance_km !== null && event.distance_km <= 200,
           )
@@ -727,7 +744,7 @@ export default {
             .bind(...binds)
             .all();
           const events = results.map((row) =>
-            serialize(row, f.lat, f.lng, range),
+            withMunicipalImageProxy(url, serialize(row, f.lat, f.lng, range)),
           );
           events.sort(
             (a, b) =>
@@ -780,7 +797,7 @@ export default {
           : null;
         return json({
           events: page.results.map((row) =>
-            serialize(row, f.lat, f.lng, range),
+            withMunicipalImageProxy(url, serialize(row, f.lat, f.lng, range)),
           ),
           ...(includeTotal ? { total: Number(count?.total ?? 0) } : {}),
           sort: f.sort,
@@ -957,7 +974,7 @@ export default {
             }),
         }));
         return json({
-          event: serialize(row),
+          event: withMunicipalImageProxy(url, serialize(row)),
           images,
           evidence: evidence.results,
           contact_phone: contactPhone,

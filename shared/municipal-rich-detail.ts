@@ -195,9 +195,10 @@ function extractSummary(html: string, context: RichParseContext) {
     /^(?:상세내용|상세 내용|행사소개|행사 소개|행사내용|행사 내용|행사개요|행사 개요|개요|주요내용|주요 내용|행사안내|행사 안내|소개)$/,
   );
   if (section) return section;
-  const meta =
-    metaContent(html, "og:description") ?? metaContent(html, "description");
-  return meta && meta.length >= 30 ? meta.slice(0, 900) : null;
+  // Site-wide meta descriptions are frequently present on municipal detail
+  // pages. Without an explicitly labelled event-content section, treating one
+  // as an event introduction creates unsupported copy in the public UI.
+  return null;
 }
 
 function normalizeTime(hour: string, minute: string) {
@@ -218,7 +219,19 @@ function extractOperatingHours(context: RichParseContext): MunicipalRichHours[] 
     /(?:^|\n)\s*(?:시간|행사시간|운영시간|공연시간|관람시간|이용시간|일시)\s*[:：]?\s*([^\n]{1,240})/i.exec(
       context.text,
     )?.[1] ?? null;
-  const raw = firstPairValue(context, labels) ?? fallback;
+  const labelledLine = context.text
+    .split("\n")
+    .map((line) => line.trim())
+    .find(
+      (line) =>
+        /(?:일\s*시|행사\s*시간|운영\s*시간|공연\s*시간|관람\s*시간|이용\s*시간)\s*[:：]/i.test(
+          line,
+        ) &&
+        /(?:[01]?\d|2[0-3]):[0-5]\d\s*(?:~|∼|～|-)\s*(?:[01]?\d|2[0-3]):[0-5]\d/.test(
+          line,
+        ),
+    );
+  const raw = firstPairValue(context, labels) ?? fallback ?? labelledLine ?? null;
   if (!raw) return [];
 
   const ranges = [
@@ -409,6 +422,12 @@ function programMarker(title: string) {
   );
 }
 
+export function municipalEventTimeOnlyLabel(value: string) {
+  return /^[\s□▪•·◦*\-–—]*(?:일\s*시|행사\s*시간|운영\s*시간|공연\s*시간|관람\s*시간|이용\s*시간|기간)\s*[:：]/u.test(
+    value,
+  );
+}
+
 function extractPrograms(
   html: string,
   context: RichParseContext,
@@ -439,6 +458,7 @@ function extractPrograms(
         name.length < 2 ||
         name.length > 100 ||
         genericHeadings.test(name) ||
+        municipalEventTimeOnlyLabel(name) ||
         /^(?:시간|운영\s*시간|행사\s*시간|공연\s*시간|관람\s*시간|이용\s*시간|기간|일시|차량\s*통제)$/u.test(
           name,
         ) ||
@@ -482,6 +502,7 @@ function extractPrograms(
         name.length < 2 ||
         name.length > 100 ||
         genericHeadings.test(name) ||
+        municipalEventTimeOnlyLabel(name) ||
         seen.has(name)
       )
         continue;

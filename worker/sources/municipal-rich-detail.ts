@@ -1,5 +1,8 @@
 import { assessCost } from "../../shared/cost-status";
-import type { MunicipalRichDetail } from "../../shared/municipal-rich-detail";
+import {
+  municipalEventTimeOnlyLabel,
+  type MunicipalRichDetail,
+} from "../../shared/municipal-rich-detail";
 
 type PrioritySnapshot = {
   summary_priority: number | null;
@@ -210,6 +213,27 @@ export async function persistMunicipalRichDetail(
   const sourcePriority = sourceKind === "organizer" ? 1 : 2;
   const statements: D1PreparedStatement[] = [];
   let changed = 0;
+
+  // A prior broad fallback could have stored an event-wide "일시" line as a
+  // program. Remove only those mechanically identifiable rows owned by this
+  // or a lower-priority source; valid named programs remain last-known-good.
+  if (canReplace(priorities.programs_priority, sourcePriority)) {
+    const existingPrograms = await db
+      .prepare(
+        `SELECT p.id,p.program_name
+         FROM event_programs p JOIN sources s ON s.id=p.source_id
+         WHERE p.event_id=? AND s.priority>=?`,
+      )
+      .bind(input.eventId, sourcePriority)
+      .all<{ id: string; program_name: string }>();
+    for (const program of existingPrograms.results)
+      if (municipalEventTimeOnlyLabel(program.program_name)) {
+        statements.push(
+          db.prepare("DELETE FROM event_programs WHERE id=?").bind(program.id),
+        );
+        changed += 1;
+      }
+  }
 
   statements.push(
     db

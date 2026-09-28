@@ -210,6 +210,14 @@ test("municipal rich detail reaches the public detail API under an encoded legac
     });
     assert.equal(body.images.length, 2);
     assert.match(
+      body.event.image_url,
+      new RegExp(
+        "/api/events/" +
+          encodeURIComponent(eventId).replace(/[.*+?^$()|[\]{}]/g, "\\$&") +
+          "/image/1$",
+      ),
+    );
+    assert.match(
       body.images[0].image_url,
       new RegExp(
         "/api/events/" +

@@ -235,6 +235,42 @@ test("municipal rich detail replaces lower-priority TourAPI detail", async () =>
   }
 });
 
+test("municipal detail clears only a previously stored event-wide time label", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seedBase(DB);
+    await DB.prepare(
+      `INSERT INTO event_programs(
+        id,event_id,program_name,program_date,start_time,end_time,
+        schedule_text,venue_name,description,featured,sort_order,
+        source_id,evidence_excerpt,updated_at
+      ) VALUES(
+        'event-time-as-program','event-1','□ 일 시: 2026. 10. 3.(토)',NULL,NULL,NULL,
+        '12:00 ~ 19:00',NULL,'행사 운영시간',0,0,
+        'municipality','official_program','2026-09-27T00:00:00Z'
+      )`,
+    ).run();
+
+    await persistMunicipalRichDetail(DB, {
+      eventId: "event-1",
+      startDate: "2026-09-27",
+      endDate: "2026-09-27",
+      sourceId: "municipality",
+      sourceName: "공식 지자체 행사 안내",
+      sourceUrl: "https://city.example.go.kr/event/1",
+      checkedAt: "2026-09-27T01:00:00Z",
+      detail: { ...richDetail, programs: [] },
+    });
+
+    const programs = await DB.prepare(
+      "SELECT program_name FROM event_programs WHERE event_id='event-1'",
+    ).all<{ program_name: string }>();
+    assert.deepEqual(programs.results, []);
+  } finally {
+    await mf.dispose();
+  }
+});
+
 test("municipal rich detail preserves higher-priority organizer facts", async () => {
   const { mf, DB } = await setup();
   try {
