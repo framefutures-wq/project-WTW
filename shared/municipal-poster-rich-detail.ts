@@ -78,7 +78,7 @@ export function parseMunicipalPosterRichDetail(text: string): MunicipalRichDetai
           human_time_text: range[0],
         });
     }
-    const phone = /^(?:문의|문의처|연락처)\s*[:：]\s*((?:02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4})/u.exec(line);
+    const phone = /^(?:문의|문의처|연락처)\s*[:：|]\s*((?:02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4})/u.exec(line);
     if (phone) result.contact_phone = phone[1].replace(/[.\s]/g, "-");
     const price = /^(?:입장료|참가비|이용료|요금)\s*[:：]\s*(.{1,100})$/u.exec(line);
     if (price) result.price_text = price[1].trim();
@@ -86,17 +86,19 @@ export function parseMunicipalPosterRichDetail(text: string): MunicipalRichDetai
 
   let inPrograms = false;
   const seen = new Set<string>();
+  const organizationLabels = /^(?:(?:주최(?:기관)?|주관(?:기관)?|후원|협찬|운영(?:\s*기관)?|문의처?|연락처)(?:\s*[·ㆍ/|]\s*(?:주최(?:기관)?|주관(?:기관)?|후원|협찬|운영(?:\s*기관)?|문의처?|연락처))*)\s*(?:[|:：\-–—]\s*|\s|$)/u;
   for (const line of lines) {
     if (/^(?:주요\s*)?(?:프로그램(?:\s*안내)?|행사\s*내용|주요\s*내용)\s*[:：]?$/u.test(line)) {
       inPrograms = true;
       continue;
     }
     if (!inPrograms) continue;
-    if (
-      /^(?:주최|주관|후원|문의|장소|일\s*시|시간|행사\s*개요|오시는\s*길)(?:\s|[:：]|$)/u.test(line) ||
-      /^QR(?:\s*코드)?\s*[:：]?$/u.test(line)
-    )
-      break;
+    // QR-related instructions and organizer/contact metadata are individual
+    // non-program rows. Continue scanning because valid program names may
+    // follow them in the OCR reading order.
+    if (/QR/iu.test(line) || organizationLabels.test(line) ||
+      /^(?:장소|일\s*시|시간|행사\s*개요|오시는\s*길)(?:\s|[:：|]|$)/u.test(line))
+      continue;
     if (
       line.length < 2 || line.length > 32 ||
       /\d{1,2}:\d{2}|20\d{2}[.\/-]|[:：]|[.!。]/u.test(line) ||

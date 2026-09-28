@@ -19,9 +19,11 @@ const posterText = [
   "떡볶이 한판",
   "무대공연",
   "체험",
+  "QR코드로 이벤트 응모가능",
   "지역화폐 소비혜택",
   "랜덤 경품 이벤트",
-  "주최 의정부도시공사",
+  "주최·주관 | 의정부도시공사 상권진흥센터",
+  "문의 | 031-828-4964",
 ].join("\n");
 
 test("existing document conversion primitive returns normalized official poster text", async () => {
@@ -85,6 +87,8 @@ test("poster details require verified date and title or venue, with time only in
   assert.deepEqual(detail.programs.map(({ name }) => name), [
     "떡볶이 한판", "무대공연", "체험", "지역화폐 소비혜택", "랜덤 경품 이벤트",
   ]);
+  assert.equal(detail.contact_phone, "031-828-4964");
+  assert.equal(detail.programs.some(({ name }) => /QR|주최|주관|문의/u.test(name)), false);
 });
 
 test("poster program parser excludes OCR explanation fragments", () => {
@@ -103,4 +107,27 @@ test("poster program parser excludes OCR explanation fragments", () => {
     "랜덤 경품 이벤트",
   ].join("\n"));
   assert.deepEqual(detail.programs.map(({ name }) => name), ["무대공연", "체험", "지역화폐 소비혜택", "랜덤 경품 이벤트"]);
+});
+
+test("poster program parser skips QR and institution rows and continues scanning", () => {
+  const detail = parseMunicipalPosterRichDetail([
+    "주요 프로그램 안내",
+    "주최/주관: 행사 운영기관",
+    "주최 | 주관",
+    "후원 의정부시",
+    "협찬: 지역 은행",
+    "운영기관 | 행사 지원센터",
+    "문의 | 031-828-4964",
+    "연락처: 031-828-4964",
+    "QR코드 스캔",
+    "QR로 참여",
+    "QR 인증",
+    "지역화폐 소비혜택",
+  ].join("\n"));
+  assert.deepEqual(detail.programs.map(({ name }) => name), ["지역화폐 소비혜택"]);
+});
+
+test("poster parser preserves OCR program spelling without adding Korean spacing", () => {
+  const detail = parseMunicipalPosterRichDetail(["주요 프로그램 안내", "떡볶이한판"].join("\n"));
+  assert.deepEqual(detail.programs.map(({ name }) => name), ["떡볶이한판"]);
 });
