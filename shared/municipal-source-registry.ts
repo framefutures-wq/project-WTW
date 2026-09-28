@@ -308,6 +308,11 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     healthMarkers: ["2026년 연간 행사·축제 일정"],
     expectedSignals: ["html_table"],
     ingestion: "generic_fallback",
+    detailLinkTemplate: {
+      path: "/portal/eventNoti/view.do",
+      idParam: "idx",
+      fixedQuery: { mId: "0301170300" },
+    },
   },
   {
     key: "chungbuk-옥천",

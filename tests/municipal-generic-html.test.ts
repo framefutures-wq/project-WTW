@@ -590,3 +590,23 @@ test("generic extractor core-dedupes nested list and anchor candidates in favor 
     "https://events.example.go.kr/events/detail.do?eventSn=77",
   );
 });
+
+
+test("Uijeongbu generic table resolves JavaScript view ids to exact official detail URLs", () => {
+  const source = MUNICIPAL_SOURCE_REGISTRY.find(
+    (item) => item.key === "gyeonggi-의정부",
+  );
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-generic-uijeongbu.html", "utf8"),
+  );
+  const foodFesta = result.candidates.find((candidate) =>
+    candidate.title.includes("동오마을 푸드페스타"),
+  );
+  assert(foodFesta);
+  assert.equal(
+    foodFesta.official_url,
+    "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016",
+  );
+});
