@@ -10,6 +10,7 @@ import {
   type MunicipalRichDetail,
 } from "../../shared/municipal-rich-detail";
 import {
+  MUNICIPAL_SOURCE_REGISTRY,
   municipalSourceAllowsUrl,
   municipalSourceByKey,
 } from "../../shared/municipal-source-registry";
@@ -222,9 +223,23 @@ function inferredSourceKind(row: RecoveryRow): SourceKind {
   }
 }
 
+function recoveryMunicipalSource(row: RecoveryRow) {
+  if (row.source_key) {
+    const source = municipalSourceByKey(row.source_key);
+    if (source) return source;
+  }
+  // Older exact official links may predate municipal_candidate_state source
+  // provenance. Infer only from the registry allowlist; never from arbitrary
+  // hostname guessing.
+  return (
+    MUNICIPAL_SOURCE_REGISTRY.find((source) =>
+      municipalSourceAllowsUrl(source, row.official_url),
+    ) ?? null
+  );
+}
+
 function recoveryReferer(row: RecoveryRow) {
-  if (!row.source_key) return null;
-  const source = municipalSourceByKey(row.source_key);
+  const source = recoveryMunicipalSource(row);
   if (!source) return null;
   try {
     const detail = new URL(row.official_url);
@@ -239,8 +254,7 @@ function recoveryReferer(row: RecoveryRow) {
 
 function recoveryUrlCandidates(row: RecoveryRow) {
   const output = [row.official_url];
-  if (!row.source_key) return output;
-  const source = municipalSourceByKey(row.source_key);
+  const source = recoveryMunicipalSource(row);
   if (!source) return output;
   try {
     const original = new URL(row.official_url);
