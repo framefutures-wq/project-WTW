@@ -358,8 +358,20 @@ async function officialResponse(
     }
   }
 
+  const readerEligible = Boolean(
+    source &&
+      (source.detailLinkTemplate ||
+        (() => {
+          try {
+            return new URL(url).href !== new URL(source.url).href;
+          } catch {
+            return false;
+          }
+        })()),
+  );
   if (
     source &&
+    readerEligible &&
     budget.readerUsed < budget.readerLimit &&
     (directBudgetExhausted ||
       (lastError && retryableOfficialFetchError(lastError)))
