@@ -464,7 +464,9 @@ test("exact official recovery uses Reader transport after direct official routes
     await seed(DB);
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url.startsWith("https://r.jina.ai/https://ui4u.go.kr/")) {
+      if (url.startsWith("https://r.jina.ai/https://ui4u.go.kr/"))
+        return new Response("reader upstream failed", { status: 502 });
+      if (url.startsWith("https://r.jina.ai/https://www.ui4u.go.kr/")) {
         assert.match(url, /idx=2016/);
         const headers = new Headers(init?.headers);
         assert.equal(init?.method, "GET");
@@ -488,6 +490,10 @@ test("exact official recovery uses Reader transport after direct official routes
     assert.equal(result.recovered, 1);
     assert.equal(result.images_recovered, 1);
     assert.equal(result.detail_recovered, 1);
+    assert.equal(result.reader_attempts, 2);
+    assert.equal(result.reader_successes, 1);
+    assert.equal(result.reader_failures, 1);
+    assert.equal(result.reader_failure_reasons.official_reader_http_502, 1);
   } finally {
     globalThis.fetch = originalFetch;
     await mf.dispose();

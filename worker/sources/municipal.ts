@@ -376,27 +376,36 @@ async function officialResponse(
     (directBudgetExhausted ||
       (lastError && retryableOfficialFetchError(lastError)))
   ) {
-    budget.readerUsed += 1;
-    try {
-      const readerPage = await fetchOfficialPageViaReader(url, {
-        refererUrl: source.url,
-      });
-      budget.readerSucceeded += 1;
-      return readerPage;
-    } catch (readerError) {
-      budget.readerFailures += 1;
-      const reason =
-        readerError instanceof Error && readerError.message
-          ? readerError.message.slice(0, 120)
-          : "official_reader_failed";
-      budget.readerFailureReasons[reason] =
-        (budget.readerFailureReasons[reason] ?? 0) + 1;
-      console.error("municipal_reader_fallback_failed", {
-        source: source.key,
-        reason,
-      });
-      // Keep the direct official failure as the source outcome reason.
+    // Reader has independent egress from the Worker. Try the same allowed
+    // host variants as direct fetches; some municipal sites expose only one
+    // of bare/www reliably from a given network.
+    for (const readerUrl of ordered) {
+      if (budget.readerUsed >= budget.readerLimit) break;
+      budget.readerUsed += 1;
+      try {
+        const readerPage = await fetchOfficialPageViaReader(readerUrl, {
+          refererUrl: source.url,
+        });
+        budget.readerSucceeded += 1;
+        if (family && preferredHosts)
+          preferredHosts.set(family, new URL(readerPage.finalUrl).hostname);
+        return readerPage;
+      } catch (readerError) {
+        budget.readerFailures += 1;
+        const reason =
+          readerError instanceof Error && readerError.message
+            ? readerError.message.slice(0, 120)
+            : "official_reader_failed";
+        budget.readerFailureReasons[reason] =
+          (budget.readerFailureReasons[reason] ?? 0) + 1;
+        console.error("municipal_reader_fallback_failed", {
+          source: source.key,
+          url: readerUrl,
+          reason,
+        });
+      }
     }
+    // Keep the direct official failure as the source outcome reason.
   }
   if (directBudgetExhausted)
     throw new Error("municipal_fetch_budget_exhausted");

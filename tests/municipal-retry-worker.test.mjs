@@ -365,7 +365,8 @@ test("municipal source uses bounded Reader GET transport when both official host
   const detailUrl = "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016";
   const wwwDetailUrl = "https://www.ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016";
   const readerListUrl = "https://r.jina.ai/" + listUrl;
-  const readerDetailUrl = "https://r.jina.ai/" + detailUrl;
+  const readerWwwListUrl = "https://r.jina.ai/" + wwwListUrl;
+  const readerWwwDetailUrl = "https://r.jina.ai/" + wwwDetailUrl;
   const seen = [];
 
   const result = await withFetch((url, init) => {
@@ -373,14 +374,16 @@ test("municipal source uses bounded Reader GET transport when both official host
     if ([listUrl, wwwListUrl, detailUrl, wwwDetailUrl].includes(url))
       throw new TypeError("fetch failed");
     if (url === readerListUrl)
-      return new Response(JSON.stringify({ data: { url: listUrl, html:
+      return new Response("reader upstream failed", { status: 502 });
+    if (url === readerWwwListUrl)
+      return new Response(JSON.stringify({ data: { url: wwwListUrl, html:
         '<h1>2026년 연간 행사·축제 일정</h1><table>' +
         '<tr><th>번호</th><th>분야</th><th>제목</th><th>시작일</th><th>종료일</th><th>장소</th><th>담당부서</th></tr>' +
         '<tr><td>378</td><td>축제</td><td><a href="#" onclick="fnView(\'2016\'); return false;">제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최</a></td>' +
         '<td>2026-10-03</td><td>2026-10-03</td><td>동오마을 공영주차장 일원(경전철 동오역 인근)</td><td>의정부도시공사 상권진흥센터</td></tr></table>'
       } }), { status: 200 });
-    if (url === readerDetailUrl)
-      return new Response(JSON.stringify({ data: { url: detailUrl, html:
+    if (url === readerWwwDetailUrl)
+      return new Response(JSON.stringify({ data: { url: wwwDetailUrl, html:
         '<h1>제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최</h1>' +
         '<p>일시: 2026. 10. 3.(토) 12:00 ~ 19:00</p>' +
         '<p>장소: 동오마을 공영주차장 일원(경전철 동오역 인근)</p>' +
@@ -399,11 +402,12 @@ test("municipal source uses bounded Reader GET transport when both official host
     result.source_outcomes.find((item) => item.source === "gyeonggi-의정부")?.status,
     "ok",
   );
-  assert.equal(result.reader_attempts, 2);
+  assert.equal(result.reader_attempts, 3);
   assert.equal(result.reader_successes, 2);
-  assert.equal(result.reader_failures, 0);
+  assert.equal(result.reader_failures, 1);
+  assert.equal(result.reader_failure_reasons.official_reader_http_502, 1);
   const readerCalls = seen.filter((item) => item.url.startsWith("https://r.jina.ai/"));
-  assert.equal(readerCalls.length, 2);
+  assert.equal(readerCalls.length, 3);
   assert.ok(readerCalls.every((item) => item.method === "GET"));
   assert.ok(readerCalls.every((item) => item.headers.get("x-respond-with") === "html"));
 });

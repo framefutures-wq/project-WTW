@@ -54,6 +54,10 @@ export type OfficialDetailRecoveryResult = {
   empty: number;
   fetch_failed: number;
   fetch_failure_reasons: Record<string, number>;
+  reader_attempts: number;
+  reader_successes: number;
+  reader_failures: number;
+  reader_failure_reasons: Record<string, number>;
 };
 
 type RecoveryPage = { html: string; finalUrl: string };
@@ -525,6 +529,10 @@ export async function runOfficialDetailRecovery(
     empty: 0,
     fetch_failed: 0,
     fetch_failure_reasons: {},
+    reader_attempts: 0,
+    reader_successes: 0,
+    reader_failures: 0,
+    reader_failure_reasons: {},
   };
   const fetchPage = options.fetchPage ?? fetchOfficialDetailPage;
   const checkedAt = now.toISOString();
@@ -552,14 +560,27 @@ export async function runOfficialDetailRecovery(
       retryableFetchFailure(lastFetchError) &&
       readerFallbacks < 4
     ) {
-      readerFallbacks += 1;
-      try {
-        page = await fetchOfficialPageViaReader(row.official_url, {
-          refererUrl,
-        });
-      } catch {
-        // Preserve the direct official failure reason if transport fallback fails.
+      for (const readerUrl of recoveryUrlCandidates(row)) {
+        if (readerFallbacks >= 4) break;
+        readerFallbacks += 1;
+        result.reader_attempts += 1;
+        try {
+          page = await fetchOfficialPageViaReader(readerUrl, {
+            refererUrl,
+          });
+          result.reader_successes += 1;
+          break;
+        } catch (readerError) {
+          result.reader_failures += 1;
+          const reason =
+            readerError instanceof Error && readerError.message
+              ? readerError.message.slice(0, 120)
+              : "official_reader_failed";
+          result.reader_failure_reasons[reason] =
+            (result.reader_failure_reasons[reason] ?? 0) + 1;
+        }
       }
+      // Preserve the direct official failure reason if all transport fallbacks fail.
     }
     if (!page) {
       result.fetch_failed += 1;
