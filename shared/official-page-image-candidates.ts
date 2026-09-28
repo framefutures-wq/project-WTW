@@ -37,10 +37,21 @@ function safeHttps(baseUrl: string, raw: unknown) {
 }
 
 function attribute(tag: string, name: string) {
+  const escaped = name.replace(/[\\^$.*+?()[\]{}|]/g, "\\function attribute(tag: string, name: string) {
   const escaped = name.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
   const quoted = new RegExp(`${escaped}\\s*=\\s*(['"])([\\s\\S]*?)\\1`, "i").exec(tag)?.[2];
   if (quoted) return decodeHtml(quoted.trim());
   return new RegExp(`${escaped}\\s*=\\s*([^\\s>]+)`, "i").exec(tag)?.[1]?.trim() ?? null;
+}");
+  const quoted = new RegExp(
+    `${escaped}\\s*=\\s*(['"])([\\s\\S]*?)\\1`,
+    "i",
+  ).exec(tag);
+  if (quoted) return decodeHtml(quoted[2].trim());
+  return (
+    new RegExp(`${escaped}\\s*=\\s*([^\\s>]+)`, "i").exec(tag)?.[1]?.trim() ??
+    null
+  );
 }
 
 function pushUnique(
@@ -164,7 +175,7 @@ export function extractOfficialPageImageCandidates(
       attribute(tag, "data-src") ??
       attribute(tag, "data-original") ??
       attribute(tag, "data-lazy-src");
-    const alt = attribute(tag, "alt");
+    const alt = attribute(tag, "alt") || null;
     const url = safeHttps(pageUrl, raw);
     if (!url || looksDecorative(url, alt)) continue;
     pushUnique(output, seen, { url, signal: "IMG", alt });
