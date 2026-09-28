@@ -310,6 +310,9 @@ async function officialResponse(
   preferredHosts?: Map<string, string>,
 ) {
   const candidates = municipalFetchUrlCandidates(url);
+  const source = SOURCES.find((item) =>
+    municipalSourceAllowsUrl(item, url),
+  );
   let family = "";
   try {
     family = new URL(url).hostname.replace(/^www\./, "");
@@ -327,6 +330,7 @@ async function officialResponse(
       : candidates;
   const attempts = ordered.length > 1 ? ordered : [url, url];
   let lastError: unknown = null;
+  let directBudgetExhausted = false;
 
   for (let attempt = 0; attempt < attempts.length; attempt += 1) {
     const candidateUrl = attempts[attempt];
@@ -338,20 +342,27 @@ async function officialResponse(
         preferredHosts.set(family, new URL(finalUrl).hostname);
       return { html: await response.text(), finalUrl };
     } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "municipal_fetch_budget_exhausted" &&
+        source &&
+        budget.readerUsed < budget.readerLimit
+      ) {
+        directBudgetExhausted = true;
+        break;
+      }
       lastError = error;
       if (!retryableOfficialFetchError(error)) throw error;
       if (attempt + 1 < attempts.length) continue;
       break;
     }
   }
-  const source = SOURCES.find((item) =>
-    municipalSourceAllowsUrl(item, url),
-  );
+
   if (
     source &&
-    lastError &&
-    retryableOfficialFetchError(lastError) &&
-    budget.readerUsed < budget.readerLimit
+    budget.readerUsed < budget.readerLimit &&
+    (directBudgetExhausted ||
+      (lastError && retryableOfficialFetchError(lastError)))
   ) {
     budget.readerUsed += 1;
     try {
@@ -366,6 +377,8 @@ async function officialResponse(
       // Keep the direct official failure as the operational reason.
     }
   }
+  if (directBudgetExhausted)
+    throw new Error("municipal_fetch_budget_exhausted");
   throw lastError instanceof Error
     ? lastError
     : new Error("official_fetch_failed");
