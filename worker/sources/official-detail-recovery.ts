@@ -19,6 +19,7 @@ import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 export const OFFICIAL_DETAIL_RECOVERY_LIMIT = 12;
 export const OFFICIAL_DETAIL_RETRY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const OFFICIAL_DETAIL_SUCCESS_IMAGE_RETRY_MS = 2 * 60 * 1000;
+export const OFFICIAL_DETAIL_TRANSIENT_RETRY_MS = 30 * 60 * 1000;
 const MAX_HTML_BYTES = 2_000_000;
 const MAX_REDIRECTS = 4;
 
@@ -223,6 +224,12 @@ function recoveryUrlCandidates(row: RecoveryRow) {
 }
 
 function fetchFailureReason(error: unknown) {
+  if (error instanceof TypeError) return "network_error";
+  const name =
+    error && typeof error === "object" && "name" in error
+      ? String((error as { name?: unknown }).name ?? "")
+      : "";
+  if (name === "AbortError" || name === "TimeoutError") return "timeout";
   if (error instanceof Error && error.message)
     return error.message.slice(0, 120);
   return "fetch_failed";
@@ -313,6 +320,9 @@ export async function selectOfficialDetailRecoveryCandidates(
   ).toISOString();
   const successImageRetryBefore = new Date(
     now.getTime() - OFFICIAL_DETAIL_SUCCESS_IMAGE_RETRY_MS,
+  ).toISOString();
+  const transientRetryBefore = new Date(
+    now.getTime() - OFFICIAL_DETAIL_TRANSIENT_RETRY_MS,
   ).toISOString();
   const rows = await db
     .prepare(
@@ -420,14 +430,25 @@ export async function selectOfficialDetailRecoveryCandidates(
              AND attempt.raw_payload LIKE '%"municipal_rich_detail"%'
              AND attempt.fetched_at<?
            )
+           OR (
+             attempt.fetched_at<?
+             AND (
+               attempt.raw_payload LIKE '%"status":"network_error"%'
+               OR attempt.raw_payload LIKE '%"status":"timeout"%'
+               OR attempt.raw_payload LIKE '%"status":"fetch failed"%'
+               OR attempt.raw_payload LIKE '%official_detail_http_429%'
+               OR attempt.raw_payload LIKE '%official_detail_http_5%'
+             )
+           )
          )
-       ORDER BY image_missing DESC,e.start_date,e.id,r.rn
+       ORDER BY image_missing DESC,r.source_rank,e.start_date,e.id,r.rn
        LIMIT ?`,
     )
     .bind(
       today,
       retryBefore,
       successImageRetryBefore,
+      transientRetryBefore,
       Math.max(8, Math.min(240, limit * 8)),
     )
     .all<RecoveryRow>();

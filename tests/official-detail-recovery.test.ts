@@ -386,3 +386,40 @@ test("municipal recovery retries an allowed sibling host after a network failure
     await mf.dispose();
   }
 });
+
+
+test("transient official-detail fetch failures retry after the short recovery window", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
+       VALUES(
+         'official-detail-event-1','municipality',2,'지자체 공식 상세 안내',
+         'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',
+         '2026-09-28T00:20:00Z',
+         '{"official_detail_recovery":{"status":"network_error"}}'
+       )`,
+    ).run();
+
+    const tooSoon = await selectOfficialDetailRecoveryCandidates(
+      DB,
+      new Date("2026-09-28T00:40:00Z"),
+      10,
+    );
+    assert.equal(tooSoon.length, 0);
+
+    const retryReady = await selectOfficialDetailRecoveryCandidates(
+      DB,
+      new Date("2026-09-28T01:00:01Z"),
+      10,
+    );
+    assert.equal(retryReady.length, 1);
+    assert.equal(
+      retryReady[0]?.official_url,
+      "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016",
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
