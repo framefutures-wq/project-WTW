@@ -658,6 +658,7 @@ async function enrichFromVerifiedPoster(
   env: Env,
   row: RecoveryRow,
   checkedAt: string,
+  options: { bypassFailureRetry?: boolean } = {},
 ): Promise<{ detail: MunicipalRichDetail; posterUrl: string; text: string; posterHash: string; cached: boolean } | null> {
   const ai = municipalPosterAI(env);
   if (!ai || row.link_source_kind !== "municipality") return null;
@@ -702,7 +703,7 @@ async function enrichFromVerifiedPoster(
       if (!posterHashChanged && payload.poster_url === poster.image_url && payload.version === POSTER_PARSER_VERSION) {
         if (payload.status === "empty" || payload.status === "core_mismatch")
           return null;
-        if (payload.status !== "success" && new Date(checkedAt).getTime() - new Date(previous.fetched_at).getTime() < POSTER_FAILURE_RETRY_MS)
+        if (!options.bypassFailureRetry && payload.status !== "success" && new Date(checkedAt).getTime() - new Date(previous.fetched_at).getTime() < POSTER_FAILURE_RETRY_MS)
           return null;
       }
     } catch {}
@@ -854,7 +855,9 @@ export async function runOfficialDetailRecovery(
     if (!page) {
       if (posterConversions < 1) {
         posterConversions += 1;
-        const poster = await enrichFromVerifiedPoster(env, row, checkedAt);
+        const poster = await enrichFromVerifiedPoster(env, row, checkedAt, {
+          bypassFailureRetry: Boolean(options.targetEventId),
+        });
         if (poster) {
           await persistMunicipalRichDetail(env.DB, {
             eventId: row.id, startDate: row.start_date, endDate: row.end_date,
@@ -930,7 +933,9 @@ export async function runOfficialDetailRecovery(
     // program content. Keep those HTML facts while reading the verified poster.
     if (!detail.summary && !detail.programs.length && posterConversions < 1) {
       posterConversions += 1;
-      const poster = await enrichFromVerifiedPoster(env, row, checkedAt);
+      const poster = await enrichFromVerifiedPoster(env, row, checkedAt, {
+        bypassFailureRetry: Boolean(options.targetEventId),
+      });
       if (poster) {
         convertedPosterUrl = poster.posterUrl;
         convertedPosterText = poster.text;

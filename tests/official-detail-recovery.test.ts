@@ -255,6 +255,39 @@ test("cached transcription must pass the current event core safety gate", async 
   } finally { globalThis.fetch = originalFetch; await mf.dispose(); }
 });
 
+test("recent poster failure waits in normal recovery but explicit target bypasses once", async () => {
+  const { mf, DB } = await setup();
+  const originalFetch = globalThis.fetch;
+  try {
+    await seed(DB);
+    const posterUrl = "https://ui4u.go.kr/poster.jpg";
+    const detailUrl = "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016";
+    await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at) VALUES('event-1',?,'municipality',?,1,'ok','2026-09-27T00:00:00Z')").bind(posterUrl, detailUrl).run();
+    const now = new Date("2026-09-28T01:00:00Z");
+    await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES('official-poster-event-1','municipality',2,'공식 포스터 판독 상태',?, ?, ?)")
+      .bind(detailUrl, new Date(now.getTime() - 60 * 60 * 1000).toISOString(), JSON.stringify({ poster_url: posterUrl, version: 5, status: "failed", error: "recent_timeout" })).run();
+    globalThis.fetch = async () => new Response(new Uint8Array([255, 216, 17]), { status: 200 });
+    let calls = 0;
+    const env = {
+      DB, MUNICIPAL_DOCUMENT_AI_ENABLED: "true",
+      AI: { async run() {
+        calls += 1;
+        return { choices: [{ message: { content: JSON.stringify({ transcription: "동오마을 푸드페스타\n2026. 10. 3.\n동오마을 공영주차장\n떡볶이 한판\n무대공연" }) } }] };
+      } },
+    } as never;
+    const options = {
+      fetchPage: async (url: string) => ({ finalUrl: url, html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026. 10. 3. 동오마을 공영주차장</p><p>행사 시간: 12:00~19:00</p>" }),
+    };
+    const normal = await runOfficialDetailRecovery(env, now, options);
+    assert.equal(normal.candidates, 1);
+    assert.equal(calls, 0, "normal recovery must honor the recent failure window");
+
+    const targeted = await runOfficialDetailRecovery(env, new Date(now.getTime() + 60_000), { ...options, targetEventId: "event-1" });
+    assert.equal(targeted.attempted, 1);
+    assert.equal(calls, 1, "one target pass may invoke OCR at most once");
+  } finally { globalThis.fetch = originalFetch; await mf.dispose(); }
+});
+
 test("poster failure without prior success stores no last_success", async () => {
   const { mf, DB } = await setup();
   const originalFetch = globalThis.fetch;
