@@ -1465,3 +1465,12 @@ UI benchmark:
 - Existing safety remains: HTTPS-only, bounded body/time/redirects, allowed-host/sibling-host rules, event title + date/venue validation, no guessed facts/images.
 - Project checks PASS for `1b43bbbf`.
 - Production deployment is still required before claiming the Uijeongbu poster is recovered.
+
+## 2026-09-28 — Uijeongbu exact-link discovery repaired
+
+- Latest production evidence still showed the Uijeongbu food-festa event with no image, enrichment, hours, or programs, while the official detail page visibly contains the poster and detail content. This confirms a collector/provenance failure, not missing source material.
+- The Uijeongbu generic source had no `detailLinkTemplate`, so list rows using JavaScript view handlers could collapse to the canonical list URL instead of the exact `/portal/eventNoti/view.do?...&idx=...` page. That left recovery with an unscoped source page.
+- `cfe45251ee10c4ae70e4b71bd1d5e65b3b85a86c` adds the Uijeongbu detail-link template (`idx` + fixed `mId=0301170300`) and regression coverage using the user-verified food-festa exact detail id `2016`. Existing generic identity bridging preserves the published event id when the exact URL improves.
+- `0e380ffe7059caae0610b1a5ce7799cddc305bdb` also changes municipal list/detail HTTP requests to a normal Chrome-like browser request profile instead of the custom bot-style User-Agent. This allows the source refresh itself to reach sites that are browser-accessible but reject/flake on bot-looking requests.
+- Project checks PASS through `0e380ffe`.
+- Production proof still requires authenticated deploy + a source-specific Uijeongbu refresh followed by official-detail recovery and a direct D1 verification of the food-festa row.

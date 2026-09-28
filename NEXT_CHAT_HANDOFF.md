@@ -2388,3 +2388,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - `1b43bbbf`: official-detail fetch now uses a Chrome-like browser request profile and same-site canonical municipal list Referer. This is specifically intended to avoid the bot-like request path that failed while browsers succeeded.
 - Project checks PASS.
 - Next authenticated boundary: deploy latest main, run `official-detail:once`, rerun missing-poster summary, and verify this exact Uijeongbu event in production before declaring success.
+
+## 2026-09-28 — Uijeongbu exact detail path fix green, production proof pending
+
+- Latest production audit still had `제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최` as `unscoped_first_party_source/network_error`, and the direct D1 check showed `image_url=NULL`, `summary=NULL`, `hours=0`, `programs=0`. The official page visibly has the poster/details, so this is collector-side.
+- `cfe45251`: Uijeongbu registry now has a detail-link template for `/portal/eventNoti/view.do`, `idx`, fixed `mId=0301170300`; regression fixture covers JavaScript `fnView('2016')` and resolves the exact user-verified URL.
+- `0e380ffe`: municipal source/detail fetches now use browser-compatible headers so the list refresh can discover/persist the exact URL even on sites that reject bot-style requests.
+- Project checks PASS.
+- Next authenticated boundary is one bounded production sequence only: deploy latest main → `municipal:once -- --source=gyeonggi-의정부` → `official-detail:once` → missing-poster audit → direct D1 verification of `동오마을`. Do not declare success until the D1 row has a real image URL and official detail fields.
