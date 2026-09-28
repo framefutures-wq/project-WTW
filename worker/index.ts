@@ -398,7 +398,7 @@ async function proxyEventImage(
   }
 
   let lastFailure: Response | null = null;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     let upstream: Response;
     try {
       upstream = await fetch(remote.toString(), {
@@ -408,7 +408,7 @@ async function proxyEventImage(
       });
     } catch {
       lastFailure = new Response("Image upstream unavailable", { status: 503 });
-      if (attempt === 0) continue;
+      if (attempt < 2) continue;
       break;
     }
 
@@ -421,7 +421,7 @@ async function proxyEventImage(
       lastFailure = new Response("Image upstream unavailable", {
         status: transient ? 503 : 502,
       });
-      if (transient && attempt === 0) continue;
+      if (transient && attempt < 2) continue;
       break;
     }
 
@@ -448,7 +448,7 @@ async function proxyEventImage(
       imageBytes = await upstream.arrayBuffer();
     } catch {
       lastFailure = new Response("Image upstream unavailable", { status: 503 });
-      if (attempt === 0) continue;
+      if (attempt < 2) continue;
       break;
     }
     if (imageBytes.byteLength > 8 * 1024 * 1024)

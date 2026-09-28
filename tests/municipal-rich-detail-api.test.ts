@@ -253,6 +253,7 @@ test("municipal rich detail reaches the public detail API under an encoded legac
         assert.equal(String(input), primaryImage);
         referer = new Headers(init?.headers).get("Referer");
         if (attempts === 1) return new Response("busy", { status: 500 });
+        if (attempts === 2) return new Response("rate limited", { status: 429 });
         return new Response(new Uint8Array([137, 80, 78, 71]), {
           status: 200,
           headers: {
@@ -263,7 +264,7 @@ test("municipal rich detail reaches the public detail API under an encoded legac
       };
       const imageResponse = await app.fetch(imageRequest, env);
       assert.equal(imageResponse.status, 200);
-      assert.equal(attempts, 2);
+      assert.equal(attempts, 3);
       assert.equal(imageResponse.headers.get("Content-Type"), "image/png");
       assert.equal(referer, detailUrl);
       assert.deepEqual(
@@ -278,7 +279,7 @@ test("municipal rich detail reaches the public detail API under an encoded legac
       assert.equal(cacheEntries.has(imageRequest.url), true);
 
       // A cache lookup racing with an in-flight fill can still fall back after
-      // both bounded upstream attempts fail.
+      // all three bounded upstream attempts fail.
       matchPlan = [null, cacheEntries.get(imageRequest.url)!.clone()];
       attempts = 0;
       globalThis.fetch = async () => {
@@ -287,7 +288,18 @@ test("municipal rich detail reaches the public detail API under an encoded legac
       };
       const fallbackResponse = await app.fetch(imageRequest, env);
       assert.equal(fallbackResponse.status, 200);
-      assert.equal(attempts, 2);
+      assert.equal(attempts, 3);
+
+      cacheEntries.delete(imageRequest.url);
+      attempts = 0;
+      globalThis.fetch = async () => {
+        attempts += 1;
+        return new Response("upstream failed", { status: 503 });
+      };
+      const exhaustedResponse = await app.fetch(imageRequest, env);
+      assert.equal(exhaustedResponse.status, 503);
+      assert.equal(attempts, 3);
+      assert.equal(cacheEntries.has(imageRequest.url), false);
 
       cacheEntries.delete(imageRequest.url);
       attempts = 0;
