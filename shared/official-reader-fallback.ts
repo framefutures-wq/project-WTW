@@ -162,12 +162,26 @@ export async function fetchOfficialPageViaReader(
   let finalUrl = target.toString();
   try {
     const payload = JSON.parse(raw) as {
-      data?: { content?: unknown; url?: unknown; images?: unknown };
+      data?: {
+        html?: unknown;
+        content?: unknown;
+        text?: unknown;
+        url?: unknown;
+        images?: unknown;
+      };
+      html?: unknown;
       content?: unknown;
+      text?: unknown;
       url?: unknown;
       images?: unknown;
     };
-    const candidate = payload.data?.content ?? payload.content;
+    const candidate =
+      payload.data?.html ??
+      payload.html ??
+      payload.data?.content ??
+      payload.content ??
+      payload.data?.text ??
+      payload.text;
     if (typeof candidate === "string") content = candidate;
     images = payload.data?.images ?? payload.images ?? null;
     const reportedUrl = payload.data?.url ?? payload.url;

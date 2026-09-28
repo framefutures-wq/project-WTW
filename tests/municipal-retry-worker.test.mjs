@@ -373,14 +373,14 @@ test("municipal source uses bounded Reader GET transport when both official host
     if ([listUrl, wwwListUrl, detailUrl, wwwDetailUrl].includes(url))
       throw new TypeError("fetch failed");
     if (url === readerListUrl)
-      return new Response(JSON.stringify({ data: { url: listUrl, content:
+      return new Response(JSON.stringify({ data: { url: listUrl, html:
         '<h1>2026년 연간 행사·축제 일정</h1><table>' +
         '<tr><th>번호</th><th>분야</th><th>제목</th><th>시작일</th><th>종료일</th><th>장소</th><th>담당부서</th></tr>' +
         '<tr><td>378</td><td>축제</td><td><a href="#" onclick="fnView(\'2016\'); return false;">제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최</a></td>' +
         '<td>2026-10-03</td><td>2026-10-03</td><td>동오마을 공영주차장 일원(경전철 동오역 인근)</td><td>의정부도시공사 상권진흥센터</td></tr></table>'
       } }), { status: 200 });
     if (url === readerDetailUrl)
-      return new Response(JSON.stringify({ data: { url: detailUrl, content:
+      return new Response(JSON.stringify({ data: { url: detailUrl, html:
         '<h1>제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최</h1>' +
         '<p>일시: 2026. 10. 3.(토) 12:00 ~ 19:00</p>' +
         '<p>장소: 동오마을 공영주차장 일원(경전철 동오역 인근)</p>' +

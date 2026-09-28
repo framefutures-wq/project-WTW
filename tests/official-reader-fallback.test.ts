@@ -31,7 +31,7 @@ test("reader fallback uses anonymous GET rendered-html transport", async () => {
       JSON.stringify({
         data: {
           url: "https://example.org/events?year=2026",
-          content:
+          html:
             '<table><tr><td><a href="#" onclick="fnView(\'2016\')">축제</a></td></tr></table>',
           images: { poster: "https://example.org/poster.jpg" },
         },
