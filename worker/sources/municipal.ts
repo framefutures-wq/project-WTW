@@ -46,10 +46,7 @@ import {
   municipalSourceFetchCeiling,
 } from "../../shared/municipal-fetch-budget";
 import { decidePublishQuality } from "../../shared/publish-quality";
-import {
-  buildDetailLinkInjection,
-  fetchOfficialPageViaReader,
-} from "../../shared/official-reader-fallback";
+import { fetchOfficialPageViaReader } from "../../shared/official-reader-fallback";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
@@ -229,6 +226,9 @@ type MunicipalFetchBudget = {
   activeLimit: number;
   readerUsed: number;
   readerLimit: number;
+  readerSucceeded: number;
+  readerFailures: number;
+  readerFailureReasons: Record<string, number>;
 };
 
 const budgetedFetch = async (
@@ -378,15 +378,24 @@ async function officialResponse(
   ) {
     budget.readerUsed += 1;
     try {
-      return await fetchOfficialPageViaReader(url, {
+      const readerPage = await fetchOfficialPageViaReader(url, {
         refererUrl: source.url,
-        injectPageScript: buildDetailLinkInjection(
-          url,
-          source.detailLinkTemplate,
-        ),
       });
-    } catch {
-      // Keep the direct official failure as the operational reason.
+      budget.readerSucceeded += 1;
+      return readerPage;
+    } catch (readerError) {
+      budget.readerFailures += 1;
+      const reason =
+        readerError instanceof Error && readerError.message
+          ? readerError.message.slice(0, 120)
+          : "official_reader_failed";
+      budget.readerFailureReasons[reason] =
+        (budget.readerFailureReasons[reason] ?? 0) + 1;
+      console.error("municipal_reader_fallback_failed", {
+        source: source.key,
+        reason,
+      });
+      // Keep the direct official failure as the source outcome reason.
     }
   }
   if (directBudgetExhausted)
@@ -702,6 +711,9 @@ export async function runMunicipalAutonomous(
       activeLimit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
       readerUsed: 0,
       readerLimit: 4,
+      readerSucceeded: 0,
+      readerFailures: 0,
+      readerFailureReasons: {},
     },
     preferredOfficialHosts = new Map<string, string>(),
     fetchResponse = (url: string) =>
@@ -1334,6 +1346,10 @@ export async function runMunicipalAutonomous(
     source_keys: selectedSources.map((source) => source.key),
     fetch_attempts: fetchBudget.used,
     fetch_budget: fetchBudget.limit,
+    reader_attempts: fetchBudget.readerUsed,
+    reader_successes: fetchBudget.readerSucceeded,
+    reader_failures: fetchBudget.readerFailures,
+    reader_failure_reasons: fetchBudget.readerFailureReasons,
     source_fetch_window: MUNICIPAL_MAX_FETCHES_PER_SOURCE_WINDOW,
     source_fetch_reserve: MUNICIPAL_MIN_FETCH_RESERVE_PER_SOURCE,
     detail_fetches: detailFetches,

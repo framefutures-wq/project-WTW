@@ -464,10 +464,13 @@ test("exact official recovery uses Reader transport after direct official routes
     await seed(DB);
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === "https://r.jina.ai/") {
-        const body = JSON.parse(String(init?.body ?? "{}")) as { url?: string };
-        assert.match(body.url ?? "", /idx=2016/);
-        return new Response(JSON.stringify({ data: { url: body.url, content:
+      if (url.startsWith("https://r.jina.ai/https://ui4u.go.kr/")) {
+        assert.match(url, /idx=2016/);
+        const headers = new Headers(init?.headers);
+        assert.equal(init?.method, "GET");
+        assert.equal(headers.get("x-respond-with"), "html");
+        const target = url.slice("https://r.jina.ai/".length);
+        return new Response(JSON.stringify({ data: { url: target, content:
           '<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>' +
           '<p>2026년 10월 3일 동오마을 공영주차장에서 열리는 공식 먹거리 축제입니다.</p>' +
           '<p>행사 시간: 12:00~19:00</p>' +

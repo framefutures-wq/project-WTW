@@ -3,7 +3,6 @@ const MAX_READER_BYTES = 2_000_000;
 
 export type OfficialReaderOptions = {
   refererUrl?: string | null;
-  injectPageScript?: string | null;
 };
 
 export type OfficialReaderPage = {
@@ -130,25 +129,26 @@ export async function fetchOfficialPageViaReader(
   const referer = options.refererUrl
     ? publicHttpsUrl(options.refererUrl)?.toString() ?? null
     : null;
-  const body: Record<string, unknown> = { url: target.toString() };
-  if (options.injectPageScript)
-    body.injectPageScript = options.injectPageScript;
-
-  const response = await fetch(READER_ENDPOINT, {
-    method: "POST",
+  // Anonymous Reader's documented basic path is GET with the target URL
+  // appended to r.jina.ai. Request rendered HTML so municipal parsers retain
+  // onclick/data attributes that Markdown conversion would discard.
+  const readerUrl = READER_ENDPOINT + target.toString();
+  const response = await fetch(readerUrl, {
+    method: "GET",
     signal: AbortSignal.timeout(25_000),
     headers: {
       accept: "application/json",
-      "content-type": "application/json",
-      "x-return-format": "html",
+      "x-respond-with": "html",
       "x-timeout": "20",
       "x-locale": "ko-KR",
       "x-no-cache": "true",
+      "x-retain-links": "all",
+      "x-retain-images": "all",
       "x-with-images-summary": "true",
+      "x-base": "final",
       ...(referer ? { "x-referer": referer } : {}),
       dnt: "1",
     },
-    body: JSON.stringify(body),
   });
   if (!response.ok)
     throw new Error("official_reader_http_" + response.status);
@@ -196,42 +196,4 @@ export async function fetchOfficialPageViaReader(
   if (new TextEncoder().encode(enriched).byteLength > MAX_READER_BYTES)
     throw new Error("official_reader_too_large");
   return { html: enriched, finalUrl };
-}
-
-export function buildDetailLinkInjection(
-  targetUrl: string,
-  template:
-    | {
-        path: string;
-        idParam: string;
-        fixedQuery?: Readonly<Record<string, string>>;
-      }
-    | undefined,
-) {
-  if (!template) return null;
-  const target = publicHttpsUrl(targetUrl);
-  if (!target) return null;
-  const payload = JSON.stringify({
-    origin: target.origin,
-    path: template.path,
-    idParam: template.idParam,
-    fixedQuery: template.fixedQuery ?? {},
-  });
-  return (
-    "(() => {" +
-    "const cfg=" +
-    payload +
-    ";" +
-    "for(const el of document.querySelectorAll('a[onclick],button[onclick]')){" +
-    "const raw=el.getAttribute('onclick')||'';" +
-    "const match=raw.match(/(?:['\\\"])(\\d+)(?:['\\\"])|\\((\\d+)\\)/);" +
-    "const id=match&&(match[1]||match[2]);if(!id)continue;" +
-    "const url=new URL(cfg.path,cfg.origin);" +
-    "for(const [key,value] of Object.entries(cfg.fixedQuery))url.searchParams.set(key,value);" +
-    "url.searchParams.set(cfg.idParam,id);" +
-    "if(el.tagName==='A')el.setAttribute('href',url.toString());" +
-    "else el.setAttribute('data-detail-url',url.toString());" +
-    "}" +
-    "})()"
-  );
 }
