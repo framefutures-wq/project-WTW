@@ -339,12 +339,9 @@ async function officialResponse(
       return { html: await response.text(), finalUrl };
     } catch (error) {
       lastError = error;
-      if (
-        attempt + 1 < attempts.length &&
-        retryableOfficialFetchError(error)
-      )
-        continue;
-      throw error;
+      if (!retryableOfficialFetchError(error)) throw error;
+      if (attempt + 1 < attempts.length) continue;
+      break;
     }
   }
   const source = SOURCES.find((item) =>
@@ -365,8 +362,8 @@ async function officialResponse(
           source.detailLinkTemplate,
         ),
       });
-    } catch (readerError) {
-      lastError = readerError;
+    } catch {
+      // Keep the direct official failure as the operational reason.
     }
   }
   throw lastError instanceof Error

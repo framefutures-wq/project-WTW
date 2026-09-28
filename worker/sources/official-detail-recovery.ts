@@ -557,8 +557,8 @@ export async function runOfficialDetailRecovery(
         page = await fetchOfficialPageViaReader(row.official_url, {
           refererUrl,
         });
-      } catch (error) {
-        lastFetchError = error;
+      } catch {
+        // Preserve the direct official failure reason if transport fallback fails.
       }
     }
     if (!page) {
