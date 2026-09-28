@@ -56,9 +56,13 @@ function pushUnique(
 function looksDecorative(url: string, alt: string | null) {
   const haystack = `${url} ${alt ?? ""}`.toLowerCase();
   return (
-    /(?:favicon|sprite|spacer|pixel|tracking|noimg|no_image|default_img|all_menu|menu_show|logo(?:[._/-]|$)|icon(?:[._/-]|$)|btn(?:[._/-]|$)|button(?:[._/-]|$)|arrow(?:[._/-]|$))/i.test(
+    /(?:favicon|sprite|spacer|pixel|tracking|noimg|no_image|default_img|all_menu|menu_show|(?:^|[\/_-])logo\d*(?:[._/-]|$)|icon(?:[._/-]|$)|btn(?:[._/-]|$)|button(?:[._/-]|$)|arrow(?:[._/-]|$)|bg_location_tab)/i.test(
       haystack,
-    ) || /\/inc\/img\/common\//i.test(haystack)
+    ) ||
+    /\/inc\/img\/common\//i.test(haystack) ||
+    /(?:공공누리|한국관광공사|경기관광공사|웹\s*접근성|품질인증|태극기)/i.test(
+      alt ?? "",
+    )
   );
 }
 

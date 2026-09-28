@@ -297,3 +297,92 @@ test("canonical municipal list page is not treated as an exact recovery page", a
     await mf.dispose();
   }
 });
+
+
+test("municipal candidate snapshot supplies the exact detail URL when primary source is the canonical list", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      "DELETE FROM event_official_links WHERE event_id='event-1'",
+    ).run();
+    await DB.prepare(
+      "UPDATE sources SET url='https://www.swcf.or.kr/?p=29' WHERE id='municipality'",
+    ).run();
+    await DB.prepare(
+      `INSERT INTO municipal_candidate_state(
+        candidate_id,source_key,first_seen_at,last_seen_at,decision_state,
+        decision_reason,retry_until,last_payload_hash,source_candidate_id,
+        title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,
+        locality_snapshot,official_url_snapshot
+      ) VALUES(
+        'event-1','suwon','2026-09-27T00:00:00Z','2026-09-27T00:00:00Z',
+        'AUTO_PUBLISH','test',NULL,'hash','3011',
+        '제9회 동오마을축제 2026 동오마을 푸드페스타',
+        '2026-10-03','2026-10-03','동오마을 공영주차장','수원',
+        'https://www.swcf.or.kr/?p=29_view&idx=3011'
+      )`,
+    ).run();
+
+    const rows = await selectOfficialDetailRecoveryCandidates(
+      DB,
+      new Date("2026-09-28T01:00:00Z"),
+      10,
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(
+      rows[0]?.official_url,
+      "https://www.swcf.or.kr/?p=29_view&idx=3011",
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("municipal recovery retries an allowed sibling host after a network failure", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      `INSERT INTO municipal_candidate_state(
+        candidate_id,source_key,first_seen_at,last_seen_at,decision_state,
+        decision_reason,retry_until,last_payload_hash,source_candidate_id,
+        title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,
+        locality_snapshot,official_url_snapshot
+      ) VALUES(
+        'event-1','gyeonggi-의정부','2026-09-27T00:00:00Z','2026-09-27T00:00:00Z',
+        'AUTO_PUBLISH','test',NULL,'hash','378',
+        '제9회 동오마을축제 2026 동오마을 푸드페스타',
+        '2026-10-03','2026-10-03','동오마을 공영주차장','의정부',
+        'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016'
+      )`,
+    ).run();
+
+    const calls: string[] = [];
+    const result = await runOfficialDetailRecovery(
+      { DB } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      {
+        fetchPage: async (url) => {
+          calls.push(url);
+          if (new URL(url).hostname === "ui4u.go.kr")
+            throw new TypeError("fetch failed");
+          return {
+            finalUrl: url,
+            html: `
+              <h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>
+              <p>2026년 10월 3일 동오마을 공영주차장에서 열리는 공식 축제입니다.</p>
+              <img src="/upload/food-festa-poster.jpg" alt="행사 포스터">
+            `,
+          };
+        },
+      },
+    );
+    assert.equal(result.recovered, 1);
+    assert.equal(result.images_recovered, 1);
+    assert.equal(calls.length, 2);
+    assert.equal(new URL(calls[1]).hostname, "www.ui4u.go.kr");
+  } finally {
+    await mf.dispose();
+  }
+});

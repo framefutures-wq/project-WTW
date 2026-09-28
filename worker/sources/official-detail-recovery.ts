@@ -18,6 +18,7 @@ import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 
 export const OFFICIAL_DETAIL_RECOVERY_LIMIT = 12;
 export const OFFICIAL_DETAIL_RETRY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const OFFICIAL_DETAIL_SUCCESS_IMAGE_RETRY_MS = 2 * 60 * 1000;
 const MAX_HTML_BYTES = 2_000_000;
 const MAX_REDIRECTS = 4;
 
@@ -50,6 +51,7 @@ export type OfficialDetailRecoveryResult = {
   insufficient_core_signal: number;
   empty: number;
   fetch_failed: number;
+  fetch_failure_reasons: Record<string, number>;
 };
 
 type RecoveryPage = { html: string; finalUrl: string };
@@ -200,6 +202,32 @@ function inferredSourceKind(row: RecoveryRow): SourceKind {
   }
 }
 
+function recoveryUrlCandidates(row: RecoveryRow) {
+  const output = [row.official_url];
+  if (!row.source_key) return output;
+  const source = municipalSourceByKey(row.source_key);
+  if (!source) return output;
+  try {
+    const original = new URL(row.official_url);
+    for (const host of source.allowedHosts) {
+      if (host === original.hostname) continue;
+      const alternate = new URL(original.href);
+      alternate.hostname = host;
+      if (!municipalSourceAllowsUrl(source, alternate.href)) continue;
+      output.push(alternate.href);
+    }
+  } catch {
+    return output;
+  }
+  return [...new Set(output)];
+}
+
+function fetchFailureReason(error: unknown) {
+  if (error instanceof Error && error.message)
+    return error.message.slice(0, 120);
+  return "fetch_failed";
+}
+
 function normalizedCore(value: string) {
   return value.replace(/[\s()\[\]{}.,·ㆍ:：/\\_-]+/g, "").toLowerCase();
 }
@@ -283,6 +311,9 @@ export async function selectOfficialDetailRecoveryCandidates(
   const retryBefore = new Date(
     now.getTime() - OFFICIAL_DETAIL_RETRY_TTL_MS,
   ).toISOString();
+  const successImageRetryBefore = new Date(
+    now.getTime() - OFFICIAL_DETAIL_SUCCESS_IMAGE_RETRY_MS,
+  ).toISOString();
   const rows = await db
     .prepare(
       `WITH official_candidates AS (
@@ -317,13 +348,26 @@ export async function selectOfficialDetailRecoveryCandidates(
            AND (l.final_url LIKE 'https://%' OR l.url LIKE 'https://%')
          UNION ALL
          SELECT
+           mcs.candidate_id AS event_id,
+           mcs.official_url_snapshot AS url,
+           e.primary_source_id AS source_id,
+           ps.kind AS source_kind,
+           ps.priority AS source_priority,
+           mcs.last_seen_at AS checked_at,
+           2 AS source_rank
+         FROM municipal_candidate_state mcs
+         JOIN events e ON e.id=mcs.candidate_id
+         JOIN sources ps ON ps.id=e.primary_source_id
+         WHERE mcs.official_url_snapshot LIKE 'https://%'
+         UNION ALL
+         SELECT
            e.id AS event_id,
            ps.url,
            ps.id AS source_id,
            ps.kind AS source_kind,
            ps.priority AS source_priority,
            ps.fetched_at AS checked_at,
-           2 AS source_rank
+           3 AS source_rank
          FROM events e
          JOIN sources ps ON ps.id=e.primary_source_id
          WHERE ps.kind IN ('municipality','organizer')
@@ -350,7 +394,7 @@ export async function selectOfficialDetailRecoveryCandidates(
            THEN 1 ELSE 0
          END AS image_missing
        FROM events e
-       JOIN ranked r ON r.event_id=e.id AND r.rn=1
+       JOIN ranked r ON r.event_id=e.id AND r.rn<=4
        JOIN sources ps ON ps.id=e.primary_source_id
        LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
        LEFT JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
@@ -368,32 +412,43 @@ export async function selectOfficialDetailRecoveryCandidates(
              SELECT 1 FROM event_operating_hours oh WHERE oh.event_id=e.id
            )
          )
-         AND (attempt.id IS NULL OR attempt.fetched_at<?)
-       ORDER BY image_missing DESC,e.start_date,e.id
+         AND (
+           attempt.id IS NULL
+           OR attempt.fetched_at<?
+           OR (
+             (ei.event_id IS NULL OR ei.image_url IS NULL OR ei.image_status!='ok')
+             AND attempt.raw_payload LIKE '%"municipal_rich_detail"%'
+             AND attempt.fetched_at<?
+           )
+         )
+       ORDER BY image_missing DESC,e.start_date,e.id,r.rn
        LIMIT ?`,
     )
     .bind(
       today,
       retryBefore,
-      Math.max(4, Math.min(160, limit * 4)),
+      successImageRetryBefore,
+      Math.max(8, Math.min(240, limit * 8)),
     )
     .all<RecoveryRow>();
 
-  return rows.results
-    .filter((row) => {
-      if (row.source_rank < 2) return true;
-      if (row.link_source_kind === "organizer") return true;
-      if (!row.source_key) return false;
-      const source = municipalSourceByKey(row.source_key);
-      if (!source || !municipalSourceAllowsUrl(source, row.official_url))
-        return false;
-      try {
-        return new URL(row.official_url).href !== new URL(source.url).href;
-      } catch {
-        return false;
-      }
-    })
-    .slice(0, Math.max(1, Math.min(40, limit)));
+  const accepted = rows.results.filter((row) => {
+    if (row.source_rank < 2) return true;
+    if (row.link_source_kind === "organizer") return true;
+    if (!row.source_key) return false;
+    const source = municipalSourceByKey(row.source_key);
+    if (!source || !municipalSourceAllowsUrl(source, row.official_url))
+      return false;
+    try {
+      return new URL(row.official_url).href !== new URL(source.url).href;
+    } catch {
+      return false;
+    }
+  });
+  const unique = new Map<string, RecoveryRow>();
+  for (const row of accepted)
+    if (!unique.has(row.id)) unique.set(row.id, row);
+  return [...unique.values()].slice(0, Math.max(1, Math.min(40, limit)));
 }
 
 export async function runOfficialDetailRecovery(
@@ -418,6 +473,7 @@ export async function runOfficialDetailRecovery(
     insufficient_core_signal: 0,
     empty: 0,
     fetch_failed: 0,
+    fetch_failure_reasons: {},
   };
   const fetchPage = options.fetchPage ?? fetchOfficialDetailPage;
   const checkedAt = now.toISOString();
@@ -425,21 +481,25 @@ export async function runOfficialDetailRecovery(
   for (const row of rows) {
     result.attempted += 1;
     const sourceKind = inferredSourceKind(row);
-    let page: RecoveryPage;
-    try {
-      page = await fetchPage(row.official_url);
-      result.fetched += 1;
-    } catch (error) {
+    let page: RecoveryPage | null = null;
+    let lastFetchError: unknown = null;
+    for (const candidateUrl of recoveryUrlCandidates(row)) {
+      try {
+        page = await fetchPage(candidateUrl);
+        break;
+      } catch (error) {
+        lastFetchError = error;
+      }
+    }
+    if (!page) {
       result.fetch_failed += 1;
-      await markAttempt(
-        env.DB,
-        row,
-        sourceKind,
-        checkedAt,
-        error instanceof Error ? error.message.slice(0, 120) : "fetch_failed",
-      );
+      const reason = fetchFailureReason(lastFetchError);
+      result.fetch_failure_reasons[reason] =
+        (result.fetch_failure_reasons[reason] ?? 0) + 1;
+      await markAttempt(env.DB, row, sourceKind, checkedAt, reason);
       continue;
     }
+    result.fetched += 1;
 
     const candidate: MunicipalCandidate = {
       source: "official-detail-recovery",

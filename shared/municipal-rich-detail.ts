@@ -375,7 +375,13 @@ function extractImages(pageUrl: string, html: string): MunicipalRichImage[] {
   add(metaContent(html, "og:image"), null, true);
 
   for (const candidate of extractOfficialPageImageCandidates(pageUrl, html, 10)) {
-    if (candidate.signal === "IMG") continue;
+    const eventImageSignal =
+      candidate.signal !== "IMG" ||
+      /(?:\/comm\/getImage\b|\/data\/editor\/|\/file\/down\b|\/uploads?\/|poster|festival|event)/i.test(
+        candidate.url,
+      ) ||
+      /(?:포스터|행사|축제|공연|전시|뮤지컬)/i.test(candidate.alt ?? "");
+    if (!eventImageSignal) continue;
     add(candidate.url, candidate.alt, true);
     if (output.length >= 5) return output.slice(0, 5);
   }

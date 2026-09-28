@@ -90,6 +90,7 @@ function dependencies(
         insufficient_core_signal: 0,
         empty: 0,
         fetch_failed: 0,
+        fetch_failure_reasons: {},
       };
     },
     processPushDeliveries: async () => {

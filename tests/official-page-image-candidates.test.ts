@@ -117,3 +117,22 @@ test("rejects common site chrome and default placeholder images", () => {
     ],
   );
 });
+
+
+test("rejects official-site chrome logos by filename and accessibility alt", () => {
+  const html = `
+    <img src="/images/fvu/common/btm_logo01.png" alt="공공누리">
+    <img src="/site/www/images/common/flag.jpg" alt="태극기">
+    <img src="/comm/getImage?upperNo=10934&fileNo=1" alt="">
+  `;
+  assert.deepEqual(
+    extractOfficialPageImageCandidates("https://example.org/event", html),
+    [
+      {
+        url: "https://example.org/comm/getImage?upperNo=10934&fileNo=1",
+        signal: "IMG",
+        alt: null,
+      },
+    ],
+  );
+});

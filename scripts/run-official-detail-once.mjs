@@ -82,6 +82,7 @@ try {
     insufficient_core_signal: 0,
     empty: 0,
     fetch_failed: 0,
+    fetch_failure_reasons: {},
   };
 
   for (let pass = 1; pass <= passes; pass += 1) {
@@ -125,6 +126,11 @@ try {
       "fetch_failed",
     ])
       aggregate[key] += Number(current[key] ?? 0);
+    for (const [reason, count] of Object.entries(
+      current.fetch_failure_reasons ?? {},
+    ))
+      aggregate.fetch_failure_reasons[reason] =
+        (aggregate.fetch_failure_reasons[reason] ?? 0) + Number(count);
     console.error(
       `[official-detail:once] pass=${pass} candidates=${current.candidates} recovered=${current.recovered} images=${current.images_recovered} detail=${current.detail_recovered}`,
     );
