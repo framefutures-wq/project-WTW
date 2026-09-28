@@ -354,6 +354,6 @@ test("municipal source/detail fetch falls back to allowed www sibling after 522"
   );
   assert.ok(seen.includes(listUrl));
   assert.ok(seen.includes(wwwListUrl));
-  assert.ok(seen.includes(detailUrl));
+  assert.equal(seen.includes(detailUrl), false);
   assert.ok(seen.includes(wwwDetailUrl));
 });

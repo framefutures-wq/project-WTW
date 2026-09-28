@@ -301,9 +301,25 @@ const municipalSourceFailureReason = (error: unknown) => {
 async function officialResponse(
   url: string,
   budget: MunicipalFetchBudget,
+  preferredHosts?: Map<string, string>,
 ) {
   const candidates = municipalFetchUrlCandidates(url);
-  const attempts = candidates.length > 1 ? candidates : [url, url];
+  let family = "";
+  try {
+    family = new URL(url).hostname.replace(/^www\./, "");
+  } catch {}
+  const preferredHost = family ? preferredHosts?.get(family) : null;
+  const ordered =
+    preferredHost && candidates.length > 1
+      ? [...candidates].sort((left, right) => {
+          const leftPreferred =
+            new URL(left).hostname === preferredHost ? 0 : 1;
+          const rightPreferred =
+            new URL(right).hostname === preferredHost ? 0 : 1;
+          return leftPreferred - rightPreferred;
+        })
+      : candidates;
+  const attempts = ordered.length > 1 ? ordered : [url, url];
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt < attempts.length; attempt += 1) {
@@ -311,7 +327,10 @@ async function officialResponse(
     try {
       const response = await budgetedFetch(candidateUrl, budget);
       if (!response.ok) throw new Error(`official_http_${response.status}`);
-      return { html: await response.text(), finalUrl: response.url || candidateUrl };
+      const finalUrl = response.url || candidateUrl;
+      if (family && preferredHosts)
+        preferredHosts.set(family, new URL(finalUrl).hostname);
+      return { html: await response.text(), finalUrl };
     } catch (error) {
       lastError = error;
       if (
@@ -632,7 +651,9 @@ export async function runMunicipalAutonomous(
       limit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
       activeLimit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
     },
-    fetchResponse = (url: string) => officialResponse(url, fetchBudget),
+    preferredOfficialHosts = new Map<string, string>(),
+    fetchResponse = (url: string) =>
+      officialResponse(url, fetchBudget, preferredOfficialHosts),
     fetchHtml = async (url: string) => (await fetchResponse(url)).html,
     summary = emptySummary(),
     source_outcomes: Array<{
