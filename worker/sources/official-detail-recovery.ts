@@ -462,18 +462,29 @@ export async function selectOfficialDetailRecoveryCandidates(
        LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
        LEFT JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
        LEFT JOIN sources attempt ON attempt.id='official-detail-' || e.id
+       LEFT JOIN sources poster_state ON poster_state.id='official-poster-' || e.id
        WHERE e.is_sample=0
          AND (? IS NULL OR e.id=?)
          AND e.verification='verified'
          AND e.publish_quality_state='PUBLIC'
          AND e.end_date>=?
          AND (
+           ? IS NOT NULL
+           OR
            ei.event_id IS NULL OR ei.image_url IS NULL OR ei.image_status!='ok'
            OR NOT EXISTS (
              SELECT 1 FROM event_enrichments en WHERE en.event_id=e.id
            )
            OR NOT EXISTS (
              SELECT 1 FROM event_operating_hours oh WHERE oh.event_id=e.id
+           )
+           OR (
+             ei.image_status='ok'
+             AND NOT EXISTS (SELECT 1 FROM event_programs p WHERE p.event_id=e.id)
+             AND (poster_state.id IS NULL OR (
+               poster_state.raw_payload LIKE '%"status":"failed"%'
+               AND poster_state.fetched_at<?
+             ))
            )
          )
          AND (
@@ -504,6 +515,8 @@ export async function selectOfficialDetailRecoveryCandidates(
       targetEventId ?? null,
       targetEventId ?? null,
       today,
+      targetEventId ?? null,
+      new Date(now.getTime() - POSTER_FAILURE_RETRY_MS).toISOString(),
       targetEventId ?? null,
       retryBefore,
       successImageRetryBefore,

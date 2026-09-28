@@ -173,6 +173,21 @@ test("verified poster conversion enriches once and never invents a summary or ti
   }
 });
 
+test("verified poster without programs remains eligible when HTML hours already exist", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare("INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt) VALUES('event-1','기존 소개','municipality','기존 소개')").run();
+    await DB.prepare("INSERT INTO event_operating_hours(id,event_id,start_date,end_date,start_time,end_time,source_id,evidence_excerpt) VALUES('hours-1','event-1','2026-10-03','2026-10-03','12:00','19:00','municipality','공식 시간')").run();
+    await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,image_status,last_checked_at) VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016','ok','2026-09-27T00:00:00Z')").run();
+    const rows = await selectOfficialDetailRecoveryCandidates(DB, new Date("2026-09-28T01:00:00Z"), 10);
+    assert.equal(rows.length, 1);
+    await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES('official-poster-event-1','municipality',2,'공식 포스터 판독 상태','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016','2026-09-28T01:00:00Z','{\"status\":\"success\"}')").run();
+    const after = await selectOfficialDetailRecoveryCandidates(DB, new Date("2026-09-28T02:00:00Z"), 10);
+    assert.equal(after.length, 0);
+  } finally { await mf.dispose(); }
+});
+
 test("poster fallback is skipped when AI is disabled or HTML already has useful rich detail", async () => {
   const { mf, DB } = await setup();
   try {
