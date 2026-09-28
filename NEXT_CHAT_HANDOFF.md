@@ -2414,3 +2414,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Bare host, browser-like headers, Referer, and allowed www sibling have all been exhausted as direct transport remedies. Do not repeat those same fixes.
 - New bounded fallback: only after retryable direct-route failure, fetch the already-allowlisted public official URL through Jina Reader server-side browser transport. Maximum 4 calls/run, no key/secret/cookies, original official URL remains provenance. For Uijeongbu list pages, preprocessing turns fnView-style numeric IDs into the registered exact-detail URL before the existing parser runs.
 - Next production proof must deploy this fallback, run only Uijeongbu source + official-detail recovery, then verify D1. Success still requires exact idx=2016, real poster URL, and rich detail fields.
+
+## 2026-09-28 — corrected Reader fallback ready for Uijeongbu production proof
+
+- Last production run on `f2bd3fab` did NOT fix Uijeongbu: municipal source remained `network_or_timeout`, discovered=0; official-detail candidates=0; food-festa D1 row still had canonical list URL and NULL image/detail fields.
+- Do not repeat the old POST/inject Reader fallback. Latest main now uses anonymous GET Reader transport, rendered-HTML payload parsing, 24h cache tolerance only after direct failures, bare/www sibling retries, and explicit Reader telemetry.
+- Functional commits after that failed production run: `3f914d9f`, `2f958ed8`, `af49a02a`, `9608a100`, `88ebc86d`, `01485f64`.
+- Project checks PASS on `01485f64`.
+- Next authenticated boundary is intentionally narrow: deploy latest main and run ONLY `municipal:once -- --source=gyeonggi-의정부` first. Read Reader telemetry. If source status becomes ok, then run `official-detail:once` and direct D1 verification for `동오마을`. If it still fails, use `reader_failure_reasons` to fix the actual transport failure; do not repeat parser/header/host guesses.
+- Success still requires exact `idx=2016`, real poster `image_url`, and official rich-detail fields in production D1.

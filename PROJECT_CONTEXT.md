@@ -1490,3 +1490,16 @@ UI benchmark:
 - A bounded transport fallback now uses Jina Reader only after all direct allowed official-host attempts fail with a transient network/timeout/429/5xx error. Jina remains transport only: the target must already be an allowlisted public HTTPS official URL, the original official URL remains provenance, cookies/secrets are never sent, and existing event title/date/venue validation still gates persistence.
 - The fallback is capped at 4 Reader calls per municipal run and 4 per official-detail recovery run. No API key or new Cloudflare resource is required; direct official fetch remains primary.
 - For generic municipal lists with a registered detailLinkTemplate, Reader receives deterministic DOM preprocessing that turns numeric JS view handlers into ordinary exact-detail links before extraction. Reader output is normalized into parseable HTML so the existing parsers and validation remain the single truth pipeline.
+
+## 2026-09-28 — Reader fallback contract corrected and instrumented
+
+- Production on `f2bd3fab` still failed Uijeongbu before parsing (`network_or_timeout`, discovered=0) and exact-detail recovery still had candidates=0; D1 remained list-URL-only with no image/detail. The initial Reader fallback therefore did not actually rescue the source.
+- The fallback itself was corrected instead of adding another city parser:
+  - `3f914d9f`: anonymous Reader transport now uses the documented GET form `https://r.jina.ai/<official-url>` and requests rendered HTML, removing the unsupported/fragile POST + injected-script dependency.
+  - `2f958ed8`: rendered-HTML JSON payloads are read from `data.html`/`html` before content/text fallbacks.
+  - `af49a02a`: fallback may use a recent (<=24h) cached official snapshot after direct egress fails; all writes remain gated by exact title plus date/venue/core validation.
+  - `9608a100`: Reader retries the same allowlisted bare/www sibling hosts as direct municipal fetches and exposes Reader attempt/success/failure reasons.
+  - `88ebc86d`: one-shot output aggregates Reader telemetry so production failures are no longer hidden behind generic `network_or_timeout`.
+  - `01485f64`: exact official links without `municipal_candidate_state` can still infer safe sibling hosts from the registry allowlist; no arbitrary hostname guessing.
+- Project checks PASS for `01485f6421ea3dff4dd162da4b39ceaee849e5ce`.
+- Production redeploy/proof is pending. The next proof should be Uijeongbu only and must inspect `reader_attempts`, `reader_successes`, `reader_failures`, and `reader_failure_reasons` before any broader audit.
