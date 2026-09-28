@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import {
   runOfficialDetailRecovery,
@@ -130,10 +131,11 @@ test("verified poster conversion enriches once and never invents a summary or ti
        VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality',
        'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')`,
     ).run();
+    let posterBytes = new Uint8Array([255, 216, 255]);
     globalThis.fetch = async (url, init) => {
       assert.equal(String(url), "https://ui4u.go.kr/poster.jpg");
       assert.equal(new Headers(init?.headers).get("Referer"), "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016");
-      return new Response(new Uint8Array([255, 216, 255]), {
+      return new Response(posterBytes, {
         status: 200, headers: { "content-type": "image/jpeg" },
       });
     };
@@ -166,6 +168,7 @@ test("verified poster conversion enriches once and never invents a summary or ti
     const parsedSuccessState = JSON.parse(successState!.raw_payload);
     assert.equal(parsedSuccessState.latest_attempt.status, "success");
     assert.equal(parsedSuccessState.last_success.poster_url, "https://ui4u.go.kr/poster.jpg");
+    assert.match(parsedSuccessState.last_success.poster_hash, /^[a-f0-9]{64}$/);
     assert.match(parsedSuccessState.last_success.transcription, /떡볶이 한판/);
     const hours = await DB.prepare("SELECT start_time,end_time,evidence_excerpt FROM event_operating_hours WHERE event_id='event-1'")
       .first<{ start_time: string; end_time: string; evidence_excerpt: string }>();
@@ -177,10 +180,14 @@ test("verified poster conversion enriches once and never invents a summary or ti
     assert.match(programs.results[0].evidence_excerpt, /poster_image=/);
     const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
     assert.equal(summary, null);
-    // Simulate a later parser attempt on the same poster that times out.
+    // A parser version change reuses the exact same image and never calls AI.
     parsedSuccessState.version = 4;
     await DB.prepare("UPDATE sources SET raw_payload=? WHERE id='official-poster-event-1'")
       .bind(JSON.stringify(parsedSuccessState)).run();
+    await runOfficialDetailRecovery(env, new Date("2026-09-28T01:30:00Z"), options);
+    assert.equal(calls, 1);
+    // Changed bytes invalidate the cache and take the normal OCR path.
+    posterBytes = new Uint8Array([255, 216, 4]);
     const timedOut = {
       DB, MUNICIPAL_DOCUMENT_AI_ENABLED: "true",
       AI: { async run() { calls += 1; throw new Error("vision_timeout"); } },
@@ -191,8 +198,8 @@ test("verified poster conversion enriches once and never invents a summary or ti
     const preserved = JSON.parse(afterFailure!.raw_payload);
     assert.equal(preserved.latest_attempt.status, "failed");
     assert.equal(preserved.latest_attempt.error, "vision_timeout");
+    assert.equal(preserved.last_success.poster_hash, parsedSuccessState.last_success.poster_hash);
     assert.equal(preserved.last_success.transcription, parsedSuccessState.last_success.transcription);
-    await runOfficialDetailRecovery(env, new Date("2026-09-28T02:00:00Z"), options);
     assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;
@@ -223,10 +230,29 @@ test("legacy successful poster state is promoted while a later failure is record
     assert.equal(state.latest_attempt.status, "failed");
     assert.equal(state.last_success.transcription, "legacy transcription");
     assert.equal(state.last_success.succeeded_at, "2026-09-27T00:00:00Z");
+    assert.equal(state.last_success.poster_hash, undefined);
   } finally {
     globalThis.fetch = originalFetch;
     await mf.dispose();
   }
+});
+
+test("cached transcription must pass the current event core safety gate", async () => {
+  const { mf, DB } = await setup();
+  const originalFetch = globalThis.fetch;
+  try {
+    await seed(DB);
+    await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at) VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')").run();
+    globalThis.fetch = async () => new Response(new Uint8Array([255, 216, 9]), { status: 200 });
+    const options = { targetEventId: "event-1", fetchPage: async (url: string) => ({ finalUrl: url, html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026. 10. 3. 동오마을 공영주차장</p><p>행사 시간: 12:00~19:00</p>" }) };
+    let calls = 0;
+    const env = { DB, MUNICIPAL_DOCUMENT_AI_ENABLED: "true", AI: { async run() { calls += 1; return { choices: [{ message: { content: JSON.stringify({ transcription: "동오마을 푸드페스타\n2026. 10. 3.\n동오마을 공영주차장\n무대공연" }) } }] }; } } } as never;
+    const hash = createHash("sha256").update(Buffer.from([255, 216, 9])).digest("hex");
+    await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES('official-poster-event-1','municipality',2,'공식 포스터 판독 상태','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016','2026-09-27T00:00:00Z',?)")
+      .bind(JSON.stringify({ version: 4, status: "success", last_success: { poster_url: "https://ui4u.go.kr/poster.jpg", poster_hash: hash, transcription: "다른 지역 행사\n2026. 10. 3.\n다른 장소\n무대공연", succeeded_at: "2026-09-27T00:00:00Z" } })).run();
+    await runOfficialDetailRecovery(env, new Date("2026-09-28T01:00:00Z"), options);
+    assert.equal(calls, 1, "unsafe cached transcription must not be reused");
+  } finally { globalThis.fetch = originalFetch; await mf.dispose(); }
 });
 
 test("poster failure without prior success stores no last_success", async () => {

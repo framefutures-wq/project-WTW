@@ -556,6 +556,7 @@ type PosterOCRState = {
   };
   last_success?: {
     poster_url: string;
+    poster_hash?: string;
     transcription: string;
     succeeded_at: string;
   };
@@ -583,6 +584,7 @@ function readPosterOCRState(rawPayload: string | null, fetchedAt: string): Poste
       if (typeof item.poster_url === "string" && typeof item.transcription === "string" && typeof item.succeeded_at === "string")
         state.last_success = {
           poster_url: item.poster_url,
+          ...(typeof item.poster_hash === "string" ? { poster_hash: item.poster_hash } : {}),
           transcription: item.transcription,
           succeeded_at: item.succeeded_at,
         };
@@ -615,7 +617,7 @@ async function writePosterOCRState(
   attemptedAt: string,
   posterUrl: string,
   status: string,
-  options: { transcription?: string; error?: string } = {},
+  options: { transcription?: string; posterHash?: string; error?: string } = {},
 ) {
   const id = `official-poster-${row.id}`;
   const previous = await db.prepare("SELECT raw_payload,fetched_at FROM sources WHERE id=?")
@@ -624,6 +626,7 @@ async function writePosterOCRState(
   if (status === "success" && options.transcription) {
     state.last_success = {
       poster_url: posterUrl,
+      ...(options.posterHash ? { poster_hash: options.posterHash } : {}),
       transcription: options.transcription,
       succeeded_at: attemptedAt,
     };
@@ -655,7 +658,7 @@ async function enrichFromVerifiedPoster(
   env: Env,
   row: RecoveryRow,
   checkedAt: string,
-): Promise<{ detail: MunicipalRichDetail; posterUrl: string; text: string } | null> {
+): Promise<{ detail: MunicipalRichDetail; posterUrl: string; text: string; posterHash: string; cached: boolean } | null> {
   const ai = municipalPosterAI(env);
   if (!ai || row.link_source_kind !== "municipality") return null;
   const poster = await env.DB.prepare(
@@ -680,13 +683,26 @@ async function enrichFromVerifiedPoster(
   const previous = await env.DB.prepare(
     "SELECT raw_payload,fetched_at FROM sources WHERE id=?",
   ).bind(stateId).first<{ raw_payload: string | null; fetched_at: string }>();
+  let posterBytes: Uint8Array | null = null;
+  let posterHashChanged = false;
   if (previous?.raw_payload) {
     try {
-      const payload = JSON.parse(previous.raw_payload) as { poster_url?: string; version?: number; status?: string };
-      if (payload.poster_url === poster.image_url && payload.version === POSTER_PARSER_VERSION) {
-        if (payload.status === "success" || payload.status === "empty" || payload.status === "core_mismatch")
+      const payload = JSON.parse(previous.raw_payload) as { poster_url?: string; version?: number; status?: string; last_success?: { poster_url?: string; poster_hash?: string; transcription?: string } };
+      const success = payload.last_success;
+      if (success?.poster_hash && success.transcription?.trim()) {
+        posterBytes = await fetchPosterBytes(poster.image_url, poster.source_page_url);
+        const hash = await sha256Hex(posterBytes);
+        posterHashChanged = hash !== success.poster_hash;
+        if (hash === success.poster_hash && posterMatchesVerifiedEvent(success.transcription, row)) {
+          const detail = parseMunicipalPosterRichDetail(success.transcription);
+          if (detail.summary || detail.operating_hours.length || detail.programs.length || detail.price_text || detail.contact_phone)
+            return { detail, posterUrl: poster.image_url, text: success.transcription, posterHash: hash, cached: true };
+        }
+      }
+      if (!posterHashChanged && payload.poster_url === poster.image_url && payload.version === POSTER_PARSER_VERSION) {
+        if (payload.status === "empty" || payload.status === "core_mismatch")
           return null;
-        if (new Date(checkedAt).getTime() - new Date(previous.fetched_at).getTime() < POSTER_FAILURE_RETRY_MS)
+        if (payload.status !== "success" && new Date(checkedAt).getTime() - new Date(previous.fetched_at).getTime() < POSTER_FAILURE_RETRY_MS)
           return null;
       }
     } catch {}
@@ -700,6 +716,8 @@ async function enrichFromVerifiedPoster(
     const image = new URL(poster.image_url);
     const extension = image.searchParams.get("ext")?.toLowerCase() || image.pathname.split(".").pop()?.toLowerCase();
     const mimeType = extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : "image/jpeg";
+    const imageBytes = posterBytes ?? await fetchPosterBytes(poster.image_url, poster.source_page_url);
+    const posterHash = await sha256Hex(imageBytes);
     const text = await transcribeMunicipalPosterImage({
       ai,
       attachment: {
@@ -710,6 +728,8 @@ async function enrichFromVerifiedPoster(
       },
       // Read the same verified official bytes with the source-page Referer.
       fetcher: ((url: RequestInfo | URL, init?: RequestInit) => {
+        if (String(url) === poster.image_url)
+          return Promise.resolve(new Response(imageBytes.slice().buffer as ArrayBuffer, { status: 200, headers: { "content-type": mimeType } }));
         const headers = new Headers(init?.headers);
         headers.set("Referer", poster.source_page_url!);
         headers.set("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.7");
@@ -727,15 +747,30 @@ async function enrichFromVerifiedPoster(
       await record("empty", text);
       return null;
     }
-    return { detail, posterUrl: poster.image_url, text };
+    return { detail, posterUrl: poster.image_url, text, posterHash, cached: false };
   } catch (error) {
     await record("failed", undefined, error instanceof Error ? error.message : String(error));
     return null;
   }
 }
 
-async function markPosterSuccess(db: D1Database, row: RecoveryRow, checkedAt: string, posterUrl: string, text: string) {
-  await writePosterOCRState(db, row, checkedAt, posterUrl, "success", { transcription: text });
+async function fetchPosterBytes(url: string, referer: string) {
+  const headers = new Headers({ Referer: referer, "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.7", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36" });
+  const response = await fetch(url, { headers, redirect: "follow", signal: AbortSignal.timeout(15_000) });
+  if (!response.ok) throw new Error(`poster_http_${response.status}`);
+  if (Number(response.headers.get("content-length") ?? 0) > 5 * 1024 * 1024) throw new Error("poster_too_large");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("poster_too_large");
+  return bytes;
+}
+
+async function sha256Hex(bytes: Uint8Array) {
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes.slice().buffer as ArrayBuffer)))
+    .map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+async function markPosterSuccess(db: D1Database, row: RecoveryRow, checkedAt: string, posterUrl: string, text: string, posterHash: string) {
+  await writePosterOCRState(db, row, checkedAt, posterUrl, "success", { transcription: text, posterHash });
 }
 
 export async function runOfficialDetailRecovery(
@@ -827,7 +862,7 @@ export async function runOfficialDetailRecovery(
             sourceUrl: row.official_url, checkedAt, detail: poster.detail,
             sourceKind: "municipality", posterUrl: poster.posterUrl,
           });
-          await markPosterSuccess(env.DB, row, checkedAt, poster.posterUrl, poster.text);
+          if (!poster.cached) await markPosterSuccess(env.DB, row, checkedAt, poster.posterUrl, poster.text, poster.posterHash);
           result.recovered += 1;
           result.detail_recovered += 1;
           continue;
@@ -889,6 +924,8 @@ export async function runOfficialDetailRecovery(
     }
     let convertedPosterUrl: string | null = null;
     let convertedPosterText: string | null = null;
+    let convertedPosterHash: string | null = null;
+    let posterWasCached = false;
     // An event-wide time or contact alone does not provide the poster's actual
     // program content. Keep those HTML facts while reading the verified poster.
     if (!detail.summary && !detail.programs.length && posterConversions < 1) {
@@ -897,6 +934,8 @@ export async function runOfficialDetailRecovery(
       if (poster) {
         convertedPosterUrl = poster.posterUrl;
         convertedPosterText = poster.text;
+        convertedPosterHash = poster.posterHash;
+        posterWasCached = poster.cached;
         detail = {
           ...detail,
           summary: poster.detail.summary,
@@ -929,8 +968,8 @@ export async function runOfficialDetailRecovery(
       sourceKind,
       ...(convertedPosterUrl ? { posterUrl: convertedPosterUrl } : {}),
     });
-    if (convertedPosterUrl && convertedPosterText)
-      await markPosterSuccess(env.DB, row, checkedAt, convertedPosterUrl, convertedPosterText);
+    if (convertedPosterUrl && convertedPosterText && convertedPosterHash && !posterWasCached)
+      await markPosterSuccess(env.DB, row, checkedAt, convertedPosterUrl, convertedPosterText, convertedPosterHash);
     await env.DB.prepare(
       `INSERT INTO event_official_links(event_id,source_id,url,checked_at)
        VALUES(?,?,?,?)
