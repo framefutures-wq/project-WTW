@@ -254,7 +254,37 @@ const retryableOfficialFetchError = (error: unknown) => {
       : "";
   if (name === "AbortError" || name === "TimeoutError") return true;
   const message = error instanceof Error ? error.message : String(error ?? "");
-  return /fetch failed|network|timeout/i.test(message);
+  if (/fetch failed|network|timeout/i.test(message)) return true;
+  const http = /^official_http_(\d{3})$/.exec(message);
+  return Boolean(http && (Number(http[1]) === 429 || Number(http[1]) >= 500));
+};
+
+const municipalFetchUrlCandidates = (rawUrl: string) => {
+  let original: URL;
+  try {
+    original = new URL(rawUrl);
+  } catch {
+    return [rawUrl];
+  }
+  const output = [original.toString()];
+  const source = SOURCES.find((item) => municipalSourceAllowsUrl(item, rawUrl));
+  if (!source) return output;
+
+  const baseHost = original.hostname.replace(/^www\./, "");
+  for (const host of source.allowedHosts) {
+    if (host === original.hostname || host.replace(/^www\./, "") !== baseHost)
+      continue;
+    const sibling = new URL(original.toString());
+    sibling.hostname = host;
+    const value = sibling.toString();
+    if (
+      value !== output[0] &&
+      municipalSourceAllowsUrl(source, value) &&
+      !output.includes(value)
+    )
+      output.push(value);
+  }
+  return output;
 };
 const municipalSourceFailureReason = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error ?? "");
@@ -272,19 +302,29 @@ async function officialResponse(
   url: string,
   budget: MunicipalFetchBudget,
 ) {
+  const candidates = municipalFetchUrlCandidates(url);
+  const attempts = candidates.length > 1 ? candidates : [url, url];
   let lastError: unknown = null;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+
+  for (let attempt = 0; attempt < attempts.length; attempt += 1) {
+    const candidateUrl = attempts[attempt];
     try {
-      const response = await budgetedFetch(url, budget);
+      const response = await budgetedFetch(candidateUrl, budget);
       if (!response.ok) throw new Error(`official_http_${response.status}`);
-      return { html: await response.text(), finalUrl: response.url };
+      return { html: await response.text(), finalUrl: response.url || candidateUrl };
     } catch (error) {
       lastError = error;
-      if (attempt === 0 && retryableOfficialFetchError(error)) continue;
+      if (
+        attempt + 1 < attempts.length &&
+        retryableOfficialFetchError(error)
+      )
+        continue;
       throw error;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error("official_fetch_failed");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("official_fetch_failed");
 }
 type SourceCandidate = {
   candidate: MunicipalCandidate;
