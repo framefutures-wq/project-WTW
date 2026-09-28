@@ -2466,3 +2466,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Production D1 and public API now expose exactly five programs: `떡볶이한판`, `무대공연`, `체험`, `지역화폐 소비혜택`, `랜덤 경품 이벤트`. QR instruction and organizer/footer rows are gone; no time-only rows. Summary remains blank.
 - Hours remain `12:00–19:00`; image status is `ok`; mobile showed the poster. Public API now displays contact `031-928-4964`.
 - Desktop and mobile both show the five clean programs and contact. Desktop detail hero poster appeared blank in the captured viewport while mobile showed it; one direct proxy request returned 404, so desktop image presentation needs a read-only follow-up check before claiming fully verified poster rendering. No additional recovery was run.
+
+## 2026-09-28 — 동오마을 대표 케이스 production end-to-end 완료
+
+- Deployed latest main `7567ac4adfa555f3c4817ecf6fe5d5dddbb765f1`; active Worker version `4a740e28-5092-460a-a023-50c0524a252d`.
+- Production detail API returns exactly five intended programs (`떡볶이한판`, `무대공연`, `체험`, `지역화폐 소비혜택`, `랜덤 경품 이벤트`), blank generic summary, hours `12:00–19:00`, and contact `031-928-4964`; no QR, organizer/institution, inquiry, or time-only program rows.
+- Exact API image proxy returned `200 image/jpeg`, 203,830 bytes on 5/5 consecutive requests. All five showed Cloudflare `HIT` for the populated canonical URL. A unique query-keyed request on the same proxy route returned 200 on its first request and 200 on the next four; later requests showed Cloudflare `HIT`.
+- Desktop poster was visible after three page loads/reloads; mobile poster remained visible after reload. Browser image elements loaded at 804 px natural width on every checked load.
+- Representative event production end-to-end verification is complete; no recovery or D1 write was run during this verification.
