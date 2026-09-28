@@ -277,6 +277,17 @@ function withMunicipalImageProxy(requestUrl: URL, event: EventItem) {
   return event;
 }
 
+function viewerImageContentType(url: URL, contentType: string) {
+  if (contentType.toLowerCase().startsWith("image/")) return contentType;
+  if (!/\/imgViewer\.jsp$/i.test(url.pathname)) return null;
+  const extension = url.searchParams.get("ext")?.toLowerCase();
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "gif") return "image/gif";
+  if (extension === "webp") return "image/webp";
+  return null;
+}
+
 function municipalContactPhone(rawPayload: string | null | undefined) {
   if (!rawPayload) return null;
   try {
@@ -363,8 +374,11 @@ async function proxyEventImage(
   if (!upstream.ok || !upstream.body)
     return new Response("Not found", { status: 404 });
 
-  const contentType = upstream.headers.get("Content-Type") ?? "";
-  if (!contentType.toLowerCase().startsWith("image/"))
+  const contentType = viewerImageContentType(
+    remote,
+    upstream.headers.get("Content-Type") ?? "",
+  );
+  if (!contentType)
     return new Response("Not found", { status: 404 });
 
   const contentLength = Number(upstream.headers.get("Content-Length") ?? 0);
