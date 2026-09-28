@@ -2368,3 +2368,16 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Regression coverage added for exact-primary eligibility, list-page exclusion, persisted official links, and common/default image rejection. Project checks PASS.
 - Uijeongbu's two current missing-image rows were `PAGE_UNAVAILABLE/network_error` in the production audit. Do not invent images for them; re-evaluate only after official page access succeeds or another exact first-party detail source is verified.
 - Next authenticated production step: pull latest main, deploy verified Worker, run bounded `official-detail:once`, then rerun missing-poster summary. This is still the image/detail bounded task; do not switch back to Yeongju/Geoje/Haeundae yet.
+
+## 2026-09-28 — latest image/detail checkpoint after second production audit
+
+- Production run on Worker `ee576db3-f431-4a77-856b-52191a194015`: official detail candidates 2, fetched 2, recovered detail 2, images 0, fetch failures 0. Missing primary-image count is now 20.
+- Current audit classes: unscoped source/list imagery 7, no image candidate 8, page unavailable 3, exact official-page image 2. The two exact image candidates are Incheon detail pages; Uijeongbu `동오마을 푸드페스타`, `송3 어울림 한마당 축제`, and Bucheon `부천시민 자전거대축제` were page-unavailable in the audit environment.
+- Important self-healing flaw fixed after this run: the short retry policy existed but official-detail recovery previously ran only at 10:00. Transient failures therefore could not actually self-heal later that day.
+- Latest code:
+  - `bc7c1cc2`: network/timeout/429/5xx exact-detail failures retry after 30 minutes; failure reasons standardized.
+  - `6a4b0c6e`: audit also uses safe candidate-state exact-detail URLs and reports their scope.
+  - `010a0455`: 11:00 / 11:45 / 13:50 / 17:55 scheduled windows now run bounded official-detail recovery as an isolated subsystem; it can run even when TourAPI base/detail is unavailable.
+- Project checks PASS on `010a0455`.
+- Next authenticated boundary only: deploy latest main, run one bounded `official-detail:once`, then rerun missing-poster summary. After that deployment, future transient official-detail failures no longer require a manual retry command; later same-day cron windows retry them automatically.
+- Continue this image/detail task until the exact-page recoverable count is exhausted and remaining rows are genuinely no-image / inaccessible / unresolved-detail-link cases. Do not switch back to Yeongju/Geoje/Haeundae before that.

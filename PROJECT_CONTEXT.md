@@ -1447,3 +1447,13 @@ UI benchmark:
   - shared image extraction now rejects known common/default/menu assets consistently;
   - missing-poster audit marks list/source-page images as unscoped and excludes them from `recoverable_from_existing_evidence`.
 - Project checks PASS for `d1507b2`. Production deploy + rerun of exact-detail recovery/audit is the next boundary.
+
+## 2026-09-28 — production recovery pass #2 and same-day self-healing correction
+
+- Production Worker `ee576db3-f431-4a77-856b-52191a194015` ran the extended exact-detail recovery. It processed 2 candidates, fetched 2/2, recovered rich detail for 2/2, but recovered 0 images. Missing PUBLIC current/future primary images remained 20 municipality events.
+- Post-run audit distribution: 7 unscoped first-party list/source-page image sets, 8 exact/first-party pages with no image candidate, 3 page-unavailable, 2 exact official pages with image candidates. The two exact recoverable examples are Incheon official detail pages; Uijeongbu two events and Bucheon one event remained page-unavailable from the audit environment.
+- A second architecture gap was found: official-detail recovery was only invoked in the 10:00 base pass. Therefore a transient fetch failure could be marked and then never receive the intended short retry on the same day.
+- `bc7c1cc278bbc99defadf254c91759db3a599af0` standardizes transient failures and makes network/timeout/429/5xx failures eligible again after 30 minutes while keeping hard failures on the long cooldown.
+- `6a4b0c6e79f8d4b3fa8ae112f53559204b537eb1` aligns the missing-poster audit with the same exact URL evidence used by recovery, including `municipal_candidate_state.official_url_snapshot`, so canonical list pages are not confused with exact event pages.
+- `010a04550b46374c29bd77f7fe2858e9396c5467` runs bounded official-detail recovery again during the 11:00 watchdog and later retry windows. Recovery stays isolated from TourAPI detail success and still runs when the same-day TourAPI base is unavailable. Windows with a municipal shard use limit 4; later recovery-only windows use limit 8.
+- Project checks PASS through `010a0455`. Production deployment of these three commits is pending.
