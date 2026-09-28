@@ -1503,3 +1503,12 @@ UI benchmark:
   - `01485f64`: exact official links without `municipal_candidate_state` can still infer safe sibling hosts from the registry allowlist; no arbitrary hostname guessing.
 - Project checks PASS for `01485f6421ea3dff4dd162da4b39ceaee849e5ce`.
 - Production redeploy/proof is pending. The next proof should be Uijeongbu only and must inspect `reader_attempts`, `reader_successes`, `reader_failures`, and `reader_failure_reasons` before any broader audit.
+
+## 2026-09-28 — Reader fallback production proof still failed before discovery
+
+- Production deployed latest Reader-fallback code (`f2bd3fabd2e47cbfb9e1c8faaccf615bb4e29e32`) as Worker version `cb7ec0b2-7a41-4e7c-a0c2-e9127b04c82f`.
+- Source-specific `municipal:once -- --source=gyeonggi-의정부` still returned `network_or_timeout`, `discovered=0`, `detail_fetches=0`, `rich_detail=0` after 2 direct fetch attempts. `official-detail:once` again had candidates=0.
+- Direct D1 verification still showed the `동오마을 푸드페스타` event pinned to the canonical list URL, with no stored official link, no image, no enrichment, hours=0, programs=0.
+- Therefore the newly added Reader fallback did not produce usable source HTML in production. Do not assume Reader transport works merely because unit tests pass.
+- Next bounded task is diagnostic, not another blind parser/fetch rewrite: add explicit Reader-attempt outcome telemetry (attempted / success / HTTP/error reason / target URL class) to municipal source results, then rerun only Uijeongbu. Based on that evidence, fix the exact transport invocation or replace the fallback if the Reader endpoint is unusable from the Worker.
+- Image/detail completeness remains the active priority. Do not resume unrelated Yeongju/Geoje/Haeundae work.

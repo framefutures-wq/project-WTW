@@ -2423,3 +2423,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Project checks PASS on `01485f64`.
 - Next authenticated boundary is intentionally narrow: deploy latest main and run ONLY `municipal:once -- --source=gyeonggi-의정부` first. Read Reader telemetry. If source status becomes ok, then run `official-detail:once` and direct D1 verification for `동오마을`. If it still fails, use `reader_failure_reasons` to fix the actual transport failure; do not repeat parser/header/host guesses.
 - Success still requires exact `idx=2016`, real poster `image_url`, and official rich-detail fields in production D1.
+
+## 2026-09-28 — NEW CHAT START HERE: Uijeongbu Reader fallback failed in production
+
+- Latest main before handoff: `f2bd3fabd2e47cbfb9e1c8faaccf615bb4e29e32` (Project checks PASS). Production Worker version: `cb7ec0b2-7a41-4e7c-a0c2-e9127b04c82f`.
+- User ran deploy → `municipal:once -- --source=gyeonggi-의정부` → `official-detail:once` → direct D1 verify.
+- Production result: Uijeongbu source still `network_or_timeout`, `discovered=0`, `detail_fetches=0`, `rich_detail=0`. Official-detail recovery candidates=0. D1 food-festa row unchanged: canonical list URL only; stored official URL null; image null; summary null; hours/programs 0.
+- Important: the bounded Jina Reader transport fallback is present in code but did NOT yield usable HTML in production. Do not repeat browser headers, bare/www sibling retry, exact-link template, or Reader fallback implementation from scratch; all are already implemented and production-tested.
+- Next bounded task: instrument Reader fallback execution so the source result exposes whether Reader was attempted, whether it returned, and the exact bounded failure reason/status. Then deploy and rerun ONLY `gyeonggi-의정부`. Use the result to repair the transport invocation or discard/replace Reader if it is unreachable from the Worker.
+- Success criterion remains unchanged: the existing food-festa event must end with exact `idx=2016` official URL plus a real poster image URL and official detail fields in D1.
+- Continue image/detail work only. Do not switch to other municipality source failures until this representative case is solved.
