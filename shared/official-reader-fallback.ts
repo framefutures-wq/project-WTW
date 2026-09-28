@@ -21,7 +21,7 @@ function publicHttpsUrl(value: string) {
       url.password ||
       host === "localhost" ||
       host.startsWith("[") ||
-      /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host) ||
+      /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) ||
       !host.includes(".")
     )
       return null;
@@ -42,24 +42,24 @@ function inlineMarkdown(value: string) {
   const escaped = escapeHtml(value);
   return escaped
     .replace(
-      /!\\[([^\\]]*)\\]\\((https:\\/\\/[^\\s)]+)(?:\\s+["'][^"']*["'])?\\)/g,
+      /!\[([^\]]*)\]\((https:\/\/[^\s)]+)(?:\s+["'][^"']*["'])?\)/g,
       '<img src="$2" alt="$1">',
     )
     .replace(
-      /\\[([^\\]]+)\\]\\((https:\\/\\/[^\\s)]+)(?:\\s+["'][^"']*["'])?\\)/g,
+      /\[([^\]]+)\]\((https:\/\/[^\s)]+)(?:\s+["'][^"']*["'])?\)/g,
       '<a href="$2">$1</a>',
     );
 }
 
 function markdownToHtml(content: string) {
-  const lines = content.replace(/\\r/g, "").split("\\n");
+  const lines = content.replace(/\r/g, "").split("\n");
   const out: string[] = [];
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const next = lines[index + 1] ?? "";
     if (
       line.includes("|") &&
-      /^\\s*\\|?(?:\\s*:?-{3,}:?\\s*\\|)+\\s*:?-{3,}:?\\s*\\|?\\s*$/.test(next)
+      /^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/.test(next)
     ) {
       const rows: string[] = [line];
       index += 2;
@@ -72,28 +72,41 @@ function markdownToHtml(content: string) {
       rows.forEach((row, rowIndex) => {
         const cells = row
           .trim()
-          .replace(/^\\||\\|$/g, "")
+          .replace(/^\||\|$/g, "")
           .split("|")
           .map((cell) => cell.trim());
         const tag = rowIndex === 0 ? "th" : "td";
         out.push(
           "<tr>" +
-            cells.map((cell) => "<" + tag + ">" + inlineMarkdown(cell) + "</" + tag + ">").join("") +
+            cells
+              .map(
+                (cell) =>
+                  "<" + tag + ">" + inlineMarkdown(cell) + "</" + tag + ">",
+              )
+              .join("") +
             "</tr>",
         );
       });
       out.push("</table>");
       continue;
     }
-    const heading = /^(#{1,6})\\s+(.+)$/.exec(line);
+    const heading = /^(#{1,6})\s+(.+)$/.exec(line);
     if (heading) {
       const level = heading[1].length;
-      out.push("<h" + level + ">" + inlineMarkdown(heading[2]) + "</h" + level + ">");
+      out.push(
+        "<h" +
+          level +
+          ">" +
+          inlineMarkdown(heading[2]) +
+          "</h" +
+          level +
+          ">",
+      );
       continue;
     }
     if (line.trim()) out.push("<p>" + inlineMarkdown(line.trim()) + "</p>");
   }
-  return out.join("\\n");
+  return out.join("\n");
 }
 
 function imageSummaryTags(images: unknown) {
@@ -105,7 +118,7 @@ function imageSummaryTags(images: unknown) {
     )
     .slice(0, 12)
     .map((url) => '<img src="' + escapeHtml(url) + '" alt="">')
-    .join("\\n");
+    .join("\n");
 }
 
 export async function fetchOfficialPageViaReader(
@@ -118,7 +131,8 @@ export async function fetchOfficialPageViaReader(
     ? publicHttpsUrl(options.refererUrl)?.toString() ?? null
     : null;
   const body: Record<string, unknown> = { url: target.toString() };
-  if (options.injectPageScript) body.injectPageScript = options.injectPageScript;
+  if (options.injectPageScript)
+    body.injectPageScript = options.injectPageScript;
 
   const response = await fetch(READER_ENDPOINT, {
     method: "POST",
@@ -161,8 +175,8 @@ export async function fetchOfficialPageViaReader(
       const reported = publicHttpsUrl(reportedUrl);
       if (
         reported &&
-        reported.hostname.replace(/^www\\./, "") ===
-          target.hostname.replace(/^www\\./, "")
+        reported.hostname.replace(/^www\./, "") ===
+          target.hostname.replace(/^www\./, "")
       )
         finalUrl = reported.toString();
     }
@@ -171,10 +185,13 @@ export async function fetchOfficialPageViaReader(
   }
 
   if (!content.trim()) throw new Error("official_reader_empty");
-  const html = /<(?:html|body|table|ul|ol|li|article|section|div|h[1-6]|p|img|a)\\b/i.test(content)
-    ? content
-    : markdownToHtml(content);
-  const enriched = [html, imageSummaryTags(images)].filter(Boolean).join("\\n");
+  const html =
+    /<(?:html|body|table|ul|ol|li|article|section|div|h[1-6]|p|img|a)\b/i.test(
+      content,
+    )
+      ? content
+      : markdownToHtml(content);
+  const enriched = [html, imageSummaryTags(images)].filter(Boolean).join("\n");
   if (!enriched.trim()) throw new Error("official_reader_empty");
   if (new TextEncoder().encode(enriched).byteLength > MAX_READER_BYTES)
     throw new Error("official_reader_too_large");
@@ -202,10 +219,12 @@ export function buildDetailLinkInjection(
   });
   return (
     "(() => {" +
-    "const cfg=" + payload + ";" +
+    "const cfg=" +
+    payload +
+    ";" +
     "for(const el of document.querySelectorAll('a[onclick],button[onclick]')){" +
     "const raw=el.getAttribute('onclick')||'';" +
-    "const match=raw.match(/(?:[\\'\\\"])(\\\\d+)(?:[\\'\\\"])|\\\\((\\\\d+)\\\\)/);" +
+    "const match=raw.match(/(?:['\\\"])(\\d+)(?:['\\\"])|\\((\\d+)\\)/);" +
     "const id=match&&(match[1]||match[2]);if(!id)continue;" +
     "const url=new URL(cfg.path,cfg.origin);" +
     "for(const [key,value] of Object.entries(cfg.fixedQuery))url.searchParams.set(key,value);" +
