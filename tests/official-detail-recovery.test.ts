@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import {
+  needsPosterRichDetailFallback,
   runOfficialDetailRecovery,
   selectOfficialDetailRecoveryCandidates,
 } from "../worker/sources/official-detail-recovery";
@@ -50,6 +51,31 @@ async function seed(DB: D1Database) {
     "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES('event-1','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016','2026-09-27T00:00:00Z')",
   ).run();
 }
+
+test("poster fallback quality gate ignores generic copy and metadata-only HTML programs", () => {
+  const title = "2026 한수원아트페스티벌 특별전 한국 미술 조선 후기부터 현대까지";
+  const genericSummary = "한국관광의 메카 Beautiful City가 여러분을 초대합니다.";
+  const metadataPrograms = ["관람시간 ｜", "도슨트 프로그램 ｜", "대표전화 054-779-8585 (평일"].map((name) => ({
+    name, description: "공식 상세 정보", schedule_text: null,
+  }));
+  assert.equal(needsPosterRichDetailFallback(title, { summary: genericSummary, programs: metadataPrograms }), true);
+
+  assert.equal(needsPosterRichDetailFallback("동오마을 축제", {
+    summary: "동오마을 주민과 지역 상인이 함께하는 먹거리 축제입니다.", programs: [],
+  }), false, "event-specific summary should suppress unnecessary OCR");
+  assert.equal(needsPosterRichDetailFallback(title, {
+    summary: genericSummary,
+    programs: ["무대공연", "체험 프로그램"].map((name) => ({ name, description: "설명", schedule_text: null })),
+  }), false, "multiple real programs should suppress unnecessary OCR");
+  assert.equal(needsPosterRichDetailFallback(title, {
+    summary: genericSummary,
+    programs: ["관람시간", "공연시간", "운영시간", "행사시간", "이용시간", "대표전화", "문의", "문의전화", "연락처", "전화", "장소", "일시", "기간", "관람료", "입장료", "요금", "주최", "주최기관", "주관", "주관기관", "후원", "협찬", "운영기관", "오시는 길"].map((name) => ({ name, description: "값", schedule_text: null })),
+  }), true, "metadata labels must not count as programs");
+  assert.equal(needsPosterRichDetailFallback(title, {
+    summary: genericSummary,
+    programs: [{ name: "도슨트 프로그램", description: "도슨트 해설", schedule_text: null }],
+  }), true, "one plausible program does not suppress fallback by itself");
+});
 
 test("exact official link self-heals poster and rich detail without source-specific parser", async () => {
   const { mf, DB } = await setup();
@@ -207,6 +233,114 @@ test("verified poster conversion enriches once and never invents a summary or ti
   }
 });
 
+test("Gyeongju-like low-quality HTML falls back to poster and keeps useful HTML fields", async () => {
+  const { mf, DB } = await setup();
+  const originalFetch = globalThis.fetch;
+  try {
+    await seed(DB);
+    await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at) VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')").run();
+    await DB.prepare("INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt) VALUES('event-1','한국관광의 메카 Beautiful City가 여러분을 초대합니다.','municipality','old generic HTML summary')").run();
+    await DB.prepare("INSERT INTO event_programs(id,event_id,program_name,featured,sort_order,source_id,evidence_excerpt) VALUES('old-viewing','event-1','관람시간 ｜',0,1,'municipality','old metadata'),('old-docent','event-1','도슨트 프로그램 ｜',0,2,'municipality','old metadata'),('old-contact','event-1','대표전화 031-828-1111',0,3,'municipality','old metadata')").run();
+    globalThis.fetch = async () => new Response(new Uint8Array([255, 216, 255]), {
+      status: 200, headers: { "content-type": "image/jpeg" },
+    });
+    let calls = 0;
+    const env = {
+      DB,
+      MUNICIPAL_DOCUMENT_AI_ENABLED: "true",
+      AI: { async run() {
+        calls += 1;
+        return { choices: [{ message: { content: JSON.stringify({ transcription: [
+          "제9회 동오마을축제 2026 동오마을 푸드페스타",
+          "2026. 10. 3.", "동오마을 공영주차장", "주요 프로그램 안내",
+          "떡볶이 한판", "무대공연",
+        ].join("\n") }) } }] };
+      } },
+    } as never;
+    const html = `
+      <h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>
+      <p>2026. 10. 3. 동오마을 공영주차장</p>
+      <table>
+        <tr><th>시간</th><td>11:00~18:00</td></tr>
+        <tr><th>입장료</th><td>무료</td></tr>
+        <tr><th>문의처</th><td>031-828-0000</td></tr>
+      </table>
+      <h2>행사개요</h2>
+      <p>한국관광의 메카 Beautiful City가 여러분을 초대합니다.</p>
+      <h2>프로그램</h2>
+      <h3>관람시간 ｜</h3><p>10:00-18:00 (입장마감 17:30)</p>
+      <h3>도슨트 프로그램 ｜</h3><p>10:30 / 12:30</p>
+      <h3>대표전화 031-828-1111 (평일</h3><p>09:00~18:00</p>`;
+    const result = await runOfficialDetailRecovery(env, new Date("2026-09-28T01:00:00Z"), {
+      targetEventId: "event-1",
+      fetchPage: async (url) => ({ finalUrl: url, html }),
+    });
+    assert.equal(result.recovered, 1);
+    assert.equal(calls, 1, "low-quality summary plus metadata/one plausible program should enter OCR fallback");
+
+    const stateRow = await DB.prepare("SELECT raw_payload FROM sources WHERE id='official-poster-event-1'")
+      .first<{ raw_payload: string }>();
+    const state = JSON.parse(stateRow!.raw_payload);
+    assert.equal(state.latest_attempt.status, "success");
+    assert.match(state.last_success.poster_hash, /^[a-f0-9]{64}$/);
+
+    const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
+    assert.equal(summary, null, "generic HTML invitation copy must not persist as summary");
+    const programs = await DB.prepare("SELECT program_name FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
+      .all<{ program_name: string }>();
+    assert.deepEqual(programs.results.map((program) => program.program_name), ["떡볶이 한판", "무대공연"]);
+    const source = await DB.prepare("SELECT raw_payload FROM sources WHERE id='official-detail-event-1'")
+      .first<{ raw_payload: string }>();
+    const rich = JSON.parse(source!.raw_payload).municipal_rich_detail;
+    assert.equal(rich.contact_phone, "031-828-0000", "useful HTML contact should win over absent poster contact");
+    assert.equal(rich.price_text, "무료", "useful HTML price should be preserved");
+    const hours = await DB.prepare("SELECT start_time,end_time FROM event_operating_hours WHERE event_id='event-1'")
+      .first<{ start_time: string; end_time: string }>();
+    assert.deepEqual(hours, { start_time: "11:00", end_time: "18:00" });
+  } finally {
+    globalThis.fetch = originalFetch;
+    await mf.dispose();
+  }
+});
+
+test("poster result without programs preserves a meaningful HTML program", async () => {
+  const { mf, DB } = await setup();
+  const originalFetch = globalThis.fetch;
+  try {
+    await seed(DB);
+    await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at) VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')").run();
+    globalThis.fetch = async () => new Response(new Uint8Array([255, 216, 255]), { status: 200 });
+    let calls = 0;
+    const env = {
+      DB, MUNICIPAL_DOCUMENT_AI_ENABLED: "true",
+      AI: { async run() {
+        calls += 1;
+        return { choices: [{ message: { content: JSON.stringify({ transcription: [
+          "제9회 동오마을축제 2026 동오마을 푸드페스타", "2026. 10. 3.",
+          "동오마을 공영주차장", "운영시간: 12:00~19:00",
+        ].join("\n") }) } }] };
+      } },
+    } as never;
+    const html = `
+      <h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>
+      <p>2026. 10. 3. 동오마을 공영주차장</p>
+      <h2>행사개요</h2><p>한국관광의 메카 Beautiful City가 여러분을 초대합니다.</p>
+      <p>도슨트 프로그램 14:00 전시 해설 운영</p>`;
+    await runOfficialDetailRecovery(env, new Date("2026-09-28T01:00:00Z"), {
+      targetEventId: "event-1", fetchPage: async (url) => ({ finalUrl: url, html }),
+    });
+    assert.equal(calls, 1);
+    const programs = await DB.prepare("SELECT program_name FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
+      .all<{ program_name: string }>();
+    assert.deepEqual(programs.results.map((program) => program.program_name), ["도슨트 프로그램"]);
+    const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
+    assert.equal(summary, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await mf.dispose();
+  }
+});
+
 test("legacy successful poster state is promoted while a later failure is recorded", async () => {
   const { mf, DB } = await setup();
   const originalFetch = globalThis.fetch;
@@ -350,6 +484,12 @@ test("poster fallback is skipped when AI is disabled or HTML already has useful 
         targetEventId: "event-1", fetchPage: async (url) => ({ finalUrl: url, html: richHtml }),
       });
     assert.equal(calls, 0);
+    const multiProgramHtml = `${html}<h2>행사개요</h2><p>한국관광의 메카 Beautiful City가 여러분을 초대합니다.</p><h2>프로그램</h2><p>무대공연 14:00 야외무대</p><p>체험 프로그램 15:00 체험장</p>`;
+    await runOfficialDetailRecovery({ DB, AI: ai, MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never,
+      new Date("2026-09-28T03:00:00Z"), {
+        targetEventId: "event-1", fetchPage: async (url) => ({ finalUrl: url, html: multiProgramHtml }),
+      });
+    assert.equal(calls, 0, "multiple clear programs should suppress OCR even with generic summary copy");
   } finally { await mf.dispose(); }
 });
 

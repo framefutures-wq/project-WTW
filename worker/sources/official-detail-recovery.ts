@@ -323,6 +323,68 @@ function fieldCount(detail: MunicipalRichDetail) {
   );
 }
 
+const genericProgramLabels = [
+  "관람시간",
+  "공연시간",
+  "운영시간",
+  "행사시간",
+  "이용시간",
+  "일시",
+  "기간",
+  "대표전화",
+  "문의전화",
+  "문의",
+  "문의처",
+  "연락처",
+  "전화",
+  "장소",
+  "관람료",
+  "입장료",
+  "요금",
+  "주최",
+  "주최기관",
+  "주관",
+  "주관기관",
+  "후원",
+  "협찬",
+  "운영기관",
+  "오시는길",
+  "프로그램",
+].map((value) => value.replace(/\s+/g, ""));
+
+function meaningfulHtmlProgram(name: string) {
+  const normalized = name
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, "");
+  return Boolean(normalized) &&
+    !genericProgramLabels.some((label) => normalized.startsWith(label));
+}
+
+function meaningfulHtmlSummary(eventTitle: string, summary: string | null) {
+  const text = summary?.replace(/\s+/g, " ").trim();
+  if (!text) return false;
+  const promotional =
+    /(?:여러분을?\s*(?:초대|환영)(?:합니다)?|환영합니다|관광의\s*메카|아름다운\s*(?:도시|고장))/u.test(text);
+  if (!promotional || text.length > 140) return true;
+
+  const genericTitleTerms = new Set([
+    "특별전", "전시", "행사", "축제", "페스티벌", "공연", "콘서트", "체험", "개최",
+  ]);
+  const summaryTerms = new Set((text.normalize("NFKC").toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []));
+  const eventSpecificTitleTerms = (eventTitle.normalize("NFKC").toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
+    .filter((term) => term.length >= 3 && !/^20\d{2}$/u.test(term) && !genericTitleTerms.has(term));
+  return eventSpecificTitleTerms.some((term) => summaryTerms.has(term));
+}
+
+export function needsPosterRichDetailFallback(
+  eventTitle: string,
+  detail: Pick<MunicipalRichDetail, "summary" | "programs">,
+) {
+  if (meaningfulHtmlSummary(eventTitle, detail.summary)) return false;
+  return detail.programs.filter((program) => meaningfulHtmlProgram(program.name)).length <= 1;
+}
+
 async function markAttempt(
   db: D1Database,
   row: RecoveryRow,
@@ -931,7 +993,7 @@ export async function runOfficialDetailRecovery(
     let posterWasCached = false;
     // An event-wide time or contact alone does not provide the poster's actual
     // program content. Keep those HTML facts while reading the verified poster.
-    if (!detail.summary && !detail.programs.length && posterConversions < 1) {
+    if (needsPosterRichDetailFallback(row.title, detail) && posterConversions < 1) {
       posterConversions += 1;
       const poster = await enrichFromVerifiedPoster(env, row, checkedAt, {
         bypassFailureRetry: Boolean(options.targetEventId),
@@ -941,12 +1003,20 @@ export async function runOfficialDetailRecovery(
         convertedPosterText = poster.text;
         convertedPosterHash = poster.posterHash;
         posterWasCached = poster.cached;
+        const usefulHtmlSummary = meaningfulHtmlSummary(row.title, detail.summary)
+          ? detail.summary
+          : null;
+        const usefulHtmlPrograms = detail.programs.filter((program) =>
+          meaningfulHtmlProgram(program.name),
+        );
         detail = {
           ...detail,
-          summary: poster.detail.summary,
+          summary: poster.detail.summary ?? usefulHtmlSummary,
           operating_hours: detail.operating_hours.length
             ? detail.operating_hours : poster.detail.operating_hours,
-          programs: poster.detail.programs,
+          programs: poster.detail.programs.length
+            ? poster.detail.programs
+            : usefulHtmlPrograms,
           price_text: detail.price_text ?? poster.detail.price_text,
           contact_phone: detail.contact_phone ?? poster.detail.contact_phone,
         };
@@ -956,6 +1026,31 @@ export async function runOfficialDetailRecovery(
       result.empty += 1;
       await markAttempt(env.DB, row, sourceKind, checkedAt, "empty");
       continue;
+    }
+
+    if (convertedPosterUrl && !detail.summary) {
+      const oldSummary = await env.DB.prepare(
+        `SELECT en.source_id,en.summary,s.priority
+         FROM event_enrichments en JOIN sources s ON s.id=en.source_id
+         WHERE en.event_id=?`,
+      ).bind(row.id).first<{ source_id: string; summary: string; priority: number }>();
+      const incomingPriority = sourceKind === "organizer" ? 1 : 2;
+      if (oldSummary && oldSummary.priority >= incomingPriority &&
+          !meaningfulHtmlSummary(row.title, oldSummary.summary))
+        await env.DB.prepare("DELETE FROM event_enrichments WHERE event_id=? AND source_id=?")
+          .bind(row.id, oldSummary.source_id).run();
+    }
+    if (convertedPosterUrl && !detail.programs.length) {
+      const oldPrograms = await env.DB.prepare(
+        `SELECT p.id,p.program_name
+         FROM event_programs p JOIN sources s ON s.id=p.source_id
+         WHERE p.event_id=? AND s.priority>=?`,
+      ).bind(row.id, sourceKind === "organizer" ? 1 : 2)
+        .all<{ id: string; program_name: string }>();
+      for (const program of oldPrograms.results)
+        if (!meaningfulHtmlProgram(program.program_name))
+          await env.DB.prepare("DELETE FROM event_programs WHERE id=?")
+            .bind(program.id).run();
     }
 
     const persisted = await persistMunicipalRichDetail(env.DB, {
