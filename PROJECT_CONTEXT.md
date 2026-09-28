@@ -1457,3 +1457,11 @@ UI benchmark:
 - `6a4b0c6e79f8d4b3fa8ae112f53559204b537eb1` aligns the missing-poster audit with the same exact URL evidence used by recovery, including `municipal_candidate_state.official_url_snapshot`, so canonical list pages are not confused with exact event pages.
 - `010a04550b46374c29bd77f7fe2858e9396c5467` runs bounded official-detail recovery again during the 11:00 watchdog and later retry windows. Recovery stays isolated from TourAPI detail success and still runs when the same-day TourAPI base is unavailable. Windows with a municipal shard use limit 4; later recovery-only windows use limit 8.
 - Project checks PASS through `010a0455`. Production deployment of these three commits is pending.
+
+## 2026-09-28 — official detail fetch now mirrors normal browser navigation
+
+- Uijeongbu proved the remaining failure was still collector-side: the exact official detail page is human-accessible and contains a poster/detail content, while Galteum classified it as page unavailable/network error.
+- Commit `1b43bbbf9eb91cc00f841f0ff23f8d56a3c20467` changes exact-detail HTTP fetches from the old custom bot-style request to a browser-compatible request profile (Chrome-like User-Agent, Accept/Accept-Language, no-cache headers) and sends the same-site municipal canonical list page as Referer when available.
+- Existing safety remains: HTTPS-only, bounded body/time/redirects, allowed-host/sibling-host rules, event title + date/venue validation, no guessed facts/images.
+- Project checks PASS for `1b43bbbf`.
+- Production deployment is still required before claiming the Uijeongbu poster is recovered.

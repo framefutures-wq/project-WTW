@@ -2381,3 +2381,10 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Project checks PASS on `010a0455`.
 - Next authenticated boundary only: deploy latest main, run one bounded `official-detail:once`, then rerun missing-poster summary. After that deployment, future transient official-detail failures no longer require a manual retry command; later same-day cron windows retry them automatically.
 - Continue this image/detail task until the exact-page recoverable count is exhausted and remaining rows are genuinely no-image / inaccessible / unresolved-detail-link cases. Do not switch back to Yeongju/Geoje/Haeundae before that.
+
+## 2026-09-28 — Uijeongbu collector request profile fix ready
+
+- User supplied direct visual proof that `제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최` has a real poster and rich official detail content on the Uijeongbu page. Treat any Galteum `PAGE_UNAVAILABLE` / `NO_IMAGE_CANDIDATE` result as collector failure until the official page itself is disproven.
+- `1b43bbbf`: official-detail fetch now uses a Chrome-like browser request profile and same-site canonical municipal list Referer. This is specifically intended to avoid the bot-like request path that failed while browsers succeeded.
+- Project checks PASS.
+- Next authenticated boundary: deploy latest main, run `official-detail:once`, rerun missing-poster summary, and verify this exact Uijeongbu event in production before declaring success.
