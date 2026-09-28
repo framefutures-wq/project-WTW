@@ -1525,3 +1525,10 @@ UI benchmark:
 - Existing production D1 still has three program rows only (`떡볶이한판`, `무대공연`, `체험`); required `지역화폐 소비혜택` and `랜덤 경품 이벤트` are missing. Poster proxy is healthy (`200 image/jpeg`), hours are 12:00–19:00, but API contact is null and summary is blank.
 - Same-hash OCR cache reuse was not proven in production: current poster state has no `last_success`, hash, or transcription. AI inference start is not exposed by one-shot telemetry. Do not claim Uijeongbu detail resolution.
 - Next step is to diagnose the production timeout/transport boundary, then get explicit authorization for any further production recovery attempt.
+
+## 2026-09-28 — Uijeongbu OCR now succeeds but detail remains blocked by parser output
+
+- Worker version `f6349fb9-aca0-4d72-af42-546c84891776` ran one explicit target recovery successfully through poster OCR and persisted a new hashed `last_success`.
+- Production parser output contains the five intended program concepts but also persists QR instruction and organizer boilerplate as programs; `떡볶이한판` also differs from requested label `떡볶이 한판`. Public API exposes these rows, so the event does not meet the detail quality criteria.
+- Poster proxy returns `200 image/jpeg`, hours remain 12:00–19:00, summary is blank, and public `contact_phone` remains null. Desktop and mobile both show the QR/organizer false program rows.
+- Do not rerun production recovery for parser cleanup. The next work should be a bounded parser correction, followed by a separately authorized single target production validation.

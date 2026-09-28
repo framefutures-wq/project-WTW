@@ -2450,3 +2450,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Poster image proxy remains `200 image/jpeg` (203830 bytes); operating hours remain `2026-10-03 12:00–19:00`; public API returns `contact_phone: null`, blank summary, and no QR/time-only program rows.
 - Desktop and mobile production views were checked. Both show the poster, 12:00–19:00, and only the same three program rows; contact and two required programs are absent. API and proxy checks passed.
 - Next bounded task must diagnose the actual production timeout/transport boundary before any further target recovery. Preserve the single-attempt limit from this task; no automatic retries.
+
+## 2026-09-28 — explicit target OCR succeeded; parser output still fails production criteria
+
+- Starting HEAD `58ab9118d408b81d131fd3707cab74f035d896e4` was deployed as Worker version `f6349fb9-aca0-4d72-af42-546c84891776`.
+- Exactly one target-only recovery ran: candidates=1, attempted=1, fetched=0, recovered=1, detail_recovered=1. Reader had 2 failures (HTTP 429). Recovery classified as fresh OCR success, not cache reuse: previous D1 state had no `last_success` or hash, and the new state now has `latest_attempt.status=success`, transcription, and SHA-256 `d15113163f94ec765e9c533163e4f82fc5cdbc5f11c6288784a9a78ec3e02280`.
+- D1 now persists seven programs: `떡볶이한판`, `무대공연`, `체험`, `QR코드로 이벤트 응모가 가능`, `지역화폐 소비혜택`, `랜덤 경품 이벤트`, `주최·주관 | 의정부도시공사 상권진흥센터 동투어 상인연합회`. The first label does not match requested spacing `떡볶이 한판`; QR text and organizer boilerplate are false program rows. Do not claim resolution.
+- Public API reflects those same seven rows and blank summary. Hours remain `12:00–19:00`; image is `200 image/jpeg`; `contact_phone` remains null.
+- Desktop and mobile pages both render the event and expose the QR and organizer rows. No second recovery was run. Next task is a bounded parser-output cleanup; do not repeat production recovery unless explicitly requested.
