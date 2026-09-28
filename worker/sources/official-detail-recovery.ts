@@ -112,8 +112,24 @@ async function readBoundedHtml(response: Response) {
   return html;
 }
 
+function browserLikeHeaders(refererUrl?: string | null) {
+  const headers = new Headers({
+    "user-agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.7,en;q=0.5",
+    "cache-control": "no-cache",
+    pragma: "no-cache",
+    "upgrade-insecure-requests": "1",
+  });
+  if (refererUrl) headers.set("referer", refererUrl);
+  return headers;
+}
+
 async function fetchOfficialDetailPageOnce(
   initial: URL,
+  refererUrl?: string | null,
 ): Promise<RecoveryPage> {
   const family = hostFamily(initial.hostname);
   let current = initial;
@@ -121,10 +137,7 @@ async function fetchOfficialDetailPageOnce(
     const response = await fetch(current.toString(), {
       redirect: "manual",
       signal: AbortSignal.timeout(15_000),
-      headers: {
-        "user-agent": "GalteumOfficialDetail/1.0",
-        accept: "text/html,application/xhtml+xml",
-      },
+      headers: browserLikeHeaders(refererUrl),
     });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
@@ -172,13 +185,14 @@ const retryableFetchFailure = (error: unknown) => {
 
 export async function fetchOfficialDetailPage(
   rawUrl: string,
+  refererUrl?: string | null,
 ): Promise<RecoveryPage> {
   const initial = safeOfficialUrl(rawUrl);
   if (!initial) throw new Error("official_detail_invalid_url");
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return await fetchOfficialDetailPageOnce(initial);
+      return await fetchOfficialDetailPageOnce(initial, refererUrl);
     } catch (error) {
       lastError = error;
       if (attempt > 0 || !retryableFetchFailure(error)) throw error;
@@ -200,6 +214,21 @@ function inferredSourceKind(row: RecoveryRow): SourceKind {
       : "organizer";
   } catch {
     return "organizer";
+  }
+}
+
+function recoveryReferer(row: RecoveryRow) {
+  if (!row.source_key) return null;
+  const source = municipalSourceByKey(row.source_key);
+  if (!source) return null;
+  try {
+    const detail = new URL(row.official_url);
+    const referer = new URL(source.url);
+    return hostFamily(detail.hostname) === hostFamily(referer.hostname)
+      ? referer.toString()
+      : null;
+  } catch {
+    return null;
   }
 }
 
@@ -504,9 +533,12 @@ export async function runOfficialDetailRecovery(
     const sourceKind = inferredSourceKind(row);
     let page: RecoveryPage | null = null;
     let lastFetchError: unknown = null;
+    const refererUrl = recoveryReferer(row);
     for (const candidateUrl of recoveryUrlCandidates(row)) {
       try {
-        page = await fetchPage(candidateUrl);
+        page = options.fetchPage
+          ? await fetchPage(candidateUrl)
+          : await fetchOfficialDetailPage(candidateUrl, refererUrl);
         break;
       } catch (error) {
         lastFetchError = error;

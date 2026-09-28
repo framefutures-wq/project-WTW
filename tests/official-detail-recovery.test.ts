@@ -423,3 +423,36 @@ test("transient official-detail fetch failures retry after the short recovery wi
     await mf.dispose();
   }
 });
+
+
+test("official detail fetch presents a browser-compatible request with same-site referer", async () => {
+  const originalFetch = globalThis.fetch;
+  const seen: { url?: string; referer?: string | null; userAgent?: string | null } = {};
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    seen.url = String(input);
+    const headers = new Headers(init?.headers);
+    seen.referer = headers.get("referer");
+    seen.userAgent = headers.get("user-agent");
+    return new Response(
+      "<html><body><h1>공식 행사 상세</h1></body></html>",
+      { status: 200, headers: { "content-type": "text/html; charset=utf-8" } },
+    );
+  }) as typeof fetch;
+  try {
+    const { fetchOfficialDetailPage } = await import(
+      "../worker/sources/official-detail-recovery"
+    );
+    const result = await fetchOfficialDetailPage(
+      "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016",
+      "https://ui4u.go.kr/portal/eventNoti/list.do?mId=0301170300",
+    );
+    assert.equal(
+      seen.referer,
+      "https://ui4u.go.kr/portal/eventNoti/list.do?mId=0301170300",
+    );
+    assert.match(seen.userAgent ?? "", /Mozilla\/5\.0/);
+    assert.match(result.html, /공식 행사 상세/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
