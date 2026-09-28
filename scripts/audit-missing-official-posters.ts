@@ -145,6 +145,7 @@ type Row = {
   image_status: string | null;
   official_url: string | null;
   source_key: string | null;
+  official_url_snapshot: string | null;
 };
 
 const rows = execute(`
@@ -152,7 +153,7 @@ const rows = execute(`
     e.id, e.title, e.region, e.start_date, e.end_date,
     s.kind AS source_kind, s.url AS source_url, s.raw_payload AS source_raw_payload,
     ei.image_url, ei.image_status,
-    mcs.source_key,
+    mcs.source_key, mcs.official_url_snapshot,
     (SELECT ol.url FROM event_official_links ol
       WHERE ol.event_id=e.id ORDER BY ol.checked_at DESC LIMIT 1) AS official_url
   FROM events e
@@ -181,6 +182,13 @@ for (const row of rows) {
   const registrySource = row.source_key
     ? municipalSourceByKey(row.source_key)
     : null;
+  const exactSnapshotUrl =
+    row.official_url_snapshot &&
+    registrySource &&
+    municipalSourceAllowsUrl(registrySource, row.official_url_snapshot) &&
+    new URL(row.official_url_snapshot).href !== new URL(registrySource.url).href
+      ? row.official_url_snapshot
+      : null;
   const exactPrimaryUrl =
     row.source_kind === "organizer" && row.source_url.startsWith("https://")
       ? row.source_url
@@ -192,12 +200,15 @@ for (const row of rows) {
         : null;
   const pageUrl =
     row.official_url ??
+    exactSnapshotUrl ??
     exactPrimaryUrl ??
     (["municipality", "organizer"].includes(row.source_kind) &&
     row.source_url.startsWith("https://")
       ? row.source_url
       : null);
-  const exactPage = Boolean(row.official_url || exactPrimaryUrl);
+  const exactPage = Boolean(
+    row.official_url || exactSnapshotUrl || exactPrimaryUrl,
+  );
   let page = null;
   let pageCandidates = [];
   if (pageUrl && fetches < maxFetches) {
@@ -225,11 +236,13 @@ for (const row of rows) {
     page_url: pageUrl,
     page_scope: row.official_url
       ? "stored_official_link"
-      : exactPrimaryUrl
-        ? "exact_primary_source"
-        : pageUrl
-          ? "unscoped_first_party_source"
-          : null,
+      : exactSnapshotUrl
+        ? "candidate_state_exact_detail"
+        : exactPrimaryUrl
+          ? "exact_primary_source"
+          : pageUrl
+            ? "unscoped_first_party_source"
+            : null,
     page_access_status: page?.access_status ?? null,
     classification,
     raw_candidates: rawCandidates.slice(0, 4),
@@ -267,6 +280,7 @@ const examples = Object.fromEntries(
         id: item.id,
         title: item.title,
         source_kind: item.source_kind,
+        page_scope: item.page_scope,
         page_access_status: item.page_access_status,
         raw_candidates: item.raw_candidates.slice(0, 1),
         page_candidates: item.page_candidates.slice(0, 2),
