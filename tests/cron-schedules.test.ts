@@ -155,7 +155,7 @@ test("11:00 KST runs municipal shard then detail after the same KST date base su
       detailTime,
       dependencies(calls),
     );
-    assert.deepEqual(calls, ["municipal", "detail"]);
+    assert.deepEqual(calls, ["municipal", "official-detail", "detail"]);
     const row = await DB.prepare(
       "SELECT provider,status,message FROM sync_runs WHERE provider='tourapi-detail'",
     ).first<{ provider: string; status: string; message: string }>();
@@ -163,6 +163,7 @@ test("11:00 KST runs municipal shard then detail after the same KST date base su
     const message = JSON.parse(row!.message);
     assert.equal(message.trigger, "watchdog");
     assert.equal(message.requested, 3);
+    assert.equal(message.official_detail_recovery.recovered, 1);
   } finally {
     await mf.dispose();
   }
@@ -183,10 +184,12 @@ test("retry recovery Cron runs detail with retry-due scope only", async () => {
       return { candidates: 0, requested: 0, attempts: 0, retry_attempted: 0, retry_recovered: 0, retry_exhausted: 0, enriched: 0, empty: 0, failed: 0, failure_reasons: {}, failure_endpoints: {}, network_failure_subtypes: {}, failure_latency: {}, retry_rounds: {} };
     };
     await runScheduled(env as never, DETAIL_RETRY_RECOVERY_CRONS[0], new Date("2026-09-21T02:45:00.000Z"), deps);
-    assert.deepEqual(calls, ["municipal", "detail-retry"]);
+    assert.deepEqual(calls, ["municipal", "official-detail", "detail-retry"]);
     assert.equal(scope, "retry_due");
     const row = await DB.prepare("SELECT message FROM sync_runs WHERE provider='tourapi-detail'").first<{ message: string }>();
-    assert.equal(JSON.parse(row!.message).trigger, "retry_recovery");
+    const retryMessage = JSON.parse(row!.message);
+    assert.equal(retryMessage.trigger, "retry_recovery");
+    assert.equal(retryMessage.official_detail_recovery.recovered, 1);
   } finally {
     await mf.dispose();
   }
@@ -213,7 +216,7 @@ for (const [name, status] of [
         detailTime,
         dependencies(calls),
       );
-      assert.deepEqual(calls, ["municipal"]);
+      assert.deepEqual(calls, ["municipal", "official-detail"]);
       const row = await DB.prepare(
         "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail'",
       ).first<{ status: string; message: string }>();
@@ -261,7 +264,7 @@ test("immediate detail failure stays isolated and the 11:00 watchdog can retry",
       detailTime,
       dependencies(watchdogCalls),
     );
-    assert.deepEqual(watchdogCalls, ["municipal", "detail"]);
+    assert.deepEqual(watchdogCalls, ["municipal", "official-detail", "detail"]);
     const latest = await DB.prepare(
       "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid DESC LIMIT 1",
     ).first<{ status: string; message: string }>();
@@ -314,6 +317,30 @@ test("unknown cron is fail-closed and detail failure does not block the next bas
       dependencies(calls),
     );
     assert(calls.includes("tourapi"));
+  } finally {
+    await mf.dispose();
+  }
+});
+
+
+test("later recovery cron retries official detail even when TourAPI base is unavailable", async () => {
+  const { mf, DB, env } = await setup();
+  const calls: string[] = [];
+  try {
+    await runScheduled(
+      env as never,
+      DETAIL_RETRY_RECOVERY_CRONS[1],
+      new Date("2026-09-21T04:50:00.000Z"),
+      dependencies(calls),
+    );
+    assert.deepEqual(calls, ["official-detail"]);
+    const row = await DB.prepare(
+      "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail'",
+    ).first<{ status: string; message: string }>();
+    assert.equal(row?.status, "skipped");
+    const message = JSON.parse(row!.message);
+    assert.equal(message.reason, "base_run_missing");
+    assert.equal(message.official_detail_recovery.recovered, 1);
   } finally {
     await mf.dispose();
   }

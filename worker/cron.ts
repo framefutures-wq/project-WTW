@@ -254,6 +254,10 @@ export async function runDetailScheduled(
     | Awaited<ReturnType<typeof runMunicipalAutonomous>>
     | { status: "failed"; reason: "subsystem_error" }
     | null = null;
+  let officialDetailRecovery:
+    | Awaited<ReturnType<typeof runOfficialDetailRecovery>>
+    | { status: "failed"; reason: "subsystem_error" }
+    | null = null;
   if (municipalPlan) {
     try {
       municipal = await dependencies.runMunicipalAutonomous(env, municipalPlan);
@@ -263,6 +267,27 @@ export async function runDetailScheduled(
         error: error instanceof Error ? error.name : "unknown",
       });
       municipal = { status: "failed", reason: "subsystem_error" };
+    }
+  }
+  if (trigger === "watchdog" || trigger === "retry_recovery") {
+    try {
+      // Official detail recovery is independent from TourAPI detail. Retry it
+      // on later daily windows so transient municipal/WAF/network failures can
+      // self-heal the same day without waiting for the next 10:00 base run.
+      officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
+        env,
+        now,
+        { limit: municipalPlan ? 4 : 8 },
+      );
+    } catch (error) {
+      console.error("official_detail_recovery_retry_failed", {
+        trigger,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      officialDetailRecovery = {
+        status: "failed",
+        reason: "subsystem_error",
+      };
     }
   }
   if (trigger === "manual" && manualRunId) {
@@ -312,6 +337,9 @@ export async function runDetailScheduled(
           failure_latency: {},
           retry_rounds: {},
           ...(municipal ? { municipal } : {}),
+          ...(officialDetailRecovery
+            ? { official_detail_recovery: officialDetailRecovery }
+            : {}),
         }),
       )
       .run();
@@ -340,11 +368,20 @@ export async function runDetailScheduled(
             : {}),
           ...detail,
           ...(municipal ? { municipal } : {}),
+          ...(officialDetailRecovery
+            ? { official_detail_recovery: officialDetailRecovery }
+            : {}),
         }),
         started,
       )
       .run();
-    return { id: started, status: "success", detail, municipal };
+    return {
+      id: started,
+      status: "success",
+      detail,
+      municipal,
+      official_detail_recovery: officialDetailRecovery,
+    };
   } catch (error) {
     console.error("tourapi_detail_subsystem_failed", {
       runId: started,
@@ -366,6 +403,9 @@ export async function runDetailScheduled(
           reason: "subsystem_error",
           retry_rounds: {},
           ...(municipal ? { municipal } : {}),
+          ...(officialDetailRecovery
+            ? { official_detail_recovery: officialDetailRecovery }
+            : {}),
         }),
         started,
       )
