@@ -130,9 +130,13 @@ test("verified poster conversion enriches once and never invents a summary or ti
        VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality',
        'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')`,
     ).run();
-    globalThis.fetch = async () => new Response(new Uint8Array([255, 216, 255]), {
-      status: 200, headers: { "content-type": "image/jpeg" },
-    });
+    globalThis.fetch = async (url, init) => {
+      assert.equal(String(url), "https://ui4u.go.kr/poster.jpg");
+      assert.equal(new Headers(init?.headers).get("Referer"), "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016");
+      return new Response(new Uint8Array([255, 216, 255]), {
+        status: 200, headers: { "content-type": "image/jpeg" },
+      });
+    };
     let calls = 0;
     const env = {
       DB, MUNICIPAL_DOCUMENT_AI_ENABLED: "true",

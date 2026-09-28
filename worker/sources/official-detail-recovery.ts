@@ -544,7 +544,7 @@ export async function selectOfficialDetailRecoveryCandidates(
   return [...unique.values()].slice(0, Math.max(1, Math.min(40, limit)));
 }
 
-const POSTER_PARSER_VERSION = 1;
+const POSTER_PARSER_VERSION = 2;
 const POSTER_FAILURE_RETRY_MS = 24 * 60 * 60 * 1000;
 
 async function enrichFromVerifiedPoster(
@@ -589,13 +589,14 @@ async function enrichFromVerifiedPoster(
       }
     } catch {}
   }
-  const record = async (status: string, text?: string) => env.DB.prepare(
+  const record = async (status: string, text?: string, error?: string) => env.DB.prepare(
     `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
      VALUES(?, 'municipality', 2, '공식 포스터 판독 상태', ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload,url=excluded.url`,
   ).bind(stateId, row.official_url, checkedAt, JSON.stringify({
     poster_url: poster.image_url, version: POSTER_PARSER_VERSION, status,
     ...(text ? { converted_text: text } : {}),
+    ...(error ? { error: error.slice(0, 180) } : {}),
   })).run();
   try {
     const image = new URL(poster.image_url);
@@ -609,9 +610,15 @@ async function enrichFromVerifiedPoster(
         kind: "image",
         mimeType,
       },
-      // The existing public image proxy has already verified and served these
-      // bytes from the original official poster with its source-page Referer.
-      fetchUrl: `https://galteum.com/api/events/${encodeURIComponent(row.id)}/image/1`,
+      // Fetch the same verified official image with the source-page Referer.
+      // A Worker cannot reliably call its own public image proxy.
+      fetcher: ((url: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        headers.set("Referer", poster.source_page_url!);
+        headers.set("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.7");
+        headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36");
+        return fetch(url, { ...init, headers, redirect: "follow" });
+      }) as typeof fetch,
     });
     if (!text) { await record("empty"); return null; }
     if (!posterMatchesVerifiedEvent(text, row)) {
@@ -624,8 +631,8 @@ async function enrichFromVerifiedPoster(
       return null;
     }
     return { detail, posterUrl: poster.image_url, text };
-  } catch {
-    await record("failed");
+  } catch (error) {
+    await record("failed", undefined, error instanceof Error ? error.message : String(error));
     return null;
   }
 }
