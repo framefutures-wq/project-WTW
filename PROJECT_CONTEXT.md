@@ -1538,3 +1538,9 @@ UI benchmark:
 - Parser commit `2e5ab500782721eb49cfde823d5ea5758003a77f` deployed as Worker version `5927b1df-5ccc-4b3d-ac02-fa837b3bcbcc`; one target recovery reparsed the existing hash-matched transcription without AI and persisted exactly five valid programs.
 - QR instructions, organizer footer rows, and time-only program rows are absent. Operating hours remain 12:00–19:00, summary is blank, and API contact displays `031-928-4964`.
 - API image status is `ok` and mobile shows the poster. Desktop detail hero was blank in visual QA and one direct proxy request returned 404; verify desktop image delivery before treating presentation QA as fully complete.
+
+## 2026-09-28 — Uijeongbu representative case complete; portfolio audit priority
+
+- Superseding the earlier visual-QA note: the latest production audit confirmed the Dong-o representative event end-to-end, including stable desktop/mobile poster display, 5/5 proxy responses, five clean programs, 12:00–19:00 hours, and contact `031-928-4964`.
+- Across 35 current/future public verified events, 17 have healthy municipal primary images and 18 have no primary image row. Rich-detail coverage is summary 13, hours 8, programs 16, normalized contact 15; one event has successful poster OCR state (Dong-o), and zero current OCR failed/timeout states.
+- The largest measured residual cohort is 13 events with a healthy municipal poster, incomplete HTML detail, and no successful poster OCR. This is the next bounded portfolio priority; do not process it as a batch without a new scoped task.
