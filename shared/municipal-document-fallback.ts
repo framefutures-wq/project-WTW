@@ -319,10 +319,11 @@ export function parseConvertedMunicipalDocument(
 const fetchAttachment = async (
   attachment: MunicipalDocumentAttachment,
   fetcher: typeof fetch,
+  fetchUrl = attachment.url,
 ) => {
-  const response = await fetcher(attachment.url, {
+  const response = await fetcher(fetchUrl, {
     signal: AbortSignal.timeout(15_000),
-    headers: { "user-agent": "WeekendMwohaeMunicipal/1.0" },
+    headers: { accept: "image/*,application/pdf", "user-agent": "Mozilla/5.0" },
   });
   if (!response.ok) throw new Error(`attachment_http_${response.status}`);
   const declaredSize = Number(response.headers.get("content-length") ?? "0");
@@ -331,6 +332,34 @@ const fetchAttachment = async (
   if (buffer.byteLength > MAX_ATTACHMENT_BYTES) throw new Error("attachment_too_large");
   return new Blob([buffer], { type: attachment.mimeType });
 };
+
+export async function convertMunicipalDocumentText({
+  ai,
+  attachment,
+  fetcher = fetch,
+  fetchUrl,
+}: {
+  ai: MunicipalMarkdownAI;
+  attachment: MunicipalDocumentAttachment;
+  fetcher?: typeof fetch;
+  fetchUrl?: string;
+}): Promise<string | null> {
+  const blob = await fetchAttachment(attachment, fetcher, fetchUrl);
+  const converted = await ai.toMarkdown(
+    { name: attachment.name, blob },
+    {
+      conversionOptions: {
+        output: { format: "text" },
+        ...(attachment.kind === "pdf"
+          ? { pdf: { metadata: false } }
+          : { image: { descriptionLanguage: "ko" } }),
+      },
+    },
+  );
+  const result = Array.isArray(converted) ? converted[0] : converted;
+  if (!result || result.format === "error" || !result.data) return null;
+  return result.data.replace(/\r/g, "").trim().slice(0, 20_000) || null;
+}
 
 export async function extractMunicipalDocumentCandidates({
   ai,
@@ -352,28 +381,14 @@ export async function extractMunicipalDocumentCandidates({
   if (!ai) return { status: "ai_binding_unavailable", candidates: [] };
 
   const candidates: MunicipalDocumentCandidate[] = [];
-  let successfulConversions = 0;
   for (const attachment of attachments) {
     try {
-      const blob = await fetchAttachment(attachment, fetcher);
-      const converted = await ai.toMarkdown(
-        { name: attachment.name, blob },
-        {
-          conversionOptions: {
-            output: { format: "text" },
-            ...(attachment.kind === "pdf"
-              ? { pdf: { metadata: false } }
-              : { image: { descriptionLanguage: "ko" } }),
-          },
-        },
-      );
-      const result = Array.isArray(converted) ? converted[0] : converted;
-      if (!result || result.format === "error" || !result.data) continue;
-      successfulConversions += 1;
+      const text = await convertMunicipalDocumentText({ ai, attachment, fetcher });
+      if (!text) continue;
       const parsed = parseConvertedMunicipalDocument(
         source,
         attachment,
-        result.data,
+        text,
       );
       if (parsed) candidates.push(parsed);
     } catch {

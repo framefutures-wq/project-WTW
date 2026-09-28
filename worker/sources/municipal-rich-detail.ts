@@ -21,6 +21,7 @@ export type MunicipalRichDetailPersistInput = {
   checkedAt: string;
   detail: MunicipalRichDetail;
   sourceKind?: "municipality" | "organizer";
+  posterUrl?: string;
 };
 
 const canReplace = (priority: number | null, incomingPriority: number) =>
@@ -213,6 +214,19 @@ export async function persistMunicipalRichDetail(
   const sourcePriority = sourceKind === "organizer" ? 1 : 2;
   const statements: D1PreparedStatement[] = [];
   let changed = 0;
+  const evidence = (field: string, value: string) =>
+    excerpt(field, input.posterUrl ? `poster_image=${input.posterUrl}; ${value}` : value);
+  let existingContact: string | null = null;
+  if (input.posterUrl && !input.detail.contact_phone) {
+    const oldSource = await db.prepare("SELECT raw_payload FROM sources WHERE id=?")
+      .bind(input.sourceId).first<{ raw_payload: string | null }>();
+    try {
+      const payload = JSON.parse(oldSource?.raw_payload ?? "{}") as {
+        municipal_rich_detail?: { contact_phone?: string | null };
+      };
+      existingContact = payload.municipal_rich_detail?.contact_phone ?? null;
+    } catch {}
+  }
 
   // A prior broad fallback could have stored an event-wide "일시" line as a
   // program. Remove only those mechanically identifiable rows owned by this
@@ -255,8 +269,9 @@ export async function persistMunicipalRichDetail(
         input.checkedAt,
         JSON.stringify({
           municipal_rich_detail: {
-            contact_phone: input.detail.contact_phone,
+            contact_phone: input.detail.contact_phone ?? existingContact,
             price_text: input.detail.price_text,
+            ...(input.posterUrl ? { poster_image_url: input.posterUrl } : {}),
           },
         }),
       ),
@@ -283,7 +298,7 @@ export async function persistMunicipalRichDetail(
           input.eventId,
           input.detail.summary,
           input.sourceId,
-          excerpt("official_summary", input.detail.summary),
+          evidence("official_summary", input.detail.summary),
           input.checkedAt,
           sourcePriority,
         ),
@@ -321,7 +336,7 @@ export async function persistMunicipalRichDetail(
             input.eventId,
             input.sourceId,
             "price",
-            excerpt("official_price", input.detail.price_text),
+            evidence("official_price", input.detail.price_text),
             input.checkedAt,
           ),
       );
@@ -367,7 +382,7 @@ export async function persistMunicipalRichDetail(
             hours.human_time_text,
             index,
             input.sourceId,
-            excerpt("official_time", hours.human_time_text),
+            evidence("official_time", hours.human_time_text),
           ),
       );
     }
@@ -406,7 +421,7 @@ export async function persistMunicipalRichDetail(
             program.description,
             index,
             input.sourceId,
-            excerpt("official_program", program.name),
+            evidence("official_program", program.name),
             input.checkedAt,
           ),
       );

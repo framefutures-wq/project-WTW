@@ -17,6 +17,9 @@ import {
 import type { Env } from "../env";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 import { fetchOfficialPageViaReader } from "../../shared/official-reader-fallback";
+import { municipalDocumentAI } from "../env";
+import { convertMunicipalDocumentText } from "../../shared/municipal-document-fallback";
+import { posterMatchesVerifiedEvent, parseMunicipalPosterRichDetail } from "../../shared/municipal-poster-rich-detail";
 
 export const OFFICIAL_DETAIL_RECOVERY_LIMIT = 12;
 export const OFFICIAL_DETAIL_RETRY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -65,6 +68,7 @@ type RecoveryPage = { html: string; finalUrl: string };
 type RecoveryOptions = {
   limit?: number;
   fetchPage?: (url: string) => Promise<RecoveryPage>;
+  targetEventId?: string;
 };
 
 const sourceId = (eventId: string) => `official-detail-${eventId}`;
@@ -361,6 +365,7 @@ export async function selectOfficialDetailRecoveryCandidates(
   db: D1Database,
   now = new Date(),
   limit = OFFICIAL_DETAIL_RECOVERY_LIMIT,
+  targetEventId?: string,
 ) {
   const today = koreaDate(now);
   const retryBefore = new Date(
@@ -458,6 +463,7 @@ export async function selectOfficialDetailRecoveryCandidates(
        LEFT JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
        LEFT JOIN sources attempt ON attempt.id='official-detail-' || e.id
        WHERE e.is_sample=0
+         AND (? IS NULL OR e.id=?)
          AND e.verification='verified'
          AND e.publish_quality_state='PUBLIC'
          AND e.end_date>=?
@@ -471,6 +477,8 @@ export async function selectOfficialDetailRecoveryCandidates(
            )
          )
          AND (
+           ? IS NOT NULL
+           OR
            attempt.id IS NULL
            OR attempt.fetched_at<?
            OR (
@@ -493,7 +501,10 @@ export async function selectOfficialDetailRecoveryCandidates(
        LIMIT ?`,
     )
     .bind(
+      targetEventId ?? null,
+      targetEventId ?? null,
       today,
+      targetEventId ?? null,
       retryBefore,
       successImageRetryBefore,
       transientRetryBefore,
@@ -520,6 +531,103 @@ export async function selectOfficialDetailRecoveryCandidates(
   return [...unique.values()].slice(0, Math.max(1, Math.min(40, limit)));
 }
 
+const POSTER_PARSER_VERSION = 1;
+const POSTER_FAILURE_RETRY_MS = 24 * 60 * 60 * 1000;
+
+async function enrichFromVerifiedPoster(
+  env: Env,
+  row: RecoveryRow,
+  checkedAt: string,
+): Promise<{ detail: MunicipalRichDetail; posterUrl: string; text: string } | null> {
+  const ai = municipalDocumentAI(env);
+  if (!ai || row.link_source_kind !== "municipality") return null;
+  const poster = await env.DB.prepare(
+    `SELECT image_url,source_page_url FROM event_images
+     WHERE event_id=? AND is_primary=1 AND image_status='ok'
+       AND source_type='municipality' LIMIT 1`,
+  ).bind(row.id).first<{ image_url: string; source_page_url: string | null }>();
+  if (!poster?.image_url || !poster.source_page_url) return null;
+  try {
+    const detail = new URL(row.official_url);
+    const page = new URL(poster.source_page_url);
+    const image = new URL(poster.image_url);
+    if (
+      detail.protocol !== "https:" || image.protocol !== "https:" ||
+      hostFamily(detail.hostname) !== hostFamily(page.hostname) ||
+      detail.pathname !== page.pathname || detail.search !== page.search ||
+      hostFamily(detail.hostname) !== hostFamily(image.hostname)
+    ) return null;
+  } catch { return null; }
+
+  const stateId = `official-poster-${row.id}`;
+  const previous = await env.DB.prepare(
+    "SELECT raw_payload,fetched_at FROM sources WHERE id=?",
+  ).bind(stateId).first<{ raw_payload: string | null; fetched_at: string }>();
+  if (previous?.raw_payload) {
+    try {
+      const state = JSON.parse(previous.raw_payload) as {
+        poster_url?: string; version?: number; status?: string;
+      };
+      if (state.poster_url === poster.image_url && state.version === POSTER_PARSER_VERSION) {
+        if (state.status === "success" || state.status === "empty" || state.status === "core_mismatch")
+          return null;
+        if (new Date(checkedAt).getTime() - new Date(previous.fetched_at).getTime() < POSTER_FAILURE_RETRY_MS)
+          return null;
+      }
+    } catch {}
+  }
+  const record = async (status: string, text?: string) => env.DB.prepare(
+    `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
+     VALUES(?, 'municipality', 2, '공식 포스터 판독 상태', ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload,url=excluded.url`,
+  ).bind(stateId, row.official_url, checkedAt, JSON.stringify({
+    poster_url: poster.image_url, version: POSTER_PARSER_VERSION, status,
+    ...(text ? { converted_text: text } : {}),
+  })).run();
+  try {
+    const image = new URL(poster.image_url);
+    const extension = image.searchParams.get("ext")?.toLowerCase() || image.pathname.split(".").pop()?.toLowerCase();
+    const mimeType = extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : "image/jpeg";
+    const text = await convertMunicipalDocumentText({
+      ai,
+      attachment: {
+        url: poster.image_url,
+        name: `official-poster.${extension === "png" || extension === "webp" ? extension : "jpg"}`,
+        kind: "image",
+        mimeType,
+      },
+      // The existing public image proxy has already verified and served these
+      // bytes from the original official poster with its source-page Referer.
+      fetchUrl: `https://galteum.com/api/events/${encodeURIComponent(row.id)}/image/1`,
+    });
+    if (!text) { await record("empty"); return null; }
+    if (!posterMatchesVerifiedEvent(text, row)) {
+      await record("core_mismatch", text);
+      return null;
+    }
+    const detail = parseMunicipalPosterRichDetail(text);
+    if (!detail.summary && !detail.operating_hours.length && !detail.programs.length && !detail.price_text && !detail.contact_phone) {
+      await record("empty", text);
+      return null;
+    }
+    return { detail, posterUrl: poster.image_url, text };
+  } catch {
+    await record("failed");
+    return null;
+  }
+}
+
+async function markPosterSuccess(db: D1Database, row: RecoveryRow, checkedAt: string, posterUrl: string, text: string) {
+  await db.prepare(
+    `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
+     VALUES(?, 'municipality', 2, '공식 포스터 판독 상태', ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload,url=excluded.url`,
+  ).bind(`official-poster-${row.id}`, row.official_url, checkedAt, JSON.stringify({
+    poster_url: posterUrl, version: POSTER_PARSER_VERSION, status: "success",
+    converted_text: text,
+  })).run();
+}
+
 export async function runOfficialDetailRecovery(
   env: Env,
   now = new Date(),
@@ -529,6 +637,7 @@ export async function runOfficialDetailRecovery(
     env.DB,
     now,
     options.limit ?? OFFICIAL_DETAIL_RECOVERY_LIMIT,
+    options.targetEventId,
   );
   const result: OfficialDetailRecoveryResult = {
     candidates: rows.length,
@@ -551,6 +660,7 @@ export async function runOfficialDetailRecovery(
   const fetchPage = options.fetchPage ?? fetchOfficialDetailPage;
   const checkedAt = now.toISOString();
   let readerFallbacks = 0;
+  let posterConversions = 0;
 
   for (const row of rows) {
     result.attempted += 1;
@@ -597,6 +707,22 @@ export async function runOfficialDetailRecovery(
       // Preserve the direct official failure reason if all transport fallbacks fail.
     }
     if (!page) {
+      if (posterConversions < 1) {
+        posterConversions += 1;
+        const poster = await enrichFromVerifiedPoster(env, row, checkedAt);
+        if (poster) {
+          await persistMunicipalRichDetail(env.DB, {
+            eventId: row.id, startDate: row.start_date, endDate: row.end_date,
+            sourceId: sourceId(row.id), sourceName: "지자체 공식 상세 안내",
+            sourceUrl: row.official_url, checkedAt, detail: poster.detail,
+            sourceKind: "municipality", posterUrl: poster.posterUrl,
+          });
+          await markPosterSuccess(env.DB, row, checkedAt, poster.posterUrl, poster.text);
+          result.recovered += 1;
+          result.detail_recovered += 1;
+          continue;
+        }
+      }
       result.fetch_failed += 1;
       const reason = fetchFailureReason(lastFetchError);
       result.fetch_failure_reasons[reason] =
@@ -651,6 +777,24 @@ export async function runOfficialDetailRecovery(
       await markAttempt(env.DB, row, sourceKind, checkedAt, "extract_failed");
       continue;
     }
+    let convertedPosterUrl: string | null = null;
+    let convertedPosterText: string | null = null;
+    if (!detail.summary && !detail.operating_hours.length && !detail.programs.length && posterConversions < 1) {
+      posterConversions += 1;
+      const poster = await enrichFromVerifiedPoster(env, row, checkedAt);
+      if (poster) {
+        convertedPosterUrl = poster.posterUrl;
+        convertedPosterText = poster.text;
+        detail = {
+          ...detail,
+          summary: poster.detail.summary,
+          operating_hours: poster.detail.operating_hours,
+          programs: poster.detail.programs,
+          price_text: detail.price_text ?? poster.detail.price_text,
+          contact_phone: detail.contact_phone ?? poster.detail.contact_phone,
+        };
+      }
+    }
     if (fieldCount(detail) === 0) {
       result.empty += 1;
       await markAttempt(env.DB, row, sourceKind, checkedAt, "empty");
@@ -670,7 +814,10 @@ export async function runOfficialDetailRecovery(
       checkedAt,
       detail,
       sourceKind,
+      ...(convertedPosterUrl ? { posterUrl: convertedPosterUrl } : {}),
     });
+    if (convertedPosterUrl && convertedPosterText)
+      await markPosterSuccess(env.DB, row, checkedAt, convertedPosterUrl, convertedPosterText);
     await env.DB.prepare(
       `INSERT INTO event_official_links(event_id,source_id,url,checked_at)
        VALUES(?,?,?,?)

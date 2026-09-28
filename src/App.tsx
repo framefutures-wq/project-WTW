@@ -307,7 +307,8 @@ function StatusNotice({ event }: { event: EventItem }) {
 }
 function usefulDescription(value: string) {
   const text = value.trim();
-  return text && !/^한국관광공사 TourAPI에 등록된 행사입니다/.test(text)
+  return text &&
+    !/^(?:한국관광공사 TourAPI에 등록된 행사입니다|공식 지자체 행사 안내를 바탕으로 등록된 행사입니다)/.test(text)
     ? text
     : null;
 }

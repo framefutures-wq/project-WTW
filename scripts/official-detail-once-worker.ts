@@ -20,10 +20,14 @@ export default {
     );
     if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 20)
       return Response.json({ error: "invalid_limit" }, { status: 400 });
+    const targetEventId = request.headers.get("x-manual-official-detail-event-id") || undefined;
+    if (targetEventId && (targetEventId.length > 500 || /[\r\n]/.test(targetEventId)))
+      return Response.json({ error: "invalid_event_id" }, { status: 400 });
 
     try {
       const result = await runOfficialDetailRecovery(env, new Date(), {
         limit: rawLimit,
+        targetEventId,
       });
       return Response.json({ ok: true, result });
     } catch (error) {

@@ -15,6 +15,10 @@ const limitArg = args.find((value) => value.startsWith("--limit="));
 const limit = limitArg ? Number(limitArg.slice("--limit=".length)) : 12;
 if (!Number.isInteger(limit) || limit < 1 || limit > 20)
   throw new Error("Use --limit=1..20.");
+const targetArg = args.find((value) => value.startsWith("--event-id="));
+const targetEventId = targetArg?.slice("--event-id=".length);
+if (targetEventId && (targetEventId.length > 500 || /[\r\n]/.test(targetEventId)))
+  throw new Error("Invalid --event-id.");
 
 const name = "weekend-mwohae";
 const nonce = randomUUID().replace(/-/g, "");
@@ -45,6 +49,7 @@ try {
       main: resolve("scripts/official-detail-once-worker.ts"),
       compatibility_date: config.compatibility_date,
       d1_databases: config.d1_databases,
+      ai: config.ai,
       vars: {
         ...config.vars,
         MANUAL_OFFICIAL_DETAIL_NONCE: nonce,
@@ -106,6 +111,7 @@ try {
         `x-manual-official-detail-nonce: ${nonce}`,
         "--header",
         `x-manual-official-detail-limit: ${limit}`,
+        ...(targetEventId ? ["--header", `x-manual-official-detail-event-id: ${targetEventId}`] : []),
         url,
       ],
       { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 },

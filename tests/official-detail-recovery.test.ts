@@ -120,6 +120,85 @@ test("exact official link self-heals poster and rich detail without source-speci
   }
 });
 
+test("verified poster conversion enriches once and never invents a summary or time program", async () => {
+  const { mf, DB } = await setup();
+  const originalFetch = globalThis.fetch;
+  try {
+    await seed(DB);
+    await DB.prepare(
+      `INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at)
+       VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality',
+       'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')`,
+    ).run();
+    globalThis.fetch = async () => new Response(new Uint8Array([255, 216, 255]), {
+      status: 200, headers: { "content-type": "image/jpeg" },
+    });
+    let calls = 0;
+    const env = {
+      DB, MUNICIPAL_DOCUMENT_AI_ENABLED: "true",
+      AI: { async toMarkdown() {
+        calls += 1;
+        return { format: "text", data: [
+          "동오마을 푸드 페스타", "2026. 10. 3.(토)", "12:00~19:00",
+          "동오마을 공영주차장", "주요 프로그램 안내",
+          "떡볶이 한판", "무대공연", "체험", "주최 의정부도시공사",
+        ].join("\n") };
+      } },
+    } as never;
+    const options = {
+      targetEventId: "event-1",
+      fetchPage: async (url: string) => ({
+        finalUrl: url,
+        html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026. 10. 3. 동오마을 공영주차장</p>",
+      }),
+    };
+    const first = await runOfficialDetailRecovery(env, new Date("2026-09-28T01:00:00Z"), options);
+    assert.equal(first.recovered, 1);
+    assert.equal(calls, 1);
+    const hours = await DB.prepare("SELECT start_time,end_time,evidence_excerpt FROM event_operating_hours WHERE event_id='event-1'")
+      .first<{ start_time: string; end_time: string; evidence_excerpt: string }>();
+    assert.equal(hours?.start_time, "12:00");
+    assert.equal(hours?.end_time, "19:00");
+    assert.match(hours?.evidence_excerpt ?? "", /poster_image=/);
+    const programs = await DB.prepare("SELECT program_name FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
+      .all<{ program_name: string }>();
+    assert.deepEqual(programs.results.map((item) => item.program_name), ["떡볶이 한판", "무대공연", "체험"]);
+    const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
+    assert.equal(summary, null);
+    await runOfficialDetailRecovery(env, new Date("2026-09-28T02:00:00Z"), options);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await mf.dispose();
+  }
+});
+
+test("poster fallback is skipped when AI is disabled or HTML already has useful rich detail", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      `INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at)
+       VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality',
+       'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')`,
+    ).run();
+    let calls = 0;
+    const ai = { async toMarkdown() { calls += 1; return { format: "text", data: "unused" }; } };
+    const base = { DB, AI: ai } as never;
+    const html = "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026. 10. 3. 동오마을 공영주차장</p>";
+    await runOfficialDetailRecovery(base, new Date("2026-09-28T01:00:00Z"), {
+      targetEventId: "event-1", fetchPage: async (url) => ({ finalUrl: url, html }),
+    });
+    assert.equal(calls, 0);
+    const richHtml = html + "<h2>행사개요</h2><p>공식 행사 상세 소개가 충분히 제공되는 페이지입니다.</p>";
+    await runOfficialDetailRecovery({ DB, AI: ai, MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never,
+      new Date("2026-09-28T02:00:00Z"), {
+        targetEventId: "event-1", fetchPage: async (url) => ({ finalUrl: url, html: richHtml }),
+      });
+    assert.equal(calls, 0);
+  } finally { await mf.dispose(); }
+});
+
 test("title mismatch is quarantined and does not overwrite event detail", async () => {
   const { mf, DB } = await setup();
   try {
