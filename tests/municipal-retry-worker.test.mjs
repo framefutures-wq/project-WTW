@@ -76,8 +76,8 @@ function createMockDb({ retries = [], existing = null, duplicateRows = [], state
 
 async function withFetch(handler, run) {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (url) => {
-    const result = await handler(String(url));
+  globalThis.fetch = async (url, init) => {
+    const result = await handler(String(url), init);
     if (result instanceof Response) return result;
     return new Response(result ?? "", { status: 200 });
   };
@@ -356,4 +356,54 @@ test("municipal source/detail fetch falls back to allowed www sibling after 522"
   assert.ok(seen.includes(wwwListUrl));
   assert.equal(seen.includes(detailUrl), false);
   assert.ok(seen.includes(wwwDetailUrl));
+});
+
+test("municipal source uses bounded Reader transport when both official host routes fail", async () => {
+  const mock = createMockDb();
+  const listUrl = "https://ui4u.go.kr/portal/eventNoti/list.do?mId=0301170300";
+  const wwwListUrl = "https://www.ui4u.go.kr/portal/eventNoti/list.do?mId=0301170300";
+  const detailUrl = "https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016";
+  const wwwDetailUrl = "https://www.ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016";
+  const readerBodies = [];
+
+  const result = await withFetch((url, init) => {
+    if ([listUrl, wwwListUrl, detailUrl, wwwDetailUrl].includes(url))
+      throw new TypeError("fetch failed");
+    if (url === "https://r.jina.ai/") {
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      readerBodies.push(body);
+      if (body.url === listUrl)
+        return new Response(JSON.stringify({ data: { url: listUrl, content:
+          '<h1>2026년 연간 행사·축제 일정</h1><table>' +
+          '<tr><th>번호</th><th>분야</th><th>제목</th><th>시작일</th><th>종료일</th><th>장소</th><th>담당부서</th></tr>' +
+          '<tr><td>378</td><td>축제</td><td><a href="' + detailUrl + '">제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최</a></td>' +
+          '<td>2026-10-03</td><td>2026-10-03</td><td>동오마을 공영주차장 일원(경전철 동오역 인근)</td><td>의정부도시공사 상권진흥센터</td></tr></table>'
+        } }), { status: 200 });
+      if (body.url === detailUrl)
+        return new Response(JSON.stringify({ data: { url: detailUrl, content:
+          '<h1>제9회 동오마을축제 「2026 동오마을 푸드페스타」 개최</h1>' +
+          '<p>일시: 2026. 10. 3.(토) 12:00 ~ 19:00</p>' +
+          '<p>장소: 동오마을 공영주차장 일원(경전철 동오역 인근)</p>' +
+          '<img src="https://ui4u.go.kr/upload/food-festa.jpg" alt="동오마을 푸드페스타 포스터">'
+        } }), { status: 200 });
+    }
+    return emptySourcePage(url);
+  }, () => runMunicipalAutonomous(productionEnv(mock.db), {
+    sourceKeys: ["gyeonggi-의정부"],
+    maxPublishMutations: 3,
+    maxRetryCandidates: 4,
+    maxDetailFetches: 22,
+    maxExternalFetches: 35,
+  }));
+
+  assert.equal(
+    result.source_outcomes.find((item) => item.source === "gyeonggi-의정부")?.status,
+    "ok",
+  );
+  assert.ok(readerBodies.some((body) => body.url === listUrl));
+  assert.match(
+    String(readerBodies.find((body) => body.url === listUrl)?.injectPageScript),
+    /idx/,
+  );
+  assert.ok(readerBodies.some((body) => body.url === detailUrl));
 });

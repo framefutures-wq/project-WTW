@@ -456,3 +456,37 @@ test("official detail fetch presents a browser-compatible request with same-site
     globalThis.fetch = originalFetch;
   }
 });
+
+test("exact official recovery uses Reader transport after direct official routes fail", async () => {
+  const { mf, DB } = await setup();
+  const originalFetch = globalThis.fetch;
+  try {
+    await seed(DB);
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "https://r.jina.ai/") {
+        const body = JSON.parse(String(init?.body ?? "{}")) as { url?: string };
+        assert.match(body.url ?? "", /idx=2016/);
+        return new Response(JSON.stringify({ data: { url: body.url, content:
+          '<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>' +
+          '<p>2026년 10월 3일 동오마을 공영주차장에서 열리는 공식 먹거리 축제입니다.</p>' +
+          '<p>행사 시간: 12:00~19:00</p>' +
+          '<img src="https://ui4u.go.kr/upload/food-festa-poster.jpg" alt="행사 포스터">'
+        } }), { status: 200 });
+      }
+      throw new TypeError("fetch failed");
+    }) as typeof fetch;
+
+    const result = await runOfficialDetailRecovery(
+      { DB } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      { limit: 10 },
+    );
+    assert.equal(result.recovered, 1);
+    assert.equal(result.images_recovered, 1);
+    assert.equal(result.detail_recovered, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await mf.dispose();
+  }
+});

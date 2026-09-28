@@ -15,6 +15,7 @@ import {
 } from "../../shared/municipal-source-registry";
 import type { Env } from "../env";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
+import { fetchOfficialPageViaReader } from "../../shared/official-reader-fallback";
 
 export const OFFICIAL_DETAIL_RECOVERY_LIMIT = 12;
 export const OFFICIAL_DETAIL_RETRY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -527,6 +528,7 @@ export async function runOfficialDetailRecovery(
   };
   const fetchPage = options.fetchPage ?? fetchOfficialDetailPage;
   const checkedAt = now.toISOString();
+  let readerFallbacks = 0;
 
   for (const row of rows) {
     result.attempted += 1;
@@ -540,6 +542,21 @@ export async function runOfficialDetailRecovery(
           ? await fetchPage(candidateUrl)
           : await fetchOfficialDetailPage(candidateUrl, refererUrl);
         break;
+      } catch (error) {
+        lastFetchError = error;
+      }
+    }
+    if (
+      !page &&
+      lastFetchError &&
+      retryableFetchFailure(lastFetchError) &&
+      readerFallbacks < 4
+    ) {
+      readerFallbacks += 1;
+      try {
+        page = await fetchOfficialPageViaReader(row.official_url, {
+          refererUrl,
+        });
       } catch (error) {
         lastFetchError = error;
       }

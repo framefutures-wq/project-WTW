@@ -46,6 +46,10 @@ import {
   municipalSourceFetchCeiling,
 } from "../../shared/municipal-fetch-budget";
 import { decidePublishQuality } from "../../shared/publish-quality";
+import {
+  buildDetailLinkInjection,
+  fetchOfficialPageViaReader,
+} from "../../shared/official-reader-fallback";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
 const MAX_PER_SOURCE = 25,
@@ -223,6 +227,8 @@ type MunicipalFetchBudget = {
   used: number;
   limit: number;
   activeLimit: number;
+  readerUsed: number;
+  readerLimit: number;
 };
 
 const budgetedFetch = async (
@@ -339,6 +345,28 @@ async function officialResponse(
       )
         continue;
       throw error;
+    }
+  }
+  const source = SOURCES.find((item) =>
+    municipalSourceAllowsUrl(item, url),
+  );
+  if (
+    source &&
+    lastError &&
+    retryableOfficialFetchError(lastError) &&
+    budget.readerUsed < budget.readerLimit
+  ) {
+    budget.readerUsed += 1;
+    try {
+      return await fetchOfficialPageViaReader(url, {
+        refererUrl: source.url,
+        injectPageScript: buildDetailLinkInjection(
+          url,
+          source.detailLinkTemplate,
+        ),
+      });
+    } catch (readerError) {
+      lastError = readerError;
     }
   }
   throw lastError instanceof Error
@@ -650,6 +678,8 @@ export async function runMunicipalAutonomous(
       used: 0,
       limit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
       activeLimit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
+      readerUsed: 0,
+      readerLimit: 4,
     },
     preferredOfficialHosts = new Map<string, string>(),
     fetchResponse = (url: string) =>
