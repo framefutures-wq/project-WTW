@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { convertMunicipalDocumentText, type MunicipalMarkdownAI } from "../shared/municipal-document-fallback";
+import { convertMunicipalDocumentText, transcribeMunicipalPosterImage, type MunicipalMarkdownAI } from "../shared/municipal-document-fallback";
 import { parseMunicipalPosterRichDetail, posterMatchesVerifiedEvent } from "../shared/municipal-poster-rich-detail";
 
 const verified = {
@@ -44,10 +44,41 @@ test("existing document conversion primitive returns normalized official poster 
   assert.equal(calls, 1);
 });
 
+test("direct vision OCR requests strict JSON transcription from official poster bytes", async () => {
+  let model = "";
+  let input: any;
+  const text = await transcribeMunicipalPosterImage({
+    ai: {
+      async run(requestedModel, requestedInput) {
+        model = requestedModel;
+        input = requestedInput;
+        return { choices: [{ message: { content: JSON.stringify({ transcription: posterText }) } }] };
+      },
+    },
+    attachment: { url: "https://ui4u.go.kr/poster.jpg", name: "poster.jpg", kind: "image", mimeType: "image/jpeg" },
+    fetcher: async () => new Response(new Uint8Array([255, 216, 255]), { status: 200 }),
+  });
+  assert.equal(model, "@cf/google/gemma-4-26b-a4b-it");
+  assert.match(input.messages[0].content, /번역.*금지/);
+  assert.equal(input.response_format.type, "json_schema");
+  assert.match(input.messages[1].content[0].image_url.url, /^data:image\/jpeg;base64,/);
+  assert.equal(text, posterText);
+});
+
+test("vision OCR rejects non-JSON image captions", async () => {
+  const text = await transcribeMunicipalPosterImage({
+    ai: { async run() { return { response: "A Korean festival poster." }; } },
+    attachment: { url: "https://ui4u.go.kr/poster.jpg", name: "poster.jpg", kind: "image", mimeType: "image/jpeg" },
+    fetcher: async () => new Response(new Uint8Array([255, 216, 255]), { status: 200 }),
+  });
+  assert.equal(text, null);
+});
+
 test("poster details require verified date and title or venue, with time only in hours", () => {
   assert.equal(posterMatchesVerifiedEvent(posterText, verified), true);
   assert.equal(posterMatchesVerifiedEvent(posterText.replace("2026. 10. 3.", "2026. 10. 4."), verified), false);
   assert.equal(posterMatchesVerifiedEvent("2026. 10. 3. 다른 행사 / 중앙공원", verified), false);
+  assert.equal(posterMatchesVerifiedEvent("A food festival poster in Korea, October 3 2026.", verified), false);
   const detail = parseMunicipalPosterRichDetail(posterText);
   assert.equal(detail.summary, null);
   assert.deepEqual(detail.operating_hours.map(({ start_time, end_time }) => [start_time, end_time]), [["12:00", "19:00"]]);

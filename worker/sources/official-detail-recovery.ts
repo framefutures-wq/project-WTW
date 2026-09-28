@@ -17,8 +17,8 @@ import {
 import type { Env } from "../env";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 import { fetchOfficialPageViaReader } from "../../shared/official-reader-fallback";
-import { municipalDocumentAI } from "../env";
-import { convertMunicipalDocumentText } from "../../shared/municipal-document-fallback";
+import { municipalPosterAI } from "../env";
+import { transcribeMunicipalPosterImage } from "../../shared/municipal-document-fallback";
 import { posterMatchesVerifiedEvent, parseMunicipalPosterRichDetail } from "../../shared/municipal-poster-rich-detail";
 
 export const OFFICIAL_DETAIL_RECOVERY_LIMIT = 12;
@@ -544,7 +544,7 @@ export async function selectOfficialDetailRecoveryCandidates(
   return [...unique.values()].slice(0, Math.max(1, Math.min(40, limit)));
 }
 
-const POSTER_PARSER_VERSION = 2;
+const POSTER_PARSER_VERSION = 3;
 const POSTER_FAILURE_RETRY_MS = 24 * 60 * 60 * 1000;
 
 async function enrichFromVerifiedPoster(
@@ -552,7 +552,7 @@ async function enrichFromVerifiedPoster(
   row: RecoveryRow,
   checkedAt: string,
 ): Promise<{ detail: MunicipalRichDetail; posterUrl: string; text: string } | null> {
-  const ai = municipalDocumentAI(env);
+  const ai = municipalPosterAI(env);
   if (!ai || row.link_source_kind !== "municipality") return null;
   const poster = await env.DB.prepare(
     `SELECT image_url,source_page_url FROM event_images
@@ -602,7 +602,7 @@ async function enrichFromVerifiedPoster(
     const image = new URL(poster.image_url);
     const extension = image.searchParams.get("ext")?.toLowerCase() || image.pathname.split(".").pop()?.toLowerCase();
     const mimeType = extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : "image/jpeg";
-    const text = await convertMunicipalDocumentText({
+    const text = await transcribeMunicipalPosterImage({
       ai,
       attachment: {
         url: poster.image_url,
@@ -610,8 +610,7 @@ async function enrichFromVerifiedPoster(
         kind: "image",
         mimeType,
       },
-      // Fetch the same verified official image with the source-page Referer.
-      // A Worker cannot reliably call its own public image proxy.
+      // Read the same verified official bytes with the source-page Referer.
       fetcher: ((url: RequestInfo | URL, init?: RequestInit) => {
         const headers = new Headers(init?.headers);
         headers.set("Referer", poster.source_page_url!);

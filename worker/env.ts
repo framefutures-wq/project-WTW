@@ -1,10 +1,10 @@
-import type { MunicipalMarkdownAI } from "../shared/municipal-document-fallback";
+import type { MunicipalMarkdownAI, MunicipalVisionAI } from "../shared/municipal-document-fallback";
 
 export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
   /** Optional until the production Workers AI binding is explicitly enabled. */
-  AI?: MunicipalMarkdownAI;
+  AI?: MunicipalMarkdownAI & MunicipalVisionAI;
   /** Cost guard. AI document conversion stays off unless this is exactly "true". */
   MUNICIPAL_DOCUMENT_AI_ENABLED?: string;
   APP_MODE: "sample" | "production";
@@ -23,5 +23,9 @@ export interface Env {
 
 
 export function municipalDocumentAI(env: Env) {
+  return env.MUNICIPAL_DOCUMENT_AI_ENABLED === "true" ? env.AI : undefined;
+}
+
+export function municipalPosterAI(env: Env) {
   return env.MUNICIPAL_DOCUMENT_AI_ENABLED === "true" ? env.AI : undefined;
 }

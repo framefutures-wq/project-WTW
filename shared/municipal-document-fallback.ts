@@ -38,6 +38,11 @@ export interface MunicipalMarkdownAI {
   ): Promise<MunicipalMarkdownResult | MunicipalMarkdownResult[]>;
 }
 
+/** The existing Workers AI binding also exposes direct model inference. */
+export interface MunicipalVisionAI {
+  run(model: string, input: unknown, options?: unknown): Promise<unknown>;
+}
+
 export type MunicipalDocumentCandidate = {
   mode: MunicipalDocumentMode;
   candidate: MunicipalCandidate;
@@ -332,6 +337,86 @@ const fetchAttachment = async (
   if (buffer.byteLength > MAX_ATTACHMENT_BYTES) throw new Error("attachment_too_large");
   return new Blob([buffer], { type: attachment.mimeType });
 };
+
+const bytesToBase64 = (bytes: Uint8Array) => {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let start = 0; start < bytes.length; start += chunkSize)
+    binary += String.fromCharCode(...bytes.subarray(start, start + chunkSize));
+  return btoa(binary);
+};
+
+const strictPosterTranscriptionPrompt = [
+  "이 이미지는 한국어 행사 포스터다.",
+  "보이는 한글, 숫자, 시간, 장소, 프로그램 문구를 가능한 한 원문 그대로 전사하라.",
+  "번역, 요약, 설명, 추측, 화면에 없는 문구 생성은 금지한다.",
+  "읽을 수 없는 부분은 만들어내지 말고 생략하거나 [판독불가]로 표시한다.",
+  "행사 사실을 구조화하거나 추론하지 말고 원문 전사만 반환하라.",
+].join(" ");
+
+function transcriptionFromVisionResponse(response: unknown): string | null {
+  if (!response || typeof response !== "object") return null;
+  const value = response as {
+    response?: unknown;
+    choices?: Array<{ message?: { content?: unknown } }>;
+  };
+  const content = value.choices?.[0]?.message?.content ?? value.response;
+  if (typeof content !== "string") return null;
+  try {
+    const parsed = JSON.parse(content) as { transcription?: unknown };
+    return typeof parsed.transcription === "string"
+      ? parsed.transcription.replace(/\r/g, "").trim().slice(0, 20_000) || null
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * OCR is intentionally separate from Markdown conversion: that service
+ * describes images, while this direct vision request asks only for a literal
+ * Korean transcription.
+ */
+export async function transcribeMunicipalPosterImage({
+  ai,
+  attachment,
+  fetcher = fetch,
+  fetchUrl,
+}: {
+  ai: MunicipalVisionAI;
+  attachment: MunicipalDocumentAttachment;
+  fetcher?: typeof fetch;
+  fetchUrl?: string;
+}): Promise<string | null> {
+  if (attachment.kind !== "image") return null;
+  const blob = await fetchAttachment(attachment, fetcher, fetchUrl);
+  const imageUrl = `data:${attachment.mimeType};base64,${bytesToBase64(new Uint8Array(await blob.arrayBuffer()))}`;
+  const response = await ai.run("@cf/google/gemma-4-26b-a4b-it", {
+    messages: [
+      { role: "system", content: strictPosterTranscriptionPrompt },
+      {
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: imageUrl } },
+          { type: "text", text: "JSON의 transcription 필드에 전사문만 반환하라." },
+        ],
+      },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        type: "object",
+        properties: { transcription: { type: "string" } },
+        required: ["transcription"],
+        additionalProperties: false,
+      },
+    },
+    temperature: 0,
+    max_tokens: 2048,
+    chat_template_kwargs: { enable_thinking: false },
+  });
+  return transcriptionFromVisionResponse(response);
+}
 
 export async function convertMunicipalDocumentText({
   ai,

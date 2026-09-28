@@ -140,13 +140,15 @@ test("verified poster conversion enriches once and never invents a summary or ti
     let calls = 0;
     const env = {
       DB, MUNICIPAL_DOCUMENT_AI_ENABLED: "true",
-      AI: { async toMarkdown() {
+      AI: { async run(model: string, input: unknown) {
         calls += 1;
-        return { format: "text", data: [
+        assert.equal(model, "@cf/google/gemma-4-26b-a4b-it");
+        assert.equal((input as any).response_format.type, "json_schema");
+        return { choices: [{ message: { content: JSON.stringify({ transcription: [
           "동오마을 푸드 페스타", "2026. 10. 3.(토)", "12:00~19:00",
           "동오마을 공영주차장", "주요 프로그램 안내",
           "떡볶이 한판", "무대공연", "체험", "주최 의정부도시공사",
-        ].join("\n") };
+        ].join("\n") }) } }] };
       } },
     } as never;
     const options = {
@@ -202,7 +204,7 @@ test("poster fallback is skipped when AI is disabled or HTML already has useful 
        'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')`,
     ).run();
     let calls = 0;
-    const ai = { async toMarkdown() { calls += 1; return { format: "text", data: "unused" }; } };
+    const ai = { async run() { calls += 1; return { response: JSON.stringify({ transcription: "unused" }) }; } };
     const base = { DB, AI: ai } as never;
     const html = "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026. 10. 3. 동오마을 공영주차장</p>";
     await runOfficialDetailRecovery(base, new Date("2026-09-28T01:00:00Z"), {
