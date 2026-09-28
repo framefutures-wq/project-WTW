@@ -227,11 +227,32 @@ test("municipal rich detail reaches the public detail API under an encoded legac
     );
 
     const originalFetch = globalThis.fetch;
-    let referer: string | null = null;
+    const originalCaches = globalThis.caches;
+    const cacheEntries = new Map<string, Response>();
+    let matchPlan: Array<Response | null> | null = null;
+    Object.defineProperty(globalThis, "caches", {
+      configurable: true,
+      value: {
+        default: {
+          match: async (key: Request) => {
+            if (matchPlan?.length) return matchPlan.shift()?.clone() ?? null;
+            return cacheEntries.get(key.url)?.clone() ?? null;
+          },
+          put: async (key: Request, value: Response) => {
+            cacheEntries.set(key.url, value.clone());
+          },
+        },
+      },
+    });
     try {
+      const imageRequest = new Request(body.images[0].image_url);
+      let attempts = 0;
+      let referer: string | null = null;
       globalThis.fetch = async (input, init) => {
+        attempts += 1;
         assert.equal(String(input), primaryImage);
         referer = new Headers(init?.headers).get("Referer");
+        if (attempts === 1) return new Response("busy", { status: 500 });
         return new Response(new Uint8Array([137, 80, 78, 71]), {
           status: 200,
           headers: {
@@ -240,19 +261,120 @@ test("municipal rich detail reaches the public detail API under an encoded legac
           },
         });
       };
-      const imageResponse = await app.fetch(
-        new Request(body.images[0].image_url),
-        env,
-      );
+      const imageResponse = await app.fetch(imageRequest, env);
       assert.equal(imageResponse.status, 200);
+      assert.equal(attempts, 2);
       assert.equal(imageResponse.headers.get("Content-Type"), "image/png");
       assert.equal(referer, detailUrl);
       assert.deepEqual(
         [...new Uint8Array(await imageResponse.arrayBuffer())],
         [137, 80, 78, 71],
       );
+
+      attempts = 0;
+      const cachedResponse = await app.fetch(imageRequest, env);
+      assert.equal(cachedResponse.status, 200);
+      assert.equal(attempts, 0);
+      assert.equal(cacheEntries.has(imageRequest.url), true);
+
+      // A cache lookup racing with an in-flight fill can still fall back after
+      // both bounded upstream attempts fail.
+      matchPlan = [null, cacheEntries.get(imageRequest.url)!.clone()];
+      attempts = 0;
+      globalThis.fetch = async () => {
+        attempts += 1;
+        return new Response("rate limited", { status: 429 });
+      };
+      const fallbackResponse = await app.fetch(imageRequest, env);
+      assert.equal(fallbackResponse.status, 200);
+      assert.equal(attempts, 2);
+
+      cacheEntries.delete(imageRequest.url);
+      attempts = 0;
+      globalThis.fetch = async () => {
+        attempts += 1;
+        if (attempts === 1)
+          return new Response("rate limited", { status: 429 });
+        return new Response(new Uint8Array([137, 80, 78, 78]), {
+          status: 200,
+          headers: { "Content-Type": "image/png" },
+        });
+      };
+      assert.equal((await app.fetch(imageRequest, env)).status, 200);
+      assert.equal(attempts, 2);
+
+      // Network exceptions get exactly one retry too.
+      cacheEntries.delete(imageRequest.url);
+      attempts = 0;
+      globalThis.fetch = async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error("network failure");
+        return new Response(new Uint8Array([137, 80, 78, 71]), {
+          status: 200,
+          headers: { "Content-Type": "image/png" },
+        });
+      };
+      assert.equal((await app.fetch(imageRequest, env)).status, 200);
+      assert.equal(attempts, 2);
+
+      // A successful first fetch is not retried, and only valid images cache.
+      cacheEntries.delete(imageRequest.url);
+      attempts = 0;
+      globalThis.fetch = async () => {
+        attempts += 1;
+        return new Response(new Uint8Array([137, 80, 78, 71]), {
+          status: 200,
+          headers: { "Content-Type": "image/png" },
+        });
+      };
+      assert.equal((await app.fetch(imageRequest, env)).status, 200);
+      assert.equal(attempts, 1);
+      assert.equal(cacheEntries.has(imageRequest.url), true);
+
+      cacheEntries.delete(imageRequest.url);
+      attempts = 0;
+      globalThis.fetch = async () => {
+        attempts += 1;
+        return new Response("not an image", {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        });
+      };
+      const invalidImage = await app.fetch(imageRequest, env);
+      assert.equal(invalidImage.status, 502);
+      assert.equal(attempts, 1);
+      assert.equal(cacheEntries.has(imageRequest.url), false);
+
+      await DB.prepare(
+        "UPDATE event_images SET image_url=? WHERE event_id=? AND is_primary=1",
+      )
+        .bind("https://hangang.seoul.go.kr/www/imgViewer.jsp?ext=jpg", eventId)
+        .run();
+      cacheEntries.delete(imageRequest.url);
+      attempts = 0;
+      globalThis.fetch = async (_input, init) => {
+        attempts += 1;
+        assert.equal(new Headers(init?.headers).get("Referer"), detailUrl);
+        return new Response(new Uint8Array([255, 216, 255]), {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        });
+      };
+      const viewerImage = await app.fetch(imageRequest, env);
+      assert.equal(viewerImage.status, 200);
+      assert.equal(viewerImage.headers.get("Content-Type"), "image/jpeg");
+      assert.equal(attempts, 1);
+
+      const absentSlot = await app.fetch(
+        new Request(imageRequest.url.replace(/\/image\/1$/, "/image/3")),
+        env,
+      );
+      assert.equal(absentSlot.status, 404);
     } finally {
       globalThis.fetch = originalFetch;
+      if (originalCaches === undefined) delete (globalThis as any).caches;
+      else
+        Object.defineProperty(globalThis, "caches", { value: originalCaches });
     }
   } finally {
     await mf.dispose();

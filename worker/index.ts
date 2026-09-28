@@ -362,6 +362,26 @@ async function proxyEventImage(
   )
     return new Response("Not found", { status: 404 });
 
+  const cacheKey = new Request(request.url, { method: "GET" });
+  const imageCache = (globalThis.caches as CacheStorage & { default?: Cache })
+    ?.default;
+  const cachedImage = async () => {
+    if (!imageCache) return null;
+    try {
+      const cached = await imageCache.match(cacheKey);
+      if (
+        cached?.status === 200 &&
+        (cached.headers.get("Content-Type") ?? "")
+          .toLowerCase()
+          .startsWith("image/")
+      )
+        return cached;
+    } catch {}
+    return null;
+  };
+  const cached = await cachedImage();
+  if (cached) return cached;
+
   const headers = new Headers({
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
@@ -377,35 +397,77 @@ async function proxyEventImage(
     } catch {}
   }
 
-  const upstream = await fetch(remote.toString(), {
-    redirect: "follow",
-    headers,
-  });
-  if (!upstream.ok || !upstream.body)
-    return new Response("Not found", { status: 404 });
+  let lastFailure: Response | null = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let upstream: Response;
+    try {
+      upstream = await fetch(remote.toString(), {
+        redirect: "follow",
+        headers,
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch {
+      lastFailure = new Response("Image upstream unavailable", { status: 503 });
+      if (attempt === 0) continue;
+      break;
+    }
 
-  const contentType = viewerImageContentType(
-    remote,
-    upstream.headers.get("Content-Type") ?? "",
-  );
-  if (!contentType)
-    return new Response("Not found", { status: 404 });
+    if (!upstream.ok || !upstream.body) {
+      const transient =
+        !upstream.body ||
+        upstream.status === 408 ||
+        upstream.status === 429 ||
+        upstream.status >= 500;
+      lastFailure = new Response("Image upstream unavailable", {
+        status: transient ? 503 : 502,
+      });
+      if (transient && attempt === 0) continue;
+      break;
+    }
 
-  const contentLength = Number(upstream.headers.get("Content-Length") ?? 0);
-  if (contentLength > 8 * 1024 * 1024)
-    return new Response("Image too large", { status: 413 });
+    const contentType = viewerImageContentType(
+      remote,
+      upstream.headers.get("Content-Type") ?? "",
+    );
+    if (!contentType)
+      return new Response("Invalid image response", { status: 502 });
 
-  const responseHeaders = new Headers({
-    "Content-Type": contentType,
-    "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
-    "X-Content-Type-Options": "nosniff",
-  });
-  const etag = upstream.headers.get("ETag");
-  if (etag) responseHeaders.set("ETag", etag);
-  return new Response(upstream.body, {
-    status: 200,
-    headers: responseHeaders,
-  });
+    const contentLength = Number(upstream.headers.get("Content-Length") ?? 0);
+    if (contentLength > 8 * 1024 * 1024)
+      return new Response("Image too large", { status: 413 });
+
+    const responseHeaders = new Headers({
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+      "X-Content-Type-Options": "nosniff",
+    });
+    const etag = upstream.headers.get("ETag");
+    if (etag) responseHeaders.set("ETag", etag);
+    let imageBytes: ArrayBuffer;
+    try {
+      imageBytes = await upstream.arrayBuffer();
+    } catch {
+      lastFailure = new Response("Image upstream unavailable", { status: 503 });
+      if (attempt === 0) continue;
+      break;
+    }
+    if (imageBytes.byteLength > 8 * 1024 * 1024)
+      return new Response("Image too large", { status: 413 });
+    const response = new Response(imageBytes, {
+      status: 200,
+      headers: responseHeaders,
+    });
+    if (imageCache) {
+      try {
+        await imageCache.put(cacheKey, response.clone());
+      } catch {}
+    }
+    return response;
+  }
+
+  return (await cachedImage()) ??
+    lastFailure ??
+    new Response("Image upstream unavailable", { status: 503 });
 }
 
 function json(data: unknown, status = 200) {
