@@ -779,7 +779,9 @@ export async function runOfficialDetailRecovery(
     }
     let convertedPosterUrl: string | null = null;
     let convertedPosterText: string | null = null;
-    if (!detail.summary && !detail.operating_hours.length && !detail.programs.length && posterConversions < 1) {
+    // An event-wide time or contact alone does not provide the poster's actual
+    // program content. Keep those HTML facts while reading the verified poster.
+    if (!detail.summary && !detail.programs.length && posterConversions < 1) {
       posterConversions += 1;
       const poster = await enrichFromVerifiedPoster(env, row, checkedAt);
       if (poster) {
@@ -788,7 +790,8 @@ export async function runOfficialDetailRecovery(
         detail = {
           ...detail,
           summary: poster.detail.summary,
-          operating_hours: poster.detail.operating_hours,
+          operating_hours: detail.operating_hours.length
+            ? detail.operating_hours : poster.detail.operating_hours,
           programs: poster.detail.programs,
           price_text: detail.price_text ?? poster.detail.price_text,
           contact_phone: detail.contact_phone ?? poster.detail.contact_phone,

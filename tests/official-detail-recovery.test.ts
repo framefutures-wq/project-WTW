@@ -149,7 +149,7 @@ test("verified poster conversion enriches once and never invents a summary or ti
       targetEventId: "event-1",
       fetchPage: async (url: string) => ({
         finalUrl: url,
-        html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026. 10. 3. 동오마을 공영주차장</p>",
+        html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026. 10. 3. 동오마을 공영주차장</p><p>행사 시간: 12:00~19:00</p>",
       }),
     };
     const first = await runOfficialDetailRecovery(env, new Date("2026-09-28T01:00:00Z"), options);
@@ -159,10 +159,10 @@ test("verified poster conversion enriches once and never invents a summary or ti
       .first<{ start_time: string; end_time: string; evidence_excerpt: string }>();
     assert.equal(hours?.start_time, "12:00");
     assert.equal(hours?.end_time, "19:00");
-    assert.match(hours?.evidence_excerpt ?? "", /poster_image=/);
-    const programs = await DB.prepare("SELECT program_name FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
-      .all<{ program_name: string }>();
+    const programs = await DB.prepare("SELECT program_name,evidence_excerpt FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
+      .all<{ program_name: string; evidence_excerpt: string }>();
     assert.deepEqual(programs.results.map((item) => item.program_name), ["떡볶이 한판", "무대공연", "체험"]);
+    assert.match(programs.results[0].evidence_excerpt, /poster_image=/);
     const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
     assert.equal(summary, null);
     await runOfficialDetailRecovery(env, new Date("2026-09-28T02:00:00Z"), options);
