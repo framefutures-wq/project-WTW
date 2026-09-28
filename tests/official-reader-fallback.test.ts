@@ -20,6 +20,7 @@ test("reader fallback uses anonymous GET rendered-html transport", async () => {
     method?: string;
     respondWith?: string | null;
     referer?: string | null;
+    cacheTolerance?: string | null;
   } = {};
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     seen.url = String(input);
@@ -27,6 +28,7 @@ test("reader fallback uses anonymous GET rendered-html transport", async () => {
     const headers = new Headers(init?.headers);
     seen.respondWith = headers.get("x-respond-with");
     seen.referer = headers.get("x-referer");
+    seen.cacheTolerance = headers.get("x-cache-tolerance");
     return new Response(
       JSON.stringify({
         data: {
@@ -51,6 +53,7 @@ test("reader fallback uses anonymous GET rendered-html transport", async () => {
     assert.equal(seen.method, "GET");
     assert.equal(seen.respondWith, "html");
     assert.equal(seen.referer, "https://example.org/events");
+    assert.equal(seen.cacheTolerance, "86400");
     assert.match(page.html, /onclick="fnView\('2016'\)"/);
     assert.match(page.html, /src="https:\/\/example\.org\/poster\.jpg"/);
   } finally {

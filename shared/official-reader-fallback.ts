@@ -141,13 +141,15 @@ export async function fetchOfficialPageViaReader(
       "x-respond-with": "html",
       "x-timeout": "20",
       "x-locale": "ko-KR",
-      "x-no-cache": "true",
+      // This path is used only after direct official fetches fail. A recent
+      // cached official snapshot is preferable to dropping the source
+      // entirely; event identity/date/venue validation still gates writes.
+      "x-cache-tolerance": "86400",
       "x-retain-links": "all",
       "x-retain-images": "all",
       "x-with-images-summary": "true",
       "x-base": "final",
       ...(referer ? { "x-referer": referer } : {}),
-      dnt: "1",
     },
   });
   if (!response.ok)
