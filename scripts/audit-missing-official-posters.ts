@@ -59,8 +59,38 @@ function parse(raw: string | null) {
   }
 }
 
-async function fetchHtml(rawUrl: string) {
-  let current = rawUrl;
+function auditUrlCandidates(
+  rawUrl: string,
+  source: ReturnType<typeof municipalSourceByKey>,
+) {
+  const output = [rawUrl];
+  if (!source) return output;
+  try {
+    const original = new URL(rawUrl);
+    const baseHost = original.hostname.replace(/^www\./, "");
+    for (const host of source.allowedHosts) {
+      if (
+        host === original.hostname ||
+        host.replace(/^www\./, "") !== baseHost
+      )
+        continue;
+      const sibling = new URL(original.toString());
+      sibling.hostname = host;
+      const value = sibling.toString();
+      if (
+        municipalSourceAllowsUrl(source, value) &&
+        !output.includes(value)
+      )
+        output.push(value);
+    }
+  } catch {}
+  return output;
+}
+
+async function fetchHtml(
+  rawUrl: string,
+  source: ReturnType<typeof municipalSourceByKey>,
+) {
   const base = {
     url: rawUrl,
     final_url: rawUrl,
@@ -68,68 +98,103 @@ async function fetchHtml(rawUrl: string) {
     http_status: null as number | null,
     html: "",
   };
-  try {
-    for (let redirect = 0; redirect <= 5; redirect += 1) {
-      const allowed = await allowedUrl(current);
-      if (allowed === false) return { ...base, final_url: current, access_status: "blocked_url" };
-      if (allowed === null) return { ...base, final_url: current };
-      const response = await fetch(current, {
-        redirect: "manual",
-        signal: AbortSignal.timeout(12_000),
-        headers: {
-          "user-agent": "project-WTW missing-poster-audit/1.0",
-          accept: "text/html,application/xhtml+xml",
-        },
-      });
-      if ([301, 302, 303, 307, 308].includes(response.status)) {
-        const location = response.headers.get("location");
-        await response.body?.cancel();
-        if (!location || redirect === 5)
-          return { ...base, final_url: current, access_status: "http_error", http_status: response.status };
-        current = new URL(location, current).href;
-        continue;
-      }
-      if (!response.ok) {
-        await response.body?.cancel();
-        return { ...base, final_url: current, access_status: "http_error", http_status: response.status };
-      }
-      const contentType = response.headers.get("content-type") ?? "";
-      if (!/text\/html|application\/xhtml/i.test(contentType)) {
-        await response.body?.cancel();
-        return { ...base, final_url: current, access_status: "unsupported_content", http_status: response.status };
-      }
-      const reader = response.body?.getReader();
-      if (!reader) return { ...base, final_url: current, access_status: "http_error", http_status: response.status };
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        size += value.length;
-        if (size > 2_000_000) {
-          await reader.cancel();
-          return { ...base, final_url: current, access_status: "too_large", http_status: response.status };
+  const attempts = auditUrlCandidates(rawUrl, source);
+
+  for (const attemptUrl of attempts) {
+    let current = attemptUrl;
+    try {
+      for (let redirect = 0; redirect <= 5; redirect += 1) {
+        const allowed = await allowedUrl(current);
+        if (allowed === false)
+          return {
+            ...base,
+            final_url: current,
+            access_status: "blocked_url",
+          };
+        if (allowed === null) break;
+        const response = await fetch(current, {
+          redirect: "manual",
+          signal: AbortSignal.timeout(12_000),
+          headers: {
+            "user-agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+            accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.7,en;q=0.5",
+            "cache-control": "no-cache",
+            pragma: "no-cache",
+            "upgrade-insecure-requests": "1",
+          },
+        });
+        if ([301, 302, 303, 307, 308].includes(response.status)) {
+          const location = response.headers.get("location");
+          await response.body?.cancel();
+          if (!location || redirect === 5)
+            break;
+          current = new URL(location, current).href;
+          continue;
         }
-        chunks.push(value);
+        if (!response.ok) {
+          const status = response.status;
+          await response.body?.cancel();
+          if (status === 429 || status >= 500) break;
+          return {
+            ...base,
+            final_url: current,
+            access_status: "http_error",
+            http_status: status,
+          };
+        }
+        const contentType = response.headers.get("content-type") ?? "";
+        if (!/text\/html|application\/xhtml/i.test(contentType)) {
+          await response.body?.cancel();
+          return {
+            ...base,
+            final_url: current,
+            access_status: "unsupported_content",
+            http_status: response.status,
+          };
+        }
+        const reader = response.body?.getReader();
+        if (!reader)
+          break;
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          size += value.length;
+          if (size > 2_000_000) {
+            await reader.cancel();
+            return {
+              ...base,
+              final_url: current,
+              access_status: "too_large",
+              http_status: response.status,
+            };
+          }
+          chunks.push(value);
+        }
+        const bytes = Buffer.concat(chunks);
+        const charset =
+          contentType.match(/charset=["']?([^;"'\s]+)/i)?.[1] ?? "utf-8";
+        let html = "";
+        try {
+          html = new TextDecoder(charset).decode(bytes);
+        } catch {
+          html = bytes.toString("utf8");
+        }
+        return {
+          ...base,
+          final_url: current,
+          access_status: "ok",
+          http_status: response.status,
+          html,
+        };
       }
-      const bytes = Buffer.concat(chunks);
-      let charset = contentType.match(/charset=["']?([^;"'\s]+)/i)?.[1] ?? "utf-8";
-      let html = "";
-      try {
-        html = new TextDecoder(charset).decode(bytes);
-      } catch {
-        html = bytes.toString("utf8");
-      }
-      return {
-        ...base,
-        final_url: current,
-        access_status: "ok",
-        http_status: response.status,
-        html,
-      };
-    }
-  } catch {}
-  return { ...base, final_url: current };
+    } catch {}
+  }
+  return base;
 }
 
 type Row = {
@@ -213,7 +278,7 @@ for (const row of rows) {
   let pageCandidates = [];
   if (pageUrl && fetches < maxFetches) {
     fetches += 1;
-    page = await fetchHtml(pageUrl);
+    page = await fetchHtml(pageUrl, registrySource);
     if (page.access_status === "ok")
       pageCandidates = extractOfficialPageImageCandidates(page.final_url, page.html, 8);
   }
