@@ -1004,12 +1004,12 @@ export default {
             source_priority: number;
           }>();
         const highlights = await env.DB.prepare(
-          `SELECT label,tag,featured FROM event_highlights WHERE event_id=? ORDER BY featured DESC,sort_order`,
+          `SELECT label,tag,featured,source_id FROM event_highlights WHERE event_id=? ORDER BY featured DESC,sort_order`,
         )
           .bind(eventId)
           .all<{ label: string; tag: string | null; featured: number }>();
         const programs = await env.DB.prepare(
-          `SELECT p.id,p.program_name,p.program_date,p.start_time,p.end_time,p.schedule_text,p.venue_name,p.description,p.featured,(SELECT json_group_array(tag) FROM event_program_tags WHERE program_id=p.id) AS tags FROM event_programs p WHERE p.event_id=? ORDER BY p.featured DESC,p.program_date,p.start_time,p.sort_order`,
+          `SELECT p.id,p.source_id,p.program_name,p.program_date,p.start_time,p.end_time,p.schedule_text,p.venue_name,p.description,p.featured,(SELECT json_group_array(tag) FROM event_program_tags WHERE program_id=p.id) AS tags FROM event_programs p WHERE p.event_id=? ORDER BY p.featured DESC,p.program_date,p.start_time,p.sort_order`,
         )
           .bind(eventId)
           .all<Record<string, unknown>>();
@@ -1024,7 +1024,10 @@ export default {
             ...(occurrencesByProgram.get(String(occurrence.program_id)) ?? []),
             occurrence,
           ]);
-        const programRows = programs.results.map((program) => ({
+        const visiblePrograms = programs.results.filter((program) =>
+          !municipalEventTimeOnlyLabel(String(program.program_name)),
+        );
+        const programRows = visiblePrograms.map((program) => ({
           name: String(program.program_name),
           date: program.program_date as string | null,
           start_time: program.start_time as string | null,
@@ -1058,22 +1061,47 @@ export default {
                 venue: row.venue_name as string | null,
               };
             }),
-        })).filter((program) => !municipalEventTimeOnlyLabel(program.name));
+        }));
         const visibleSummary = enrichment
           ? visibleMunicipalSummary(enrichment.summary, enrichment.source_kind)
           : null;
+        const hasVisibleDetail = Boolean(
+          visibleSummary || highlights.results.length || programRows.length,
+        );
+        const detailSourceIds = [
+          ...visiblePrograms.map((program) => String(program.source_id)),
+          ...highlights.results.map((item) => String(item.source_id)),
+        ];
+        const fallbackSource = !enrichment && hasVisibleDetail && detailSourceIds.length
+          ? await env.DB.prepare(
+              `SELECT s.url AS source_url,s.kind AS source_kind,s.priority AS source_priority
+               FROM sources s
+               WHERE s.id IN (${detailSourceIds.map(() => "?").join(",")})
+                 AND s.kind!='sample'
+                 AND s.url LIKE 'https://%'
+               ORDER BY s.priority ASC,s.id ASC
+               LIMIT 1`,
+            )
+              .bind(...detailSourceIds)
+              .first<{
+                source_url: string;
+                source_kind: string;
+                source_priority: number;
+              }>()
+          : null;
+        const enrichmentSource = enrichment ?? fallbackSource;
         return json({
           event: withMunicipalImageProxy(url, serialize(row)),
           images,
           evidence: evidence.results,
           contact_phone: contactPhone,
           operating_hours: parseOperatingHours(row.operating_hours_json),
-          enrichment: enrichment && (visibleSummary || highlights.results.length || programRows.length)
+          enrichment: enrichmentSource && hasVisibleDetail
             ? {
                 summary: visibleSummary ?? "",
-                source_url: enrichment.source_url,
-                source_kind: enrichment.source_kind,
-                source_priority: enrichment.source_priority,
+                source_url: enrichmentSource.source_url,
+                source_kind: enrichmentSource.source_kind,
+                source_priority: enrichmentSource.source_priority,
                 highlights: highlights.results.map((item) => ({
                   label: item.label,
                   tag: item.tag,

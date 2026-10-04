@@ -29,6 +29,7 @@ test("municipal rich detail reaches the public detail API under an encoded legac
   const eventId =
     "municipal-seoul-hangang-legacy|달빛한가위마당|2026-09-27";
   const sourceId = "municipal-source-" + eventId;
+  const programSourceId = "organizer-program-source";
   const detailUrl =
     "https://hangang.seoul.go.kr/www/eventMng/detail.do?mid=538&srchType=list&evntSn=462";
   const primaryImage =
@@ -53,6 +54,11 @@ test("municipal rich detail reaches the public detail API under an encoded legac
         }),
       )
       .run();
+
+    await DB.prepare(
+      `INSERT INTO sources(id,kind,priority,name,url,fetched_at)
+       VALUES(?, 'organizer', 1, '행사 주최자', 'https://organizer.example.test/event', ?)`,
+    ).bind(programSourceId, "2026-09-27T06:00:00.000Z").run();
 
     await DB.prepare(
       `INSERT INTO events(
@@ -146,7 +152,7 @@ test("municipal rich detail reaches the public detail API under an encoded legac
           name,
           name + " 공식 프로그램",
           index,
-          sourceId,
+          programSourceId,
           "official_program",
           "2026-09-27T06:00:00.000Z",
         )
@@ -199,6 +205,9 @@ test("municipal rich detail reaches the public detail API under an encoded legac
     const body = (await response.json()) as any;
 
     assert.match(body.enrichment?.summary ?? "", /6개국 전통 공연/);
+    assert.equal(body.enrichment.source_url, detailUrl);
+    assert.equal(body.enrichment.source_kind, "municipality");
+    assert.equal(body.enrichment.source_priority, 2);
     assert.deepEqual(
       body.enrichment.programs.map((program: any) => program.name),
       ["6개국 전통 공연", "한복 대여", "전통놀이 체험"],
@@ -388,6 +397,66 @@ test("municipal rich detail reaches the public detail API under an encoded legac
       else
         Object.defineProperty(globalThis, "caches", { value: originalCaches });
     }
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("detail API builds enrichment from official program or highlight sources without a summary row", async () => {
+  const { mf, DB } = await setup();
+  try {
+    const now = new Date().toISOString();
+    const programSource = "official-program-source";
+    const highlightSource = "official-highlight-source";
+    const sourceUrl = "https://official.example.test/event";
+    await DB.batch([
+      DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES(?, 'municipality', 2, '공식 지자체 안내', ?, ?)").bind(programSource, sourceUrl, now),
+      DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES(?, 'organizer', 1, '주최자 공식 안내', ?, ?)").bind(highlightSource, "https://organizer.example.test/event", now),
+      ...["program-only", "empty-detail", "highlight-only"].map((id) =>
+        DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES(?, '행사', '설명', '경북', '장소', '주소', '2026-10-08', '2026-10-18', 'unknown', 'scheduled', 'verified', 0, ?, ?, ?)").bind(id, programSource, now, now),
+      ),
+      ...["program-only", "empty-detail", "highlight-only"].flatMap((id) =>
+        ["schedule", "venue", "status"].map((field) =>
+          DB.prepare("INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?, '공식 확인', ?)").bind(id, programSource, field, now),
+        ),
+      ),
+      DB.prepare("INSERT INTO event_programs(id,event_id,program_name,featured,sort_order,source_id,evidence_excerpt) VALUES('docent-program','program-only','도슨트 프로그램',0,1,?,'공식 일정')").bind(programSource),
+      DB.prepare("INSERT INTO event_programs(id,event_id,program_name,featured,sort_order,source_id,evidence_excerpt) VALUES('time-metadata','empty-detail','관람시간: 운영 안내',0,1,?,'운영 시간')").bind(programSource),
+      DB.prepare("INSERT INTO event_highlights(event_id,label,tag,featured,sort_order,source_id,evidence_excerpt) VALUES('highlight-only','공식 체험 프로그램','experience',1,1,?,'공식 하이라이트')").bind(highlightSource),
+    ]);
+
+    const env = {
+      DB,
+      APP_MODE: "production",
+      TOUR_API_ENABLED: "false",
+      ASSETS: { fetch: () => new Response("asset") },
+      WEB_PUSH_ENABLED: "false",
+    } as any;
+    const request = (id: string) => app.fetch(
+      new Request("https://galteum.com/api/events/" + encodeURIComponent(id)),
+      env,
+    );
+
+    const programResponse = await request("program-only");
+    const programBody = await programResponse.json() as any;
+    assert.equal(programResponse.status, 200);
+    assert.equal(programBody.enrichment.summary, "");
+    assert.deepEqual(programBody.enrichment.programs.map((row: any) => row.name), ["도슨트 프로그램"]);
+    assert.equal(programBody.enrichment.source_url, sourceUrl);
+    assert.equal(programBody.enrichment.source_kind, "municipality");
+    assert.equal(programBody.enrichment.source_priority, 2);
+
+    const emptyResponse = await request("empty-detail");
+    assert.equal((await emptyResponse.json() as any).enrichment, null);
+
+    const highlightResponse = await request("highlight-only");
+    const highlightBody = await highlightResponse.json() as any;
+    assert.equal(highlightResponse.status, 200);
+    assert.equal(highlightBody.enrichment.summary, "");
+    assert.deepEqual(highlightBody.enrichment.highlights.map((row: any) => row.label), ["공식 체험 프로그램"]);
+    assert.equal(highlightBody.enrichment.source_url, "https://organizer.example.test/event");
+    assert.equal(highlightBody.enrichment.source_kind, "organizer");
+    assert.equal(highlightBody.enrichment.source_priority, 1);
   } finally {
     await mf.dispose();
   }
