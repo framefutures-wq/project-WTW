@@ -2513,3 +2513,9 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Deployed commit `300d7cbdfc8af1d7836333ca6fe3fcfb563fd021` as Worker `0034fbbf-71b5-46b7-a1c2-a5a789dad156`.
 - Without rerunning recovery, production API for `municipal-gyeongbuk-경주-7746` now returns an enrichment object with blank summary, the official municipal source, and the docent program/schedule/description. Contact `054-777-5823` and actual price remain; operating hours remain empty. OCR source row remains absent.
 - Desktop and mobile both show the docent program, schedule, description, contact, and price; no generic summary or inaccurate 10:00–18:00 hours; no overflow or app errors. HTML-first Gyeongju recovery is verified without OCR.
+
+## 2026-10-04 — scheduled official-detail OCR transport safety
+
+- Scheduled official-detail recovery now stops at the recorded transport failure if direct official HTML and Reader fallback both fail; it does not call poster OCR or create/update poster OCR state.
+- Explicit `targetEventId` diagnostics retain the previous poster-only fallback. Scheduled runs still allow verified poster OCR after HTML was fetched and parsed but rich detail remains insufficient.
+- Deployed commit `120338691803a27652c0254ee4d7f46d06e813fc` as Worker `ef1a85d8-e37d-4065-9b53-e17b2bb74645`. No manual recovery or scheduled trigger was run.
