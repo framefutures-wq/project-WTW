@@ -2506,3 +2506,10 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - D1 rich detail was unchanged: `event_enrichments.summary` remains null, there are no `event_operating_hours` rows, and the existing single program row remains `평일` with `09:00 ~ 19:00` / `평일 09:00 ~ 19:00(토·일·공휴일 제외)`. That time-only row predates this run and was not added by it. `price_text=무료`; public API contact is null. The API still returns `enrichment=null`, no operating hours, and no programs.
 - The API image proxy returned `200 image/jpeg` (15,103 bytes). Desktop and mobile production views showed the event poster and a secondary `OPEN` graphic; the detail panel showed the pre-existing event description and free price, with no enrichment summary, hours, programs, or contact.
 - Classification: **core safety reject** for poster OCR; the run does not prove cross-source poster OCR success. No code or deployment change was made. Only this handoff was updated to record the production result.
+
+## 2026-10-04 — Gyeongju HTML program-only detail API/UI production verification
+
+- Fixed detail API enrichment assembly so a visible official program or highlight can supply source metadata when no `event_enrichments` row exists; an existing enrichment source remains preferred. Metadata-only programs remain filtered.
+- Deployed commit `300d7cbdfc8af1d7836333ca6fe3fcfb563fd021` as Worker `0034fbbf-71b5-46b7-a1c2-a5a789dad156`.
+- Without rerunning recovery, production API for `municipal-gyeongbuk-경주-7746` now returns an enrichment object with blank summary, the official municipal source, and the docent program/schedule/description. Contact `054-777-5823` and actual price remain; operating hours remain empty. OCR source row remains absent.
+- Desktop and mobile both show the docent program, schedule, description, contact, and price; no generic summary or inaccurate 10:00–18:00 hours; no overflow or app errors. HTML-first Gyeongju recovery is verified without OCR.
