@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   classifyOperatingHoursEvidence,
+  formatEventOperatingHours,
   formatOperatingHours,
-  formatOperatingHoursForRange,
   selectOperatingHours,
   validOperatingTime,
   type EventOperatingHours,
@@ -74,10 +74,7 @@ test("same-day multiple official sessions stay visible on detail", () => {
     hours("2026-09-27", "2026-09-27", "17:00", "18:00"),
   ];
   assert.equal(
-    formatOperatingHoursForRange(rows, {
-      start: "2026-09-27",
-      end: "2026-09-27",
-    }),
+    formatEventOperatingHours(rows, "2026-09-27", "2026-09-27"),
     "15:00 ~ 16:00 · 17:00 ~ 18:00",
   );
 });
@@ -88,10 +85,17 @@ test("different multi-day hours remain hidden instead of being flattened", () =>
     hours("2026-09-28", "2026-09-28", "17:00", "18:00"),
   ];
   assert.equal(
-    formatOperatingHoursForRange(rows, {
-      start: "2026-09-27",
-      end: "2026-09-28",
-    }),
+    formatEventOperatingHours(rows, "2026-09-27", "2026-09-28"),
     null,
+  );
+});
+
+test("detail hours use the event period when discovery selection is outside it", () => {
+  const rows = [hours("2026-10-08", "2026-11-29", "10:00", "17:00")];
+  const discoveryRange = { start: "2026-10-03", end: "2026-10-04" };
+  assert.equal(discoveryRange.end < rows[0].start_date, true);
+  assert.equal(
+    formatEventOperatingHours(rows, "2026-10-08", "2026-11-29"),
+    "10:00 ~ 17:00",
   );
 });

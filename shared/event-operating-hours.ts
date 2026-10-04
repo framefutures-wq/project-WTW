@@ -94,3 +94,14 @@ export function formatOperatingHoursForRange(
   const unique = [...new Set(labels)];
   return unique.length ? unique.join(" · ") : null;
 }
+
+export function formatEventOperatingHours(
+  rows: EventOperatingHours[],
+  eventStart: string,
+  eventEnd: string,
+) {
+  return formatOperatingHoursForRange(rows, {
+    start: eventStart,
+    end: eventEnd,
+  });
+}

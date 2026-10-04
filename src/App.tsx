@@ -47,8 +47,8 @@ import { nearbyDetailEvents, similarDetailEvents } from "../shared/detail-explor
 import { formatProgramTime } from "../shared/event-program-time";
 import { decodeEventPathId, validEventId } from "../shared/event-id";
 import {
+  formatEventOperatingHours,
   formatOperatingHours,
-  formatOperatingHoursForRange,
   type EventOperatingHours,
 } from "../shared/event-operating-hours";
 import {
@@ -2160,9 +2160,10 @@ export default function App() {
         ) : detail ? (
           (() => {
             const location = locationLines(detail.event);
-            const operatingHours = formatOperatingHoursForRange(
+            const operatingHours = formatEventOperatingHours(
               detail.operating_hours,
-              eventDisplayRange,
+              detail.event.start_date,
+              detail.event.end_date,
             );
             const price = detail.event.price_text?.trim();
             const officialUrl = detailOfficialUrl(
