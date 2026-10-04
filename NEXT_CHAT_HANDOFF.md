@@ -2,6 +2,13 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-04 — Paju HTML 상세와 운영시간 UI production 검증 완료
+
+- `municipal-paju-947`의 HTML rich-detail recovery와 상세 UI 운영시간 표시를 production에서 검증했다. 최신 코드 `15bc23a6834fbd29c87016ffc50dfa43416be4ae`, Worker version `0fb2aacc-2672-4d96-a841-afc77055bff4`.
+- 상세 operating hours는 홈 discovery range가 아니라 행사 자체 시작일/종료일을 기준으로 표시한다. Production desktop/mobile 모두 `10:00 ~ 17:00`, 공식 summary, 도슨트, 문의 `031-950-8435`, 무료 및 포스터가 정상 표시된다. `평일 09:00~19:00` metadata program은 없다.
+- OCR 상태 `core_mismatch`의 기존 시각은 유지됐고 이번 작업에서 recovery/D1 write/AI/OCR 호출은 하지 않았다.
+- 확인 중 배경의 Seoul Hangang 행사 이미지 proxy 한 건에서 HTTP 502가 관찰됐다. 이번 작업 범위에서 수정하지 않았다.
+
 ## 사용자와 작업 방식
 
 - 한국어로 짧고 정확하게 답한다.
