@@ -2519,3 +2519,9 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Scheduled official-detail recovery now stops at the recorded transport failure if direct official HTML and Reader fallback both fail; it does not call poster OCR or create/update poster OCR state.
 - Explicit `targetEventId` diagnostics retain the previous poster-only fallback. Scheduled runs still allow verified poster OCR after HTML was fetched and parsed but rich detail remains insufficient.
 - Deployed commit `120338691803a27652c0254ee4d7f46d06e813fc` as Worker `ef1a85d8-e37d-4065-9b53-e17b2bb74645`. No manual recovery or scheduled trigger was run.
+
+## 2026-10-04 — structured municipal program-list parser
+
+- The shared rich-detail parser now treats explicit program section markers as containers: comma-separated values and immediately following `ul`/`ol` items become separate programs with null descriptions unless an item has its own description.
+- Paju 948 exact-HTML dry-run returns `유가행렬`, `추향제`, `문화예술공연`, and `전통문화 체험`, with no poster/intro copy absorbed; the existing quality gate therefore skips OCR. Paju 946 dry-run returns its eight official list items separately.
+- Deployed parser commit `bda5e6a35a4dfc1ad48f5fed3b0111b13447523a` as Worker `720e8da9-c25e-44c1-a672-ccb4c2ddafd2`. No recovery or scheduled trigger was run; the next real cron remains responsible for persistence.
