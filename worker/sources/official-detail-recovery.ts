@@ -930,7 +930,9 @@ export async function runOfficialDetailRecovery(
       // Preserve the direct official failure reason if all transport fallbacks fail.
     }
     if (!page) {
-      if (posterConversions < 1) {
+      // Scheduled runs only OCR a poster after a live official page was fetched
+      // and parsed. Keep poster-only diagnostics available for an explicit target.
+      if (options.targetEventId && posterConversions < 1) {
         posterConversions += 1;
         const poster = await enrichFromVerifiedPoster(env, row, checkedAt, {
           bypassFailureRetry: Boolean(options.targetEventId),

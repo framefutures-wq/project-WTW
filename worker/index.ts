@@ -1007,7 +1007,7 @@ export default {
           `SELECT label,tag,featured,source_id FROM event_highlights WHERE event_id=? ORDER BY featured DESC,sort_order`,
         )
           .bind(eventId)
-          .all<{ label: string; tag: string | null; featured: number }>();
+          .all<{ label: string; tag: string | null; featured: number; source_id: string }>();
         const programs = await env.DB.prepare(
           `SELECT p.id,p.source_id,p.program_name,p.program_date,p.start_time,p.end_time,p.schedule_text,p.venue_name,p.description,p.featured,(SELECT json_group_array(tag) FROM event_program_tags WHERE program_id=p.id) AS tags FROM event_programs p WHERE p.event_id=? ORDER BY p.featured DESC,p.program_date,p.start_time,p.sort_order`,
         )

@@ -53,6 +53,42 @@ async function seed(DB: D1Database) {
   ).run();
 }
 
+async function seedVerifiedPoster(DB: D1Database) {
+  await DB.prepare(
+    `INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at)
+     VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality',
+       'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')`,
+  ).run();
+}
+
+function posterAi(calls: { count: number }) {
+  return {
+    async run() {
+      calls.count += 1;
+      return { choices: [{ message: { content: JSON.stringify({ transcription: [
+        "동오마을 푸드 페스타", "2026. 10. 3.(토)", "12:00~19:00",
+        "동오마을 공영주차장", "떡볶이 한판", "무대공연", "체험",
+      ].join("\n") }) } }] };
+    },
+  };
+}
+
+function mockReaderAndPoster() {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("https://r.jina.ai/"))
+      return new Response("reader failed", { status: 502 });
+    if (url === "https://ui4u.go.kr/poster.jpg")
+      return new Response(new Uint8Array([255, 216, 255]), {
+        status: 200,
+        headers: { "content-type": "image/jpeg" },
+      });
+    throw new TypeError("unexpected fetch " + url);
+  }) as typeof fetch;
+  return () => { globalThis.fetch = originalFetch; };
+}
+
 test("poster fallback quality gate ignores generic copy and metadata-only HTML programs", () => {
   const title = "2026 한수원아트페스티벌 특별전 한국 미술 조선 후기부터 현대까지";
   const genericSummary = "한국관광의 메카 Beautiful City가 여러분을 초대합니다.";
@@ -575,6 +611,147 @@ test("verified poster without programs remains eligible when HTML hours already 
     const after = await selectOfficialDetailRecoveryCandidates(DB, new Date("2026-09-28T02:00:00Z"), 10);
     assert.equal(after.length, 0);
   } finally { await mf.dispose(); }
+});
+
+test("scheduled recovery does not invoke poster OCR after all HTML transports fail", async () => {
+  const { mf, DB } = await setup();
+  const restoreFetch = mockReaderAndPoster();
+  const calls = { count: 0 };
+  try {
+    await seed(DB);
+    await seedVerifiedPoster(DB);
+    const priorState = JSON.stringify({
+      poster_url: "https://ui4u.go.kr/poster.jpg",
+      version: 5,
+      status: "success",
+      latest_attempt: {
+        status: "success",
+        attempted_at: "2026-09-27T00:00:00Z",
+        parser_version: 5,
+      },
+      last_success: {
+        poster_url: "https://ui4u.go.kr/poster.jpg",
+        poster_hash: "a".repeat(64),
+        transcription: "이전 검증된 transcription",
+        succeeded_at: "2026-09-27T00:00:00Z",
+      },
+    });
+    await DB.prepare(
+      `INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload)
+       VALUES('official-poster-event-1','municipality',2,'공식 포스터 판독 상태',
+         'https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',
+         '2026-09-27T00:00:00Z',?)`,
+    ).bind(priorState).run();
+
+    const result = await runOfficialDetailRecovery(
+      { DB, AI: posterAi(calls), MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      { fetchPage: async () => { throw new TypeError("fetch failed"); } },
+    );
+
+    assert.equal(calls.count, 0);
+    assert.equal(result.fetch_failed, 1);
+    assert.equal(result.fetch_failure_reasons.network_error, 1);
+    assert.equal(result.reader_attempts, 2);
+    assert.equal(result.reader_failures, 2);
+    const state = await DB.prepare(
+      "SELECT fetched_at,raw_payload FROM sources WHERE id='official-poster-event-1'",
+    ).first<{ fetched_at: string; raw_payload: string }>();
+    assert.deepEqual(state, {
+      fetched_at: "2026-09-27T00:00:00Z",
+      raw_payload: priorState,
+    });
+    const attempt = await DB.prepare(
+      "SELECT raw_payload FROM sources WHERE id='official-detail-event-1'",
+    ).first<{ raw_payload: string }>();
+    assert.match(attempt?.raw_payload ?? "", /network_error/);
+  } finally {
+    restoreFetch();
+    await mf.dispose();
+  }
+});
+
+test("explicit target retains poster fallback after official and Reader transports fail", async () => {
+  const { mf, DB } = await setup();
+  const restoreFetch = mockReaderAndPoster();
+  const calls = { count: 0 };
+  try {
+    await seed(DB);
+    await seedVerifiedPoster(DB);
+    const result = await runOfficialDetailRecovery(
+      { DB, AI: posterAi(calls), MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      {
+        targetEventId: "event-1",
+        fetchPage: async () => { throw new TypeError("fetch failed"); },
+      },
+    );
+    assert.equal(result.recovered, 1);
+    assert.equal(calls.count, 1);
+    const state = await DB.prepare(
+      "SELECT raw_payload FROM sources WHERE id='official-poster-event-1'",
+    ).first<{ raw_payload: string }>();
+    assert.equal(JSON.parse(state!.raw_payload).latest_attempt.status, "success");
+  } finally {
+    restoreFetch();
+    await mf.dispose();
+  }
+});
+
+test("scheduled recovery retains poster OCR after successful but insufficient HTML", async () => {
+  const { mf, DB } = await setup();
+  const restoreFetch = mockReaderAndPoster();
+  const calls = { count: 0 };
+  try {
+    await seed(DB);
+    await seedVerifiedPoster(DB);
+    const result = await runOfficialDetailRecovery(
+      { DB, AI: posterAi(calls), MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      {
+        fetchPage: async (url) => ({
+          finalUrl: url,
+          html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026년 10월 3일 동오마을 공영주차장</p><p>행사 시간: 12:00~19:00</p>",
+        }),
+      },
+    );
+    assert.equal(result.fetched, 1);
+    assert.equal(result.recovered, 1);
+    assert.equal(calls.count, 1);
+  } finally {
+    restoreFetch();
+    await mf.dispose();
+  }
+});
+
+test("scheduled recovery skips poster OCR after sufficient HTML detail", async () => {
+  const { mf, DB } = await setup();
+  const restoreFetch = mockReaderAndPoster();
+  const calls = { count: 0 };
+  try {
+    await seed(DB);
+    await seedVerifiedPoster(DB);
+    const result = await runOfficialDetailRecovery(
+      { DB, AI: posterAi(calls), MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      {
+        fetchPage: async (url) => ({
+          finalUrl: url,
+          html: `<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026년 10월 3일 동오마을 공영주차장에서 주민과 상인이 함께하는 먹거리 축제입니다.</p><p>행사 시간: 12:00~19:00</p><h2>프로그램</h2><p>무대공연 14:00 야외무대</p><p>체험 프로그램 15:00 체험장</p>`,
+        }),
+      },
+    );
+    assert.equal(result.fetched, 1);
+    assert.equal(result.recovered, 1);
+    assert.equal(calls.count, 0);
+    const state = await DB.prepare(
+      "SELECT 1 FROM sources WHERE id='official-poster-event-1'",
+    ).first();
+    assert.equal(state, null);
+  } finally {
+    restoreFetch();
+    await mf.dispose();
+  }
 });
 
 test("poster fallback is skipped when AI is disabled or HTML already has useful rich detail", async () => {
