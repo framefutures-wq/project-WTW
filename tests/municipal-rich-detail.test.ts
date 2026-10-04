@@ -254,7 +254,7 @@ test("extracts inline label-value detail safely and keeps closure rules intact",
     "https://www.gyeongju.go.kr/tour/page.do?con_uid=fixture",
     `
       <html><body>
-        <main class="bottom festival">
+        <div class="bottom festival">
           <div class="detail">
             전시일정 ｜ 2026. 6. 30. ~ 2026. 10. 18.<br>
             관람시간 ｜ 10:00-18:00(입장마감 17:30)<br>
@@ -267,7 +267,7 @@ test("extracts inline label-value detail safely and keeps closure rules intact",
             * 회차별 30명 현장 선착순 진행(수신기 대여)<br>
             ※ 오디오도슨트는 개인휴대폰 QR코드로 이용가능<br>
           </div>
-        </main>
+        </div>
         <footer>
           <p>대표전화054-779-8585 (평일 09:00~18:00)</p>
           <p>경주시 관광 안내 정보를 확인하세요.</p>
