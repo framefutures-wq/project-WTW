@@ -140,6 +140,62 @@ function explicitPairs(html: string): Pair[] {
     if (labelText && value) pairs.push({ label: labelText, value });
   }
 
+  // Some municipal tourism pages render their event-specific fields as plain
+  // text lines (`label ｜ value`) inside a detail block instead of table rows.
+  // Only recognized field labels are admitted here; this avoids treating
+  // arbitrary prose, footer text, or time colons as metadata.
+  const inlineLabels = new Set([
+    "전시일정",
+    "기간",
+    "일정",
+    "관람시간",
+    "운영시간",
+    "행사시간",
+    "공연시간",
+    "이용시간",
+    "전시장소",
+    "장소",
+    "관람료",
+    "입장료",
+    "이용료",
+    "이용요금",
+    "참가비",
+    "참가료",
+    "관람할인",
+    "문의",
+    "문의처",
+    "문의전화",
+    "문의하기",
+    "관람문의",
+    "행사문의",
+    "연락처",
+    "대표전화",
+    "전화",
+    "도슨트프로그램",
+  ]);
+  const scopedHtml = detailContentHtml(html);
+  const textLines = municipalRichText(scopedHtml).split("\n");
+  for (let index = 0; index < textLines.length; index += 1) {
+    const match = /^(.{1,40}?)\s*[｜|:：]\s*(.{1,300})$/u.exec(
+      textLines[index].trim(),
+    );
+    if (!match || !inlineLabels.has(normalizedLabel(match[1]))) continue;
+    const label = match[1].trim();
+    let value = match[2].trim();
+    if (
+      /(?:관람시간|운영시간|행사시간|공연시간|이용시간)/u.test(
+        normalizedLabel(label),
+      )
+    ) {
+      const closure = textLines
+        .slice(index + 1, index + 4)
+        .find((next) => /(?:휴관|휴무|정기\s*휴일|매주\s*월요일)/u.test(next));
+      if (closure) value += ` ${closure.trim()}`;
+    }
+    if (!pairs.some((pair) => pair.label === label && pair.value === value))
+      pairs.push({ label, value });
+  }
+
   return pairs;
 }
 
@@ -191,7 +247,7 @@ function sectionText(
 const exhibitionSummaryLabel =
   /^(?:전시서문|전시\s*소개|전시\s*개요|전시\s*안내)$/u;
 const metadataProgramLabel =
-  /^(?:관람\s*시간|운영\s*시간|공연\s*시간|이용\s*시간|대표\s*전화|문의|문의\s*전화|연락처|전화|기간|일시|장소|요금|입장료|관람료|주최|주관|후원)$/u;
+  /^(?:관람\s*시간|운영\s*시간|공연\s*시간|이용\s*시간|대표\s*전화|관람\s*문의|행사\s*문의|문의처|문의|문의\s*전화|연락처|전화|기간|일시|장소|요금|입장료|관람료|이용료|주최|주관|후원)$/u;
 
 type RichBreakChunk = {
   text: string;
@@ -228,6 +284,43 @@ function breakChunks(html: string): RichBreakChunk[] {
 }
 
 function detailContentHtml(html: string) {
+  const balancedDiv = (opening: RegExp, from = 0) => {
+    const marker = opening.exec(html.slice(from));
+    if (!marker) return null;
+    const start = from + (marker.index ?? 0);
+    const contentStart = start + marker[0].length;
+    const tags = /<\/?div\b[^>]*>/gi;
+    let depth = 1;
+    for (const match of html.slice(contentStart).matchAll(tags)) {
+      if (/^<\//.test(match[0])) depth -= 1;
+      else if (!/\/\s*>$/.test(match[0])) depth += 1;
+      if (depth === 0)
+        return { start, end: contentStart + (match.index ?? 0), contentStart };
+    }
+    return { start, end: html.length, contentStart };
+  };
+
+  // Gyeongju-style event pages place their event copy in
+  // `.bottom.festival .detail`; constrain line parsing to that event block so
+  // footer representative numbers and site chrome cannot outrank event data.
+  const festival = balancedDiv(
+    /<div\b(?=[^>]*class=["'][^"']*\bbottom\b)(?=[^>]*class=["'][^"']*\bfestival\b)[^>]*>/i,
+  );
+  if (festival) {
+    const block = html.slice(festival.contentStart, festival.end);
+    const detailOffset =
+      /<div\b(?=[^>]*class=["'][^"']*\bdetail\b)[^>]*>/i.exec(block);
+    if (detailOffset) {
+      const absolute = festival.contentStart + (detailOffset.index ?? 0);
+      const detail = balancedDiv(
+        /<div\b(?=[^>]*class=["'][^"']*\bdetail\b)[^>]*>/i,
+        absolute,
+      );
+      if (detail) return html.slice(detail.contentStart, detail.end);
+    }
+    return block;
+  }
+
   const marker =
     /<div\b[^>]*class=["'][^"']*\bdetail_view_area\b[^"']*["'][^>]*>/i.exec(
       html,
@@ -352,6 +445,9 @@ function extractOperatingHours(
       null
     )?.replace(/([01]?\d|2[0-3]):\s+(\d{2})/g, "$1:$2") ?? null;
   if (!raw) return [];
+  // The current operating-hours model cannot encode weekly closure rules.
+  // Do not persist a clean-looking time range after dropping that qualifier.
+  if (/(?:휴관|휴무|정기\s*휴일|매주\s*월요일)/u.test(raw)) return [];
 
   const ranges = [
     ...raw.matchAll(
@@ -419,19 +515,31 @@ function extractOperatingHours(
 
 function extractPhone(context: RichParseContext) {
   const labels = [
+    "관람문의",
+    "행사문의",
     "문의처",
+    "문의전화",
     "문의하기",
     "문의",
-    "전화",
     "연락처",
     "대표전화",
-    "문의전화",
-  ] as const;
+    "전화",
+  ];
+  const rank = new Map(
+    labels.map((label, index) => [normalizedLabel(label), index]),
+  );
+  const pair = context.pairs
+    .filter((candidate) => rank.has(normalizedLabel(candidate.label)))
+    .sort(
+      (a, b) =>
+        rank.get(normalizedLabel(a.label))! -
+        rank.get(normalizedLabel(b.label))!,
+    )[0];
   const fallback =
-    /(?:^|\n)\s*(?:문의처|문의하기|문의|전화|연락처|대표전화|문의전화)\s*[:：]?\s*([^\n]{1,160})/i.exec(
+    /(?:^|\n)\s*(?:관람문의|행사문의|문의처|문의전화|문의하기|문의|연락처|대표전화|전화)\s*[:：|｜]?\s*([^\n]{1,160})/i.exec(
       context.text,
     )?.[1] ?? null;
-  const raw = firstPairValue(context, labels) ?? fallback;
+  const raw = pair?.value ?? fallback;
   if (!raw) return null;
   const normal = /\b(?:02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4}\b/.exec(
     raw,
@@ -458,7 +566,13 @@ function extractPrice(context: RichParseContext) {
     /(?:^|\n)\s*(?:이용요금|이용료|요금|관람료|입장료|참가비|참가료|비용)\s*[:：]?\s*([^\n]{1,220})/i.exec(
       context.text,
     )?.[1] ?? null;
-  return firstPairValue(context, labels) ?? fallback;
+  const value = firstPairValue(context, labels) ?? fallback;
+  if (
+    !value ||
+    /^(?:안내|상세\s*보기|바로\s*가기|자세히\s*보기|확인)$/u.test(value.trim())
+  )
+    return null;
+  return value;
 }
 
 function absoluteHttps(pageUrl: string, raw: string) {
@@ -589,9 +703,46 @@ function extractPrograms(
   };
 
   const chunks = breakChunks(detailContentHtml(html));
+  const inlineLines = municipalRichText(detailContentHtml(html)).split("\n");
+  for (let index = 0; index < inlineLines.length; index += 1) {
+    const match = /^(.{1,40}?)\s*[｜|:：]\s*(.{1,300})$/u.exec(
+      inlineLines[index].trim(),
+    );
+    if (
+      !match ||
+      !/프로그램/u.test(match[1]) ||
+      metadataProgramLabel.test(match[1])
+    )
+      continue;
+    const details = [match[2].trim()];
+    for (const following of inlineLines.slice(index + 1)) {
+      if (/^.{1,40}\s*[｜|:：]\s*.+$/u.test(following.trim())) break;
+      if (/오디오\s*도슨트/u.test(following)) continue;
+      if (following.trim()) details.push(following.trim());
+    }
+    addProgram(match[1], details.join("\n"));
+  }
   for (let index = 0; index < chunks.length; index += 1) {
     const section = chunks[index];
     const title = section.text.replace(/^[|｜_\s]+|[|｜_\s]+$/g, "");
+    const inline = /^(.{1,40}?)\s*[｜|:：]\s*(.{1,300})$/u.exec(title);
+    if (
+      inline &&
+      /프로그램/u.test(inline[1]) &&
+      !metadataProgramLabel.test(inline[1])
+    ) {
+      const details = [inline[2].trim()];
+      for (let next = index + 1; next < chunks.length; next += 1) {
+        const chunk = chunks[next];
+        if (/^.{1,40}\s*[｜|:：]\s*.+$/u.test(chunk.text)) break;
+        if (chunk.bold && chunk.text) break;
+        if (/오디오\s*도슨트/u.test(chunk.text)) continue;
+        if (chunk.text && !/^[_|｜]+$/.test(chunk.text))
+          details.push(chunk.text);
+      }
+      addProgram(inline[1], details.join("\n"));
+      continue;
+    }
     if (!section.bold || !programMarker(title)) continue;
     const details: string[] = [];
     for (let next = index + 1; next < chunks.length; next += 1) {

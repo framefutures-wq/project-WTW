@@ -249,6 +249,51 @@ test("extracts Paju-style exhibition essay, hours, and docent without metadata p
   assert.doesNotMatch(rich.summary ?? "", /공식 홈페이지|지역 고등학생/);
 });
 
+test("extracts inline label-value detail safely and keeps closure rules intact", () => {
+  const rich = extractMunicipalRichDetail(
+    "https://www.gyeongju.go.kr/tour/page.do?con_uid=fixture",
+    `
+      <html><body>
+        <main class="bottom festival">
+          <div class="detail">
+            전시일정 ｜ 2026. 6. 30. ~ 2026. 10. 18.<br>
+            관람시간 ｜ 10:00-18:00(입장마감 17:30)<br>
+            * 매주 월요일 휴관. 단, 공휴일이 월요일인 경우 정상개관하며 다음 평일 휴관<br>
+            전시장소 ｜ 경주예술의전당 알천미술관<br>
+            관 람 료 ｜ 성인 10,000원 / 어린이 및 청소년 7,000원<br>
+            관람할인 ｜ 경주시민 5,000원<br>
+            관람문의 ｜ 054-777-5823<br>
+            도슨트 프로그램 ｜ 10:30 / 12:30 / 14:00 / 16:00<br>
+            * 회차별 30명 현장 선착순 진행(수신기 대여)<br>
+            ※ 오디오도슨트는 개인휴대폰 QR코드로 이용가능<br>
+          </div>
+        </main>
+        <footer>
+          <p>대표전화054-779-8585 (평일 09:00~18:00)</p>
+          <p>경주시 관광 안내 정보를 확인하세요.</p>
+        </footer>
+      </body></html>
+    `,
+  );
+
+  assert.equal(rich.contact_phone, "054-777-5823");
+  assert.equal(rich.price_text, "성인 10,000원 / 어린이 및 청소년 7,000원");
+  assert.deepEqual(rich.operating_hours, []);
+  assert.deepEqual(
+    rich.programs.map(({ name }) => name),
+    ["도슨트 프로그램"],
+  );
+  assert.equal(rich.programs[0]?.schedule_text, "10:30, 12:30, 14:00, 16:00");
+  assert.match(rich.programs[0]?.description ?? "", /회차별 30명 현장 선착순/);
+  assert.doesNotMatch(rich.programs[0]?.description ?? "", /오디오도슨트/);
+  assert.equal(rich.summary, null);
+  assert.doesNotMatch(rich.price_text ?? "", /안내/);
+  assert.equal(
+    rich.programs.some(({ name }) => /관람시간|대표전화/.test(name)),
+    false,
+  );
+});
+
 test("rich text removes scripts and preserves block boundaries", () => {
   assert.equal(
     municipalRichText(
