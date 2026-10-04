@@ -95,9 +95,10 @@ test("extracts explicit table labels and rejects off-site body images", () => {
   assert.equal(rich.operating_hours[0]?.end_time, "18:00");
   assert.equal(rich.price_text, "성인 10,000원");
   assert.equal(rich.contact_phone, "031-123-4567");
-  assert.deepEqual(rich.images.map((image) => image.url), [
-    "https://festival.example.go.kr/event/poster.jpg",
-  ]);
+  assert.deepEqual(
+    rich.images.map((image) => image.url),
+    ["https://festival.example.go.kr/event/poster.jpg"],
+  );
 });
 
 test("extracts current Suwon-style detail while rejecting generic site chrome", () => {
@@ -142,9 +143,10 @@ test("extracts current Suwon-style detail while rejecting generic site chrome", 
   );
   assert.equal(rich.price_text, "무료");
   assert.equal(rich.contact_phone, "031-290-3583");
-  assert.deepEqual(rich.images.map((image) => image.url), [
-    "https://www.swcf.or.kr/upload/event/sumunjang-poster.jpg",
-  ]);
+  assert.deepEqual(
+    rich.images.map((image) => image.url),
+    ["https://www.swcf.or.kr/upload/event/sumunjang-poster.jpg"],
+  );
 });
 
 test("extracts Korean-hour ranges and time-bearing program lines from an exact Hangang page", () => {
@@ -188,10 +190,63 @@ test("does not turn site chrome or an event-wide date line into detail content",
   );
 
   assert.equal(rich.summary, null);
-  assert.deepEqual(rich.operating_hours.map((row) => [row.start_time, row.end_time]), [
-    ["12:00", "19:00"],
-  ]);
+  assert.deepEqual(
+    rich.operating_hours.map((row) => [row.start_time, row.end_time]),
+    [["12:00", "19:00"]],
+  );
   assert.deepEqual(rich.programs, []);
+});
+
+test("extracts Paju-style exhibition essay, hours, and docent without metadata programs or site boilerplate", () => {
+  const rich = extractMunicipalRichDetail(
+    "https://tour.paju.go.kr/user/link/cultural/BD_selectCulturalView.do?cultMstSn=947",
+    `
+      <meta name="description" content="파주시의 다양한 문화행사를 만나보세요.">
+      <footer><p>파주시 문화관광 공식 홈페이지</p></footer>
+      <table>
+        <tr><th>행사기간</th><td>2026-10-08 ~ 2026-11-29</td></tr>
+        <tr><th>행사시간</th><td>10: 00~17: 00</td></tr>
+        <tr><th>행사장소</th><td>평화뮤지엄 S827</td></tr>
+        <tr><th>문의하기</th><td>031-950-8435</td></tr>
+      </table>
+      <div class="detail_view_area">
+        <div><span style="font-weight:bold">기간</span><br>2026. 10. 8. ~ 2026. 11. 29.<br>
+        <span style="font-weight:bold">전시서문</span><br>
+        파주문화재단은 이번 기획전시에서 공간과 예술가, 작품과 관람객의 관계를 살펴봅니다.<br>
+        <span style="font-weight:bold">학생선정작</span><br>지역 고등학생 작품을 함께 선보입니다.<br>
+        평일 09:00~19:00<br>
+        대표전화 031-950-8435<br>
+        <span style="font-weight:bold">전시연계 프로그램</span><br>
+        <span style="font-weight:bold">| 도슨트 프로그램</span><br>
+        - 일시: 매주 토요일 11:00~17:00<br>
+        - 전시와 작품 해설을 함께하는 관람 프로그램입니다.
+        </div>
+      </div>
+    `,
+  );
+
+  assert.equal(
+    rich.summary,
+    "파주문화재단은 이번 기획전시에서 공간과 예술가, 작품과 관람객의 관계를 살펴봅니다.",
+  );
+  assert.deepEqual(
+    rich.operating_hours.map(({ start_time, end_time }) => [
+      start_time,
+      end_time,
+    ]),
+    [["10:00", "17:00"]],
+  );
+  assert.equal(rich.contact_phone, "031-950-8435");
+  assert.deepEqual(
+    rich.programs.map(({ name }) => name),
+    ["도슨트 프로그램"],
+  );
+  assert.match(rich.programs[0]?.description ?? "", /전시와 작품 해설/);
+  assert.equal(
+    rich.programs.some(({ name }) => /평일|대표전화/.test(name)),
+    false,
+  );
+  assert.doesNotMatch(rich.summary ?? "", /공식 홈페이지|지역 고등학생/);
 });
 
 test("rich text removes scripts and preserves block boundaries", () => {

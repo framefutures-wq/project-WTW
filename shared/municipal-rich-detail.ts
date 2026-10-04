@@ -36,9 +36,12 @@ function decodeHtml(value: string) {
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&#(\d+);/g, (_match, code) =>
-      String.fromCodePoint(Number(code)),
-    )
+    .replace(/&lsquo;/gi, "‘")
+    .replace(/&rsquo;/gi, "’")
+    .replace(/&ldquo;/gi, "“")
+    .replace(/&rdquo;/gi, "”")
+    .replace(/&hellip;/gi, "…")
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCodePoint(Number(code)))
     .replace(/&#x([0-9a-f]+);/gi, (_match, code) =>
       String.fromCodePoint(Number.parseInt(code, 16)),
     );
@@ -52,7 +55,7 @@ export function municipalRichText(html: string) {
       .replace(/<style\b[\s\S]*?<\/style\s*>/gi, " ")
       .replace(BLOCK_END, "\n")
       .replace(/<br\s*\/?\s*>/gi, "\n")
-      .replace(/<[^>]+>/g, " "),
+      .replace(/<[^>]+>/g, ""),
   )
     .replace(/[ \t\f\v]+/g, " ")
     .replace(/\s*\n\s*/g, "\n")
@@ -86,7 +89,8 @@ type RichParseContext = {
 function explicitPairs(html: string): Pair[] {
   const pairs: Pair[] = [];
 
-  const dl = /<dt\b[^>]*>([\s\S]*?)<\/dt\s*>\s*<dd\b[^>]*>([\s\S]*?)<\/dd\s*>/gi;
+  const dl =
+    /<dt\b[^>]*>([\s\S]*?)<\/dt\s*>\s*<dd\b[^>]*>([\s\S]*?)<\/dd\s*>/gi;
   for (const match of html.matchAll(dl))
     pairs.push({ label: compact(match[1]), value: compact(match[2]) });
 
@@ -94,15 +98,34 @@ function explicitPairs(html: string): Pair[] {
   for (const row of rows) {
     const cells = [
       ...row.matchAll(/<(th|td)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi),
-    ].map((match) => compact(match[2]));
-    if (cells.length >= 2 && cells[0] && cells[1])
-      pairs.push({ label: cells[0], value: cells.slice(1).join(" ") });
+    ].map((match) => ({
+      tag: match[1].toLowerCase(),
+      text: compact(match[2]),
+    }));
+    for (let index = 0; index < cells.length - 1; index += 1) {
+      if (cells[index].tag === "th" && cells[index + 1].tag === "td") {
+        const label = cells[index].text;
+        const value = cells[index + 1].text;
+        if (label && value) pairs.push({ label, value });
+      }
+    }
+    if (
+      cells.length >= 2 &&
+      cells[0].tag !== "th" &&
+      cells[0].text &&
+      cells[1].text
+    )
+      pairs.push({
+        label: cells[0].text,
+        value: cells
+          .slice(1)
+          .map((cell) => cell.text)
+          .join(" "),
+      });
   }
 
   const strongRows =
-    html.match(
-      /<(?:li|p|div)\b[^>]*>[\s\S]*?<\/(?:li|p|div)\s*>/gi,
-    ) ?? [];
+    html.match(/<(?:li|p|div)\b[^>]*>[\s\S]*?<\/(?:li|p|div)\s*>/gi) ?? [];
   for (const row of strongRows) {
     const label =
       /<(?:strong|b|em|span)\b[^>]*>([\s\S]*?)<\/(?:strong|b|em|span)\s*>/i.exec(
@@ -165,19 +188,102 @@ function sectionText(
   return null;
 }
 
+const exhibitionSummaryLabel =
+  /^(?:전시서문|전시\s*소개|전시\s*개요|전시\s*안내)$/u;
+const metadataProgramLabel =
+  /^(?:관람\s*시간|운영\s*시간|공연\s*시간|이용\s*시간|대표\s*전화|문의|문의\s*전화|연락처|전화|기간|일시|장소|요금|입장료|관람료|주최|주관|후원)$/u;
+
+type RichBreakChunk = {
+  text: string;
+  bold: boolean;
+  start: number;
+  end: number;
+};
+
+function breakChunks(html: string): RichBreakChunk[] {
+  const output: RichBreakChunk[] = [];
+  const re = /([^<]*(?:<(?!br\b)[^>]*>[^<]*)*)<br\s*\/?\s*>/gi;
+  let cursor = 0;
+  for (const match of html.matchAll(re)) {
+    const start = match.index ?? 0;
+    const raw = match[1];
+    output.push({
+      text: compact(raw),
+      bold: /<(?:b|strong|h[1-6])\b|font-weight\s*:\s*bold/i.test(raw),
+      start,
+      end: start + match[0].length,
+    });
+    cursor = start + match[0].length;
+  }
+  if (cursor < html.length)
+    output.push({
+      text: compact(html.slice(cursor)),
+      bold: /<(?:b|strong|h[1-6])\b|font-weight\s*:\s*bold/i.test(
+        html.slice(cursor),
+      ),
+      start: cursor,
+      end: html.length,
+    });
+  return output;
+}
+
+function detailContentHtml(html: string) {
+  const marker =
+    /<div\b[^>]*class=["'][^"']*\bdetail_view_area\b[^"']*["'][^>]*>/i.exec(
+      html,
+    );
+  if (!marker) return html;
+  const contentStart = (marker.index ?? 0) + marker[0].length;
+  const tags = /<\/?div\b[^>]*>/gi;
+  let depth = 1;
+  for (const match of html.slice(contentStart).matchAll(tags)) {
+    const tag = match[0];
+    if (/^<\//.test(tag)) depth -= 1;
+    else if (!/\/\s*>$/.test(tag)) depth += 1;
+    if (depth === 0)
+      return html.slice(contentStart, contentStart + (match.index ?? 0));
+  }
+  return html.slice(contentStart);
+}
+
+function labelledExhibitionSection(
+  html: string,
+  labels: RegExp,
+  minimumLength = 30,
+) {
+  const chunks = breakChunks(html);
+  for (let index = 0; index < chunks.length; index += 1) {
+    const current = chunks[index];
+    if (!labels.test(current.text.replace(/^[|｜_\s]+|[|｜_\s]+$/g, "")))
+      continue;
+    const content: string[] = [];
+    for (let next = index + 1; next < chunks.length; next += 1) {
+      const chunk = chunks[next];
+      if (chunk.bold && chunk.text && !/^[_|｜]+$/.test(chunk.text)) break;
+      if (chunk.text && !/^[_|｜]+$/.test(chunk.text)) content.push(chunk.text);
+    }
+    const value = content
+      .join("\n")
+      .replace(/\n{2,}/g, "\n")
+      .trim();
+    if (value.length >= minimumLength) return value.slice(0, 900);
+  }
+  return null;
+}
+
 function metaContent(html: string, key: string) {
   const escaped = key.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
   const patterns = [
     new RegExp(
-      '<meta\\b[^>]*(?:property|name)=["\']' +
+      "<meta\\b[^>]*(?:property|name)=[\"']" +
         escaped +
-        '["\'][^>]*content=["\']([^"\']+)["\'][^>]*>',
+        "[\"'][^>]*content=[\"']([^\"']+)[\"'][^>]*>",
       "i",
     ),
     new RegExp(
-      '<meta\\b[^>]*content=["\']([^"\']+)["\'][^>]*(?:property|name)=["\']' +
+      "<meta\\b[^>]*content=[\"']([^\"']+)[\"'][^>]*(?:property|name)=[\"']" +
         escaped +
-        '["\'][^>]*>',
+        "[\"'][^>]*>",
       "i",
     ),
   ];
@@ -189,10 +295,15 @@ function metaContent(html: string, key: string) {
 }
 
 function extractSummary(html: string, context: RichParseContext) {
+  const exhibition = labelledExhibitionSection(
+    detailContentHtml(html),
+    exhibitionSummaryLabel,
+  );
+  if (exhibition) return exhibition;
   const section = sectionText(
     html,
     context.headings,
-    /^(?:상세내용|상세 내용|행사소개|행사 소개|행사내용|행사 내용|행사개요|행사 개요|개요|주요내용|주요 내용|행사안내|행사 안내|소개)$/,
+    /^(?:상세내용|상세 내용|행사소개|행사 소개|행사내용|행사 내용|행사개요|행사 개요|개요|주요내용|주요 내용|행사안내|행사 안내|소개|전시서문|전시\s*소개|전시\s*개요|전시\s*안내)$/,
   );
   if (section) return section;
   // Site-wide meta descriptions are frequently present on municipal detail
@@ -205,7 +316,9 @@ function normalizeTime(hour: string, minute: string) {
   return hour.padStart(2, "0") + ":" + minute.padStart(2, "0");
 }
 
-function extractOperatingHours(context: RichParseContext): MunicipalRichHours[] {
+function extractOperatingHours(
+  context: RichParseContext,
+): MunicipalRichHours[] {
   const labels = [
     "시간",
     "행사시간",
@@ -231,7 +344,13 @@ function extractOperatingHours(context: RichParseContext): MunicipalRichHours[] 
           line,
         ),
     );
-  const raw = firstPairValue(context, labels) ?? fallback ?? labelledLine ?? null;
+  const raw =
+    (
+      firstPairValue(context, labels) ??
+      fallback ??
+      labelledLine ??
+      null
+    )?.replace(/([01]?\d|2[0-3]):\s+(\d{2})/g, "$1:$2") ?? null;
   if (!raw) return [];
 
   const ranges = [
@@ -286,9 +405,7 @@ function extractOperatingHours(context: RichParseContext): MunicipalRichHours[] 
         : [];
     });
 
-  const single = /(?:^|[^0-9])([01]?\d|2[0-3]):([0-5]\d)(?:[^0-9]|$)/.exec(
-    raw,
-  );
+  const single = /(?:^|[^0-9])([01]?\d|2[0-3]):([0-5]\d)(?:[^0-9]|$)/.exec(raw);
   return single
     ? [
         {
@@ -303,6 +420,7 @@ function extractOperatingHours(context: RichParseContext): MunicipalRichHours[] 
 function extractPhone(context: RichParseContext) {
   const labels = [
     "문의처",
+    "문의하기",
     "문의",
     "전화",
     "연락처",
@@ -310,7 +428,7 @@ function extractPhone(context: RichParseContext) {
     "문의전화",
   ] as const;
   const fallback =
-    /(?:^|\n)\s*(?:문의처|문의|전화|연락처|대표전화|문의전화)\s*[:：]?\s*([^\n]{1,160})/i.exec(
+    /(?:^|\n)\s*(?:문의처|문의하기|문의|전화|연락처|대표전화|문의전화)\s*[:：]?\s*([^\n]{1,160})/i.exec(
       context.text,
     )?.[1] ?? null;
   const raw = firstPairValue(context, labels) ?? fallback;
@@ -324,7 +442,6 @@ function extractPhone(context: RichParseContext) {
   const short = /(?:^|\s)(\d{3,4})(?:\s|$)/.exec(raw)?.[1];
   return short ?? null;
 }
-
 
 function extractPrice(context: RichParseContext) {
   const labels = [
@@ -387,7 +504,11 @@ function extractImages(pageUrl: string, html: string): MunicipalRichImage[] {
 
   add(metaContent(html, "og:image"), null, true);
 
-  for (const candidate of extractOfficialPageImageCandidates(pageUrl, html, 10)) {
+  for (const candidate of extractOfficialPageImageCandidates(
+    pageUrl,
+    html,
+    10,
+  )) {
     const eventImageSignal =
       candidate.signal !== "IMG" ||
       /(?:\/comm\/getImage\b|\/data\/editor\/|\/file\/down\b|\/uploads?\/|poster|festival|event)/i.test(
@@ -436,6 +557,51 @@ function extractPrograms(
   const output: MunicipalRichProgram[] = [];
   const seen = new Set<string>();
 
+  const addProgram = (nameValue: string, descriptionValue: string) => {
+    const name = nameValue.replace(/^[|｜*•·▪◦\-–—\s]+/, "").trim();
+    const description = descriptionValue
+      .replace(/\n{2,}/g, "\n")
+      .trim()
+      .slice(0, 700);
+    if (
+      !name ||
+      name.length < 2 ||
+      name.length > 100 ||
+      !description ||
+      genericHeadings.test(name) ||
+      metadataProgramLabel.test(name) ||
+      /^(?:프로그램|전시연계\s*프로그램|주요\s*프로그램|세부\s*프로그램)$/u.test(
+        name,
+      ) ||
+      municipalEventTimeOnlyLabel(name) ||
+      /^(?:평일|주말|토요일|일요일|공휴일)(?:\s|$)/u.test(name) ||
+      seen.has(name)
+    )
+      return;
+    seen.add(name);
+    const timeText =
+      description
+        .match(
+          /(?:[01]?\d|2[0-3]):[0-5]\d(?:\s*(?:~|∼|～|-|–)\s*(?:[01]?\d|2[0-3]):[0-5]\d)?/g,
+        )
+        ?.join(", ") ?? null;
+    output.push({ name, description, schedule_text: timeText });
+  };
+
+  const chunks = breakChunks(detailContentHtml(html));
+  for (let index = 0; index < chunks.length; index += 1) {
+    const section = chunks[index];
+    const title = section.text.replace(/^[|｜_\s]+|[|｜_\s]+$/g, "");
+    if (!section.bold || !programMarker(title)) continue;
+    const details: string[] = [];
+    for (let next = index + 1; next < chunks.length; next += 1) {
+      const chunk = chunks[next];
+      if (chunk.bold && chunk.text && !/^[_|｜]+$/.test(chunk.text)) break;
+      if (chunk.text && !/^[_|｜]+$/.test(chunk.text)) details.push(chunk.text);
+    }
+    if (details.length) addProgram(title, details.join("\n"));
+  }
+
   for (let index = 0; index < headings.length; index += 1) {
     const section = headings[index];
     if (!programMarker(section.title)) continue;
@@ -462,27 +628,18 @@ function extractPrograms(
         /^(?:시간|운영\s*시간|행사\s*시간|공연\s*시간|관람\s*시간|이용\s*시간|기간|일시|차량\s*통제)$/u.test(
           name,
         ) ||
-        seen.has(name)
+        seen.has(name) ||
+        metadataProgramLabel.test(name) ||
+        /^(?:평일|주말|토요일|일요일|공휴일)(?:\s|$)/u.test(name)
       )
         continue;
       const nextStart = children[childIndex + 1]?.start ?? sectionEnd;
-      const description = municipalRichText(
-        html.slice(child.end, nextStart),
-      )
+      const description = municipalRichText(html.slice(child.end, nextStart))
         .replace(/\n{2,}/g, "\n")
         .trim()
         .slice(0, 700);
       if (!description) continue;
-      const timeText =
-        description.match(
-          /(?:[01]?\d|2[0-3]):[0-5]\d(?:\s*(?:~|∼|～|-)\s*(?:[01]?\d|2[0-3]):[0-5]\d)?/g,
-        )?.join(", ") ?? null;
-      seen.add(name);
-      output.push({
-        name,
-        description,
-        schedule_text: timeText,
-      });
+      addProgram(name, description);
       if (output.length >= 8) return output;
     }
   }
@@ -491,9 +648,11 @@ function extractPrograms(
     for (const line of context.text.split("\n").map((value) => value.trim())) {
       if (!line || line.length > 180) continue;
       const schedule =
-        line.match(
-          /(?:[01]?\d|2[0-3]):[0-5]\d(?:\s*(?:~|∼|～|-)\s*(?:[01]?\d|2[0-3]):[0-5]\d)?/g,
-        )?.join(", ") ?? null;
+        line
+          .match(
+            /(?:[01]?\d|2[0-3]):[0-5]\d(?:\s*(?:~|∼|～|-)\s*(?:[01]?\d|2[0-3]):[0-5]\d)?/g,
+          )
+          ?.join(", ") ?? null;
       if (!schedule) continue;
       const firstTime = line.search(/(?:[01]?\d|2[0-3]):[0-5]\d/);
       const name = firstTime > 1 ? line.slice(0, firstTime).trim() : "";
@@ -503,15 +662,12 @@ function extractPrograms(
         name.length > 100 ||
         genericHeadings.test(name) ||
         municipalEventTimeOnlyLabel(name) ||
-        seen.has(name)
+        seen.has(name) ||
+        metadataProgramLabel.test(name) ||
+        /^(?:평일|주말|토요일|일요일|공휴일)(?:\s|$)/u.test(name)
       )
         continue;
-      seen.add(name);
-      output.push({
-        name: name.replace(/^[•·▪◦*\-–—\s]+/, ""),
-        description: line,
-        schedule_text: schedule,
-      });
+      addProgram(name, line);
       if (output.length >= 8) break;
     }
   }
