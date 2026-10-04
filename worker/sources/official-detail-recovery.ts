@@ -1002,6 +1002,8 @@ export async function runOfficialDetailRecovery(
       await markAttempt(env.DB, row, sourceKind, checkedAt, "extract_failed");
       continue;
     }
+    if (!meaningfulHtmlSummary(row.title, detail.summary))
+      detail = { ...detail, summary: null };
     let convertedPosterUrl: string | null = null;
     let convertedPosterText: string | null = null;
     let convertedPosterHash: string | null = null;
@@ -1037,23 +1039,30 @@ export async function runOfficialDetailRecovery(
         };
       }
     }
+    if (!meaningfulHtmlSummary(row.title, detail.summary))
+      detail = { ...detail, summary: null };
+    if (!meaningfulHtmlSummary(row.title, detail.summary)) {
+      const oldSummaries = await env.DB.prepare(
+        `SELECT en.source_id,en.summary,s.priority
+         FROM event_enrichments en JOIN sources s ON s.id=en.source_id
+         WHERE en.event_id=?`,
+      ).bind(row.id).all<{ source_id: string; summary: string; priority: number }>();
+      const incomingPriority = sourceKind === "organizer" ? 1 : 2;
+      for (const oldSummary of oldSummaries.results)
+        if (
+          oldSummary.priority >= incomingPriority &&
+          !meaningfulHtmlSummary(row.title, oldSummary.summary)
+        )
+          await env.DB.prepare(
+            "DELETE FROM event_enrichments WHERE event_id=? AND source_id=?",
+          )
+            .bind(row.id, oldSummary.source_id)
+            .run();
+    }
     if (fieldCount(detail) === 0) {
       result.empty += 1;
       await markAttempt(env.DB, row, sourceKind, checkedAt, "empty");
       continue;
-    }
-
-    if (convertedPosterUrl && !detail.summary) {
-      const oldSummary = await env.DB.prepare(
-        `SELECT en.source_id,en.summary,s.priority
-         FROM event_enrichments en JOIN sources s ON s.id=en.source_id
-         WHERE en.event_id=?`,
-      ).bind(row.id).first<{ source_id: string; summary: string; priority: number }>();
-      const incomingPriority = sourceKind === "organizer" ? 1 : 2;
-      if (oldSummary && oldSummary.priority >= incomingPriority &&
-          !meaningfulHtmlSummary(row.title, oldSummary.summary))
-        await env.DB.prepare("DELETE FROM event_enrichments WHERE event_id=? AND source_id=?")
-          .bind(row.id, oldSummary.source_id).run();
     }
     if (convertedPosterUrl && !detail.programs.length) {
       const oldPrograms = await env.DB.prepare(

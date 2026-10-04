@@ -363,7 +363,7 @@ test("Gyeongju-like HTML with one program and structured facts skips poster fall
     assert.equal(posterState, null, "poster OCR state must not be created when HTML is sufficient");
 
     const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
-    assert.equal(summary?.summary, "한국관광의 메카 Beautiful City가 여러분을 초대합니다.");
+    assert.equal(summary, null, "generic promotional HTML summary must be removed");
     const programs = await DB.prepare("SELECT program_name FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
       .all<{ program_name: string }>();
     assert.ok(programs.results.some((program) => /도슨트 프로그램/.test(program.program_name)));
@@ -381,11 +381,49 @@ test("Gyeongju-like HTML with one program and structured facts skips poster fall
   }
 });
 
+test("generic HTML cleanup preserves a higher-priority meaningful summary", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await DB.prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('organizer','organizer',1,'주최자','https://festival.example.org/event','2026-09-27T00:00:00Z')",
+    ).run();
+    await DB.prepare(
+      "INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt) VALUES('event-1','지역 예술가와 주민이 함께 만드는 행사입니다.','organizer','official meaningful summary')",
+    ).run();
+    const html = `
+      <h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1>
+      <p>2026. 10. 3. 동오마을 공영주차장</p>
+      <table><tr><th>이용요금</th><td>무료</td></tr></table>
+      <h2>행사개요</h2>
+      <p>한국관광의 메카 Beautiful City가 여러분을 초대합니다.</p>
+    `;
+    await runOfficialDetailRecovery(
+      { DB } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      { targetEventId: "event-1", fetchPage: async (url) => ({ finalUrl: url, html }) },
+    );
+
+    const summary = await DB.prepare(
+      "SELECT summary,source_id FROM event_enrichments WHERE event_id='event-1'",
+    ).first<{ summary: string; source_id: string }>();
+    assert.deepEqual(summary, {
+      summary: "지역 예술가와 주민이 함께 만드는 행사입니다.",
+      source_id: "organizer",
+    });
+  } finally {
+    await mf.dispose();
+  }
+});
+
 test("poster result without programs preserves a meaningful HTML program", async () => {
   const { mf, DB } = await setup();
   const originalFetch = globalThis.fetch;
   try {
     await seed(DB);
+    await DB.prepare(
+      "INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt) VALUES('event-1','한국관광의 메카 Beautiful City가 여러분을 초대합니다.','municipality','existing generic HTML summary')",
+    ).run();
     await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at) VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016',1,'ok','2026-09-27T00:00:00Z')").run();
     globalThis.fetch = async () => new Response(new Uint8Array([255, 216, 255]), { status: 200 });
     let calls = 0;
