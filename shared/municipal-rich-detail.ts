@@ -32,6 +32,7 @@ function decodeHtml(value: string) {
   return value
     .replace(/&nbsp;|&#160;/gi, " ")
     .replace(/&amp;/gi, "&")
+    .replace(/&middot;/gi, "·")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
@@ -657,6 +658,42 @@ function programMarker(title: string) {
   );
 }
 
+function genericProgramSectionLabel(value: string) {
+  const normalized = value
+    .replace(/^[\s○□▪•·◦*\-–—]+/u, "")
+    .replace(/[\s:：|｜]/gu, "");
+  return /^(?:주요|세부|행사)?프로그램$/u.test(normalized);
+}
+
+function explicitProgramListItems(html: string) {
+  const output: string[] = [];
+  const add = (value: string) => {
+    const item = value
+      .replace(/^[\s○□▪•·◦*\-–—]+/u, "")
+      .replace(/\s+등$/u, "")
+      .trim();
+    if (item && item.length <= 100 && !output.includes(item)) output.push(item);
+  };
+  const scoped = detailContentHtml(html);
+  for (const line of municipalRichText(scoped).split("\n")) {
+    const match = /^(.{1,40}?)\s*[｜|:：]\s*(.{1,500})$/u.exec(line.trim());
+    if (!match || !genericProgramSectionLabel(match[1])) continue;
+    for (const item of match[2].split(/[,，]/u)) add(item);
+  }
+  const sectionTag = /<(h[1-6]|p)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi;
+  for (const match of scoped.matchAll(sectionTag)) {
+    if (!genericProgramSectionLabel(compact(match[2]))) continue;
+    const following = scoped.slice((match.index ?? 0) + match[0].length);
+    const list = /^\s*<(?:ul|ol)\b[^>]*>([\s\S]*?)<\/(?:ul|ol)\s*>/i.exec(
+      following,
+    );
+    if (!list) continue;
+    for (const item of list[1].matchAll(/<li\b[^>]*>([\s\S]*?)<\/li\s*>/gi))
+      add(compact(item[1]));
+  }
+  return output;
+}
+
 export function municipalEventTimeOnlyLabel(value: string) {
   return /^[\s□▪•·◦*\-–—]*(?:일\s*시|행사\s*시간|운영\s*시간|공연\s*시간|관람\s*시간|이용\s*시간|기간)\s*[:：]/u.test(
     value,
@@ -671,17 +708,15 @@ function extractPrograms(
   const output: MunicipalRichProgram[] = [];
   const seen = new Set<string>();
 
-  const addProgram = (nameValue: string, descriptionValue: string) => {
+  const addProgram = (nameValue: string, descriptionValue: string | null) => {
     const name = nameValue.replace(/^[|｜*•·▪◦\-–—\s]+/, "").trim();
     const description = descriptionValue
-      .replace(/\n{2,}/g, "\n")
-      .trim()
-      .slice(0, 700);
+      ? descriptionValue.replace(/\n{2,}/g, "\n").trim().slice(0, 700)
+      : null;
     if (
       !name ||
       name.length < 2 ||
       name.length > 100 ||
-      !description ||
       genericHeadings.test(name) ||
       metadataProgramLabel.test(name) ||
       /^(?:프로그램|전시연계\s*프로그램|주요\s*프로그램|세부\s*프로그램)$/u.test(
@@ -693,14 +728,17 @@ function extractPrograms(
     )
       return;
     seen.add(name);
-    const timeText =
-      description
+    const timeText = description
+      ? description
         .match(
           /(?:[01]?\d|2[0-3]):[0-5]\d(?:\s*(?:~|∼|～|-|–)\s*(?:[01]?\d|2[0-3]):[0-5]\d)?/g,
         )
-        ?.join(", ") ?? null;
+        ?.join(", ") ?? null
+      : null;
     output.push({ name, description, schedule_text: timeText });
   };
+
+  for (const name of explicitProgramListItems(html)) addProgram(name, null);
 
   const chunks = breakChunks(detailContentHtml(html));
   const inlineLines = municipalRichText(detailContentHtml(html)).split("\n");
@@ -711,6 +749,7 @@ function extractPrograms(
     if (
       !match ||
       !/프로그램/u.test(match[1]) ||
+      genericProgramSectionLabel(match[1]) ||
       metadataProgramLabel.test(match[1])
     )
       continue;
@@ -729,6 +768,7 @@ function extractPrograms(
     if (
       inline &&
       /프로그램/u.test(inline[1]) &&
+      !genericProgramSectionLabel(inline[1]) &&
       !metadataProgramLabel.test(inline[1])
     ) {
       const details = [inline[2].trim()];

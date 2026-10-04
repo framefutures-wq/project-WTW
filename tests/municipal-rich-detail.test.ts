@@ -249,6 +249,62 @@ test("extracts Paju-style exhibition essay, hours, and docent without metadata p
   assert.doesNotMatch(rich.summary ?? "", /공식 홈페이지|지역 고등학생/);
 });
 
+test("splits an explicit Paju-style comma-separated program list without absorbing promotion copy", () => {
+  const rich = extractMunicipalRichDetail(
+    "https://tour.example.go.kr/event/948",
+    `
+      <div class="detail_view_area">
+        <div class="f14">
+          파주가 낳은 율곡 이이 선생의 유덕을 추앙하기 위한 제36회 율곡문화제가 개최됩니다.<br>
+          ○ 주요 프로그램 : 유가행렬, 추향제, 문화예술공연, 전통문화 체험 등
+        </div>
+        <div class="img-wrap"><div class="ir-desc">홍보 포스터 및 기관 안내</div></div>
+      </div>
+    `,
+  );
+
+  assert.deepEqual(
+    rich.programs,
+    ["유가행렬", "추향제", "문화예술공연", "전통문화 체험"].map((name) => ({
+      name,
+      description: null,
+      schedule_text: null,
+    })),
+  );
+  assert.equal(
+    rich.programs.some((program) => /홍보|안내|주요 프로그램/.test(program.name)),
+    false,
+  );
+});
+
+test("splits a structured program list into individual Paju-style programs", () => {
+  const rich = extractMunicipalRichDetail(
+    "https://tour.example.go.kr/event/946",
+    `
+      <div class="detail_view_area">
+        <p><strong>○ 주요 프로그램</strong></p>
+        <ul>
+          <li>* 탄현면 주민자치회 <strong>삼도품 축제</strong></li>
+          <li>* 국립민속박물관 파주 <strong>전시·체험·교육 프로그램</strong></li>
+          <li>* 국립극장 무대예술지원센터 <strong>전시·체험 및 공연</strong></li>
+        </ul>
+        <p><strong>○ 문의:</strong> 031-940-8516</p>
+      </div>
+    `,
+  );
+
+  assert.deepEqual(
+    rich.programs.map((program) => [program.name, program.description]),
+    [
+      ["탄현면 주민자치회 삼도품 축제", null],
+      ["국립민속박물관 파주 전시·체험·교육 프로그램", null],
+      ["국립극장 무대예술지원센터 전시·체험 및 공연", null],
+    ],
+  );
+  assert.equal(rich.programs.some((program) => program.name === "주요 프로그램"), false);
+  assert.equal(rich.programs.some((program) => /문의/.test(program.name)), false);
+});
+
 test("extracts inline label-value detail safely and keeps closure rules intact", () => {
   const rich = extractMunicipalRichDetail(
     "https://www.gyeongju.go.kr/tour/page.do?con_uid=fixture",
