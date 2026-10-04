@@ -379,10 +379,25 @@ function meaningfulHtmlSummary(eventTitle: string, summary: string | null) {
 
 export function needsPosterRichDetailFallback(
   eventTitle: string,
-  detail: Pick<MunicipalRichDetail, "summary" | "programs">,
+  detail: Pick<MunicipalRichDetail, "summary" | "programs"> &
+    Partial<
+      Pick<
+        MunicipalRichDetail,
+        "price_text" | "contact_phone" | "operating_hours"
+      >
+    >,
 ) {
   if (meaningfulHtmlSummary(eventTitle, detail.summary)) return false;
-  return detail.programs.filter((program) => meaningfulHtmlProgram(program.name)).length <= 1;
+  const meaningfulProgramCount = detail.programs.filter((program) =>
+    meaningfulHtmlProgram(program.name),
+  ).length;
+  if (meaningfulProgramCount >= 2) return false;
+  const hasStructuredFact = Boolean(
+    detail.price_text?.trim() ||
+      detail.contact_phone?.trim() ||
+      (detail.operating_hours?.length ?? 0) > 0,
+  );
+  return !(meaningfulProgramCount === 1 && hasStructuredFact);
 }
 
 async function markAttempt(

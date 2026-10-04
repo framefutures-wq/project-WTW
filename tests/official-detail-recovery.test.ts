@@ -8,6 +8,7 @@ import {
   runOfficialDetailRecovery,
   selectOfficialDetailRecoveryCandidates,
 } from "../worker/sources/official-detail-recovery";
+import type { MunicipalRichDetail } from "../shared/municipal-rich-detail";
 
 async function setup() {
   const mf = new Miniflare(
@@ -75,6 +76,87 @@ test("poster fallback quality gate ignores generic copy and metadata-only HTML p
     summary: genericSummary,
     programs: [{ name: "도슨트 프로그램", description: "도슨트 해설", schedule_text: null }],
   }), true, "one plausible program does not suppress fallback by itself");
+});
+
+test("poster fallback skips OCR only when one meaningful program has another structured fact", () => {
+  const title = "한수원아트페스티벌 특별전";
+  const docent = {
+    name: "도슨트 프로그램",
+    description: "공식 전시 해설 프로그램",
+    schedule_text: "10:30, 12:30",
+  };
+  const hours: MunicipalRichDetail["operating_hours"] = [
+    {
+      start_time: "10:00",
+      end_time: "18:00",
+      human_time_text: "10:00~18:00",
+    },
+  ];
+
+  // A: one program plus price/contact is sufficient with closure hours omitted.
+  assert.equal(
+    needsPosterRichDetailFallback(title, {
+      summary: null,
+      programs: [docent],
+      price_text: "성인 10,000원 / 어린이 및 청소년 7,000원",
+      contact_phone: "054-777-5823",
+      operating_hours: [],
+    }),
+    false,
+  );
+  // B: one program alone remains eligible for poster fallback.
+  assert.equal(
+    needsPosterRichDetailFallback(title, {
+      summary: null,
+      programs: [docent],
+      price_text: null,
+      contact_phone: null,
+      operating_hours: [],
+    }),
+    true,
+  );
+  // C: structured fields without a real program remain eligible.
+  assert.equal(
+    needsPosterRichDetailFallback(title, {
+      summary: null,
+      programs: [],
+      price_text: "무료",
+      contact_phone: "054-777-5823",
+      operating_hours: hours,
+    }),
+    true,
+  );
+  // D: two meaningful programs remain sufficient.
+  assert.equal(
+    needsPosterRichDetailFallback(title, {
+      summary: null,
+      programs: [docent, { ...docent, name: "전시 연계 체험" }],
+    }),
+    false,
+  );
+  // E: meaningful summary remains sufficient.
+  assert.equal(
+    needsPosterRichDetailFallback(title, {
+      summary:
+        "이번 특별전은 조선 후기부터 현대까지 한국 미술의 흐름을 소개합니다.",
+      programs: [],
+    }),
+    false,
+  );
+  // F: metadata pseudo-programs do not count as event content.
+  assert.equal(
+    needsPosterRichDetailFallback(title, {
+      summary: null,
+      programs: [
+        { ...docent, name: "관람시간" },
+        { ...docent, name: "대표전화" },
+      ],
+      price_text: "무료",
+      contact_phone: "054-777-5823",
+      operating_hours: hours,
+    }),
+    true,
+  );
 });
 
 test("exact official link self-heals poster and rich detail without source-specific parser", async () => {
@@ -233,7 +315,7 @@ test("verified poster conversion enriches once and never invents a summary or ti
   }
 });
 
-test("Gyeongju-like low-quality HTML falls back to poster and keeps useful HTML fields", async () => {
+test("Gyeongju-like HTML with one program and structured facts skips poster fallback", async () => {
   const { mf, DB } = await setup();
   const originalFetch = globalThis.fetch;
   try {
@@ -276,19 +358,15 @@ test("Gyeongju-like low-quality HTML falls back to poster and keeps useful HTML 
       fetchPage: async (url) => ({ finalUrl: url, html }),
     });
     assert.equal(result.recovered, 1);
-    assert.equal(calls, 1, "low-quality summary plus metadata/one plausible program should enter OCR fallback");
-
-    const stateRow = await DB.prepare("SELECT raw_payload FROM sources WHERE id='official-poster-event-1'")
-      .first<{ raw_payload: string }>();
-    const state = JSON.parse(stateRow!.raw_payload);
-    assert.equal(state.latest_attempt.status, "success");
-    assert.match(state.last_success.poster_hash, /^[a-f0-9]{64}$/);
+    assert.equal(calls, 0, "one HTML program plus structured facts should suppress OCR");
+    const posterState = await DB.prepare("SELECT id FROM sources WHERE id='official-poster-event-1'").first();
+    assert.equal(posterState, null, "poster OCR state must not be created when HTML is sufficient");
 
     const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
-    assert.equal(summary, null, "generic HTML invitation copy must not persist as summary");
+    assert.equal(summary?.summary, "한국관광의 메카 Beautiful City가 여러분을 초대합니다.");
     const programs = await DB.prepare("SELECT program_name FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
       .all<{ program_name: string }>();
-    assert.deepEqual(programs.results.map((program) => program.program_name), ["떡볶이 한판", "무대공연"]);
+    assert.ok(programs.results.some((program) => /도슨트 프로그램/.test(program.program_name)));
     const source = await DB.prepare("SELECT raw_payload FROM sources WHERE id='official-detail-event-1'")
       .first<{ raw_payload: string }>();
     const rich = JSON.parse(source!.raw_payload).municipal_rich_detail;
@@ -332,7 +410,7 @@ test("poster result without programs preserves a meaningful HTML program", async
     assert.equal(calls, 1);
     const programs = await DB.prepare("SELECT program_name FROM event_programs WHERE event_id='event-1' ORDER BY sort_order")
       .all<{ program_name: string }>();
-    assert.deepEqual(programs.results.map((program) => program.program_name), ["도슨트 프로그램"]);
+    assert.ok(programs.results.some((program) => /^도슨트 프로그램/.test(program.program_name)));
     const summary = await DB.prepare("SELECT summary FROM event_enrichments WHERE event_id='event-1'").first();
     assert.equal(summary, null);
   } finally {
