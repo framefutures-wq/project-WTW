@@ -120,7 +120,6 @@ test("10:00 KST hands off to bounded detail immediately after base succeeds", as
       "tourapi",
       "municipal",
       "private",
-      "official-detail",
       "detail",
       "push",
     ]);
@@ -139,6 +138,54 @@ test("10:00 KST hands off to bounded detail immediately after base succeeds", as
       (row) => row.provider === "tourapi-detail",
     );
     assert.equal(JSON.parse(detailRun!.message!).trigger, "base_handoff");
+    const baseRun = runs.results.find((row) => row.provider === "tourapi");
+    assert.equal(
+      Object.hasOwn(JSON.parse(baseRun!.message!), "official_detail_recovery"),
+      false,
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("10:00 base does not call official detail, even if that dependency throws", async () => {
+  const { mf, DB, env } = await setup();
+  const calls: string[] = [];
+  try {
+    const deps = dependencies(calls);
+    deps.runOfficialDetailRecovery = async () => {
+      calls.push("official-detail");
+      throw new Error("must not run in base");
+    };
+    const result = await runScheduled(env as never, BASE_SYNC_CRON, baseTime, deps);
+    assert.equal((result as { status?: string }).status, "success");
+    assert.deepEqual(calls, ["tourapi", "municipal", "private", "detail", "push"]);
+    assert.deepEqual(
+      await DB.prepare("SELECT status FROM sync_runs WHERE provider='tourapi'").first(),
+      { status: "success" },
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("base upstream failure finalizes failed without official-detail recovery", async () => {
+  const { mf, DB, env } = await setup();
+  const calls: string[] = [];
+  try {
+    const deps = dependencies(calls);
+    deps.syncTourApi = async () => {
+      calls.push("tourapi");
+      throw new Error("TourAPI unavailable");
+    };
+    await assert.rejects(runScheduled(env as never, BASE_SYNC_CRON, baseTime, deps));
+    assert.deepEqual(calls, ["tourapi", "municipal", "private", "push"]);
+    const row = await DB.prepare(
+      "SELECT status,finished_at,message FROM sync_runs WHERE provider='tourapi'",
+    ).first<{ status: string; finished_at: string | null; message: string }>();
+    assert.equal(row?.status, "failed");
+    assert.ok(row?.finished_at);
+    assert.equal(Object.hasOwn(JSON.parse(row!.message), "official_detail_recovery"), false);
   } finally {
     await mf.dispose();
   }
@@ -327,25 +374,25 @@ test("unknown cron is fail-closed and detail failure does not block the next bas
 });
 
 
-test("later recovery cron retries official detail even when TourAPI base is unavailable", async () => {
-  const { mf, DB, env } = await setup();
-  const calls: string[] = [];
-  try {
-    await runScheduled(
-      env as never,
-      DETAIL_RETRY_RECOVERY_CRONS[1],
-      new Date("2026-09-21T04:50:00.000Z"),
-      dependencies(calls),
-    );
-    assert.deepEqual(calls, ["official-detail"]);
-    const row = await DB.prepare(
-      "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail'",
-    ).first<{ status: string; message: string }>();
-    assert.equal(row?.status, "skipped");
-    const message = JSON.parse(row!.message);
-    assert.equal(message.reason, "base_run_missing");
-    assert.equal(message.official_detail_recovery.recovered, 1);
-  } finally {
-    await mf.dispose();
-  }
-});
+for (const [cron, timestamp] of [
+  [DETAIL_RETRY_RECOVERY_CRONS[1], "2026-09-21T04:50:00.000Z"],
+  [DETAIL_RETRY_RECOVERY_CRONS[2], "2026-09-21T08:55:00.000Z"],
+] as const) {
+  test(`${cron} recovery retries official detail even when TourAPI base is unavailable`, async () => {
+    const { mf, DB, env } = await setup();
+    const calls: string[] = [];
+    try {
+      await runScheduled(env as never, cron, new Date(timestamp), dependencies(calls));
+      assert.deepEqual(calls, ["official-detail"]);
+      const row = await DB.prepare(
+        "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail'",
+      ).first<{ status: string; message: string }>();
+      assert.equal(row?.status, "skipped");
+      const message = JSON.parse(row!.message);
+      assert.equal(message.reason, "base_run_missing");
+      assert.equal(message.official_detail_recovery.recovered, 1);
+    } finally {
+      await mf.dispose();
+    }
+  });
+}

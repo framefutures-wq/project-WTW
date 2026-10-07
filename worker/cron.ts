@@ -118,24 +118,6 @@ export async function runBaseScheduled(
       scheduledMunicipalPlan(0),
     );
     const privateOfficial = await dependencies.runPrivateOfficialSources(env);
-    let officialDetailRecovery:
-      | Awaited<ReturnType<typeof runOfficialDetailRecovery>>
-      | { status: "failed"; reason: "subsystem_error" };
-    try {
-      officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
-        env,
-        now,
-      );
-    } catch (error) {
-      console.error("official_detail_recovery_failed", {
-        baseRunId: id,
-        error: error instanceof Error ? error.name : "unknown",
-      });
-      officialDetailRecovery = {
-        status: "failed",
-        reason: "subsystem_error",
-      };
-    }
     const baseStatus = imported ? "success" : "skipped";
     await env.DB.prepare(
       "UPDATE sync_runs SET status=?, finished_at=?,message=?,stale_count=? WHERE id=?",
@@ -147,7 +129,6 @@ export async function runBaseScheduled(
           tourapi: imported ?? tourApiReadiness(env),
           municipal,
           private: privateOfficial,
-          official_detail_recovery: officialDetailRecovery,
         }),
         results[1].meta.changes,
         id,
@@ -191,20 +172,6 @@ export async function runBaseScheduled(
           scheduledMunicipalPlan(0),
         ));
     const privateOfficial = await dependencies.runPrivateOfficialSources(env);
-    let officialDetailRecovery:
-      | Awaited<ReturnType<typeof runOfficialDetailRecovery>>
-      | { status: "failed"; reason: "subsystem_error" };
-    try {
-      officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
-        env,
-        now,
-      );
-    } catch {
-      officialDetailRecovery = {
-        status: "failed",
-        reason: "subsystem_error",
-      };
-    }
     const message =
       error instanceof Error && error.message.startsWith("TourAPI ")
         ? error.message
@@ -222,7 +189,6 @@ export async function runBaseScheduled(
           tourapi: message,
           municipal,
           private: privateOfficial,
-          official_detail_recovery: officialDetailRecovery,
         }),
         id,
       )

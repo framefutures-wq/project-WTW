@@ -2525,3 +2525,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The shared rich-detail parser now treats explicit program section markers as containers: comma-separated values and immediately following `ul`/`ol` items become separate programs with null descriptions unless an item has its own description.
 - Paju 948 exact-HTML dry-run returns `유가행렬`, `추향제`, `문화예술공연`, and `전통문화 체험`, with no poster/intro copy absorbed; the existing quality gate therefore skips OCR. Paju 946 dry-run returns its eight official list items separately.
 - Deployed parser commit `bda5e6a35a4dfc1ad48f5fed3b0111b13447523a` as Worker `720e8da9-c25e-44c1-a672-ccb4c2ddafd2`. No recovery or scheduled trigger was run; the next real cron remains responsible for persistence.
+
+## 2026-10-07 — base invocation isolation
+
+- Production base runs for 2026-10-05, 10-06, and 10-07 remained `running` with no `finished_at`. Read-only evidence narrowed the likely cause to an oversized base invocation / Worker execution-time termination; exact timeout was not proven because there was no invocation termination log. Stale rows did not prevent the following day's new base run.
+- Removed official-detail recovery from both the 10:00 base success and catch paths. Base now finalizes after TourAPI, municipal shard 0, and private official; successful base still immediately hands off to TourAPI detail as `base_handoff`.
+- Official-detail recovery remains in 11:00 watchdog, 11:45 retry, and 13:50/17:55 recovery windows, including when base is missing/running/failed. Purpose: shorten pre-finalization work and isolate the subsystem.
+- The 2026-10-05/06/07 production running rows were not updated or deleted. No manual cron/recovery/D1 write was performed for this separation.
+- Next verification point is the next natural 10:00 KST base cron: confirm its `sync_runs` row finalizes and then check the ordinary detail handoff/watchdog behavior read-only.

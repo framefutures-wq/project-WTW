@@ -55,6 +55,11 @@ Production Cron 현재 상태:
 - retry recovery: 매일 11:45 / 13:50 / 17:55 KST (`45 2 * * *`, `50 4 * * *`, `55 8 * * *` UTC)
 - 현재 11시 detail run은 같은 KST 운영일의 10시 base run이 `success`로 끝난 것을 D1 `sync_runs`에서 확인한 뒤 실행한다.
 
+2026-10-07 운영 변경:
+- 10:00 base invocation은 TourAPI base sync → municipal shard 0 → private official → base finalize → 성공 시 TourAPI detail `base_handoff` 순서로 수행한다.
+- official-detail recovery는 base의 정상/실패 경로에서 제외하고 11:00 watchdog, 11:45 retry, 13:50/17:55 recovery windows에서만 실행한다. 이 later windows는 기존처럼 base 상태와 독립적으로 official-detail recovery를 시도한다.
+- 목적은 base finalize 전 invocation을 짧게 유지하고 official-detail을 별도 scheduled subsystem으로 격리하는 것이다. 10/05~10/07 stuck base rows는 보존하며 수정하지 않았다.
+
 Zero-Human v2 (production 배포 완료):
 
 - 10시 base 완료 후 11시까지 기다리지 않는다.
@@ -1420,7 +1425,7 @@ UI benchmark:
 
 - A systemic image/detail gap was confirmed from the Uijeongbu `2026 동오마을 푸드페스타` case: Galteum could already open the exact official event page through `event_official_links`, while municipal rich-detail ingestion did not generically reuse that known exact URL. This allowed the UI to know the authoritative page while poster/summary/time/contact/program data remained sparse.
 - The fix is source-agnostic rather than city-specific. New `official-detail-recovery` selects current/future PUBLIC events with an already verified exact official URL from `event_official_links`, falling back to successful official-source audit links, then performs bounded safe fetch → event identity/core validation → shared rich-detail/image extraction → priority-aware persistence.
-- The recovery layer is now part of the 10:00 KST base ingestion as an isolated bounded subsystem. A recovery failure never turns a successful base ingestion into failure.
+- The recovery layer originally ran in the 10:00 KST base ingestion; since 2026-10-07 it runs only in the 11:00 watchdog and later retry/recovery windows, isolated from base finalization.
 - Safety contract:
   - HTTPS only, bounded same-family redirects/body size/time;
   - one bounded retry for network/timeout/429/5xx;
