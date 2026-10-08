@@ -85,7 +85,6 @@ export async function runBaseScheduled(
   now = new Date(),
   dependencies = productionDependencies,
 ) {
-  let municipalAttempted = false;
   const startedAt = now.toISOString();
   const id = await startRun(env, "tourapi", startedAt);
   if (!id) {
@@ -112,12 +111,6 @@ export async function runBaseScheduled(
       ).bind(startedAt, cutoff),
     ]);
     const imported = await dependencies.syncTourApi(env, id);
-    municipalAttempted = true;
-    const municipal = await dependencies.runMunicipalAutonomous(
-      env,
-      scheduledMunicipalPlan(0),
-    );
-    const privateOfficial = await dependencies.runPrivateOfficialSources(env);
     const baseStatus = imported ? "success" : "skipped";
     await env.DB.prepare(
       "UPDATE sync_runs SET status=?, finished_at=?,message=?,stale_count=? WHERE id=?",
@@ -127,8 +120,6 @@ export async function runBaseScheduled(
         new Date().toISOString(),
         JSON.stringify({
           tourapi: imported ?? tourApiReadiness(env),
-          municipal,
-          private: privateOfficial,
         }),
         results[1].meta.changes,
         id,
@@ -163,15 +154,6 @@ export async function runBaseScheduled(
     }
     return { id, status: baseStatus, detail_handoff: detailHandoff };
   } catch (error) {
-    // Municipal sources are independently bounded; a TourAPI outage must not stop their daily retry/publish cycle.
-    const municipal = municipalAttempted
-      ? { skipped: "already_attempted" }
-      : ((municipalAttempted = true),
-        await dependencies.runMunicipalAutonomous(
-          env,
-          scheduledMunicipalPlan(0),
-        ));
-    const privateOfficial = await dependencies.runPrivateOfficialSources(env);
     const message =
       error instanceof Error && error.message.startsWith("TourAPI ")
         ? error.message
@@ -187,8 +169,6 @@ export async function runBaseScheduled(
         new Date().toISOString(),
         JSON.stringify({
           tourapi: message,
-          municipal,
-          private: privateOfficial,
         }),
         id,
       )
@@ -215,6 +195,7 @@ export async function runDetailScheduled(
   trigger: "base_handoff" | "watchdog" | "retry_recovery" | "manual" = "watchdog",
   manualRunId?: string,
   municipalPlan?: MunicipalRunPlan,
+  runPrivateOfficial = false,
 ) {
   let municipal:
     | Awaited<ReturnType<typeof runMunicipalAutonomous>>
@@ -222,6 +203,10 @@ export async function runDetailScheduled(
     | null = null;
   let officialDetailRecovery:
     | Awaited<ReturnType<typeof runOfficialDetailRecovery>>
+    | { status: "failed"; reason: "subsystem_error" }
+    | null = null;
+  let privateOfficial:
+    | Awaited<ReturnType<typeof runPrivateOfficialSources>>
     | { status: "failed"; reason: "subsystem_error" }
     | null = null;
   if (municipalPlan) {
@@ -254,6 +239,17 @@ export async function runDetailScheduled(
         status: "failed",
         reason: "subsystem_error",
       };
+    }
+  }
+  if (runPrivateOfficial) {
+    try {
+      privateOfficial = await dependencies.runPrivateOfficialSources(env);
+    } catch (error) {
+      console.error("private_official_failed", {
+        trigger,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      privateOfficial = { status: "failed", reason: "subsystem_error" };
     }
   }
   if (trigger === "manual" && manualRunId) {
@@ -306,6 +302,7 @@ export async function runDetailScheduled(
           ...(officialDetailRecovery
             ? { official_detail_recovery: officialDetailRecovery }
             : {}),
+          ...(privateOfficial ? { private: privateOfficial } : {}),
         }),
       )
       .run();
@@ -337,6 +334,7 @@ export async function runDetailScheduled(
           ...(officialDetailRecovery
             ? { official_detail_recovery: officialDetailRecovery }
             : {}),
+          ...(privateOfficial ? { private: privateOfficial } : {}),
         }),
         started,
       )
@@ -347,6 +345,7 @@ export async function runDetailScheduled(
       detail,
       municipal,
       official_detail_recovery: officialDetailRecovery,
+      private: privateOfficial,
     };
   } catch (error) {
     console.error("tourapi_detail_subsystem_failed", {
@@ -372,6 +371,7 @@ export async function runDetailScheduled(
           ...(officialDetailRecovery
             ? { official_detail_recovery: officialDetailRecovery }
             : {}),
+          ...(privateOfficial ? { private: privateOfficial } : {}),
         }),
         started,
       )
@@ -394,7 +394,7 @@ export async function runScheduled(
       dependencies,
       "watchdog",
       undefined,
-      scheduledMunicipalPlan(1),
+      scheduledMunicipalPlan(0),
     );
   if (cron === DETAIL_RETRY_RECOVERY_CRONS[0])
     return runDetailScheduled(
@@ -403,10 +403,27 @@ export async function runScheduled(
       dependencies,
       "retry_recovery",
       undefined,
+      scheduledMunicipalPlan(1),
+    );
+  if (cron === DETAIL_RETRY_RECOVERY_CRONS[1])
+    return runDetailScheduled(
+      env,
+      now,
+      dependencies,
+      "retry_recovery",
+      undefined,
       scheduledMunicipalPlan(2),
     );
-  if ((DETAIL_RETRY_RECOVERY_CRONS as readonly string[]).includes(cron))
-    return runDetailScheduled(env, now, dependencies, "retry_recovery");
+  if (cron === DETAIL_RETRY_RECOVERY_CRONS[2])
+    return runDetailScheduled(
+      env,
+      now,
+      dependencies,
+      "retry_recovery",
+      undefined,
+      undefined,
+      true,
+    );
   console.warn("unknown_scheduled_cron", { cron });
   return { skipped: "unknown_cron" };
 }
