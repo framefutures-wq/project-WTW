@@ -2526,6 +2526,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Paju 948 exact-HTML dry-run returns `유가행렬`, `추향제`, `문화예술공연`, and `전통문화 체험`, with no poster/intro copy absorbed; the existing quality gate therefore skips OCR. Paju 946 dry-run returns its eight official list items separately.
 - Deployed parser commit `bda5e6a35a4dfc1ad48f5fed3b0111b13447523a` as Worker `720e8da9-c25e-44c1-a672-ccb4c2ddafd2`. No recovery or scheduled trigger was run; the next real cron remains responsible for persistence.
 
+## 2026-10-08 — base subsystem window isolation
+
+- 2026-10-08 natural 10:00 base run also remained `running` with no `finished_at` after official-detail recovery was removed. That confirms official-detail was not the root cause.
+- Base now performs TourAPI only, finalizes its own `sync_runs` row, and then performs the existing `base_handoff` detail pass. Municipal shard 0/1/2 run at 11:00/11:45/13:50; private official runs at 17:55. Official-detail recovery remains in every later window and retains its base-independent policy.
+- The 2026-10-05/06/07/08 production running rows were not updated or deleted. No manual cron/recovery/D1 write was performed.
+- Next: verify the next natural 10:00 KST base row read-only. It must have a final status and `finished_at`; then confirm immediate TourAPI detail handoff. Do not manually trigger ingestion.
+
 ## 2026-10-07 — base invocation isolation
 
 - Production base runs for 2026-10-05, 10-06, and 10-07 remained `running` with no `finished_at`. Read-only evidence narrowed the likely cause to an oversized base invocation / Worker execution-time termination; exact timeout was not proven because there was no invocation termination log. Stale rows did not prevent the following day's new base run.

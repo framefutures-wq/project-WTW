@@ -55,10 +55,10 @@ Production Cron 현재 상태:
 - retry recovery: 매일 11:45 / 13:50 / 17:55 KST (`45 2 * * *`, `50 4 * * *`, `55 8 * * *` UTC)
 - 현재 11시 detail run은 같은 KST 운영일의 10시 base run이 `success`로 끝난 것을 D1 `sync_runs`에서 확인한 뒤 실행한다.
 
-2026-10-07 운영 변경:
-- 10:00 base invocation은 TourAPI base sync → municipal shard 0 → private official → base finalize → 성공 시 TourAPI detail `base_handoff` 순서로 수행한다.
-- official-detail recovery는 base의 정상/실패 경로에서 제외하고 11:00 watchdog, 11:45 retry, 13:50/17:55 recovery windows에서만 실행한다. 이 later windows는 기존처럼 base 상태와 독립적으로 official-detail recovery를 시도한다.
-- 목적은 base finalize 전 invocation을 짧게 유지하고 official-detail을 별도 scheduled subsystem으로 격리하는 것이다. 10/05~10/07 stuck base rows는 보존하며 수정하지 않았다.
+2026-10-08 운영 변경:
+- 10:00 base invocation은 TourAPI base sync → base finalize → 성공 시 TourAPI detail `base_handoff`만 수행한다. municipal, private official, official-detail recovery는 실행하지 않는다.
+- municipal shard 0/1/2는 각각 11:00 watchdog / 11:45 retry / 13:50 retry window로 분리한다. private official은 17:55 retry window에서 실행한다.
+- official-detail recovery는 11:00, 11:45, 13:50, 17:55 later windows에서 base 상태와 독립적으로 실행한다. 10/05~10/08 stuck base rows는 보존하며 수정하지 않았다.
 
 Zero-Human v2 (production 배포 완료):
 
@@ -226,7 +226,7 @@ TourAPI:
   - `detailCommon2`, `detailIntro2`, `detailInfo2`
   - bounded candidate selection / refresh TTL / retry / priority protection
 - `worker/cron.ts`
-  - 10시 base TourAPI·stale maintenance·municipal·private·alert/push flow와 11시 detail-only flow를 분리
+  - 10시 base TourAPI·stale maintenance·push flow를 municipal/private/official-detail later windows와 분리
   - detail은 당일 base 성공 확인 후에만 실행하며 각 결과를 `sync_runs.provider='tourapi-detail'`로 별도 기록
 
 Read-only provider audit:
