@@ -3,6 +3,8 @@ const MAX_READER_BYTES = 2_000_000;
 
 export type OfficialReaderOptions = {
   refererUrl?: string | null;
+  /** Clamp scheduled recovery waits without changing manual/default behavior. */
+  timeoutMs?: number;
 };
 
 export type OfficialReaderPage = {
@@ -133,9 +135,14 @@ export async function fetchOfficialPageViaReader(
   // appended to r.jina.ai. Request rendered HTML so municipal parsers retain
   // onclick/data attributes that Markdown conversion would discard.
   const readerUrl = READER_ENDPOINT + target.toString();
-  const response = await fetch(readerUrl, {
+  const timeoutMs = options.timeoutMs ?? 25_000;
+  const withinTimeout = <T>(promise: Promise<T>) => new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("official_reader_timeout")), timeoutMs);
+    promise.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+  const request = fetch(readerUrl, {
     method: "GET",
-    signal: AbortSignal.timeout(25_000),
+    signal: AbortSignal.timeout(timeoutMs),
     headers: {
       accept: "application/json",
       "x-respond-with": "html",
@@ -152,10 +159,12 @@ export async function fetchOfficialPageViaReader(
       ...(referer ? { "x-referer": referer } : {}),
     },
   });
+  const response = options.timeoutMs ? await withinTimeout(request) : await request;
   if (!response.ok)
     throw new Error("official_reader_http_" + response.status);
 
-  const raw = await response.text();
+  const body = response.text();
+  const raw = options.timeoutMs ? await withinTimeout(body) : await body;
   if (new TextEncoder().encode(raw).byteLength > MAX_READER_BYTES)
     throw new Error("official_reader_too_large");
 

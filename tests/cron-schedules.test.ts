@@ -9,6 +9,7 @@ import {
   runScheduled,
   type ScheduledDependencies,
 } from "../worker/cron";
+import { SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS } from "../worker/sources/official-detail-recovery";
 
 async function setup() {
   const mf = new Miniflare(
@@ -312,6 +313,18 @@ for (const [cron, timestamp, expectedCalls] of [
         .bind("2026-09-21T01:00:00.000Z", "2026-09-21T01:10:00.000Z")
         .run();
       const deps = dependencies(calls);
+      deps.runOfficialDetailRecovery = async (_env, _now, options) => {
+        assert.equal(options?.maxDurationMs, SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS);
+        calls.push("official-detail");
+        return {
+          candidates: 1, attempted: 1, fetched: 0, recovered: 0,
+          images_recovered: 0, detail_recovered: 0, title_mismatch: 0,
+          core_conflict: 0, insufficient_core_signal: 0, empty: 0,
+          fetch_failed: 0, fetch_failure_reasons: {}, reader_attempts: 0,
+          reader_successes: 0, reader_failures: 0, reader_failure_reasons: {},
+          budget_exhausted: true, skipped_due_to_budget: 1,
+        };
+      };
       deps.enrichTourApiDetails = async (_env, _now, options) => {
         assert.equal(options?.candidateScope, "retry_due");
         calls.push("detail-retry");

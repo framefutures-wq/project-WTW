@@ -25,6 +25,11 @@ export const OFFICIAL_DETAIL_RECOVERY_LIMIT = 12;
 export const OFFICIAL_DETAIL_RETRY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const OFFICIAL_DETAIL_SUCCESS_IMAGE_RETRY_MS = 2 * 60 * 1000;
 export const OFFICIAL_DETAIL_TRANSIENT_RETRY_MS = 30 * 60 * 1000;
+// Scheduled windows also run private-official and TourAPI detail afterwards.
+// Stop recovery well before the platform deadline so those subsystems get time.
+export const SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS = 90_000;
+const MIN_EXTERNAL_REQUEST_REMAINING_MS = 1_000;
+const MIN_POSTER_OCR_REMAINING_MS = 10_000;
 const MAX_HTML_BYTES = 2_000_000;
 const MAX_REDIRECTS = 4;
 
@@ -62,6 +67,9 @@ export type OfficialDetailRecoveryResult = {
   reader_successes: number;
   reader_failures: number;
   reader_failure_reasons: Record<string, number>;
+  budget_exhausted?: boolean;
+  skipped_due_to_budget?: number;
+  poster_timeouts?: number;
 };
 
 type RecoveryPage = { html: string; finalUrl: string };
@@ -69,7 +77,19 @@ type RecoveryOptions = {
   limit?: number;
   fetchPage?: (url: string) => Promise<RecoveryPage>;
   targetEventId?: string;
+  /** Scheduled callers supply this; manual/explicit recovery remains unbounded. */
+  maxDurationMs?: number;
+  /** Test-only override for the scheduled OCR admission threshold. */
+  minPosterOcrRemainingMs?: number;
+  /** Test-only override for the scheduled transport admission threshold. */
+  minExternalRequestRemainingMs?: number;
 };
+
+const timeout = <T>(promise: Promise<T>, timeoutMs: number, reason: string) =>
+  new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(reason)), timeoutMs);
+    promise.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
 
 const sourceId = (eventId: string) => `official-detail-${eventId}`;
 
@@ -140,15 +160,20 @@ function browserLikeHeaders(refererUrl?: string | null) {
 async function fetchOfficialDetailPageOnce(
   initial: URL,
   refererUrl?: string | null,
+  timeoutMs = 15_000,
+  enforceTimeout = false,
 ): Promise<RecoveryPage> {
   const family = hostFamily(initial.hostname);
   let current = initial;
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect += 1) {
-    const response = await fetch(current.toString(), {
+    const request = fetch(current.toString(), {
       redirect: "manual",
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(timeoutMs),
       headers: browserLikeHeaders(refererUrl),
     });
+    const response = enforceTimeout
+      ? await timeout(request, timeoutMs, "official_detail_timeout")
+      : await request;
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
       await response.body?.cancel();
@@ -196,13 +221,14 @@ const retryableFetchFailure = (error: unknown) => {
 export async function fetchOfficialDetailPage(
   rawUrl: string,
   refererUrl?: string | null,
+  options: { timeoutMs?: number } = {},
 ): Promise<RecoveryPage> {
   const initial = safeOfficialUrl(rawUrl);
   if (!initial) throw new Error("official_detail_invalid_url");
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return await fetchOfficialDetailPageOnce(initial, refererUrl);
+      return await fetchOfficialDetailPageOnce(initial, refererUrl, options.timeoutMs ?? 15_000, options.timeoutMs !== undefined);
     } catch (error) {
       lastError = error;
       if (attempt > 0 || !retryableFetchFailure(error)) throw error;
@@ -735,7 +761,7 @@ async function enrichFromVerifiedPoster(
   env: Env,
   row: RecoveryRow,
   checkedAt: string,
-  options: { bypassFailureRetry?: boolean } = {},
+  options: { bypassFailureRetry?: boolean; timeoutMs?: number; remainingMs?: () => number; onTimeout?: () => void } = {},
 ): Promise<{ detail: MunicipalRichDetail; posterUrl: string; text: string; posterHash: string; cached: boolean } | null> {
   const ai = municipalPosterAI(env);
   if (!ai || row.link_source_kind !== "municipality") return null;
@@ -768,7 +794,7 @@ async function enrichFromVerifiedPoster(
       const payload = JSON.parse(previous.raw_payload) as { poster_url?: string; version?: number; status?: string; last_success?: { poster_url?: string; poster_hash?: string; transcription?: string } };
       const success = payload.last_success;
       if (success?.poster_hash && success.transcription?.trim()) {
-        posterBytes = await fetchPosterBytes(poster.image_url, poster.source_page_url);
+        posterBytes = await fetchPosterBytes(poster.image_url, poster.source_page_url, options.remainingMs ? Math.min(15_000, options.remainingMs()) : options.timeoutMs);
         const hash = await sha256Hex(posterBytes);
         posterHashChanged = hash !== success.poster_hash;
         if (hash === success.poster_hash && posterMatchesVerifiedEvent(success.transcription, row)) {
@@ -794,9 +820,9 @@ async function enrichFromVerifiedPoster(
     const image = new URL(poster.image_url);
     const extension = image.searchParams.get("ext")?.toLowerCase() || image.pathname.split(".").pop()?.toLowerCase();
     const mimeType = extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : "image/jpeg";
-    const imageBytes = posterBytes ?? await fetchPosterBytes(poster.image_url, poster.source_page_url);
+    const imageBytes = posterBytes ?? await fetchPosterBytes(poster.image_url, poster.source_page_url, options.remainingMs ? Math.min(15_000, options.remainingMs()) : options.timeoutMs);
     const posterHash = await sha256Hex(imageBytes);
-    const text = await transcribeMunicipalPosterImage({
+    const transcription = transcribeMunicipalPosterImage({
       ai,
       attachment: {
         url: poster.image_url,
@@ -815,6 +841,10 @@ async function enrichFromVerifiedPoster(
         return fetch(url, { ...init, headers, redirect: "follow" });
       }) as typeof fetch,
     });
+    const ocrTimeoutMs = options.remainingMs?.() ?? options.timeoutMs;
+    const text = ocrTimeoutMs
+      ? await timeout(transcription, ocrTimeoutMs, "official_poster_ocr_timeout")
+      : await transcription;
     if (!text) { await record("empty"); return null; }
     if (!posterMatchesVerifiedEvent(text, row)) {
       await record("core_mismatch", text);
@@ -827,17 +857,27 @@ async function enrichFromVerifiedPoster(
     }
     return { detail, posterUrl: poster.image_url, text, posterHash, cached: false };
   } catch (error) {
+    if (error instanceof Error && error.message === "official_poster_ocr_timeout")
+      options.onTimeout?.();
     await record("failed", undefined, error instanceof Error ? error.message : String(error));
     return null;
   }
 }
 
-async function fetchPosterBytes(url: string, referer: string) {
+async function fetchPosterBytes(url: string, referer: string, timeoutMs?: number) {
+  const effectiveTimeoutMs = timeoutMs ?? 15_000;
+  const startedAt = Date.now();
   const headers = new Headers({ Referer: referer, "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.7", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36" });
-  const response = await fetch(url, { headers, redirect: "follow", signal: AbortSignal.timeout(15_000) });
+  const request = fetch(url, { headers, redirect: "follow", signal: AbortSignal.timeout(effectiveTimeoutMs) });
+  const response = timeoutMs ? await timeout(request, effectiveTimeoutMs, "poster_timeout") : await request;
   if (!response.ok) throw new Error(`poster_http_${response.status}`);
   if (Number(response.headers.get("content-length") ?? 0) > 5 * 1024 * 1024) throw new Error("poster_too_large");
-  const bytes = new Uint8Array(await response.arrayBuffer());
+  const bodyTimeoutMs = Math.max(1, effectiveTimeoutMs - (Date.now() - startedAt));
+  const bytes = new Uint8Array(
+    timeoutMs
+      ? await timeout(response.arrayBuffer(), bodyTimeoutMs, "poster_timeout")
+      : await response.arrayBuffer(),
+  );
   if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("poster_too_large");
   return bytes;
 }
@@ -879,23 +919,54 @@ export async function runOfficialDetailRecovery(
     reader_successes: 0,
     reader_failures: 0,
     reader_failure_reasons: {},
+    budget_exhausted: false,
+    skipped_due_to_budget: 0,
+    poster_timeouts: 0,
   };
   const fetchPage = options.fetchPage ?? fetchOfficialDetailPage;
   const checkedAt = now.toISOString();
+  const deadlineAt = options.maxDurationMs
+    ? Date.now() + options.maxDurationMs
+    : null;
+  const remainingMs = () => deadlineAt === null ? null : Math.max(0, deadlineAt - Date.now());
+  const canStartExternal = (minimum = MIN_EXTERNAL_REQUEST_REMAINING_MS) => {
+    const remaining = remainingMs();
+    return remaining === null || remaining >= minimum;
+  };
+  const exhaust = (remainingCandidates: number) => {
+    result.budget_exhausted = true;
+    result.skipped_due_to_budget = Math.max(result.skipped_due_to_budget ?? 0, remainingCandidates);
+  };
   let readerFallbacks = 0;
   let posterConversions = 0;
 
-  for (const row of rows) {
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (!canStartExternal(options.minExternalRequestRemainingMs ?? MIN_EXTERNAL_REQUEST_REMAINING_MS)) {
+      exhaust(rows.length - index);
+      break;
+    }
     result.attempted += 1;
     const sourceKind = inferredSourceKind(row);
     let page: RecoveryPage | null = null;
     let lastFetchError: unknown = null;
     const refererUrl = recoveryReferer(row);
     for (const candidateUrl of recoveryUrlCandidates(row)) {
+      if (!canStartExternal(options.minExternalRequestRemainingMs ?? MIN_EXTERNAL_REQUEST_REMAINING_MS)) {
+        exhaust(rows.length - index - 1);
+        break;
+      }
       try {
+        const remaining = remainingMs();
         page = options.fetchPage
-          ? await fetchPage(candidateUrl)
-          : await fetchOfficialDetailPage(candidateUrl, refererUrl);
+          ? await (remaining === null ? fetchPage(candidateUrl) : timeout(fetchPage(candidateUrl), remaining, "official_detail_timeout"))
+          : await (remaining === null
+            ? fetchOfficialDetailPage(candidateUrl, refererUrl)
+            : timeout(
+              fetchOfficialDetailPage(candidateUrl, refererUrl, { timeoutMs: Math.min(15_000, remaining) }),
+              remaining,
+              "official_detail_timeout",
+            ));
         break;
       } catch (error) {
         lastFetchError = error;
@@ -909,12 +980,24 @@ export async function runOfficialDetailRecovery(
     ) {
       for (const readerUrl of recoveryUrlCandidates(row)) {
         if (readerFallbacks >= 4) break;
+        if (!canStartExternal(options.minExternalRequestRemainingMs ?? MIN_EXTERNAL_REQUEST_REMAINING_MS)) {
+          exhaust(rows.length - index - 1);
+          break;
+        }
         readerFallbacks += 1;
         result.reader_attempts += 1;
         try {
-          page = await fetchOfficialPageViaReader(readerUrl, {
-            refererUrl,
-          });
+          const remaining = remainingMs();
+          page = remaining === null
+            ? await fetchOfficialPageViaReader(readerUrl, { refererUrl })
+            : await timeout(
+              fetchOfficialPageViaReader(readerUrl, {
+                refererUrl,
+                timeoutMs: Math.min(25_000, remaining),
+              }),
+              remaining,
+              "official_reader_timeout",
+            );
           result.reader_successes += 1;
           break;
         } catch (readerError) {
@@ -933,9 +1016,16 @@ export async function runOfficialDetailRecovery(
       // Scheduled runs only OCR a poster after a live official page was fetched
       // and parsed. Keep poster-only diagnostics available for an explicit target.
       if (options.targetEventId && posterConversions < 1) {
+        if (!canStartExternal(options.minPosterOcrRemainingMs ?? MIN_POSTER_OCR_REMAINING_MS)) {
+          exhaust(rows.length - index - 1);
+          break;
+        }
         posterConversions += 1;
         const poster = await enrichFromVerifiedPoster(env, row, checkedAt, {
           bypassFailureRetry: Boolean(options.targetEventId),
+          timeoutMs: remainingMs() === null ? undefined : remainingMs()!,
+          remainingMs: () => remainingMs() ?? 15_000,
+          onTimeout: () => { result.poster_timeouts = (result.poster_timeouts ?? 0) + 1; result.budget_exhausted = true; },
         });
         if (poster) {
           await persistMunicipalRichDetail(env.DB, {
@@ -950,6 +1040,7 @@ export async function runOfficialDetailRecovery(
           continue;
         }
       }
+      if (!canStartExternal(options.minExternalRequestRemainingMs ?? MIN_EXTERNAL_REQUEST_REMAINING_MS)) exhaust(rows.length - index - 1);
       result.fetch_failed += 1;
       const reason = fetchFailureReason(lastFetchError);
       result.fetch_failure_reasons[reason] =
@@ -1013,9 +1104,16 @@ export async function runOfficialDetailRecovery(
     // An event-wide time or contact alone does not provide the poster's actual
     // program content. Keep those HTML facts while reading the verified poster.
     if (needsPosterRichDetailFallback(row.title, detail) && posterConversions < 1) {
+      if (!canStartExternal(options.minPosterOcrRemainingMs ?? MIN_POSTER_OCR_REMAINING_MS)) {
+        exhaust(rows.length - index - 1);
+        break;
+      }
       posterConversions += 1;
       const poster = await enrichFromVerifiedPoster(env, row, checkedAt, {
         bypassFailureRetry: Boolean(options.targetEventId),
+        timeoutMs: remainingMs() === null ? undefined : remainingMs()!,
+        remainingMs: () => remainingMs() ?? 15_000,
+        onTimeout: () => { result.poster_timeouts = (result.poster_timeouts ?? 0) + 1; result.budget_exhausted = true; },
       });
       if (poster) {
         convertedPosterUrl = poster.posterUrl;

@@ -9,7 +9,7 @@ import {
   type MunicipalRunPlan,
 } from "../shared/municipal-run-plan";
 import { runPrivateOfficialSources } from "./sources/private-official";
-import { runOfficialDetailRecovery } from "./sources/official-detail-recovery";
+import { SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS, runOfficialDetailRecovery } from "./sources/official-detail-recovery";
 import { processPushDeliveries } from "./push";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 const privateLkgClause = (alias: string) => {
@@ -352,7 +352,7 @@ export async function runDetailScheduled(
         officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
           env,
           now,
-          { limit: municipalPlan ? 4 : 8 },
+          { limit: municipalPlan ? 4 : 8, maxDurationMs: SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS },
         );
       } catch (error) {
         console.error("official_detail_recovery_retry_failed", {

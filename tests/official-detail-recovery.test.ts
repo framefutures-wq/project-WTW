@@ -1165,3 +1165,129 @@ test("exact official recovery uses Reader transport after direct official routes
     await mf.dispose();
   }
 });
+
+async function seedSecondRecoveryCandidate(DB: D1Database) {
+  await DB.prepare(
+    `INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at,publish_quality_state,publish_quality_reason,publish_quality_rule_version,publish_quality_checked_at)
+     VALUES('event-2','제10회 동오마을축제','기존 설명','경기','동오마을 공영주차장','동오마을 공영주차장','2026-10-04','2026-10-04','unknown','unknown','scheduled','verified',0,'municipality','2026-09-27T00:00:00Z','PUBLIC','ok','v1','2026-09-27T00:00:00Z')`,
+  ).run();
+  await DB.prepare(
+    "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES('event-2','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2017','2026-09-27T00:00:00Z')",
+  ).run();
+}
+
+test("scheduled recovery returns its normal result inside the budget when candidates are fast", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    const result = await runOfficialDetailRecovery({ DB } as never, new Date("2026-09-28T01:00:00Z"), {
+      maxDurationMs: 5_000,
+      minExternalRequestRemainingMs: 1,
+      fetchPage: async (url) => ({ finalUrl: url, html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026년 10월 3일 동오마을 공영주차장에서 열리는 공식 축제입니다.</p><p>행사 시간: 12:00~19:00</p><h2>프로그램</h2><p>무대공연 14:00 야외무대</p><p>체험 프로그램 15:00 체험장</p>" }),
+    });
+    assert.equal(result.budget_exhausted, false);
+    assert.equal(result.skipped_due_to_budget, 0);
+    assert.equal(result.recovered, 1);
+  } finally { await mf.dispose(); }
+});
+
+test("scheduled recovery stops a slow direct fetch and does not start the next candidate", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    await seedSecondRecoveryCandidate(DB);
+    let started = 0;
+    const startedAt = Date.now();
+    const result = await runOfficialDetailRecovery({ DB } as never, new Date("2026-09-28T01:00:00Z"), {
+      maxDurationMs: 100,
+      minExternalRequestRemainingMs: 1,
+      fetchPage: async () => {
+        started += 1;
+        return new Promise<never>(() => {});
+      },
+    });
+    assert.ok(Date.now() - startedAt < 500);
+    assert.equal(started, 1);
+    assert.equal(result.budget_exhausted, true);
+    assert.equal(result.skipped_due_to_budget, 1);
+  } finally { await mf.dispose(); }
+});
+
+test("scheduled Reader fallback is clamped by the remaining recovery budget", async () => {
+  const { mf, DB } = await setup();
+  const originalFetch = globalThis.fetch;
+  try {
+    await seed(DB);
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).startsWith("https://r.jina.ai/")) return new Promise<never>(() => {});
+      throw new TypeError("direct failed");
+    }) as typeof fetch;
+    const startedAt = Date.now();
+    const result = await runOfficialDetailRecovery({ DB } as never, new Date("2026-09-28T01:00:00Z"), { maxDurationMs: 100, minExternalRequestRemainingMs: 1 });
+    assert.ok(Date.now() - startedAt < 500);
+    assert.equal(result.reader_attempts, 1);
+    assert.equal(result.budget_exhausted, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await mf.dispose();
+  }
+});
+
+test("scheduled OCR timeout returns without allowing a late AI result to persist", async () => {
+  const { mf, DB } = await setup();
+  const restoreFetch = mockReaderAndPoster();
+  let resolveLate: ((value: unknown) => void) | undefined;
+  const ai = { run: () => new Promise((resolve) => { resolveLate = resolve; }) };
+  try {
+    await seed(DB);
+    await seedVerifiedPoster(DB);
+    const result = await runOfficialDetailRecovery(
+      { DB, AI: ai, MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never,
+      new Date("2026-09-28T01:00:00Z"),
+      {
+        maxDurationMs: 200,
+        minExternalRequestRemainingMs: 1,
+        minPosterOcrRemainingMs: 10,
+        fetchPage: async (url) => ({ finalUrl: url, html: "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026년 10월 3일 동오마을 공영주차장</p>" }),
+      },
+    );
+    assert.equal(result.budget_exhausted, true);
+    assert.equal(result.poster_timeouts, 1);
+    const before = await DB.prepare("SELECT raw_payload FROM sources WHERE id='official-poster-event-1'").first<{ raw_payload: string }>();
+    assert.match(before?.raw_payload ?? "", /official_poster_ocr_timeout/);
+    resolveLate?.({ choices: [{ message: { content: JSON.stringify({ transcription: "동오마을 푸드 페스타\n2026. 10. 3.(토)\n12:00~19:00\n동오마을 공영주차장" }) } }] });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const after = await DB.prepare("SELECT raw_payload FROM sources WHERE id='official-poster-event-1'").first<{ raw_payload: string }>();
+    assert.match(after?.raw_payload ?? "", /official_poster_ocr_timeout/);
+  } finally {
+    restoreFetch();
+    await mf.dispose();
+  }
+});
+
+test("scheduled HTML with a verified poster starts at most one OCR while manual recovery remains unbounded", async () => {
+  const { mf, DB } = await setup();
+  const restoreFetch = mockReaderAndPoster();
+  const calls = { count: 0 };
+  try {
+    await seed(DB);
+    await seedVerifiedPoster(DB);
+    const html = "<h1>제9회 동오마을축제 2026 동오마을 푸드페스타</h1><p>2026년 10월 3일 동오마을 공영주차장</p>";
+    const scheduled = await runOfficialDetailRecovery({ DB, AI: posterAi(calls), MUNICIPAL_DOCUMENT_AI_ENABLED: "true" } as never, new Date("2026-09-28T01:00:00Z"), {
+      maxDurationMs: 500,
+      minExternalRequestRemainingMs: 1,
+      minPosterOcrRemainingMs: 10,
+      fetchPage: async (url) => ({ finalUrl: url, html }),
+    });
+    assert.equal(scheduled.budget_exhausted, false);
+    assert.equal(calls.count, 1);
+    const explicit = await runOfficialDetailRecovery({ DB } as never, new Date("2026-09-28T01:00:00Z"), {
+      targetEventId: "event-1",
+      fetchPage: async (url) => ({ finalUrl: url, html }),
+    });
+    assert.equal(explicit.budget_exhausted, false);
+  } finally {
+    restoreFetch();
+    await mf.dispose();
+  }
+});
