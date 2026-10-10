@@ -2533,6 +2533,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The 2026-10-05/06/07/08 production running rows were not updated or deleted. No manual cron/recovery/D1 write was performed.
 - Next: verify the next natural 10:00 KST base row read-only. It must have a final status and `finished_at`; then confirm immediate TourAPI detail handoff. Do not manually trigger ingestion.
 
+## 2026-10-10 — scheduled-window early ledger
+
+- Base isolation is production-verified: natural 10/09 and 10/10 TourAPI-only bases finalized with `finished_at`; 10/05~10/08 stuck rows remain preserved.
+- Read-only audit saw Paju 946 update around the 10/09 11:00 window but no later-window `sync_runs` row. Previously municipal/official-detail/private work ran before the ledger row was created, so interruption during pre-work could leave side effects without an observable run.
+- Current main creates a `scheduled_window` ledger at invocation start, records phase before each heavy subsystem, and finalizes with available results when base is missing/running/failed. Previous ledger rows do not lock the next window; only an actual in-flight TourAPI detail run remains a detail lock.
+- After deployment, do not manually invoke cron or recovery. Read-only inspect the next natural scheduled window for trigger, final phase/message, status, and `finished_at`; hard termination should remain as `running` at its last phase.
+
 ## 2026-10-07 — base invocation isolation
 
 - Production base runs for 2026-10-05, 10-06, and 10-07 remained `running` with no `finished_at`. Read-only evidence narrowed the likely cause to an oversized base invocation / Worker execution-time termination; exact timeout was not proven because there was no invocation termination log. Stale rows did not prevent the following day's new base run.

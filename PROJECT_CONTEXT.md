@@ -60,6 +60,11 @@ Production Cron 현재 상태:
 - municipal shard 0/1/2는 각각 11:00 watchdog / 11:45 retry / 13:50 retry window로 분리한다. private official은 17:55 retry window에서 실행한다.
 - official-detail recovery는 11:00, 11:45, 13:50, 17:55 later windows에서 base 상태와 독립적으로 실행한다. 10/05~10/08 stuck base rows는 보존하며 수정하지 않았다.
 
+2026-10-10 scheduled-window observability update:
+- watchdog/retry runs create a `sync_runs` invocation ledger before municipal, official-detail, or private work; its message records trigger and phase (`started`, `municipal`, `official_detail`, `private`, `tourapi_detail`, `finished`).
+- A prior hard-terminated window ledger does not block the next window's municipal/official-detail/private work. TourAPI detail retains its own concurrent-run protection.
+- Base missing/running/failed still finalizes the current window ledger with subsystem results while skipping only TourAPI detail. Await natural production-window verification after deployment.
+
 Zero-Human v2 (production 배포 완료):
 
 - 10시 base 완료 후 11시까지 기다리지 않는다.
