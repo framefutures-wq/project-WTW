@@ -2,6 +2,11 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-10 — detail v3 production finish
+
+- Detail hierarchy was finished within the existing v3 direction: shallow contained media header → title/date/place → official action and compact facts → programs → optional summary → quiet official-source footer. No ingestion, cron, recovery, D1, or API-contract code changed.
+- Production Worker `6d7c4d09-e0a6-4c81-b20f-28ae5d02752a` includes code commit `dc649c8d74f7375da4ed024d263b5bf0a3051853`. Public desktop/mobile checks passed for Paju 948, Gyeongju 7746, and Paju 947: loaded posters, no horizontal overflow, no empty optional sections, and the stored program/detail content remained intact.
+
 ## 2026-10-10 — scheduled official-detail DONE selector correction deployed
 
 - Gyeongju 7746/Paju completed detail was eligible again after cooldown because the selector treated missing summary or operating-hours as independently incomplete.
