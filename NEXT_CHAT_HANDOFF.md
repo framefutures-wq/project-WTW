@@ -2,6 +2,11 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-10 — full-page detail production deployed
+
+- `/events/:id` now renders as a standalone document page rather than a `<dialog>` overlay: no home backdrop, bottom-sheet, internal dialog scroll, or floating close control. Card navigation, direct URL/reload, and browser back continue to use the existing route/history contract.
+- Code commit `9b0855cae74843afd1d4d4f26ecc9456ca421f10` is deployed in Worker `80a5d252-29ac-487a-a992-ff1e1382739c`. Public desktop/mobile checks passed for Paju 948, Gyeongju 7746, and Paju 947: document scroll, no horizontal overflow, no detail dialog, and stored programs/facts remain visible. Paju 948 shows all four programs; the Gyeongju sparse case adds no empty summary/hours section.
+
 ## 2026-10-10 — detail v3 production finish
 
 - Detail hierarchy was finished within the existing v3 direction: shallow contained media header → title/date/place → official action and compact facts → programs → optional summary → quiet official-source footer. No ingestion, cron, recovery, D1, or API-contract code changed.

@@ -67,6 +67,10 @@ Production Cron 현재 상태:
 - Scheduled official-detail selection treats healthy-image events with useful stored official detail as DONE: a meaningful summary, two meaningful programs, or one meaningful program plus price/contact/operating-hours is sufficient. Missing summary or operating-hours alone does not cause reselection; a missing/blocked/invalid image remains a separate recovery reason.
 - Base missing/running/failed still finalizes the current window ledger with subsystem results while skipping only TourAPI detail. Await natural production-window verification after deployment.
 
+2026-10-10 detail presentation update:
+- Public `/events/:id` is a standalone full-page route rather than a modal/dialog. It retains direct URLs, reload, card navigation, and browser-back list restoration while using normal document scroll, a shallow contained media header, and an editorial content rail.
+- This frontend-only change does not alter API contracts, D1, ingestion, recovery, OCR, selectors, or Cron.
+
 Zero-Human v2 (production 배포 완료):
 
 - 10시 base 완료 후 11시까지 기다리지 않는다.

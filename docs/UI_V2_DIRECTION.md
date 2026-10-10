@@ -312,3 +312,10 @@ Adaptive media:
 - 이미지가 없을 때의 fallback은 임시 안전장치일 뿐이며, 실제 공식 상세/출처에 포스터가 존재하면 ingestion이 그 이미지를 확보하는 것이 우선이다.
 - 이미지 없음을 디자인으로 가리는 것을 품질 해결로 취급하지 않는다.
 - 포스터 수집 누락 문제는 홈 UI와 별도 bounded data-quality task로 추적한다.
+
+## 18. 2026-10-10 — 상세는 독립 full-page route로 제시한다
+
+- `/events/:id` 상세는 홈 위의 modal/dialog 또는 mobile bottom-sheet가 아니라 **독립 콘텐츠 페이지**가 기본이다.
+- desktop은 header 아래의 넓은 content rail에 shallow full-width media와 editorial content flow를 사용한다. 기본 `이미지 | 정보` hero 분할과 dark backdrop은 사용하지 않는다.
+- mobile도 header → 목록으로 → media → 본문으로 이어지는 normal document scroll을 사용한다. 내부 dialog scroll, floating close button, sheet radius를 사용하지 않는다.
+- 제목·일정·장소·공식 CTA·supporting facts는 미디어 바로 뒤에서 읽히고, 프로그램·소개·주변 탐색·공식 출처는 같은 문서 흐름에서 조용히 이어진다.
