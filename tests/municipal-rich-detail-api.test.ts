@@ -195,6 +195,17 @@ test("municipal rich detail reaches the public detail API under an encoded legac
       WEB_PUSH_ENABLED: "false",
     } as any;
 
+    // Legacy rows remain in D1, but explicit site chrome must not reach the
+    // gallery. Real image slot IDs must not be renumbered after filtering.
+    for (const [slot, imageUrl] of [
+      [3, "https://official.example.org/resources/images/new_img_opentype00.png"],
+      [4, "https://official.example.org/design/tour/img/common/wtr-snowy.png"],
+      [5, "https://official.example.org/upload/event-photo.jpg"],
+    ] as const) {
+      await DB.prepare("INSERT INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,last_checked_at) VALUES(?,?,'municipality',?,?,'ok','2026-10-10T00:00:00Z')")
+        .bind(eventId, imageUrl, detailUrl, slot).run();
+    }
+
     const response = await app.fetch(
       new Request(
         "https://galteum.com/api/events/" + encodeURIComponent(eventId),
@@ -217,7 +228,9 @@ test("municipal rich detail reaches the public detail API under an encoded legac
       display: "120",
       href: "tel:120",
     });
-    assert.equal(body.images.length, 2);
+    assert.equal(body.images.length, 3);
+    assert.deepEqual(body.images.map((image: any) => image.sort_order), [1, 2, 5]);
+    assert.match(body.images[2].image_url, /\/image\/5$/);
     assert.match(
       body.event.image_url,
       new RegExp(
@@ -254,6 +267,18 @@ test("municipal rich detail reaches the public detail API under an encoded legac
       },
     });
     try {
+      let chromeFetches = 0;
+      globalThis.fetch = async () => {
+        chromeFetches += 1;
+        throw new Error("site chrome must never be fetched");
+      };
+      for (const slot of [3, 4]) {
+        const chromeUrl = body.images[0].image_url.replace(/\/image\/1$/, `/image/${slot}`);
+        cacheEntries.set(chromeUrl, new Response("old cached badge", { headers: { "Content-Type": "image/png" } }));
+        assert.equal((await app.fetch(new Request(chromeUrl), env)).status, 404);
+      }
+      assert.equal(chromeFetches, 0);
+      assert.equal((await DB.prepare("SELECT count(*) AS n FROM event_additional_images WHERE event_id=?").bind(eventId).first<{ n: number }>())?.n, 4);
       const imageRequest = new Request(body.images[0].image_url);
       let attempts = 0;
       let referer: string | null = null;

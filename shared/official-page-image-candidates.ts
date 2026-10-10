@@ -58,13 +58,26 @@ function pushUnique(
   output.push(candidate);
 }
 
-function looksDecorative(url: string, alt: string | null) {
+// Shared by extraction and the public read path: provenance on an official
+// page does not make its site chrome an event photo. Match explicit asset
+// signatures, not broad words like "cloud"/"banner" in an uploaded poster.
+export function looksDecorative(url: string, alt: string | null = null) {
+  let pathname: string;
+  try {
+    pathname = decodeURIComponent(new URL(url).pathname);
+  } catch {
+    return true;
+  }
   const haystack = `${url} ${alt ?? ""}`.toLowerCase();
   return (
     /(?:favicon|sprite|spacer|pixel|tracking|noimg|no_image|default_img|all_menu|menu_show|(?:^|[\/_-])logo\d*(?:[._/-]|$)|icon(?:[._/-]|$)|btn(?:[._/-]|$)|button(?:[._/-]|$)|arrow(?:[._/-]|$)|bg_location_tab)/i.test(
       haystack,
     ) ||
     /\/inc\/img\/common\//i.test(haystack) ||
+    /(?:^|[/_\-])(?:opentype\d*|kogl(?:[_\-]?type\d*)?|copyright|license|licence)(?:[._/\-]|$)/i.test(pathname) ||
+    /\/(?:images?|img)\/common\/(?:wtr|weather)[_\-]/i.test(url) ||
+    /\/(?:icons?|weather|navigation|footer)\//i.test(pathname) ||
+    /(?:사이트|홈페이지|누리집)\s*(?:로고|배너)|(?:저작권|공공누리|라이선스)\s*(?:표시|마크|로고)|날씨\s*(?:아이콘|이미지)/u.test(alt ?? "") ||
     /(?:공공누리|한국관광공사|경기관광공사|웹\s*접근성|품질인증|태극기)/i.test(
       alt ?? "",
     )

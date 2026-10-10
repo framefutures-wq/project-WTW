@@ -32,6 +32,7 @@ import {
   COMPANION_RULE_VERSION,
 } from "../shared/companion-suitability";
 import { normalizeOfficialPhone } from "../shared/contact-phone";
+import { looksDecorative } from "../shared/official-page-image-candidates";
 import { municipalEventTimeOnlyLabel } from "../shared/municipal-rich-detail";
 import { validProgramTime } from "../shared/event-program-time";
 import {
@@ -352,6 +353,8 @@ async function proxyEventImage(
   } catch {
     return new Response("Not found", { status: 404 });
   }
+  // Reject old stored chrome before consulting the image cache as well.
+  if (looksDecorative(remote.href)) return new Response("Not found", { status: 404 });
   if (
     remote.protocol !== "https:" ||
     remote.username ||
@@ -925,7 +928,7 @@ export default {
             ? [{ image_url: String(row.image_url), source_type: row.image_source_type as string | null, source_page_url: row.image_source_page_url as string | null, is_primary: true, sort_order: 1 }]
             : []),
           ...additionalImages.results.map((image) => ({ ...image, is_primary: false })),
-        ].filter((image, index, items) =>
+        ].filter((image) => !looksDecorative(image.image_url)).filter((image, index, items) =>
           items.findIndex((candidate) => candidate.image_url === image.image_url) === index,
         ).slice(0, 5).map((image) => ({
           ...image,

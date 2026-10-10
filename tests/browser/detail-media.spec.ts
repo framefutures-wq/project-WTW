@@ -57,7 +57,7 @@ const detail = (id: string, secondary: string) => ({
   ],
 });
 
-test("two-image detail keeps the secondary image whole with a backdrop", async ({ page }) => {
+test("two-image detail keeps images whole and uses a full poster per mobile slide", async ({ page }) => {
   const portrait = "https://tong.visitkorea.or.kr/detail-secondary-portrait.svg";
   const landscape = "https://tong.visitkorea.or.kr/detail-secondary-landscape.svg";
   await page.route("**/api/events/*", (route) => {
@@ -103,7 +103,9 @@ test("two-image detail keeps the secondary image whole with a backdrop", async (
   );
 
   for (const id of ["portrait", "landscape"]) {
-    await page.goto(`/events/${id}`);
+    // Synthetic fixtures use the query entry so the server SEO lookup does not
+    // require these mock IDs to exist in D1. Real routes are checked separately.
+    await page.goto(`/?event=${id}`);
     await expect(page.locator(".detail-media-pair")).toBeVisible();
     const media = await page.locator(".detail-media-pair").evaluate((pair) => {
       const secondary = pair.querySelector(".detail-media-secondary")!;
@@ -125,5 +127,21 @@ test("two-image detail keeps the secondary image whole with a backdrop", async (
     expect(media.naturalHeight).toBeGreaterThan(0);
     expect(media.width).toBeGreaterThan(0);
     expect(media.height).toBeGreaterThan(0);
+    if (page.viewportSize()!.width <= 760) {
+      const pair = page.locator(".detail-media-pair");
+      const layout = await pair.evaluate((element) => ({
+        width: element.clientWidth,
+        slide: element.firstElementChild!.getBoundingClientRect().width,
+        scrollWidth: element.scrollWidth,
+      }));
+      expect(layout.slide).toBeGreaterThan(layout.width * 0.8);
+      expect(layout.scrollWidth).toBeGreaterThan(layout.width);
+      await pair.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+      await expect.poll(() => pair.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+    }
+    await page.locator(".detail-media-secondary").click();
+    await expect(page.locator(".image-lightbox")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".image-lightbox")).toHaveCount(0);
   }
 });

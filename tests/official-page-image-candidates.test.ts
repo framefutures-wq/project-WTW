@@ -3,7 +3,32 @@ import test from "node:test";
 import {
   extractOfficialPageImageCandidates,
   extractRawPayloadImageCandidates,
+  looksDecorative,
 } from "../shared/official-page-image-candidates";
+
+test("site license badges and weather chrome are excluded without rejecting event posters", () => {
+  const bad = [
+    "https://tour.example.org/resources/user/common/images/new_img_opentype00.png",
+    "https://city.example.org/design/tour2026/img/common/wtr-snowy.png",
+    "https://city.example.org/design/tour/img/common/weather-cloudy.png",
+    "https://city.example.org/images/footer/copyright.jpg",
+    "https://city.example.org/images/icons/cloud.png",
+    "https://city.example.org/images/kogl_type1.png",
+  ];
+  for (const url of bad) assert.equal(looksDecorative(url), true, url);
+  const good = [
+    "https://city.example.org/upload/cloud-festival-poster.jpg",
+    "https://city.example.org/upload/event-banner.jpg",
+    "https://city.example.org/upload/ckuploads/2026/opaque.jpg",
+    "https://city.example.org/comm/getImage?upperNo=10934&fileNo=1",
+  ];
+  for (const url of good) assert.equal(looksDecorative(url), false, url);
+  const html = [...bad, ...good].map(url => `<img src="${url}" alt="">`).join("");
+  assert.deepEqual(extractOfficialPageImageCandidates("https://city.example.org/event", html).map(x => x.url), good);
+  assert.equal(extractRawPayloadImageCandidates({ images: bad }).length, 0);
+  assert.equal(looksDecorative(good[2], "홈페이지 배너"), true);
+  assert.equal(looksDecorative("not a URL"), true);
+});
 
 test("prefers page metadata and keeps portrait poster URLs", () => {
   const html = `

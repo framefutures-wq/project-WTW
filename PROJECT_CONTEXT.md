@@ -69,7 +69,8 @@ Production Cron 현재 상태:
 
 2026-10-10 detail presentation update:
 - Public `/events/:id` is a standalone full-page route rather than a modal/dialog. It retains direct URLs, reload, card navigation, and browser-back list restoration while using normal document scroll, a shallow contained media header, and an editorial content rail.
-- This frontend-only change does not alter API contracts, D1, ingestion, recovery, OCR, selectors, or Cron.
+- Follow-up visual polish enlarges contained posters (desktop 440px / mobile 340px), widens the centered information rail, and removes home footer/promo content from detail routes. Mobile multi-image media uses large horizontally scrollable slides instead of two narrow columns.
+- Public detail media and the image proxy reject explicit public-license badges and site/weather icons, including legacy stored rows, before image-cache lookup. Stored rows and image slot IDs remain intact. Candidate extraction shares that decorative-image filter; D1 writes, ingestion scheduling, recovery, OCR, selectors, and Cron are unchanged.
 
 Zero-Human v2 (production 배포 완료):
 

@@ -1384,12 +1384,12 @@ export default function App() {
   };
   return (
     <>
-      <header className={compactHeader ? "header header-compact" : "header"}>
+      <header className={compactHeader && !selected ? "header header-compact" : "header"}>
         <div className="header-inner">
           <a href="/" className="brand" aria-label="갈틈 홈">
             갈틈
           </a>
-          {compactHeader && (
+          {compactHeader && !selected && (
             <>
               <form
                 className="compact-search"
@@ -2091,7 +2091,7 @@ export default function App() {
           </button>
         </aside>
       </main>
-      <footer hidden={Boolean(selected)}>
+      {!selected && <footer>
         <a className="footer-brand" href="/">
           갈틈
         </a>
@@ -2103,7 +2103,7 @@ export default function App() {
           {mode === "sample" ? "샘플 데이터 모드" : "공식 출처 기반"}
           {" · "}확인된 정보만 안내합니다.
         </small>
-      </footer>
+      </footer>}
       {(selected || about) && (
         <section
           aria-label={about ? "정보 확인 원칙" : "행사 상세 정보"}
