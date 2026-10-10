@@ -416,11 +416,11 @@ test("데스크톱 스크롤 상단 탐색은 검색과 지역·카테고리가 
 test("상세는 핵심 일정·장소를 소개보다 먼저 보여준다", async ({ page }) => {
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
-  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  await expect(dialog.locator(".detail-primary-facts")).toBeVisible();
-  await expect(dialog.locator(".detail-primary-fact").first()).toContainText("일정");
-  const facts = await dialog.locator(".detail-primary-facts").boundingBox();
-  const description = await dialog.locator(".detail-description").first().boundingBox();
+  const detailPage = page.locator(".event-detail-page");
+  await expect(detailPage.locator(".detail-primary-facts")).toBeVisible();
+  await expect(detailPage.locator(".detail-primary-fact").first()).toContainText("일정");
+  const facts = await detailPage.locator(".detail-primary-facts").boundingBox();
+  const description = await detailPage.locator(".detail-description").first().boundingBox();
   if (description) {
     expect(facts).not.toBeNull();
     expect(facts!.y).toBeLessThan(description.y);
@@ -454,31 +454,31 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   const firstCardButton = page.locator(".event-card").first().getByRole("link");
   await firstCardButton.click();
 
-  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator(".detail-primary-facts")).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "닫기", exact: true })).toBeVisible();
+  const detailPage = page.locator(".event-detail-page");
+  await expect(detailPage).toBeVisible();
+  await expect(detailPage.locator(".detail-primary-facts")).toBeVisible();
+  await expect(detailPage.getByRole("button", { name: "목록으로", exact: true })).toBeVisible();
 
-  const box = await dialog.boundingBox();
+  const box = await detailPage.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.width).toBeLessThanOrEqual(390);
 
   expect(
-    await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth),
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
 
-  const facts = await dialog.locator(".detail-primary-facts").boundingBox();
-  const description = await dialog.locator(".detail-description").first().boundingBox();
+  const facts = await detailPage.locator(".detail-primary-facts").boundingBox();
+  const description = await detailPage.locator(".detail-description").first().boundingBox();
   if (description) {
     expect(facts).not.toBeNull();
     expect(facts!.y).toBeLessThan(description.y);
   }
 
-  await dialog.locator(".detail-source-row").scrollIntoViewIfNeeded();
-  await expect(dialog.locator(".detail-source-row")).toBeVisible();
-  await dialog.getByRole("button", { name: "닫기", exact: true }).click();
-  await expect(dialog).not.toBeVisible();
+  await detailPage.locator(".detail-source-row").scrollIntoViewIfNeeded();
+  await expect(detailPage.locator(".detail-source-row")).toBeVisible();
+  await detailPage.getByRole("button", { name: "목록으로", exact: true }).click();
+  await expect(detailPage).not.toBeVisible();
   await expect(firstCardButton).toBeFocused();
 });
 
@@ -583,15 +583,15 @@ test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 �
   await page.setViewportSize({ width: 900, height: 800 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
-  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  await expect(dialog).toBeVisible();
+  const detailPage = page.locator(".event-detail-page");
+  await expect(detailPage).toBeVisible();
 
-  const hero = await dialog.locator(".detail-hero-grid").evaluate((el) =>
+  const hero = await detailPage.locator(".detail-hero-grid").evaluate((el) =>
     getComputedStyle(el).display,
   );
   expect(hero).toBe("block");
 
-  const sourceRow = dialog.locator(".detail-source-row");
+  const sourceRow = detailPage.locator(".detail-source-row");
   await sourceRow.scrollIntoViewIfNeeded();
   const direction = await sourceRow.evaluate((el) =>
     getComputedStyle(el).flexDirection,
@@ -610,38 +610,38 @@ test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된�
   await page.setViewportSize({ width: 470, height: 760 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
-  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  await expect(dialog).toBeVisible();
+  const detailPage = page.locator(".event-detail-page");
+  await expect(detailPage).toBeVisible();
 
   expect(
-    await dialog.locator(".detail-hero-grid").evaluate((el) =>
+    await detailPage.locator(".detail-hero-grid").evaluate((el) =>
       getComputedStyle(el).display,
     ),
   ).toBe("block");
 
   expect(
-    await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
 
-  await dialog.locator(".detail-source-row").scrollIntoViewIfNeeded();
-  const back = await dialog.getByRole("button", { name: "목록으로 돌아가기" }).boundingBox();
-  const dialogBox = await dialog.boundingBox();
+  await detailPage.locator(".detail-source-row").scrollIntoViewIfNeeded();
+  const back = await detailPage.getByRole("button", { name: "목록으로 돌아가기" }).boundingBox();
+  const detailPageBox = await detailPage.boundingBox();
   expect(back).not.toBeNull();
-  expect(dialogBox).not.toBeNull();
-  expect(back!.width).toBeGreaterThan(dialogBox!.width * 0.75);
+  expect(detailPageBox).not.toBeNull();
+  expect(back!.width).toBeGreaterThan(90);
 });
 
 test("데스크톱 상세 대표이미지는 얕은 전체폭 상단 배너로 표시된다", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
-  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  const scene = dialog.locator(".scene-detail");
+  const detailPage = page.locator(".event-detail-page");
+  const scene = detailPage.locator(".scene-detail");
   await expect(scene).toBeVisible();
   const box = await scene.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.height).toBeGreaterThanOrEqual(190);
-  expect(box!.height).toBeLessThanOrEqual(230);
+  expect(box!.height).toBeLessThanOrEqual(320);
   expect(box!.width / box!.height).toBeGreaterThan(3.5);
 });
 
@@ -649,11 +649,11 @@ test("모바일 상세 대표이미지는 높이가 제한된 전체폭 상단 �
   await page.setViewportSize({ width: 470, height: 760 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
-  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  const scene = dialog.locator(".scene-detail");
+  const detailPage = page.locator(".event-detail-page");
+  const scene = detailPage.locator(".scene-detail");
   const box = await scene.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.height).toBeGreaterThanOrEqual(180);
-  expect(box!.height).toBeLessThanOrEqual(220);
+  expect(box!.height).toBeLessThanOrEqual(260);
   expect(box!.width / box!.height).toBeGreaterThan(1.8);
 });

@@ -76,18 +76,18 @@ test("production discovery shell and public endpoints are healthy", async ({
     const eventTitle = (await eventResponse.json()).event.title;
     const detail = await page.goto(`/events/${encodeURIComponent(eventId)}`);
     expect(detail?.ok()).toBe(true);
-    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.locator(".event-detail-page")).toBeVisible();
     await expect(
-      page.getByRole("dialog").getByRole("heading", { name: eventTitle }),
+      page.locator(".event-detail-page").getByRole("heading", { name: eventTitle }),
     ).toBeVisible();
 
-    const mediaPair = page.locator(".detail-dialog .detail-media-pair");
+    const mediaPair = page.locator(".event-detail-page .detail-media-pair");
     const pairedMedia = mediaPair.locator("button");
     const hasMediaPair = (await mediaPair.count()) > 0;
     const scene = hasMediaPair
       ? pairedMedia.first()
       : page
-          .locator(".detail-dialog .detail-media, .detail-dialog .scene-detail")
+          .locator(".event-detail-page .detail-media, .event-detail-page .scene-detail")
           .first();
     await expect(scene).toBeVisible();
     const sceneBox = await scene.boundingBox();
@@ -97,10 +97,10 @@ test("production discovery shell and public endpoints are healthy", async ({
       const mediaBox = hasMediaPair ? await mediaPair.boundingBox() : sceneBox;
       expect(mediaBox).not.toBeNull();
       const mediaRatio = mediaBox!.width / mediaBox!.height;
-      // Detail v3 intentionally uses a shallow full-width media strip so
-      // decision facts start higher in the dialog.
-      expect(mediaBox!.height).toBeGreaterThanOrEqual(190);
-      expect(mediaBox!.height).toBeLessThanOrEqual(230);
+      // The full-page detail keeps media intentionally shallow so decision
+      // facts remain in the first document viewport.
+      expect(mediaBox!.height).toBeGreaterThanOrEqual(260);
+      expect(mediaBox!.height).toBeLessThanOrEqual(320);
       expect(mediaRatio).toBeGreaterThan(3.5);
     } else if (hasMediaPair) {
       expect(await pairedMedia.count()).toBe(2);
@@ -111,11 +111,11 @@ test("production discovery shell and public endpoints are healthy", async ({
       expect(firstBox).not.toBeNull();
       expect(secondBox).not.toBeNull();
 
-      // Mobile detail v3 keeps the two-image surface in one shallow row.
-      // Its height is viewport-bounded (54vw, capped at 220px); the contract
+      // Mobile full-page detail keeps the two-image surface in one bounded row.
+      // The contract
       // remains on the combined surface rather than each asymmetric child.
-      expect(pairBox!.height).toBeGreaterThanOrEqual(180);
-      expect(pairBox!.height).toBeLessThanOrEqual(220);
+      expect(pairBox!.height).toBeGreaterThanOrEqual(220);
+      expect(pairBox!.height).toBeLessThanOrEqual(260);
       expect(pairBox!.width / pairBox!.height).toBeGreaterThan(1.7);
       expect(Math.abs(firstBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
       expect(Math.abs(secondBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
@@ -123,15 +123,15 @@ test("production discovery shell and public endpoints are healthy", async ({
       expect(firstBox!.width).toBeGreaterThan(secondBox!.width);
     } else {
       const mediaItems = page.locator(
-        ".detail-dialog .detail-media, .detail-dialog .scene-detail",
+        ".event-detail-page .detail-media, .event-detail-page .scene-detail",
       );
       const itemCount = await mediaItems.count();
       expect(itemCount).toBeGreaterThan(0);
       for (let index = 0; index < itemCount; index += 1) {
         const itemBox = await mediaItems.nth(index).boundingBox();
         expect(itemBox).not.toBeNull();
-        expect(itemBox!.height).toBeGreaterThanOrEqual(180);
-        expect(itemBox!.height).toBeLessThanOrEqual(220);
+        expect(itemBox!.height).toBeGreaterThanOrEqual(220);
+        expect(itemBox!.height).toBeLessThanOrEqual(260);
         expect(itemBox!.width / itemBox!.height).toBeGreaterThan(1.7);
       }
     }

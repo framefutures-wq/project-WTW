@@ -625,8 +625,7 @@ export default function App() {
       schedule_changed: true,
       cancelled_or_postponed: true,
     });
-  const dialog = useRef<HTMLDialogElement>(null),
-    opener = useRef<HTMLElement | null>(null),
+  const opener = useRef<HTMLElement | null>(null),
     resultsRef = useRef<HTMLElement | null>(null),
     heroRef = useRef<HTMLElement | null>(null),
     regionFilterRef = useRef<HTMLSelectElement | null>(null),
@@ -921,14 +920,12 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, [selected]);
   useEffect(() => {
-    if (selected || about) {
+    if (about) {
       opener.current = document.activeElement as HTMLElement;
-      dialog.current?.showModal();
-    } else if (dialog.current?.open) {
-      dialog.current.close();
-      opener.current?.focus();
+      return;
     }
-  }, [selected, about]);
+    opener.current?.focus();
+  }, [about]);
   useEffect(() => {
     if (!lightbox) return;
     const previousOverflow = document.body.style.overflow;
@@ -1450,7 +1447,7 @@ export default function App() {
           </span>
         </div>
       )}
-      <main>
+      <main hidden={Boolean(selected)}>
         <section
           ref={heroRef}
           className={heroImage ? "hero hero-with-image" : "hero"}
@@ -2094,7 +2091,7 @@ export default function App() {
           </button>
         </aside>
       </main>
-      <footer>
+      <footer hidden={Boolean(selected)}>
         <a className="footer-brand" href="/">
           갈틈
         </a>
@@ -2107,18 +2104,21 @@ export default function App() {
           {" · "}확인된 정보만 안내합니다.
         </small>
       </footer>
-      <dialog
-        aria-label={about ? "정보 확인 원칙" : "행사 상세 정보"}
-        ref={dialog}
-        onCancel={close}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) close();
-        }}
-        className="detail-dialog"
-      >
-        <button className="dialog-close" onClick={close} aria-label="닫기">
-          <X size={22} />
-        </button>
+      {(selected || about) && (
+        <section
+          aria-label={about ? "정보 확인 원칙" : "행사 상세 정보"}
+          aria-modal={about || undefined}
+          className={selected ? "event-detail-page" : "about-dialog"}
+          onMouseDown={(event) => {
+            if (about && event.target === event.currentTarget) close();
+          }}
+          role={about ? "dialog" : undefined}
+        >
+        {about && (
+          <button className="dialog-close" onClick={close} aria-label="닫기">
+            <X size={22} />
+          </button>
+        )}
         {about ? (
           <div className="about-content">
             <ShieldCheck size={35} />
@@ -2157,7 +2157,12 @@ export default function App() {
               </div>
             )}
           </div>
-        ) : detail ? (
+        ) : (
+          <div className="event-detail-rail">
+            <button className="detail-page-back" onClick={close}>
+              <ChevronLeft size={18} /> 목록으로
+            </button>
+        {detail ? (
           (() => {
             const location = locationLines(detail.event);
             const operatingHours = formatEventOperatingHours(
@@ -2457,7 +2462,7 @@ export default function App() {
             );
           })()
         ) : (
-          <div className="about-content">
+          <div className="detail-page-status">
             <Sparkles size={28} />
             <h2>
               {detailError?.startsWith("행사를 찾을")
@@ -2477,7 +2482,10 @@ export default function App() {
             )}
           </div>
         )}
-      </dialog>
+          </div>
+        )}
+        </section>
+      )}
       {lightbox && (
         <div
           className="image-lightbox"

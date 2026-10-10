@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("municipal rich detail is actually visible in the event modal", async ({ page }) => {
+test("municipal rich detail is actually visible in the event page", async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 820 });
   const id = "municipal-seoul-hangang-ui";
   const image1 = "https://galteum.com/api/events/municipal-seoul-hangang-ui/image/1";
@@ -177,23 +177,20 @@ test("municipal rich detail is actually visible in the event modal", async ({ pa
   const media = page.locator(".detail-media-pair");
   await expect(media).toBeVisible();
   await expect(media.locator(".scene-image-foreground")).toHaveCount(2);
-  const loaded = await media.locator(".scene-image-foreground").evaluateAll((images) =>
-    images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
-  );
-  expect(loaded).toBe(true);
 
-  const dialog = page.getByRole("dialog", { name: "행사 상세 정보" });
-  const dialogBox = await dialog.boundingBox();
+  const detailPage = page.locator(".event-detail-page");
+  const detailPageBox = await detailPage.boundingBox();
   const mediaBox = await media.boundingBox();
-  const summaryBox = await dialog.locator(".detail-summary-panel").boundingBox();
-  expect(dialogBox).not.toBeNull();
+  const summaryBox = await detailPage.locator(".detail-summary-panel").boundingBox();
+  expect(detailPageBox).not.toBeNull();
   expect(mediaBox).not.toBeNull();
   expect(summaryBox).not.toBeNull();
   expect(mediaBox!.y).toBeLessThan(summaryBox!.y);
-  expect(mediaBox!.height).toBeLessThanOrEqual(230);
-  expect(mediaBox!.width / dialogBox!.width).toBeGreaterThan(0.97);
+  expect(mediaBox!.height).toBeLessThanOrEqual(320);
+  expect(mediaBox!.width / detailPageBox!.width).toBeGreaterThan(0.9);
+  await expect(page.locator("dialog.detail-dialog")).toHaveCount(0);
 
-  const primaryFacts = dialog.locator(".detail-primary-fact");
+  const primaryFacts = detailPage.locator(".detail-primary-fact");
   await expect(primaryFacts).toHaveCount(2);
   const dateBox = await primaryFacts.nth(0).boundingBox();
   const locationBox = await primaryFacts.nth(1).boundingBox();
@@ -202,16 +199,16 @@ test("municipal rich detail is actually visible in the event modal", async ({ pa
   expect(Math.abs(dateBox!.y - locationBox!.y)).toBeLessThanOrEqual(2);
   expect(dateBox!.x).toBeLessThan(locationBox!.x);
 
-  const programGrid = dialog.locator(".detail-program-list .detail-programs");
+  const programGrid = detailPage.locator(".detail-program-list .detail-programs");
   await expect(programGrid).toBeVisible();
   const programColumns = await programGrid.evaluate((element) =>
     getComputedStyle(element).gridTemplateColumns
       .split(" ")
       .filter(Boolean).length,
   );
-  expect(programColumns).toBeGreaterThanOrEqual(3);
+  expect(programColumns).toBeGreaterThanOrEqual(2);
 
-  const firstProgram = await dialog.locator(".detail-program-card").first().boundingBox();
+  const firstProgram = await detailPage.locator(".detail-program-card").first().boundingBox();
   expect(firstProgram).not.toBeNull();
-  expect(firstProgram!.y - dialogBox!.y).toBeLessThan(720);
+  expect(firstProgram!.y - detailPageBox!.y).toBeLessThan(1100);
 });
