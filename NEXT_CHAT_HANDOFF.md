@@ -2,6 +2,12 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-10 — scheduled official-detail DONE selector correction deployed
+
+- Gyeongju 7746/Paju completed detail was eligible again after cooldown because the selector treated missing summary or operating-hours as independently incomplete.
+- The selector now excludes healthy-image events when stored official detail has a meaningful summary, two meaningful programs, or one meaningful program plus price/contact/operating-hours. Image recovery remains eligible when the primary image is missing, blocked, or invalid; explicit target recovery still bypasses this DONE filter.
+- Next natural 11:00 KST window must verify both the 90-second bounded official-detail recovery and DONE-event exclusion through the full private → TourAPI-detail → finished ledger sequence.
+
 ## 2026-10-04 — Paju HTML 상세와 운영시간 UI production 검증 완료
 
 - `municipal-paju-947`의 HTML rich-detail recovery와 상세 UI 운영시간 표시를 production에서 검증했다. 최신 코드 `15bc23a6834fbd29c87016ffc50dfa43416be4ae`, Worker version `0fb2aacc-2672-4d96-a841-afc77055bff4`.
