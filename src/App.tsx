@@ -2237,7 +2237,6 @@ export default function App() {
                     </div>
                     {showDerivedInfo && (
                       <div className="detail-glance" aria-label="갈틈 한눈에 보기">
-                        <span className="detail-glance-heading">갈틈 한눈에 보기</span>
                         <span className="detail-glance-status">
                           {derivedInfo.state === "ongoing" ? "진행중" : "예정"}
                           {derivedInfo.dDay && ` · ${derivedInfo.dDay}`}
@@ -2444,7 +2443,7 @@ export default function App() {
                   )}
                   <div className="detail-source-row">
                     <p className="detail-source">
-                      출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
+                      공식 출처 · {detail.event.source_name ?? "한국관광공사 TourAPI"}
                       {formatTrustDate(detail.event.checked_at) && (
                         <> · 마지막 확인 {formatTrustDate(detail.event.checked_at)}</>
                       )}

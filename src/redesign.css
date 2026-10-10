@@ -3895,6 +3895,211 @@ footer {
   }
 }
 
+/* Detail finish: editorial facts and programs, not an administrative card stack. */
+.detail-summary-panel {
+  padding: 17px 26px 14px;
+}
+
+.detail-summary-panel .eyebrow {
+  font-size: 10px;
+  letter-spacing: .05em;
+}
+
+.detail-summary-panel h2 {
+  margin-bottom: 12px;
+  font-size: clamp(27px, 2.5vw, 34px);
+  letter-spacing: -.055em;
+}
+
+.detail-primary-facts {
+  gap: 0;
+  margin-top: 8px;
+  border-top: 1px solid #e4ddd4;
+  border-bottom: 1px solid #e4ddd4;
+}
+
+.detail-primary-fact {
+  min-height: 0;
+  padding: 11px 5px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.detail-primary-fact + .detail-primary-fact {
+  padding-left: 16px;
+  border-left: 1px solid #e4ddd4;
+}
+
+.detail-primary-fact strong {
+  font-size: 14px;
+}
+
+.detail-primary-fact em {
+  margin-top: 1px;
+}
+
+.detail-glance {
+  gap: 5px 9px;
+  margin-top: 8px;
+  color: #66706f;
+  font-size: 11px;
+}
+
+.detail-glance-heading {
+  display: none;
+}
+
+.detail-glance-status {
+  color: #a84422;
+}
+
+.detail-action-row {
+  margin-top: 12px;
+}
+
+.detail-official-link-top,
+.detail-map-link {
+  min-height: 42px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.detail-supporting-facts {
+  gap: 0;
+  margin-top: 10px;
+  border-top: 1px solid #e4ddd4;
+}
+
+.detail-supporting-fact {
+  min-height: 48px;
+  padding: 9px 8px 8px 0;
+}
+
+.detail-supporting-fact + .detail-supporting-fact {
+  padding-left: 12px;
+  border-left: 1px solid #e4ddd4;
+}
+
+.detail-supporting-fact strong {
+  font-size: 12px;
+}
+
+.detail-body {
+  padding-top: 8px;
+}
+
+.detail-description,
+.detail-enrichment,
+.detail-exploration {
+  margin-top: 22px;
+}
+
+.detail-description h3,
+.detail-enrichment h3,
+.detail-exploration h3 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.detail-description p {
+  max-width: 72ch;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.detail-program-list .detail-programs {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.detail-program-card {
+  min-height: 88px;
+  padding: 13px 14px;
+  border-color: #e5ddd2;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.detail-program-card strong {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.detail-program-card span {
+  margin-top: 6px;
+  color: #a84422;
+  font-weight: 800;
+}
+
+.detail-program-card small {
+  margin-top: 4px;
+}
+
+.detail-program-card p {
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.detail-explore-list {
+  gap: 8px;
+}
+
+.detail-explore-card {
+  border-radius: 10px;
+}
+
+.detail-source-row {
+  margin-top: 28px;
+  padding-top: 14px;
+}
+
+.detail-source {
+  color: #69726f;
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .detail-summary-panel {
+    padding: 14px 16px 12px;
+  }
+
+  .detail-summary-panel h2 {
+    margin-right: 38px;
+    font-size: 24px;
+    line-height: 1.17;
+  }
+
+  .detail-primary-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-primary-fact + .detail-primary-fact {
+    padding-left: 5px;
+    border-top: 1px solid #e4ddd4;
+    border-left: 0;
+  }
+
+  .detail-supporting-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-supporting-fact + .detail-supporting-fact {
+    padding-left: 0;
+    border-top: 1px solid #e4ddd4;
+    border-left: 0;
+  }
+
+  .detail-program-list .detail-programs {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-program-card {
+    min-height: 0;
+    padding: 12px;
+  }
+}
+
 /* Home cards v9: Korea Tourism-inspired poster-first editorial grid. */
 .featured-events {
   padding: 0;
