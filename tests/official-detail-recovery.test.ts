@@ -195,6 +195,57 @@ test("poster fallback skips OCR only when one meaningful program has another str
   );
 });
 
+async function seedStoredSelectorEvent(DB: D1Database, input: {
+  id: string; title?: string; startDate: string; summary?: string; programs?: string[];
+  price?: string; contact?: string; hours?: boolean; imageStatus?: "ok" | "missing";
+}) {
+  const sourceId = `selector-source-${input.id}`;
+  const detailSourceId = `official-detail-${input.id}`;
+  await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,?,?,?,?,?,?)")
+    .bind(sourceId, "municipality", 2, "selector test", `https://example.test/${input.id}`, "2026-09-01T00:00:00Z", null).run();
+  await DB.prepare(`INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,price_text,pet_policy,status,verification,is_sample,primary_source_id,checked_at,publish_quality_state,publish_quality_reason,publish_quality_rule_version,publish_quality_checked_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .bind(input.id, input.title ?? input.id, "existing detail", "경기", "공식 장소", "공식 장소", input.startDate, "2026-10-31", input.price ? "paid" : "unknown", input.price ?? null, "unknown", "scheduled", "verified", 0, sourceId, "2026-09-01T00:00:00Z", "PUBLIC", "ok", "v1", "2026-09-01T00:00:00Z").run();
+  await DB.prepare("INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES(?,?,?,?)")
+    .bind(input.id, sourceId, `https://example.test/${input.id}/detail`, "2026-09-01T00:00:00Z").run();
+  if (input.contact) await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,?,?,?,?,?,?)")
+    .bind(detailSourceId, "municipality", 2, "지자체 공식 상세 안내", `https://example.test/${input.id}/detail`, "2026-09-01T00:00:00Z", JSON.stringify({ municipal_rich_detail: { contact_phone: input.contact, price_text: input.price ?? null } })).run();
+  if (input.summary) await DB.prepare("INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt) VALUES(?,?,?,?)")
+    .bind(input.id, input.summary, sourceId, "official summary").run();
+  for (const [index, program] of (input.programs ?? []).entries()) await DB.prepare("INSERT INTO event_programs(id,event_id,program_name,featured,sort_order,source_id,evidence_excerpt) VALUES(?,?,?,?,?,?,?)")
+    .bind(`${input.id}-program-${index}`, input.id, program, 0, index, sourceId, "official program").run();
+  if (input.hours) await DB.prepare("INSERT INTO event_operating_hours(id,event_id,start_date,end_date,start_time,end_time,source_id,evidence_excerpt) VALUES(?,?,?,?,?,?,?,?)")
+    .bind(`${input.id}-hours`, input.id, "2026-10-01", "2026-10-31", "10:00", "18:00", sourceId, "official hours").run();
+  if (input.imageStatus) await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,is_primary,image_status,last_checked_at) VALUES(?,?,?,?,?,?,?)")
+    .bind(input.id, `https://example.test/${input.id}.jpg`, "municipality", `https://example.test/${input.id}/detail`, 1, input.imageStatus, "2026-09-01T00:00:00Z").run();
+}
+
+test("scheduled selector excludes useful stored detail but retains incomplete, image, and explicit candidates", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seedStoredSelectorEvent(DB, { id: "gyeongju-done", title: "한수원아트페스티벌 특별전", startDate: "2026-10-01", programs: ["도슨트 프로그램"], price: "성인 10,000원", contact: "054-777-5823", imageStatus: "ok" });
+    await seedStoredSelectorEvent(DB, { id: "one-program-incomplete", startDate: "2026-10-02", programs: ["도슨트 프로그램"], imageStatus: "ok" });
+    await seedStoredSelectorEvent(DB, { id: "paju-stale", startDate: "2026-10-03", programs: ["평일"], price: "무료", imageStatus: "ok" });
+    await seedStoredSelectorEvent(DB, { id: "two-programs-done", startDate: "2026-10-04", programs: ["무대 공연", "전통 체험"], imageStatus: "ok" });
+    await seedStoredSelectorEvent(DB, { id: "summary-done", title: "별빛 문화제", startDate: "2026-10-05", summary: "별빛 문화제는 지역 예술가와 주민이 함께하는 공식 야간 문화 행사입니다.", imageStatus: "ok" });
+    await seedStoredSelectorEvent(DB, { id: "image-missing-done", startDate: "2026-10-06", programs: ["도슨트 프로그램"], price: "무료", contact: "031-123-4567", imageStatus: "missing" });
+    const ids = new Set((await selectOfficialDetailRecoveryCandidates(DB, new Date("2026-09-28T01:00:00Z"), 20)).map((row) => row.id));
+    for (const id of ["gyeongju-done", "two-programs-done", "summary-done"]) assert.equal(ids.has(id), false);
+    for (const id of ["one-program-incomplete", "paju-stale", "image-missing-done"]) assert.equal(ids.has(id), true);
+    const explicit = await selectOfficialDetailRecoveryCandidates(DB, new Date("2026-09-28T01:00:00Z"), 1, "gyeongju-done");
+    assert.deepEqual(explicit.map((row) => row.id), ["gyeongju-done"]);
+  } finally { await mf.dispose(); }
+});
+
+test("scheduled selector filters DONE rows before applying the final limit", async () => {
+  const { mf, DB } = await setup();
+  try {
+    for (const [index, id] of ["done-a", "done-b", "done-c"].entries()) await seedStoredSelectorEvent(DB, { id, startDate: `2026-10-0${index + 1}`, programs: ["무대 공연", "전통 체험"], imageStatus: "ok" });
+    await seedStoredSelectorEvent(DB, { id: "later-incomplete", startDate: "2026-10-04", programs: ["평일"], imageStatus: "ok" });
+    const rows = await selectOfficialDetailRecoveryCandidates(DB, new Date("2026-09-28T01:00:00Z"), 1);
+    assert.deepEqual(rows.map((row) => row.id), ["later-incomplete"]);
+  } finally { await mf.dispose(); }
+});
+
 test("exact official link self-heals poster and rich detail without source-specific parser", async () => {
   const { mf, DB } = await setup();
   try {
@@ -602,7 +653,7 @@ test("verified poster without programs remains eligible when HTML hours already 
   const { mf, DB } = await setup();
   try {
     await seed(DB);
-    await DB.prepare("INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt) VALUES('event-1','기존 소개','municipality','기존 소개')").run();
+    await DB.prepare("INSERT INTO event_enrichments(event_id,summary,source_id,evidence_excerpt) VALUES('event-1','한국관광의 메카가 여러분을 초대합니다.','municipality','generic 소개')").run();
     await DB.prepare("INSERT INTO event_operating_hours(id,event_id,start_date,end_date,start_time,end_time,source_id,evidence_excerpt) VALUES('hours-1','event-1','2026-10-03','2026-10-03','12:00','19:00','municipality','공식 시간')").run();
     await DB.prepare("INSERT INTO event_images(event_id,image_url,source_type,source_page_url,image_status,last_checked_at) VALUES('event-1','https://ui4u.go.kr/poster.jpg','municipality','https://ui4u.go.kr/portal/eventNoti/view.do?mId=0301170300&idx=2016','ok','2026-09-27T00:00:00Z')").run();
     const rows = await selectOfficialDetailRecoveryCandidates(DB, new Date("2026-09-28T01:00:00Z"), 10);

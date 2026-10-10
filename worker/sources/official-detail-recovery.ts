@@ -350,6 +350,11 @@ function fieldCount(detail: MunicipalRichDetail) {
 }
 
 const genericProgramLabels = [
+  "평일",
+  "주말",
+  "토요일",
+  "일요일",
+  "공휴일",
   "관람시간",
   "공연시간",
   "운영시간",
@@ -375,6 +380,8 @@ const genericProgramLabels = [
   "협찬",
   "운영기관",
   "오시는길",
+  "주요프로그램",
+  "세부프로그램",
   "프로그램",
 ].map((value) => value.replace(/\s+/g, ""));
 
@@ -403,7 +410,8 @@ function meaningfulHtmlSummary(eventTitle: string, summary: string | null) {
   return eventSpecificTitleTerms.some((term) => summaryTerms.has(term));
 }
 
-export function needsPosterRichDetailFallback(
+/** One common gate for fresh HTML and persisted official detail. */
+export function hasUsefulOfficialRichDetail(
   eventTitle: string,
   detail: Pick<MunicipalRichDetail, "summary" | "programs"> &
     Partial<
@@ -413,17 +421,77 @@ export function needsPosterRichDetailFallback(
       >
     >,
 ) {
-  if (meaningfulHtmlSummary(eventTitle, detail.summary)) return false;
+  if (meaningfulHtmlSummary(eventTitle, detail.summary)) return true;
   const meaningfulProgramCount = detail.programs.filter((program) =>
     meaningfulHtmlProgram(program.name),
   ).length;
-  if (meaningfulProgramCount >= 2) return false;
+  if (meaningfulProgramCount >= 2) return true;
   const hasStructuredFact = Boolean(
     detail.price_text?.trim() ||
       detail.contact_phone?.trim() ||
       (detail.operating_hours?.length ?? 0) > 0,
   );
-  return !(meaningfulProgramCount === 1 && hasStructuredFact);
+  return meaningfulProgramCount === 1 && hasStructuredFact;
+}
+
+export function needsPosterRichDetailFallback(
+  eventTitle: string,
+  detail: Pick<MunicipalRichDetail, "summary" | "programs"> &
+    Partial<Pick<MunicipalRichDetail, "price_text" | "contact_phone" | "operating_hours">>,
+) {
+  return !hasUsefulOfficialRichDetail(eventTitle, detail);
+}
+
+type StoredRichDetail = {
+  summary: string | null;
+  program_name: string | null;
+  has_hours: number;
+  has_price: number;
+  has_contact: number;
+};
+
+async function storedRichDetailByEvent(db: D1Database, eventIds: string[]) {
+  if (!eventIds.length) return new Map<string, StoredRichDetail[]>();
+  const placeholders = eventIds.map(() => "?").join(",");
+  const rows = await db.prepare(
+    `SELECT e.id,en.summary,p.program_name,
+       CASE WHEN EXISTS(SELECT 1 FROM event_operating_hours oh WHERE oh.event_id=e.id) THEN 1 ELSE 0 END AS has_hours,
+       CASE WHEN NULLIF(TRIM(e.price_text),'') IS NOT NULL OR EXISTS(
+         SELECT 1 FROM sources rich WHERE rich.id IN ('official-detail-' || e.id,e.primary_source_id)
+           AND json_valid(COALESCE(rich.raw_payload,''))
+           AND NULLIF(TRIM(json_extract(rich.raw_payload,'$.municipal_rich_detail.price_text')),'') IS NOT NULL
+       ) THEN 1 ELSE 0 END AS has_price,
+       CASE WHEN EXISTS(
+         SELECT 1 FROM sources rich WHERE rich.id IN ('official-detail-' || e.id,e.primary_source_id)
+           AND json_valid(COALESCE(rich.raw_payload,''))
+           AND NULLIF(TRIM(json_extract(rich.raw_payload,'$.municipal_rich_detail.contact_phone')),'') IS NOT NULL
+       ) THEN 1 ELSE 0 END AS has_contact
+     FROM events e
+     LEFT JOIN event_enrichments en ON en.event_id=e.id
+     LEFT JOIN event_programs p ON p.event_id=e.id
+     WHERE e.id IN (${placeholders})`,
+  ).bind(...eventIds).all<StoredRichDetail & { id: string }>();
+  const stored = new Map<string, StoredRichDetail[]>();
+  for (const row of rows.results) {
+    const details = stored.get(row.id) ?? [];
+    details.push(row);
+    stored.set(row.id, details);
+  }
+  return stored;
+}
+
+function hasSufficientStoredRichDetail(row: RecoveryRow, facts: StoredRichDetail[] | undefined) {
+  const representative = facts?.[0];
+  if (!representative) return false;
+  return hasUsefulOfficialRichDetail(row.title, {
+    summary: representative.summary,
+    programs: (facts ?? []).map((fact) => fact.program_name)
+      .filter((name): name is string => Boolean(name))
+      .map((name) => ({ name, description: null, schedule_text: null })),
+    price_text: representative.has_price ? "official" : null,
+    contact_phone: representative.has_contact ? "official" : null,
+    operating_hours: representative.has_hours ? [{ start_time: "", end_time: "", human_time_text: "" }] : [],
+  });
 }
 
 async function markAttempt(
@@ -644,7 +712,15 @@ export async function selectOfficialDetailRecoveryCandidates(
   const unique = new Map<string, RecoveryRow>();
   for (const row of accepted)
     if (!unique.has(row.id)) unique.set(row.id, row);
-  return [...unique.values()].slice(0, Math.max(1, Math.min(40, limit)));
+  const candidates = [...unique.values()];
+  // Filter the generous raw batch before the final limit so front-loaded DONE
+  // rows cannot starve incomplete events further down the ordered candidate set.
+  if (targetEventId)
+    return candidates.slice(0, Math.max(1, Math.min(40, limit)));
+  const stored = await storedRichDetailByEvent(db, candidates.map((row) => row.id));
+  return candidates
+    .filter((row) => row.image_missing || !hasSufficientStoredRichDetail(row, stored.get(row.id)))
+    .slice(0, Math.max(1, Math.min(40, limit)));
 }
 
 const POSTER_PARSER_VERSION = 5;
