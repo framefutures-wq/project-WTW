@@ -2540,6 +2540,13 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Current main creates a `scheduled_window` ledger at invocation start, records phase before each heavy subsystem, and finalizes with available results when base is missing/running/failed. Previous ledger rows do not lock the next window; only an actual in-flight TourAPI detail run remains a detail lock.
 - After deployment, do not manually invoke cron or recovery. Read-only inspect the next natural scheduled window for trigger, final phase/message, status, and `finished_at`; hard termination should remain as `running` at its last phase.
 
+## 2026-10-10 — scheduled official-detail recovery time budget
+
+- The natural 17:55 KST scheduled-window ledger was created, then remained `running` at phase `official_detail` with no final summary; private official and TourAPI retry detail were not reached. This narrows the current production blocker to `runOfficialDetailRecovery()`.
+- Scheduled recovery now uses a 90-second wall-clock budget, clamps direct fetch, Reader fallback, poster fetch, and Workers AI poster transcription to remaining time, and returns `budget_exhausted` / `skipped_due_to_budget` rather than waiting for platform termination. Late AI results cannot persist after the wrapper times out.
+- The same policy is passed by all watchdog/retry windows. After recovery returns, existing subsystem order continues: at 17:55 private official then retry-due TourAPI detail. No manual cron, recovery, OCR/AI call, or production D1 write was run for verification.
+- Next: read-only inspect the next natural later window. It should reach `private`, `tourapi_detail`, and `finished` (or finalize with the appropriate base/detail skip reason) with `finished_at` set.
+
 ## 2026-10-07 — base invocation isolation
 
 - Production base runs for 2026-10-05, 10-06, and 10-07 remained `running` with no `finished_at`. Read-only evidence narrowed the likely cause to an oversized base invocation / Worker execution-time termination; exact timeout was not proven because there was no invocation termination log. Stale rows did not prevent the following day's new base run.

@@ -63,6 +63,7 @@ Production Cron 현재 상태:
 2026-10-10 scheduled-window observability update:
 - watchdog/retry runs create a `sync_runs` invocation ledger before municipal, official-detail, or private work; its message records trigger and phase (`started`, `municipal`, `official_detail`, `private`, `tourapi_detail`, `finished`).
 - A prior hard-terminated window ledger does not block the next window's municipal/official-detail/private work. TourAPI detail retains its own concurrent-run protection.
+- Scheduled official-detail recovery has a 90-second wall-clock budget. It clamps direct/Reader/poster work to remaining time and returns a budget-exhaustion result before the platform deadline, allowing later private and TourAPI-detail subsystems to continue.
 - Base missing/running/failed still finalizes the current window ledger with subsystem results while skipping only TourAPI detail. Await natural production-window verification after deployment.
 
 Zero-Human v2 (production 배포 완료):
