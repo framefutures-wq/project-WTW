@@ -27,7 +27,11 @@ export const BASE_SYNC_CRON = "0 1 * * *";
 export const DETAIL_SYNC_CRON = "0 2 * * *";
 // 11:45 / 13:50 / 17:55 KST: each leaves room after the preceding bounded pass
 // for the 30m → 2h → 4h retry schedule, without polling candidates that are not due.
-export const DETAIL_RETRY_RECOVERY_CRONS = ["45 2 * * *", "50 4 * * *", "55 8 * * *"] as const;
+export const DETAIL_RETRY_RECOVERY_CRONS = [
+  "45 2 * * *",
+  "50 4 * * *",
+  "55 8 * * *",
+] as const;
 
 const MUNICIPAL_SOURCE_KEYS = MUNICIPAL_SOURCE_REGISTRY.map(
   (source) => source.key,
@@ -74,6 +78,27 @@ async function startRun(
       "running",
       provider,
       provider,
+      new Date(Date.parse(now) - 3600_000).toISOString(),
+    )
+    .run();
+  return started.meta.changes ? id : null;
+}
+
+async function startDetailRun(env: Env, now: string) {
+  const id = crypto.randomUUID();
+  // Scheduled-window ledger rows are deliberately not a detail lock: an
+  // interrupted 11:00 window must not stop 11:45's municipal/recovery work.
+  // A normal detail run (including the base handoff) still protects the
+  // TourAPI detail subsystem from concurrent execution.
+  const started = await env.DB.prepare(
+    "INSERT INTO sync_runs(id,started_at,status,provider) SELECT ?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM sync_runs WHERE provider=? AND status='running' AND started_at>? AND COALESCE(json_extract(message,'$.ledger'),'')!='scheduled_window')",
+  )
+    .bind(
+      id,
+      now,
+      "running",
+      "tourapi-detail",
+      "tourapi-detail",
       new Date(Date.parse(now) - 3600_000).toISOString(),
     )
     .run();
@@ -192,11 +217,35 @@ export async function runDetailScheduled(
   env: Env,
   now = new Date(),
   dependencies = productionDependencies,
-  trigger: "base_handoff" | "watchdog" | "retry_recovery" | "manual" = "watchdog",
+  trigger:
+    "base_handoff" | "watchdog" | "retry_recovery" | "manual" = "watchdog",
   manualRunId?: string,
   municipalPlan?: MunicipalRunPlan,
   runPrivateOfficial = false,
 ) {
+  const scheduledWindow =
+    trigger === "watchdog" || trigger === "retry_recovery";
+  const startedAt = now.toISOString();
+  // This row is an invocation ledger, not the TourAPI-detail concurrency lock.
+  // It must exist before any bounded municipal/private/recovery work begins.
+  const windowRunId = scheduledWindow ? crypto.randomUUID() : null;
+  if (windowRunId) {
+    await env.DB.prepare(
+      "INSERT INTO sync_runs(id,started_at,status,provider,message) VALUES(?,?,?,?,?)",
+    )
+      .bind(
+        windowRunId,
+        startedAt,
+        "running",
+        "tourapi-detail",
+        JSON.stringify({
+          trigger,
+          ledger: "scheduled_window",
+          phase: "started",
+        }),
+      )
+      .run();
+  }
   let municipal:
     | Awaited<ReturnType<typeof runMunicipalAutonomous>>
     | { status: "failed"; reason: "subsystem_error" }
@@ -209,174 +258,211 @@ export async function runDetailScheduled(
     | Awaited<ReturnType<typeof runPrivateOfficialSources>>
     | { status: "failed"; reason: "subsystem_error" }
     | null = null;
-  if (municipalPlan) {
-    try {
-      municipal = await dependencies.runMunicipalAutonomous(env, municipalPlan);
-    } catch (error) {
-      console.error("municipal_shard_failed", {
-        shardIndex: municipalPlan.shardIndex,
-        error: error instanceof Error ? error.name : "unknown",
-      });
-      municipal = { status: "failed", reason: "subsystem_error" };
-    }
-  }
-  if (trigger === "watchdog" || trigger === "retry_recovery") {
-    try {
-      // Official detail recovery is independent from TourAPI detail. Retry it
-      // on later daily windows so transient municipal/WAF/network failures can
-      // self-heal the same day without waiting for the next 10:00 base run.
-      officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
-        env,
-        now,
-        { limit: municipalPlan ? 4 : 8 },
-      );
-    } catch (error) {
-      console.error("official_detail_recovery_retry_failed", {
-        trigger,
-        error: error instanceof Error ? error.name : "unknown",
-      });
-      officialDetailRecovery = {
-        status: "failed",
-        reason: "subsystem_error",
-      };
-    }
-  }
-  if (runPrivateOfficial) {
-    try {
-      privateOfficial = await dependencies.runPrivateOfficialSources(env);
-    } catch (error) {
-      console.error("private_official_failed", {
-        trigger,
-        error: error instanceof Error ? error.name : "unknown",
-      });
-      privateOfficial = { status: "failed", reason: "subsystem_error" };
-    }
-  }
-  if (trigger === "manual" && manualRunId) {
-    const existing = await env.DB.prepare(
-      "SELECT status FROM sync_runs WHERE provider='tourapi-detail' AND json_extract(message,'$.manual_run_id')=? AND status IN ('running','success') LIMIT 1",
-    ).bind(manualRunId).first();
-    if (existing) return { status: "skipped", reason: "manual_already_executed" };
-  }
-  const window = baseWindow(now);
-  const base = await env.DB.prepare(
-    "SELECT id,status,started_at,finished_at FROM sync_runs WHERE provider='tourapi' AND started_at>=? AND started_at<? ORDER BY started_at DESC LIMIT 1",
-  )
-    .bind(window.start, window.end)
-    .first<{
+  let baseRun: {
+    id: string;
+    status: string;
+    started_at: string;
+    finished_at: string | null;
+  } | null = null;
+  const phase = async (value: string) => {
+    if (!windowRunId) return;
+    await env.DB.prepare("UPDATE sync_runs SET message=? WHERE id=?")
+      .bind(
+        JSON.stringify({
+          trigger,
+          ledger: "scheduled_window",
+          phase: value,
+          ...(municipal ? { municipal } : {}),
+          ...(officialDetailRecovery
+            ? { official_detail_recovery: officialDetailRecovery }
+            : {}),
+          ...(privateOfficial ? { private: privateOfficial } : {}),
+        }),
+        windowRunId,
+      )
+      .run();
+  };
+  const message = (
+    base: {
       id: string;
       status: string;
       started_at: string;
       finished_at: string | null;
-    }>();
-  const id = crypto.randomUUID();
-  const skipped = async (reason: string) => {
+    } | null,
+    detail: Record<string, unknown> = {},
+    reason?: string,
+  ) => ({
+    trigger,
+    ...(scheduledWindow
+      ? { ledger: "scheduled_window", phase: "finished" }
+      : {}),
+    ...(reason ? { reason } : {}),
+    base_run: base,
+    candidates: 0,
+    requested: 0,
+    attempts: 0,
+    retry_attempted: 0,
+    retry_recovered: 0,
+    retry_exhausted: 0,
+    enriched: 0,
+    empty: 0,
+    failed: 0,
+    failure_reasons: {},
+    failure_endpoints: {},
+    network_failure_subtypes: {},
+    failure_latency: {},
+    retry_rounds: {},
+    ...detail,
+    ...(municipal ? { municipal } : {}),
+    ...(officialDetailRecovery
+      ? { official_detail_recovery: officialDetailRecovery }
+      : {}),
+    ...(privateOfficial ? { private: privateOfficial } : {}),
+  });
+  const finalize = async (
+    id: string,
+    status: "success" | "skipped" | "failed",
+    payload: Record<string, unknown>,
+  ) => {
     await env.DB.prepare(
-      "INSERT INTO sync_runs(id,started_at,finished_at,status,provider,message) VALUES(?,?,?,?,?,?)",
+      "UPDATE sync_runs SET status=?,finished_at=?,message=? WHERE id=?",
     )
-      .bind(
-        id,
-        now.toISOString(),
-        now.toISOString(),
-        "skipped",
-        "tourapi-detail",
-        JSON.stringify({
-          trigger,
-          reason,
-          base_run: base ?? null,
-          candidates: 0,
-          requested: 0,
-          attempts: 0,
-          retry_attempted: 0,
-          retry_recovered: 0,
-          retry_exhausted: 0,
-          enriched: 0,
-          empty: 0,
-          failed: 0,
-          failure_reasons: {},
-          failure_endpoints: {},
-          network_failure_subtypes: {},
-          failure_latency: {},
-          retry_rounds: {},
-          ...(municipal ? { municipal } : {}),
-          ...(officialDetailRecovery
-            ? { official_detail_recovery: officialDetailRecovery }
-            : {}),
-          ...(privateOfficial ? { private: privateOfficial } : {}),
-        }),
-      )
+      .bind(status, new Date().toISOString(), JSON.stringify(payload), id)
       .run();
-    return { id, status: "skipped", reason };
   };
-  if (!base) return skipped("base_run_missing");
-  if (base.status === "running") return skipped("base_run_running");
-  if (base.status !== "success" || !base.finished_at)
-    return skipped("base_run_not_successful");
-  const started = await startRun(env, "tourapi-detail", now.toISOString());
-  if (!started) return skipped("detail_already_running");
   try {
-    const detail = await dependencies.enrichTourApiDetails(env, now, {
-      candidateScope: trigger === "retry_recovery" ? "retry_due" : "all",
-    });
-    await env.DB.prepare(
-      "UPDATE sync_runs SET status='success',finished_at=?,message=? WHERE id=?",
-    )
-      .bind(
-        new Date().toISOString(),
-        JSON.stringify({
+    if (municipalPlan) {
+      await phase("municipal");
+      try {
+        municipal = await dependencies.runMunicipalAutonomous(
+          env,
+          municipalPlan,
+        );
+      } catch (error) {
+        console.error("municipal_shard_failed", {
+          shardIndex: municipalPlan.shardIndex,
+          error: error instanceof Error ? error.name : "unknown",
+        });
+        municipal = { status: "failed", reason: "subsystem_error" };
+      }
+    }
+    if (scheduledWindow) {
+      await phase("official_detail");
+      try {
+        officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
+          env,
+          now,
+          { limit: municipalPlan ? 4 : 8 },
+        );
+      } catch (error) {
+        console.error("official_detail_recovery_retry_failed", {
           trigger,
-          base_run: base.id,
-          ...(trigger === "manual" && manualRunId
-            ? { manual_run_id: manualRunId }
-            : {}),
-          ...detail,
-          ...(municipal ? { municipal } : {}),
-          ...(officialDetailRecovery
-            ? { official_detail_recovery: officialDetailRecovery }
-            : {}),
-          ...(privateOfficial ? { private: privateOfficial } : {}),
-        }),
-        started,
-      )
-      .run();
-    return {
-      id: started,
-      status: "success",
-      detail,
-      municipal,
-      official_detail_recovery: officialDetailRecovery,
-      private: privateOfficial,
-    };
-  } catch (error) {
-    console.error("tourapi_detail_subsystem_failed", {
-      runId: started,
-      error: error instanceof Error ? error.name : "unknown",
-    });
-    await env.DB.prepare(
-      "UPDATE sync_runs SET status='failed',finished_at=?,message=? WHERE id=?",
-    )
-      .bind(
-        new Date().toISOString(),
-        JSON.stringify({
-          trigger,
-          base_run: base.id,
-          candidates: 0,
-          requested: 0,
-          enriched: 0,
-          empty: 0,
-          failed: 1,
+          error: error instanceof Error ? error.name : "unknown",
+        });
+        officialDetailRecovery = {
+          status: "failed",
           reason: "subsystem_error",
-          retry_rounds: {},
-          ...(municipal ? { municipal } : {}),
-          ...(officialDetailRecovery
-            ? { official_detail_recovery: officialDetailRecovery }
-            : {}),
-          ...(privateOfficial ? { private: privateOfficial } : {}),
-        }),
-        started,
+        };
+      }
+    }
+    if (runPrivateOfficial) {
+      await phase("private");
+      try {
+        privateOfficial = await dependencies.runPrivateOfficialSources(env);
+      } catch (error) {
+        console.error("private_official_failed", {
+          trigger,
+          error: error instanceof Error ? error.name : "unknown",
+        });
+        privateOfficial = { status: "failed", reason: "subsystem_error" };
+      }
+    }
+    if (trigger === "manual" && manualRunId) {
+      const existing = await env.DB.prepare(
+        "SELECT status FROM sync_runs WHERE provider='tourapi-detail' AND json_extract(message,'$.manual_run_id')=? AND status IN ('running','success') LIMIT 1",
       )
-      .run();
-    throw new Error("TourAPI detail enrichment failed");
+        .bind(manualRunId)
+        .first();
+      if (existing)
+        return { status: "skipped", reason: "manual_already_executed" };
+    }
+    const window = baseWindow(now);
+    const base = await env.DB.prepare(
+      "SELECT id,status,started_at,finished_at FROM sync_runs WHERE provider='tourapi' AND started_at>=? AND started_at<? ORDER BY started_at DESC LIMIT 1",
+    )
+      .bind(window.start, window.end)
+      .first<{
+        id: string;
+        status: string;
+        started_at: string;
+        finished_at: string | null;
+      }>();
+    baseRun = base ?? null;
+    const id = windowRunId ?? crypto.randomUUID();
+    const skipped = async (reason: string) => {
+      const payload = message(base ?? null, {}, reason);
+      if (windowRunId) await finalize(windowRunId, "skipped", payload);
+      else {
+        await env.DB.prepare(
+          "INSERT INTO sync_runs(id,started_at,finished_at,status,provider,message) VALUES(?,?,?,?,?,?)",
+        )
+          .bind(
+            id,
+            startedAt,
+            new Date().toISOString(),
+            "skipped",
+            "tourapi-detail",
+            JSON.stringify(payload),
+          )
+          .run();
+      }
+      return { id, status: "skipped" as const, reason };
+    };
+    if (!base) return skipped("base_run_missing");
+    if (base.status === "running") return skipped("base_run_running");
+    if (base.status !== "success" || !base.finished_at)
+      return skipped("base_run_not_successful");
+    await phase("tourapi_detail");
+    const started = await startDetailRun(env, startedAt);
+    if (!started) return skipped("detail_already_running");
+    try {
+      const detail = await dependencies.enrichTourApiDetails(env, now, {
+        candidateScope: trigger === "retry_recovery" ? "retry_due" : "all",
+      });
+      const payload = message(base, {
+        ...(trigger === "manual" && manualRunId
+          ? { manual_run_id: manualRunId }
+          : {}),
+        ...detail,
+      });
+      await finalize(started, "success", payload);
+      if (windowRunId) await finalize(windowRunId, "success", payload);
+      return {
+        id: windowRunId ?? started,
+        status: "success",
+        detail,
+        municipal,
+        official_detail_recovery: officialDetailRecovery,
+        private: privateOfficial,
+      };
+    } catch (error) {
+      console.error("tourapi_detail_subsystem_failed", {
+        runId: started,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      const payload = message(base, { failed: 1 }, "subsystem_error");
+      await finalize(started, "failed", payload);
+      throw new Error("TourAPI detail enrichment failed");
+    }
+  } catch (error) {
+    if (windowRunId) {
+      await finalize(
+        windowRunId,
+        "failed",
+        message(baseRun, { failed: 1 }, "subsystem_error"),
+      );
+    }
+    throw error;
   }
 }
 
