@@ -27,8 +27,8 @@
 .category-drawer-list strong { font-size:15px; }
 .category-drawer-list small { color:#879099; font-size:11px; }
 .category-mark { width:48px; height:48px; flex:0 0 48px; display:grid; place-items:center; border-radius:12px; background:#f1effa; color:#5138c5; font-size:12px; font-weight:800; }
-@media (max-width:760px) { .region-quick-trigger,.category-quick-trigger { top:10px; height:40px; } .region-quick-trigger { left:88px; max-width:112px; } .category-quick-trigger { left:206px; max-width:120px; } .region-quick-trigger span,.category-quick-trigger span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .region-drawer,.category-drawer { width:min(400px,100vw); } }
-@media (max-width:390px) { .region-quick-trigger { left:78px; max-width:104px; } .category-quick-trigger { left:188px; max-width:108px; } }
+@media (max-width:760px) { .region-quick-trigger,.category-quick-trigger { top:10px; height:40px; gap:5px; padding:0 9px; } .region-quick-trigger { left:68px; max-width:100px; } .category-quick-trigger { left:174px; width:max-content; max-width:none; } .region-quick-trigger span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .category-quick-trigger span { flex:none; white-space:nowrap; } .region-drawer,.category-drawer { width:min(400px,100vw); } }
+@media (max-width:390px) { .region-quick-trigger { left:64px; max-width:98px; } .category-quick-trigger { left:170px; } }
 
 /* Sticky-search state: keep the existing global region/category controls,
    but move them out of the search field so only one set is visible. */

@@ -154,3 +154,26 @@ test("home gives the lead recommendation visual priority before its utilities", 
     path: `test-results/home-first-viewport-${page.viewportSize()!.width >= 760 ? "desktop" : "mobile"}.png`,
   });
 });
+
+test("home header keeps region and category controls readable at mobile and desktop widths", async ({ page }) => {
+  const width = page.viewportSize()!.width;
+  await page.setViewportSize({ width: width >= 760 ? 1440 : 390, height: width >= 760 ? 900 : 844 });
+  await page.goto("/");
+
+  const category = page.locator(".category-quick-trigger");
+  const region = page.locator(".region-quick-trigger");
+  const about = page.locator(".trust-link");
+  await expect(category).toBeVisible();
+  await expect(category.locator("span")).toHaveText("카테고리");
+  await expect(region).toBeVisible();
+  await expect(about).toBeVisible();
+
+  const boxes = await Promise.all([category, region, about].map((locator) => locator.boundingBox()));
+  expect(boxes.every(Boolean)).toBe(true);
+  const [categoryBox, regionBox, aboutBox] = boxes as NonNullable<(typeof boxes)[number]>[];
+  expect(categoryBox.x).toBeGreaterThanOrEqual(0);
+  expect(categoryBox.x + categoryBox.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(categoryBox.x).toBeGreaterThanOrEqual(regionBox.x + regionBox.width);
+  expect(categoryBox.x + categoryBox.width).toBeLessThanOrEqual(aboutBox.x);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
