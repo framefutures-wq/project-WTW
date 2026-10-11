@@ -20,6 +20,12 @@
 - The temporary raw checkpoint is capped at 300 KiB and cleared after parse; normalized JSON is capped at 64 KiB. No production migration, deploy, or runner cutover has occurred.
 - Next: verify each runner stage ten times against Free Preview with a local/test D1 binding.
 
+## 2026-10-11 — Free Preview Test-D1 FETCH transport proven
+
+- `detailFetchOne` now uses the municipal browser headers, allowed host variant selection, redirect follow, and bounded retry for network, timeout, 429, and 5xx responses. It still performs only fetch, text read, hash, and checkpoint write.
+- Ten fresh Uijeongbu detail jobs completed `PARSE_PENDING` on the temporary Free Preview Worker and isolated D1: 10/10 HTTP 200, 0 observed 1102, 0 network/HTTP failures. Each checkpoint stored 249,733 characters and a 64-character SHA-256; attempts remained 0.
+- Verdict: `FETCH_TRANSPORT_PROVEN`. Temporary resources remain for the PARSE-stage proof; production remains untouched.
+
 ## 2026-10-11 — HOME final visual finish production 완료
 
 - HOME의 section label은 한국어로 정리했고, hero headline 하나만 남겨 첫 화면의 이중 시작을 제거했다.
