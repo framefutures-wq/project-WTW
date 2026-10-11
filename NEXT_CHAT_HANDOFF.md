@@ -2,6 +2,13 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — dormant municipal micro scheduler production deploy verified
+
+- Commit `f4ac9a0` deployed as Worker version `6a4b703b-13b2-4c14-8c91-5d0326030528`. D1 `weekend-mwohae-production`, AI, Assets, and required secrets remain bound.
+- Public HOME, today/weekend event APIs, and an encoded real event detail API/page returned HTTP 200 with valid app/data schemas. Both municipal micro queues remain 0 rows.
+- The deployed scheduler code is still not imported by `runScheduled`; the five Cron triggers remain `0 1`, `0 2`, `45 2`, `50 4`, and `55 8` UTC. No manual ingestion or seed occurred.
+- Next bounded task: production Cron cutover — replace the existing `0 2 * * *` trigger with `* * * * *` micro scheduling and remove legacy municipal shard calls while preserving official-detail/TourAPI watchdog semantics. Requires explicit user approval.
+
 ## 2026-10-11 — production municipal micro schema ready; scheduler remains dormant
 
 - Production D1 `weekend-mwohae-production` applied additive migrations `0024_municipal_detail_jobs.sql` and `0025_municipal_scan_jobs.sql`. Both tables and ready indexes exist; both queues are empty. Existing production row counts were read-only checked (`events` 477, `sources` 801, `event_evidence` 2151).

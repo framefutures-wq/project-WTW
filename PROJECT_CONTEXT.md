@@ -6,10 +6,10 @@
 
 ## 1. 프로젝트 정체성
 
-## 2026-10-11 — municipal micro schema production ready, scheduler dormant
+## 2026-10-11 — municipal micro scheduler deployed, scheduler dormant
 
 - Production D1 `weekend-mwohae-production` has additive migrations `0024_municipal_detail_jobs` and `0025_municipal_scan_jobs`; both job tables and ready indexes are present and both queues contain 0 rows.
-- The source code has a dormant one-unit municipal micro scheduler and one-source daily seed helper. It is not connected to `runScheduled`; production Worker, Cron mapping, and ingestion behavior remain unchanged until a separate deploy task.
+- Worker version `6a4b703b-13b2-4c14-8c91-5d0326030528` includes the dormant one-unit municipal micro scheduler and one-source daily seed helper. Neither is connected to `runScheduled`; Cron mapping and ingestion behavior remain unchanged until a separately approved cutover task.
 
 ## 2026-10-11 — HOME 일요일 weekend 기준과 첫 화면 수정
 
