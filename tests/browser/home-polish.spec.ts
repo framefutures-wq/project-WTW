@@ -110,11 +110,14 @@ test("home keeps a dense four-column desktop grid and a safe mobile structure", 
   if (page.viewportSize()!.width >= 760) {
     expect(layout.columns).toBe(4);
   } else {
-    expect(layout.columns).toBe(2);
+    expect(layout.columns).toBe(1);
   }
 
   const firstScene = page.locator(".event-card .scene").first();
   const sceneBox = await firstScene.boundingBox();
   expect(sceneBox).not.toBeNull();
-  expect(sceneBox!.width / sceneBox!.height).toBeCloseTo(0.75, 1);
+  expect(sceneBox!.width / sceneBox!.height).toBeCloseTo(
+    page.viewportSize()!.width >= 760 ? 0.75 : 4 / 3,
+    1,
+  );
 });

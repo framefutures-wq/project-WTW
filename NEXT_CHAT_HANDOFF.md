@@ -2,6 +2,13 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — YES 제품화 홈 decision-first 재설계 완료
+
+- 홈은 hero/search → compact 날짜·지역 discovery bar → `이번 주말 먼저 볼 곳` 추천 → `더 둘러보기` 전체 행사 → 빠른 카테고리 순서로 재구성됐다.
+- 모바일 추천은 큰 1열 카드, 전체 목록은 2열을 유지한다. 포스터 contain/일반 사진 cover, 제목·날짜·지역/장소 위계를 강화했고 빈 이미지 graphic은 사진보다 조용하게 유지한다.
+- 검색·기간/date picker·지역·내 주변·카테고리/audience·세부필터·정렬·pagination·analytics·상세 navigation은 유지했다. 이번 commit은 production에 배포하지 않는다.
+- 다음 UI bounded task: 상세페이지 decision-first 재설계.
+
 ## 2026-10-11 — municipal scheduled-window bounding deployed pending natural verification
 
 - The natural 11:00 KST watchdog ledger `20036430-d1af-4c6b-a4d3-7733530f8e6f` started at `2026-10-11T02:00:45.340Z` and remained `running` in `municipal` for more than 20 minutes. It never reached official-detail or TourAPI-detail and had no `finished_at`; the responsible source was not observable from the previous telemetry.
@@ -665,6 +672,7 @@ UI 기준:
 - READY 누계는 **12개**다: 기존 `seoul-gangnam`, `seoul-yeongdeungpo`, `incheon-서해`, `gyeonggi-과천`, `gyeonggi-광주` + 이번 7개. C/D checkpoint 전에는 Registry onboarding을 하지 않으며, 이후 Phase 6E에서 3~5개 단위 bounded onboarding batch로 처리한다.
 - inventory: 총 245; ACTIVE 9 / READY 12 / GAP 20 / WATCH 43 / EXCLUDE 0 / UNREVIEWED 161. 경기도 하위 UNREVIEWED는 0이며 다음 deterministic survey queue는 **`busan-gangseo`**부터다.
 - 이번 작업은 source research + inventory/docs만 변경했다. Registry·collector·production·D1·Cron/manual ingestion은 변경하지 않았다. C **2026-09-24 10:00 KST** 기존 ACTIVE 9 read-only Cron 검증 → D **2026-09-24 11:00 KST** TourAPI watchdog read-only 검증 순서를 유지한다.
+
 ## 2026-09-23 운영 위임 — 전국 municipal survey 무중단 진행
 
 - 사용자가 전국 municipal/source coverage 조사에 대해 **지자체별·batch별 확인을 받지 말고 deterministic queue 순서대로 끝까지 진행**하도록 위임했다.
@@ -820,7 +828,6 @@ UI 기준:
 - `https://galteum.com/api/health`와 `/api/events?limit=1&period=today` HTTP 200. manual base/municipal/detail, D1 write는 실행하지 않았다.
 - 다음: 2026-09-25 10:00 KST 자연 Cron 결과를 read-only 확인하고 과천·하남·상주 ingestion/state 및 후보 품질을 검증한다. 수동 수집은 하지 않는다.
 
-
 ## 2026-09-24 — HOLD / 재개 조건 추적
 
 - HOLD는 폐기가 아니라 **재개 조건이 붙은 추적 상태**다. 새 채팅/후속 작업에서 아래 항목을 임의로 READY로 되돌리거나 처음부터 재조사하지 않는다.
@@ -843,7 +850,6 @@ UI 기준:
 - **TourAPI retry telemetry 의미 불일치 HOLD**: `retry_attempted/recovered/exhausted`와 `retry_rounds` 집계 의미가 어긋나는 observability 이슈. 실제 recovery 동작은 정상 확인됐으므로 즉시 운영 장애로 취급하지 않고 후순위 정리.
 - 다음 즉시 작업은 HOLD 항목을 더 파는 것이 아니라, 남은 non-calendar municipal GAP 중 공통 개선 효율이 높은 그룹을 계속 bounded하게 처리한다.
 
-
 ## 2026-09-24 — 사용자 부재 중 autonomous queue / PAUSED_USER_ACTION
 
 - 사용자 위임: routine municipal 작업은 중간 승인 없이 계속 진행한다. Codespaces/Cloudflare/D1가 필요한 지점은 `PAUSED_USER_ACTION`으로 남기고 다음 독립 작업을 진행한다. HOLD 항목은 기존 재개 조건 전까지 다시 열지 않는다.
@@ -864,7 +870,6 @@ UI 기준:
   - 이천 시정달력은 public fetch에서 현재 bad request가 발생해 raw/live 확인은 Codespaces 체크포인트로 넘긴다.
 - 다음 autonomous 우선순위: latest GitHub Actions가 정상인지 확인한 뒤, production 변경 없이 embedded JSON / 남은 non-calendar GAP 중 **공통 패턴으로 2개 이상 해결 가능한 후보**를 계속 조사한다.
 
-
 ## 2026-09-24 — 4-source live parser probe 미실행 / 환경 DNS
 
 - Codespaces read-only probe 시도 결과, `git fetch origin`은 성공했지만 local HEAD가 `48e8674`로 `origin/main 756d689`보다 3 commits 뒤였고 working tree는 clean이었다. checkout/pull은 수행하지 않았다.
@@ -877,7 +882,6 @@ UI 기준:
   3. 전부 `EAI_AGAIN`이면 반복 재시도하지 말고 DNS/environment issue로 종료하고 다음 독립 작업으로 이동.
 - production D1, Registry, manual ingestion, deploy는 이 검증과 무관하며 계속 금지.
 
-
 ## 2026-09-24 — ENV_DNS_BLOCKED 재확인
 
 - Codespaces를 latest main `f53d826836947472a4c29faacd7ef97d8af889f0`까지 `git pull --ff-only origin main`으로 fast-forward했고 working tree clean을 확인했다.
@@ -888,7 +892,6 @@ UI 기준:
 - 그 전에는 해당 4 source를 이유 없이 HOLD/READY로 재분류하거나 production onboarding하지 않는다.
 - 사용자 개입이 필요 없는 다음 작업은 다른 non-calendar GAP 그룹의 공통 패턴 조사/설계로 계속 진행한다.
 
-
 ## 2026-09-24 — ACTIVE 증가 우선 Batch A staging
 
 - 조사/보류 루프보다 production coverage 증가를 우선하는 운영으로 전환했다.
@@ -897,7 +900,6 @@ UI 기준:
 - **10:00 KST 자연 수집 안전성을 위해 Batch A Registry opt-in은 main에서 제거하고 별도 branch `staging/municipal-batch-a`에 보존했다.**
 - main은 내일 10:00 전에 production deploy해도 신규 Batch A source가 들어오지 않는 상태로 유지한다. production 자체는 계속 기존 Worker `d9118a65-9d67-490b-b51d-016c3bbbc437` / code basis `c223028...`를 유지하며 오늘 밤에는 deploy하지 않는다.
 - 10:00 자연수집 read-only 검증이 정상이고 DNS/raw probe가 성공할 때만 staging branch 내용을 재검토해 main으로 가져온다.
-
 
 ## 2026-09-24 — 10:00 KST production freeze / morning verifier
 
@@ -911,7 +913,6 @@ UI 기준:
 - 권장 실행 시점: 10:05~10:10 KST 이후. base가 아직 running이면 기다리며 polling하지 말고 나중에 1회 다시 확인한다.
 - morning 결과가 정상일 때만 Batch A live probe/deploy를 다시 연다.
 
-
 ## 2026-09-26 — 2026-09-25 자연 Cron production checkpoint 결과
 
 - 사용자가 2026-09-25 10:00 KST 자연 Cron 이후 `npm run verify:morning:prod -- --remote`를 실행했고, production D1에 **SELECT only** 검증을 완료했다.
@@ -924,7 +925,6 @@ UI 기준:
 - Batch A(평택·여주·경산)는 `staging/municipal-batch-a`에 계속 보존하고, 과천·하남·상주 원인 진단 전 production 확대 deploy는 보류.
 - 다음 bounded task: source별로 raw fetch 성공 / health marker / extraction mode / candidate 수를 분리해 보는 **read-only municipal source diagnostic**. 원인 확인 후 해당 source만 수정하고, 나머지 onboarding batch를 막지 않는다.
 
-
 ## 2026-09-26 — municipal live diagnostic 성공 / transient fetch hardening
 
 - 사용자가 latest main에서 `npm run diagnose:municipal:3`를 실행했고, 초기 sandbox fetch 실패 후 network 권한 재실행에서 **과천·하남·상주 모두 HTTP 200 / document healthy / generic_html extraction 성공**을 확인했다.
@@ -935,7 +935,6 @@ UI 기준:
 - `runMunicipalAutonomous` 결과에 source별 `source_outcomes`(ok/error, candidate count, bounded reason)을 추가해 다음 `sync_runs.message.municipal`만으로 source failure 원인을 확인할 수 있게 했다.
 - ingestion/gate/D1 publication 정책은 변경하지 않았다. 잘못된 데이터 허용 범위 확대 없음.
 
-
 ## 2026-09-26 — Batch A main opt-in 재개
 
 - 과천·하남·상주는 OBSERVE 트랙으로 내리고 신규 municipal coverage 확대를 재개한다.
@@ -943,7 +942,6 @@ UI 기준:
 - 이 batch는 기존 generic extractor만 사용하고 새 parser/collector 범위 확대는 하지 않는다.
 - production deploy 전 GitHub Project checks 성공이 필수다. Cloudflare 인증이 필요한 실제 deploy만 사용자 환경에서 1회 실행한다.
 - source 하나가 실패해도 나머지 source 진행을 막지 않는다. 다음부터 coverage 성과는 ACTIVE 증가 수로 보고한다.
-
 
 ## 2026-09-26 — municipal Batch B +2 main 준비
 
@@ -955,7 +953,6 @@ UI 기준:
 - `gyeonggi-광주`는 current official page에 2026 future 행사 core가 확인되지만 pagination query contract를 GitHub/web만으로 확정하지 못해 이번 batch에서 억지로 넣지 않았다. 다음 독립 batch에서 bounded paging contract를 먼저 확정한다.
 - production deploy는 아직 하지 않는다. 여러 batch를 모은 뒤 사용자 Codespaces는 최종 deploy 1회에만 사용한다.
 
-
 ## 2026-09-26 — municipal Batch C +1 경기 광주
 
 - Batch C로 `gyeonggi-광주`를 main Registry에 opt-in했다.
@@ -964,7 +961,6 @@ UI 기준:
 - first page 자체에 current/future candidate가 충분하며, pagination을 억지로 선언하지 않아 잘못된 repeated-page crawl 위험을 피한다.
 - production deploy는 아직 하지 않는다. Batch A +3, Batch B +2, Batch C +1을 묶어 최종 deploy 1회로 가져간다.
 
-
 ## 2026-09-26 — 사용자 위임: 끝까지 자동 진행
 
 - 사용자는 municipal coverage 확대를 **추가 시작/계속 명령 없이 가능한 데까지 끝까지 밀어붙이는 방식**으로 운영하길 명시했다.
@@ -972,12 +968,10 @@ UI 기준:
 - Codespaces는 여러 batch를 모은 뒤 final deploy 1회에만 요청하는 것을 기본으로 한다.
 - 개별 source가 막히면 그 source만 분리하고 전체 queue는 계속 진행한다.
 
-
 ## 2026-09-26 — 새 채팅 `계속` 보고 규칙
 
 - 사용자는 새 채팅에서 `계속`이라고 말하면 먼저 **현재까지 완료 / 지금 하는 중 / 앞으로 남은 작업 / 사용자 개입 필요 여부**를 한 번에 보고받고 싶어 한다.
 - 보고 후에는 추가 승인 없이 안전한 다음 작업을 바로 이어간다.
-
 
 ## 2026-09-26 — municipal Batch D +2 강남·울산 북구
 
@@ -988,7 +982,6 @@ UI 기준:
 - 이 batch는 새 parser나 publication policy를 추가하지 않는다. source가 runtime에서 generic candidate를 만들지 못하면 기존 fail-closed/source_outcomes 경로로 해당 source만 error 처리되고 다른 source를 막지 않는다.
 - main 누적 신규 준비량은 Batch A +3 / B +2 / C +1 / D +2 = **총 +8**. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — municipal GAP 해소: 대구 서구 parser
 
 - 대구 서구 비원뮤직홀 공식 공연일정은 HTML 안에 `listMonthly[].playList[]` JSON payload를 직접 포함한다. 2026 schedule에서 `title/startDate/endDate/place/idx` core가 명시적으로 확인됐다.
@@ -997,7 +990,6 @@ UI 기준:
 - source `daegu-서`를 Registry에 registered_parser로 추가했고 retained fixture/test를 추가했다.
 - main 누적 신규 준비량은 기존 +8에 대구 서구 +1을 더해 **총 +9**. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — municipal Batch E +1 원주
 
 - 원주시 공식 주요 문화행사 월간일정은 table header가 `행사명 / 기간 / 장소명`을 명시하고, 2026-09 실제 row에서 full-year date와 venue를 self-contained로 제공한다.
@@ -1005,13 +997,11 @@ UI 기준:
 - retained live-shape fixture에서 완전한 row 1건은 candidate가 되고 venue 누락 row는 fail-closed 제외되는 테스트를 추가했다.
 - main 누적 신규 준비량은 **총 +10**. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — 대구 서구 parser CI fixture 회귀 수정
 
 - 신규 registered parser `daegu-서` 추가 뒤 공통 parser-backed fixture test의 fixture map에 해당 key가 빠져 Project checks 1건이 실패한 원인을 확인했다.
 - runtime/parser 동작은 변경하지 않고 `tests/municipal-generic-html.test.ts`의 기존 registered-parser fixture map에 대구 서구 retained fixture를 연결했다.
 - 기능 변경이 아닌 test contract 누락 수정이며 production deploy 대상이 아니다.
-
 
 ## 2026-09-26 — municipal Batch F +2 용인·이천
 
@@ -1020,14 +1010,12 @@ UI 기준:
 - 둘 다 기존 `generic_fallback`만 사용하며 새 parser/publication policy는 추가하지 않았다. source parse failure는 기존 source_outcomes fail-closed 경로로 격리된다.
 - main 누적 신규 준비량은 **총 +12**. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — access HOLD 해제: 의정부 +1
 
 - `gyeonggi-의정부` 공식 2026 연간 행사·축제 목록이 다시 정상 접근되고 현재 38페이지 table에서 제목·시작일·종료일·장소·담당부서를 명시적으로 제공함을 재확인했다.
 - HOLD였던 접근 상태를 해제하고 first page only `generic_fallback` Registry opt-in으로 전환했다. pagination parameter는 추측하지 않았다.
 - live-shape retained fixture로 split start/end columns와 venue가 candidate core로 추출되는 계약을 고정했다.
 - main 누적 신규 준비량은 **총 +13**. production deploy는 아직 하지 않는다.
-
 
 ## 2026-09-26 — municipal parser Batch G +3 옥천·안동·부산 동구
 
@@ -1038,14 +1026,12 @@ UI 기준:
 - 세 source 모두 retained live-shape fixture와 registered-parser path 회귀 테스트를 추가했다. pagination은 추측하지 않고 first page only로 제한했다.
 - main 누적 신규 준비량은 기존 +13에서 **총 +16**으로 증가. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — access HOLD 해제: 영주 +1
 
 - GitHub Actions live fetch에서 영주시 문화달력이 HTTP 200으로 정상 접근되고, 현재 2026-09 일정의 title·venue·full-year start/end·detail `mon_uid`가 같은 행사 block에 있음을 확인했다.
 - calendar는 같은 multi-day 행사를 여러 날짜에 반복 노출할 수 있어 `mon_uid` 기준 dedupe하는 registered parser를 추가했다.
 - `gyeongbuk-영주` access HOLD를 해제하고 Registry opt-in했다. retained live-shape fixture에서 category/title/venue/date/detail id와 중복 제거를 검증한다.
 - main 누적 신규 준비량은 **총 +17**. production deploy는 아직 하지 않는다.
-
 
 ## 2026-09-26 — access HOLD 해제: 해운대 +1
 
@@ -1055,7 +1041,6 @@ UI 기준:
 - `busan-해운대` HOLD를 해제하고 annual source로 Registry opt-in했다.
 - main 누적 신규 준비량은 **총 +18**. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — municipal GAP 해소: 경주 +1
 
 - GitHub Actions live probe에서 경주문화관광 `mnu_uid=4609&listType=list`가 HTTP 200으로 current list를 직접 반환하고, 각 `dl`에 title·full-year 기간·장소·first-party detail `con_uid`를 self-contained로 제공함을 확인했다.
@@ -1064,7 +1049,6 @@ UI 기준:
 - retained live-shape fixture와 registered-parser 회귀 테스트를 추가했다.
 - main 누적 신규 준비량은 **총 +19**. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — municipal parser Batch H +1 울산 중구
 
 - GitHub Actions live fetch에서 울산 중구 문화예술업종행사일정이 HTTP 200으로 정상 접근되고, 공식 공연분과 table이 heading에 2026년/월을 명시하며 행사명·일자·장소를 제공함을 확인했다.
@@ -1072,7 +1056,6 @@ UI 기준:
 - '미정' title, 날짜를 정확히 해석할 수 없는 row, venue 누락은 fail-closed 제외한다.
 - 현재 live page 자체는 2026-05 공연분과로 오래된 일정이므로 당장 publish 증가를 기대하지 않고, 다음 공식 갱신 시 자동 수집 가능한 상태로만 전환한다.
 - main 누적 신규 준비량은 **총 +20**. production deploy는 아직 하지 않는다.
-
 
 ## 2026-09-26 — municipal JSON source staging: 포항 +1
 
@@ -1084,7 +1067,6 @@ UI 기준:
 - staging branch Project checks 성공 후 commit `2e161e8dbe14c90fa0a217e939bd4b3e4151f89a`를 main에 fast-forward 반영했다.
 - main 누적 신규 준비량은 **총 +21**. production deploy는 아직 하지 않았다.
 
-
 ## 2026-09-26 — municipal GAP 해소: 포천 +1
 
 - 기존 포천 문화사업 월간목록은 list/detail 모두 장소를 `기타`로만 제공하는 항목이 많아 venue core를 안전하게 채울 수 없음을 GitHub Actions POST-detail probe로 재확인했다.
@@ -1094,7 +1076,6 @@ UI 기준:
 - retained live-shape fixture/test를 추가했다.
 - main 누적 신규 준비량은 기존 +21에서 **총 +22**. production deploy는 아직 하지 않는다.
 
-
 ## 2026-09-26 — municipal GAP 해소: 거제 +1
 
 - 거제시 공식 문화관광 행사일정표는 web 확인 기준 2026 월별 목록에서 행사명·장소·기간·시간을 동일 row에 제공한다. 기간은 `26.08.21 ~ 26.08.22`처럼 2자리 연도라 generic full-year parser가 의도적으로 거부하던 구조다.
@@ -1103,7 +1084,6 @@ UI 기준:
 - first-party detail href가 있으면 보존하고 없으면 공식 월별 목록 URL을 provenance로 유지한다.
 - GitHub Actions 환경에서 해당 host fetch는 실패했지만 공식 web source는 접근 가능하므로 source_outcomes 격리 전제 하에 opt-in했다. production에서 fetch 실패 시 이 source만 error로 격리된다.
 - main 누적 신규 준비량은 **총 +23**. production deploy는 아직 하지 않는다.
-
 
 ## 2026-09-26 — 채팅 한도 도달 handoff 저장
 
@@ -1139,7 +1119,6 @@ UI 기준:
 - 다음 안전한 단계는 이 audit PR 검증/merge 후, 누적 +23 source를 기존 Worker에 production deploy 1회로 반영하는 것이다. Cloudflare 인증이 필요한 실제 deploy는 사용자 Codespaces 환경이 필요한 checkpoint로 취급한다.
 - TourAPI와 UI v2는 계속 동결한다.
 
-
 ## 2026-09-26 — PR #26 merged / production deploy checkpoint
 
 - PR #26 `docs: close final municipal ready audit`의 Project checks가 success로 완료된 뒤 main에 병합했다.
@@ -1149,7 +1128,6 @@ UI 기준:
 - 다음 단계는 사용자 Codespaces/Cloudflare 인증 환경에서 기존 Worker `weekend-mwohae`에 production deploy 1회 수행 후 galteum.com smoke를 확인하는 것.
 - 신규 Cloudflare resource, D1 migration/write, Cron 변경, secret 변경은 필요 없다. 다음 자연 10:00 KST Cron에서 35 source의 `source_outcomes`를 read-only로 검증한다.
 
-
 ## 2026-09-26 — municipal detail route hotfix merged
 
 - +23 municipal source production deployment itself succeeded; deployed Worker version before hotfix redeploy is `b722c4a5-70aa-43d3-ba70-3b0405c2ef0a`.
@@ -1157,7 +1135,6 @@ UI 기준:
 - PR #27 `fix: support municipal event ids in detail routes` passed both Project checks and UI browser smoke and was merged to main as `2033d54b457d4b190b1df66a1d0828bb2240e2b8`.
 - The fix changes URL encoding/decoding/validation and related tests only; it does not change D1 rows/schema, Cron, secrets, ingestion policy, or Cloudflare resources.
 - Next checkpoint: pull latest main in Codespaces, run one verified production redeploy, then run production smoke. If smoke passes, close the +23 deploy stabilization phase and wait for the next natural 10:00 KST Cron to validate all 35 Registry sources via `source_outcomes`.
-
 
 ## 2026-09-26 — +23 production deploy stabilization complete
 
@@ -1171,7 +1148,6 @@ UI 기준:
 - 다음 단계: 2026-09-27 10:00 KST 자연 base Cron에서 Registry 35 source의 `source_outcomes`를 read-only 검증한다. 실패 source만 분리하고 정상 source는 건드리지 않는다.
 - 해당 자연수집 검증이 끝나면 전국 245개 1차 조사 + 현재 바로 onboarding 가능한 source 단계는 마감하고, COLLECTOR_GAP 41개를 반복 유형별 공통 기능으로 해결하는 다음 Phase로 넘어간다.
 
-
 ## 2026-09-26 — all-35 municipal production verifier ready
 
 - PR #28 `feat: verify all municipal production sources` passed Project checks and was merged to main as `f5edabce93e3072b8d764de22bdc5d505c49b931`.
@@ -1180,7 +1156,6 @@ UI 기준:
 - A regression test locks verifier keys to `MUNICIPAL_SOURCE_REGISTRY`, so future Registry additions cannot silently drift from production verification coverage.
 - No Worker/runtime behavior, D1 schema/data, Cron, secrets, ingestion, or production deployment changed; Cloudflare redeploy is not needed for this verifier-only change.
 - Next action remains: after the 2026-09-27 10:00 KST natural base Cron, pull latest main and run `npm run verify:morning:prod -- --remote` to inspect all 35 sources. Do not trigger manual ingestion.
-
 
 ## 2026-09-26 — all-source verifier D1 query compatibility fix
 
@@ -1191,7 +1166,6 @@ UI 기준:
 - No Worker/runtime behavior, D1 schema/data, Cron, secrets, ingestion, or production deployment changed. No redeploy is required.
 - A verifier run on 2026-09-26 will still reflect the latest base run from 10:00 KST, which occurred before the +23 production deploy; therefore incomplete 35-source outcomes are expected until the 2026-09-27 10:00 KST natural base run.
 
-
 ## 2026-09-26 — all-35 verifier compatibility confirmed against production D1
 
 - After PR #29, `npm run verify:morning:prod -- --remote` completed successfully against production D1; the prior `LIKE or GLOB pattern too complex` error is resolved.
@@ -1199,7 +1173,6 @@ UI 기준:
 - Therefore the all-source summary correctly reported expected 35 / reported 12 / ok 9 / error 3 / missing 23. The 23 missing keys are exactly the post-deploy batch and are not treated as current failures yet.
 - The three legacy sources 과천·하남·상주 remain explicit `source_error` in that pre-deploy base run.
 - Next decisive checkpoint remains the 2026-09-27 10:00 KST natural base run. After it finishes, rerun the same read-only verifier and classify only sources that are still error/missing/zero-observed in that new base.
-
 
 ## 2026-09-26 — SEO internal-link fix merged / production deploy checkpoint
 
@@ -1209,7 +1182,6 @@ UI 기준:
 - Project checks and UI browser smoke both passed. PR #30 merged to main as `3de8d6f270cec27461d341a599d3a83aef787d32`.
 - No municipal ingestion, D1, Cron, Registry, API contract, or production data changed.
 - This frontend/runtime change still needs one verified production deploy and production smoke from the authenticated Codespaces environment before the SEO task is closed.
-
 
 ## 2026-09-26 — SEO home-to-detail internal links deployed
 
@@ -1221,7 +1193,6 @@ UI 기준:
 - Municipal ingestion/D1/Cron/Registry에는 변경 없음.
 - 이 SEO bounded task는 production까지 완료로 닫는다.
 - 다음 독립 SEO 후보: 지역/기간 검색어를 받을 indexable landing surface 필요성 및 현재 query-URL canonical 동작 점검. 기존 municipal 35-source natural validation은 별도 대기 상태를 유지한다.
-
 
 ## 2026-09-26 — Seoul weekend SEO landing merged / production deploy checkpoint
 
@@ -1235,7 +1206,6 @@ UI 기준:
 - Frontend/Worker/SEO runtime change이므로 authenticated Codespaces에서 verified production deploy + smoke가 필요하다.
 - Municipal 35-source natural validation은 독립적으로 2026-09-27 10:00 KST checkpoint를 유지한다.
 
-
 ## 2026-09-26 — Seoul weekend SEO landing deployed
 
 - SEO 2차 pilot landing이 authenticated Codespaces에서 production에 verified deploy됐다.
@@ -1245,7 +1215,6 @@ UI 기준:
 - Pilot URL은 `/weekend/seoul`; 일반 faceted query URL은 계속 홈 canonical 통합 정책을 유지한다.
 - Municipal ingestion/D1/Cron/Registry에는 변경 없음.
 - External fetch 도구에서는 galteum.com 직접 응답 검증이 차단되어 있어, production-specific SEO head/sitemap 최종 확인은 Codespaces에서 curl로 확인한다.
-
 
 ## 2026-09-26 — Seoul weekend SEO landing production verification complete
 
@@ -1259,7 +1228,6 @@ UI 기준:
 - SEO 2차 pilot landing task is fully closed through production verification.
 - Expansion to additional regional/period landing pages remains gated on pilot indexing/traffic evidence; do not mass-generate similar pages yet.
 
-
 ## 2026-09-26 — pre-promotion production QA completed: 2 blockers found
 
 - 홍보 전 production 실사용 QA를 임시 PR #32에서 read-only로 실행했고, PR은 결과 수집 후 merge 없이 closed 처리했다. main/production 데이터에는 영향 없음.
@@ -1272,7 +1240,6 @@ UI 기준:
 - 따라서 현재 verdict는 `NOT_PROMOTION_READY`. 본격 홍보 전 위 2개 blocker를 각각 bounded fix로 닫고 동일 production QA를 다시 통과시켜야 한다.
 - 다음 bounded task 우선순위: municipal URL형 ID의 public detail 404 수정 → regression test → CI → deploy → affected URL production 200/canonical 확인. 그 다음 mobile 390px event-grid overflow 수정.
 
-
 ## 2026-09-26 — encoded municipal public detail 404 fix merged / deploy checkpoint
 
 - Promotion blocker #1 root cause confirmed: event lookup/decode was correct (detail API 200), but SEO/public detail rendering fetched the encoded `/events/:id` path from the Static Assets binding. For URL-bearing municipal IDs, the asset layer could return 404 even after the Worker had already found the event.
@@ -1282,7 +1249,6 @@ UI 기준:
 - No D1, ingestion, Cron, Registry, collector, or API contract changes.
 - Production deploy + direct verification of `서울함공원 한가위 특별행사` public URL (HTTP 200 + canonical) is still required before blocker #1 is closed.
 - Promotion blocker #2 remains: 390px mobile event-grid horizontal overflow (~42px).
-
 
 ## 2026-09-26 — promotion blockers status: #1 production closed, #2 merged / deploy checkpoint
 
@@ -1296,7 +1262,6 @@ UI 기준:
 - UI browser smoke SUCCESS and Project checks SUCCESS. PR #34 merged to main as `2d7affe25555e0205791d801785a07da404fd172`.
 - No D1, ingestion, Cron, Registry, collector, API, or SEO-route change.
 - Promotion blocker #2 still needs authenticated production deploy + smoke + direct 390px production verification before the promotion readiness gate can be re-evaluated.
-
 
 ## 2026-09-26 — promotion blocker #2 production verification complete
 
@@ -1313,7 +1278,6 @@ UI 기준:
 - Promotion blocker #1 was already closed in production with HTTP 200 + correct canonical for the encoded Seoul Hangang municipal event detail.
 - Therefore the two concrete blockers found by the 30-event pre-promotion QA are both closed. A final read-only promotion QA rerun is the remaining gate before starting broad promotion.
 
-
 ## 2026-09-26 — final promotion-readiness QA passed
 
 - Final read-only production QA rerun completed via temporary PR #35; PR was closed without merge and made no production writes.
@@ -1328,7 +1292,6 @@ UI 기준:
 - Warnings: 17 total. Sixteen were `source_fetch_error` from the GitHub runner while probing external official pages; these are treated as external-network/probe warnings, not confirmed event-data defects. One warning was `2026 수원화성 미디어아트` with event.checked_at roughly 150h old and remains a freshness item for routine monitoring.
 - Promotion readiness gate is now passed for broad promotion, with normal post-launch monitoring required. SEO/indexing and the Sep 27 municipal all-35 natural-run verification remain separate lanes.
 
-
 ## 2026-09-26 — Search Console/indexing readiness audit
 
 - Public search probe for `site:galteum.com` returned no visible indexed results at audit time. This is not a definitive Search Console index verdict, but indicates no obvious public search presence yet.
@@ -1336,7 +1299,6 @@ UI 기준:
 - Repository has Naver site verification meta but no Google site verification meta. This does not imply Search Console is unverified because a Google Domain property should normally be verified by DNS TXT/CNAME and does not require an HTML meta tag.
 - Next operational gate is Search Console account/property verification plus sitemap submission and URL Inspection for `/`, `/weekend/seoul`, and representative event detail URLs.
 - No code change is required before Search Console setup. Do not add a Google verification meta token unless the user chooses URL-prefix HTML-tag verification and provides the exact token.
-
 
 ## 2026-09-26 — Google Search Console connected / sitemap re-submitted
 
@@ -1351,7 +1313,6 @@ UI 기준:
 - Sitemap was re-submitted successfully at `2026-09-26T05:58:59.708Z`; accepted/confirmed, warnings 0, errors 0, currently pending Google re-download.
 - Do not repeatedly poll. Re-check sitemap/index status after Google has had time to fetch the updated sitemap.
 
-
 ## 2026-09-26 — social share preview metadata merged / deploy checkpoint
 
 - Promotion-link audit found homepage and `/weekend/seoul` had no `og:image`; event pages only had an image when a usable event image existed.
@@ -1363,7 +1324,6 @@ UI 기준:
 - No D1, ingestion, Cron, Registry, municipal source, or public API change.
 - Production deploy + direct verification of `/galteum-share.png` and page OG tags is still required before this promotion-share task is closed.
 
-
 ## 2026-09-26 — social share preview production verification complete
 
 - Social share preview changes were deployed from main `c6216f810b61ed8ca9a80e1d759f0f566f40f8a9`.
@@ -1374,7 +1334,6 @@ UI 기준:
 - `/weekend/seoul` production HTML emits the same complete social-preview image metadata with landing-specific title/description.
 - Social share preview bounded task is fully closed in production.
 
-
 ## 2026-09-26 — first promotion channel selected: Threads 7-day organic pilot
 
 - Search Console baseline before active promotion: last 28 settled days through 2026-09-23 = 0 clicks, 2 impressions, root page only. This is the measurement baseline for first-promotion lift.
@@ -1384,14 +1343,12 @@ UI 기준:
 - First 7-day experiment should test three message angles: `서울 이번 주말 뭐하지?`, `아이랑/데이트 어디 가지?`, and `축제·행사 한눈에 보기`.
 - Success is evaluated on Threads views/replies/reposts/link clicks plus GA/Search Console lift, not follower count alone.
 
-
 ## 2026-09-26 — promotion pilot paused / UI polish reprioritized
 
 - User paused the planned Threads promotion pilot before execution.
 - Do not start active promotion yet.
 - Immediate priority is UI polish/review on current production before traffic acquisition resumes.
 - When UI work restarts, inspect current production/code state and follow `docs/UI_V2_DIRECTION.md`; do not reopen already-completed UI v2 work unless there is a concrete regression or a newly identified visual/UX issue.
-
 
 ## 2026-09-26 — home hierarchy + horizontal rail fix merged / production pending
 
@@ -1410,7 +1367,6 @@ UI 기준:
 - No D1/API/SEO route/municipal/detail-page change.
 - Production deploy and public desktop/mobile visual verification are still required before this UI task is closed.
 
-
 ## 2026-09-26 — home hierarchy + horizontal rail production verification complete
 
 - Main `ae73de30adaa9d8b1d546e5ad959c503d67640a2` deployed to production.
@@ -1428,7 +1384,6 @@ UI 기준:
   - footer = x 16 / width 358
 - Therefore the user-reported top/bottom width mismatch is closed in production and the stronger first-screen hierarchy is live without horizontal overflow.
 
-
 ## 2026-09-26 — home card / section hierarchy merged, production pending
 
 - PR #38 `style: strengthen home card and section hierarchy` merged as `12b3739c8e123dd7f67e8cdebcb4d75b2cf9d364`.
@@ -1442,7 +1397,6 @@ UI 기준:
 - UI browser smoke #109 SUCCESS; Project checks #639 SUCCESS.
 - No D1/API/ingestion/municipal/SEO-route/detail-page changes.
 - Production deploy + desktop/mobile visual verification remain required before closing this bounded task.
-
 
 ## 2026-09-26 — home card / section hierarchy production verification complete
 
@@ -1462,7 +1416,6 @@ UI 기준:
   - featured card title size 14px
 - Therefore the home card/section hierarchy task is fully closed in production without layout regression.
 
-
 ## 2026-09-26 — trust section / footer polish merged, production pending
 
 - PR #39 `style: polish home trust section and footer` merged as `7eb50cef60f3de2cc7d722b5dbe885047348fc11`.
@@ -1473,7 +1426,6 @@ UI 기준:
 - Browser regression covers light footer treatment, trust surface, removal of prelaunch copy, and horizontal overflow.
 - UI browser smoke #111 SUCCESS; Project checks #649 SUCCESS.
 - Production deploy + desktop/mobile public verification remain required before closing this bounded task.
-
 
 ## 2026-09-26 — trust section / footer production verification complete
 
@@ -1491,7 +1443,6 @@ UI 기준:
   - obsolete prelaunch copy absent
 - Trust/footer polish task is fully closed in production.
 
-
 ## 2026-09-26 — home control cleanup merged, production pending
 
 - User production review found the home still visually cluttered, especially when a quick category such as 공연 was selected: theme selection auto-opened the advanced filter panel, the same theme controls were repeated inside that panel, and the active-filter row repeated the selection again.
@@ -1503,7 +1454,6 @@ UI 기준:
 - Footer now has a full bottom border/radius plus bottom breathing room, fixing the visually clipped ending.
 - UI browser smoke #113 SUCCESS; Project checks #659 SUCCESS.
 - Production deploy + desktop/mobile visual verification are still required before closing this bounded task.
-
 
 ## 2026-09-26 — home control cleanup production verification complete
 
@@ -1520,7 +1470,6 @@ UI 기준:
   - footer bottom radius 22px / bottom border 1px / bottom margin 34px
 - Mobile 390px verification: document scrollWidth = viewport = 390.
 - Home control cleanup / sparse-result / footer-finish bounded task is fully closed in production.
-
 
 ## 2026-09-26 — benchmark-informed home visual cleanup merged, production pending
 
@@ -1543,7 +1492,6 @@ UI 기준:
 - Final UI browser smoke #117 SUCCESS; Project checks #674 SUCCESS.
 - Production deploy + public desktop/mobile visual verification remain required before closing this bounded task.
 
-
 ## 2026-09-26 — benchmark home visual production deploy complete / mobile direct verify pending
 
 - Main `7bd0a2651dfa84f5dff102160a0c2c3fb1f3a259` deployed to production.
@@ -1559,7 +1507,6 @@ UI 기준:
 - Mobile direct verification script failed before assertions because `document.querySelector('.featured-grid')` was null when `getComputedStyle` ran. This is a verification-script timing issue, not evidence of a production UI failure; UI browser smoke #117 had already passed mobile coverage before merge.
 - Run one short mobile production check that waits for `.featured-grid` before reading computed styles, then close this bounded task if 2 columns / 14px title / no horizontal overflow pass.
 
-
 ## 2026-09-26 — benchmark-informed home visual production verification complete
 
 - Production Worker `0e30b84c-3549-4fac-b1cd-d6f7e93b8582` remains live with the benchmark-informed home visual cleanup.
@@ -1571,7 +1518,6 @@ UI 기준:
   - featured card title = 14px
 - Therefore the benchmark-informed home palette / hierarchy bounded task is fully closed in production.
 - No redeploy is required for this documentation-only closure.
-
 
 ## 2026-09-27 — home typography rhythm production verification complete
 
@@ -1597,7 +1543,6 @@ UI 기준:
 - Do not start another speculative UI redesign. Continue UI work only from a new production screenshot or a concrete visible issue.
 - Independent lane: the 2026-09-27 municipal all-35 natural-run checkpoint becomes due after the 10:00 KST base Cron; it does not block the closed UI task.
 - Do not mass-create SEO landing pages or reopen TourAPI detail/recovery without new evidence.
-
 
 ## 2026-09-27 — detail audit / action + mobile media production complete
 
@@ -1630,7 +1575,6 @@ UI 기준:
 - Do not manually trigger ingestion unless the natural-run audit provides concrete evidence that recovery is required.
 - Active promotion remains paused until the user explicitly resumes it.
 
-
 ## 2026-09-27 — municipal 35-source natural-run root fix merged / production pending
 
 - Sep 27 10:00 KST natural run completed TourAPI successfully (214/214 detail backlog complete) but municipal source outcomes were 9 OK / 26 error.
@@ -1657,7 +1601,6 @@ UI 기준:
 - First complete natural production checkpoint: Sep 28 after 11:45 KST. Run the read-only morning/production verifier after all three shard windows have completed.
 - Do not manually trigger municipal ingestion merely to backfill Sep 27; wait for the complete Sep 28 natural cycle unless a new concrete outage requires recovery.
 
-
 ## 2026-09-27 — municipal rich-detail coverage audit tooling ready
 
 - User surfaced a Seoul Hangang event where the official detail page contains rich images, time, free/paid info, contact, intro and programs while Galtteum shows only sparse detail.
@@ -1678,7 +1621,6 @@ UI 기준:
 - No Worker deploy is required for this tooling-only change.
 - Current next bounded step: run the 35-source read-only audit and classify sources into common rich-detail patterns before implementing any extractor/storage changes.
 - Keep the municipal shard production behavior frozen until the first complete Sep 28 natural-cycle verification after 11:45 KST.
-
 
 ## 2026-09-27 — municipal rich-detail foundation merged
 
@@ -1709,7 +1651,6 @@ UI 기준:
   3. surface municipality contact payload in the detail API;
   4. verify representative production details before broad rollout.
 
-
 ## 2026-09-27 — municipal detail-link discovery merged
 
 - PR #49 `feat: discover municipal event detail links safely` merged as `b867781ca69fb717eedbea6b41f1afc1709d43ed`.
@@ -1730,7 +1671,6 @@ UI 기준:
   - existing table/card generic extraction contracts remain intact.
 - This merge has NOT been deployed to the Worker yet. Keep production on the prior deployed version until the rich-detail ingestion wiring is complete, then deploy the combined change once before the Sep 28 natural cycle.
 - Next bounded task: wire the already-merged municipal rich-detail extractor/persistence foundation into the autonomous municipal path for both NEW and already-existing municipal events, with shard/fetch budgets preserved. Do not make enrichment depend only on `duplicateResult.decision === NEW`; existing sparse events must be eligible for bounded official detail refresh/backfill.
-
 
 ## 2026-09-27 — municipal rich-detail ingestion wired
 
@@ -1766,7 +1706,6 @@ UI 기준:
 - PR #50 has NOT been deployed to the production Worker yet.
 - Next bounded task: rerun the 35-source read-only rich-detail audit against latest main to measure detail-link recovery and remaining source/fetch gaps, then fix the remaining source classes before one combined production deploy.
 
-
 ## 2026-09-27 — municipal anchor-card detail links + identity bridge merged
 
 - Latest-main 35-source live read-only re-audit before this fix:
@@ -1794,7 +1733,6 @@ UI 기준:
 - PR #49/#50/#51 rich-detail work is still NOT deployed to the production Worker. Final deployment remains deferred until remaining source classes are handled, then deploy once before the Sep 28 natural cycle.
 - Next bounded task: resolve the remaining candidate-positive/detail-target-zero class, starting with exact JS/form detail-link patterns such as Gyeongsan `goDetail(event, id)` and Yeoju form/view routing, while treating true list-only rich sources separately from real per-event detail sources.
 
-
 ## 2026-09-27 — shard-safe production municipal one-shot ready
 
 - PR #52 `fix: shard manual municipal one-shot like production` merged as `73b506eadc3f32582e495e3d2fcd988ac9d4228d`.
@@ -1817,7 +1755,6 @@ UI 기준:
   - actual rich-detail-backfilled event rows with summary/image/hours/programs/price/contact signals.
 - No production ingestion or Worker deploy has been executed by PR #52 itself.
 - PAUSED_USER_ACTION: in Codespaces with a clean tree, pull latest main, deploy once with `npm run deploy:verified`, run production smoke, then run `npm run municipal:once` exactly once. Paste the JSON result for analysis before retrying any shard.
-
 
 ## 2026-09-27 — manual municipal one-shot timeout + same-day safety fixed
 
@@ -1846,7 +1783,6 @@ UI 기준:
   3. run `npm run municipal:once` once;
   4. paste the final JSON/progress output. If a shard transport fails, do not rerun all shards; use the printed shard number for targeted follow-up.
 
-
 ## 2026-09-27 — manual municipal rehearsal completed; verifier-only follow-up
 
 - Production deploy succeeded before the rehearsal:
@@ -1872,7 +1808,6 @@ UI 기준:
   - actual rich-detail-backed event rows;
   - explicit Seoul Hangang `달빛 한가위 마당` row with summary/image/hours/programs/price/contact.
 - Next user action: pull latest main only (no deploy needed), then run `npm run municipal:verify:manual -- --minutes=60` and paste the JSON. Use that result to determine exactly which 24 source errors are expected zero-candidate/parser gaps versus real fetch/runtime failures and whether Seoul Hangang backfill is visible.
-
 
 ## 2026-09-27 — rich-detail fetch starvation diagnosed and fixed
 
@@ -1900,7 +1835,6 @@ UI 기준:
   3. run `npm run municipal:once` once (same-day core mutation safety is already hardened);
   4. paste the complete final JSON. Do not run the standalone verifier first because the one-shot now contains the fixed verifier and should complete end-to-end.
 
-
 ## 2026-09-27 — shard 0 HTTP 500 diagnostic instrumentation merged
 
 - After deploying fetch-fairness Worker version `28f657b3-0434-4b9f-9a8f-c961213a388e`, production smoke passed.
@@ -1918,7 +1852,6 @@ UI 기준:
   2. run `npm run municipal:once -- --shard=0`;
   3. paste the full output.
 - Same-day core-change confirmation remains protected, so this targeted shard 0 diagnostic rerun cannot confirm a pending date/venue mutation on the same Korea calendar day.
-
 
 ## 2026-09-27 — shard 0 fairness rerun succeeded; Seoul Hangang backfill confirmed
 
@@ -2000,7 +1933,6 @@ UI 기준:
   6. completion criterion is the actual production detail screen, not D1 persistence or unit tests alone.
 - Do not claim completion until the user-visible production page is visually verified against the official page.
 
-
 ---
 
 ## 2026-09-27 — LATEST PRODUCT DECISION: discovery-first roadmap supersedes Hangang parity priority
@@ -2047,7 +1979,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Do not continue broad rich-detail expansion or Hangang-specific parity patching unless a later bounded task explicitly requires it.
 - The next engineering task should start from the quality gate, not from another detail parser patch.
 
-
 ## 2026-09-27 — Phase 1 done; next = backwards-compatible quality-state integration
 
 - Publish Quality Gate v1 is merged on main (PR #59, `365eebfc4bee85324125d1dd878b94369f1991d0`).
@@ -2060,7 +1991,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   4. add focused integration tests;
   5. do NOT mass-reclassify existing production rows yet;
   6. after that, build/read a production audit before any apply step.
-
 
 ## 2026-09-27 — Phase 2 done; next = read-only legacy quality audit
 
@@ -2076,7 +2006,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   4. make zero writes;
   5. use actual audit output to tune `publish_quality_v1` before an apply/deploy task.
 
-
 ## 2026-09-27 — read-only quality audit command ready; legacy apply still blocked
 
 - PR #61 merged as `aef8b8baa3bb68813fd27e4fcfbd2784a0a10168`.
@@ -2084,7 +2013,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - No production write/reclassification has happened.
 - Legacy quality apply must wait for one real production audit result.
 - Safe independent next task: improve exact official-link acquisition/storage for future/public events, especially TourAPI rows that currently have no `공식 안내 확인` action.
-
 
 ## 2026-09-27 — Phase 3 official-link foundation merged; production rollout still pending
 
@@ -2099,7 +2027,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - This code is merged but production migration/deploy/backfill has NOT been completed in this chat.
 - Legacy quality reclassification remains blocked until one real production read-only quality audit is reviewed.
 - Next safe code task: simplify the detail-page responsibility around concise core visit facts + a strong official handoff, without deleting existing rich-detail data.
-
 
 ---
 
@@ -2116,7 +2043,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - This change is intended to remove the exact class the user flagged: records that technically look event-like by title but are too thin to deserve public listing.
 - Legacy production rows are still not mass-reclassified until the read-only production audit is reviewed.
 
-
 ## 2026-09-27 — guarded discovery rollout is merged; production execution remains the only rollout boundary
 
 - Latest main: `74e3504386c54fca25ac59c78575b04783ba1d80`.
@@ -2128,14 +2054,12 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Do not ask the user to decide routine implementation details; continue independent code phases where production credentials are not required.
 - Do not claim production quality-gate rollout complete until the guarded command succeeds.
 
-
 ## 2026-09-27 — regional weekend SEO expansion merged
 
 - PR #73 merged green as `1476844767dc6406d92901c54242d4c75afd86cf`.
 - Weekend discovery landings now cover all 17 public regions via `/weekend/<region-slug>`.
 - The internal `전남광주` transitional region is intentionally not exposed as a public SEO landing.
 - Production deployment remains coupled to the guarded discovery rollout; do not deploy separately just for this config-only SEO expansion.
-
 
 ## 2026-09-27 — discovery rollout preflight fix merged
 
@@ -2144,7 +2068,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - No production write occurred in the failed attempt.
 - Next authenticated Codespaces step: pull latest main, then rerun `npm run rollout:discovery:v1`.
 - Do not apply migrations or deploy separately; keep the guarded rollout path.
-
 
 ## 2026-09-27 — production discovery v1 is deployed; final verification + legacy reclassification remain
 
@@ -2157,7 +2080,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Legacy rows are still grandfathered PUBLIC; the 17 proposed HOLD rows have not yet been written. Do not claim quality cleanup complete until a safe explicit legacy reclassification step is audited/applied.
 - Next authenticated Codespaces action should avoid unnecessary repeat migration work: pull latest main, run production browser verification with the corrected test, then run the remote zero-write quality audit and inspect HOLD examples before any legacy write.
 
-
 ## 2026-09-27 — final guarded legacy quality rollout is ready
 
 - PR #77 merged green as `54ed53657b30a8bc3299f0f47b152c43b2e06452`.
@@ -2167,7 +2089,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The write versions all audited legacy rows with `publish_quality_v2`; post-check must show `legacy_unversioned=0` and `proposed_visibility_changes=0`.
 - Next authenticated Codespaces action: pull latest main and run `npm run rollout:discovery:v1` once more. This is now the intended completion path.
 
-
 ## 2026-09-27 — discovery verification/apply output shortened
 
 - User terminal scrollback lost the beginning of the quality audit because the commands printed very large JSON.
@@ -2175,7 +2096,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - `verify:discovery:v1` now uses summary-only audit output.
 - `apply:publish-quality:v1` now prints only key before/after counts and rollout state; full audit data is still used internally for safety validation.
 - Next authenticated Codespaces step: pull latest main, then rerun the concise verification/apply commands. Do not paste or depend on the old truncated output.
-
 
 ## 2026-09-27 — Phase 1/2 closed; Phase 3 official-link cleanup is next
 
@@ -2186,7 +2106,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Official-link coverage is now the main quality bottleneck: EVENT_OFFICIAL_LINK 66 / FIRST_PARTY_SOURCE_ONLY 44 / TOURAPI_ONLY 148 / MISSING 0.
 - Next work must focus on exact official-link acquisition/backfill, starting with explicit URLs already present in persisted TourAPI detail payloads before attempting any broader discovery.
 
-
 ## 2026-09-27 — Phase 3 cached TourAPI official-link backfill ready
 
 - PR #79 merged green as `201f1df8a7cf8daa3638b288da1b1ed78125754a`.
@@ -2196,7 +2115,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The command uses only explicit homepage fields already stored in TourAPI detail payloads; it does not guess/crawl.
 - It can safely promote HOLD→PUBLIC when the explicit homepage resolves the sparse TourAPI evidence gap, but blocks any PUBLIC hiding or EXCLUDE transition.
 - Use its concise output to measure how many of the 148 TourAPI-only link gaps were recoverable from cached detail. Then decide the next Phase 3 bounded task from the remaining gap population.
-
 
 ## 2026-09-27 — 149 TourAPI official links recovered; audit the remaining 65
 
@@ -2212,7 +2130,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   after pulling latest main.
 - The audit is read-only and will split the 65 into safe resolver categories. Use that output to choose the next bounded Phase 3 task. Do not web-search all 65 indiscriminately and do not guess official URLs.
 
-
 ## 2026-09-27 — resolve 38 explicit legacy TourAPI homepage gaps next
 
 - Production audit of the remaining 65 TourAPI no-link events:
@@ -2226,7 +2143,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - This command only resolves the 38 explicit provider homepage signals through verified HTTPS. It must not classify the 27 OTHER_HTTPS_URL rows as official.
 - After the command, use the concise remaining-gap count to decide the next bounded task for the 27 evidence-classification cases.
 
-
 ## 2026-09-27 — 20 more TourAPI official links recovered; 45 remain
 
 - Explicit legacy homepage production resolver result:
@@ -2237,7 +2153,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
   - remaining TourAPI no-link rows 45
 - Do not re-run the same resolver as a discovery strategy; the next Phase 3 task should classify/verify the remaining evidence population, especially OTHER_HTTPS_URL, without guessing.
 
-
 ## 2026-09-27 — 상세 top-media density v3 merged; production deploy pending
 
 - PR #82 merged green as `5227acf5996e58a6335618ee484ff63d3be2273b`.
@@ -2245,7 +2160,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Mobile keeps top media and single-column core facts with compact supporting facts.
 - Rich Hangang browser geometry regression plus full UI browser smoke and Project checks passed.
 - Production is not yet deployed from this merge. Next authenticated Codespaces step is a verified frontend/Worker deploy followed by production browser smoke; no D1 migration or ingestion run is needed.
-
 
 ## 2026-09-27 — 상세 v3 production smoke stale contract fixed
 
@@ -2255,7 +2169,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - No redeploy is needed for PR #83 because it changes tests only.
 - Next authenticated Codespaces action: pull latest main and rerun only `TEST_BASE_URL=https://galteum.com TEST_OUTPUT_DIR=test-results/detail-v3-production npm run test:ui:prod`. If both desktop/mobile pass, close the detail v3 UI task and resume Phase 3 remaining official-link work.
 
-
 ## 2026-09-27 — detail v3 closed in production; resume Phase 3 links
 
 - Final production smoke after PR #83 passed desktop and mobile (2/2).
@@ -2263,13 +2176,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Next work returns to Phase 3 official-link quality. Current remaining TourAPI no-link population is 45: 18 unresolved explicit legacy-homepage cases + 27 OTHER_HTTPS_URL evidence cases.
 - Do not rerun the same explicit resolver as a discovery strategy; classify the remaining evidence set next.
 
-
 ## 2026-09-27 — audit the 27 OTHER_HTTPS TourAPI gaps next
 
 - PR #84 merged green as `9cbb37ecc1f12acd16cd3a361d06151bfa112b8d`.
 - Next authenticated Codespaces command after pulling latest main: `npm run official-links:audit:tourapi-other-https -- --remote`.
 - This is zero-write. Use its reachability/title-signal/domain-category output to decide which remaining URLs can become verified official links and which must stay unresolved.
-
 
 ## 2026-09-27 — Korea Tourism-style poster-first home merged; deploy pending
 
@@ -2278,7 +2189,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - UI browser smoke + Project checks passed.
 - Production frontend deploy is still pending.
 - Next separate data-quality task: audit events where Galteum shows the no-image fallback but the official event/detail page actually contains a poster, then fix the ingestion/extractor path rather than decorating the fallback.
-
 
 ## 2026-09-27 — home production PASS; run missing-poster audit next
 
@@ -2289,7 +2199,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - This audit is zero-write and is specifically for the observed case where Galteum shows a no-image fallback although the official event/detail page appears to contain a poster.
 - Use its `by_classification`, `recoverable_from_existing_evidence`, and per-event candidate output to choose the next ingestion fix.
 
-
 ## 2026-09-27 — TourAPI no-image root cause fixed; production backfill next
 
 - Audit proved many TourAPI cards had `current_image_status=missing_row` while the raw source payload already contained `firstimage`/`firstimage2`.
@@ -2298,7 +2207,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Next authenticated Codespaces command after pulling main: `npm run images:backfill:tourapi-primary -- --remote --apply`.
 - After backfill, verify remaining TourAPI missing primary count and production home cards. Do not treat municipal first-party page icons/menu assets as posters; municipal poster recovery remains a separate bounded task.
 
-
 ## 2026-09-27 — 45/46 TourAPI missing posters recovered in production
 
 - Production backfill result: scanned 46, recovered 45, remaining 1.
@@ -2306,13 +2214,11 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Do not spend more time on TourAPI poster fallback styling. The TourAPI root cause is fixed.
 - Next bounded image task: identify the one remaining TourAPI case and then municipality/organizer PUBLIC events whose official pages contain a real event poster but `event_images` is still missing/non-ok. Use official-page evidence and exclude logos/menu/icons/generic site artwork.
 
-
 ## 2026-09-27 — compact poster-gap audit command available
 
 - PR #88 merged green as `f2317800db2fcc7641685d8417c610d820ba7b3a`.
 - The existing missing-poster audit now supports `--summary` to avoid oversized Codespaces output.
 - Next command: `npm run images:audit:missing-posters -- --remote --summary` after pulling main.
-
 
 ## 2026-09-27 — exact municipal detail extraction v2 merged; production backfill next
 
@@ -2320,7 +2226,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - PR #89 merged green as `25b3d3494071e83f404417acf27197a4e85ee091`.
 - Extractor now handles Suwon/Hangang-style real page structures more completely and rejects common/default/menu/noimg assets.
 - Next authenticated Codespaces sequence: pull main, `npm run deploy:verified`, then run `npm run municipal:once` to backfill current municipal rich detail using the existing safe one-shot/shard machinery. After that run production UI smoke and a concise detail completeness check before further parser work.
-
 
 ## 2026-09-28 — municipal rich-detail 1102 mitigation merged; production continuation needs Codespaces
 
@@ -2350,7 +2255,6 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - Commits: `bc67ac6` registry contract/Geoje URL, `471424d` Geoje parser base, `3c9fdff` regression assertions.
 - GitHub Project checks including `npm run check` and municipal inventory check PASS.
 - Production action still required: deploy latest main, rerun only shard 2, then read-only manual verify. Do not rerun shard 0 or shard 1.
-
 
 ## 2026-09-28 — shard-2 retry still failed; exact-source retry support added
 

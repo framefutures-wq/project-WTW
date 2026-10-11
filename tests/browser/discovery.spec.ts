@@ -2,9 +2,11 @@ import { test, expect, type Page } from "@playwright/test";
 
 async function scrollToLoadedResults(page: Page) {
   await expect(page.locator(".event-card").first()).toBeVisible();
-  await page.locator(".results").evaluate((element) =>
-    element.scrollIntoView({ block: "start", behavior: "instant" }),
-  );
+  await page
+    .locator(".results")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
 }
 test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", async ({ page }) => {
   const errors: string[] = [];
@@ -17,7 +19,10 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   ).toBeVisible();
   const regionResponse = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return url.pathname === "/api/events" && url.searchParams.get("region") === "서울";
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("region") === "서울"
+    );
   });
   await page.getByLabel("지역", { exact: true }).selectOption("서울");
   await regionResponse;
@@ -33,22 +38,26 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
     .locator(".quick-category-grid")
     .getByRole("button", { name: "꽃", exact: true })
     .click();
-  await expect(page.locator(".advanced-filters")).not.toHaveAttribute("open", "");
+  await expect(page.locator(".advanced-filters")).not.toHaveAttribute(
+    "open",
+    "",
+  );
   await expect(page.locator(".active-filters")).toHaveCount(1);
   const flowerData = await (await flowerResponse).json();
   expect(flowerData.total).toBe(1);
   await expect(page.locator(".event-card")).toHaveCount(1);
-  const flowerCardLink = page.getByRole("link", { name: "가을빛 꽃 산책 상세 보기" });
+  const flowerCardLink = page.getByRole("link", {
+    name: "가을빛 꽃 산책 상세 보기",
+  });
   await expect(flowerCardLink).toHaveAttribute("href", /^\/events\//);
   await flowerCardLink.click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  const detailPage = page.getByRole("region", { name: "행사 상세 정보" });
+  await expect(detailPage).toBeVisible();
   await expect(
-    page
-      .getByRole("dialog")
-      .getByText("실제 행사가 아닙니다.", { exact: false }),
+    detailPage.getByText("실제 행사가 아닙니다.", { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "닫기", exact: true }).click();
-  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await page.getByRole("button", { name: "목록으로", exact: true }).click();
+  await expect(detailPage).not.toBeVisible();
   await page
     .getByLabel("행사 이름 또는 장소 검색", { exact: true })
     .fill("없는 행사 이름");
@@ -91,21 +100,28 @@ test("필터 초기화는 추천순 기본 탐색으로 돌아간다", async ({ 
     .last()
     .click();
 
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("recommended");
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue(
+    "recommended",
+  );
   await expect(page).not.toHaveURL(/sort=date/);
   await expect(
     page.getByRole("heading", { name: "이번 주말, 여기 어때요?" }),
   ).toBeVisible();
 });
 
-test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합할 수 있다", async ({ page }) => {
+test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합할 수 있다", async ({
+  page,
+}) => {
   await page.goto("/");
   const advanced = page.locator(".advanced-filters");
   await expect(advanced).not.toHaveAttribute("open", "");
 
   const kidsResponse = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return url.pathname === "/api/events" && url.searchParams.get("audience") === "kids";
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("audience") === "kids"
+    );
   });
   await page
     .locator(".quick-category-grid")
@@ -114,7 +130,9 @@ test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합
   await kidsResponse;
   await expect(advanced).not.toHaveAttribute("open", "");
   await expect(
-    page.locator(".quick-category-grid").getByRole("button", { name: "아이와", exact: true }),
+    page
+      .locator(".quick-category-grid")
+      .getByRole("button", { name: "아이와", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 
   const combinedResponse = page.waitForResponse((response) => {
@@ -132,10 +150,14 @@ test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합
   await combinedResponse;
 
   await expect(
-    page.locator(".quick-category-grid").getByRole("button", { name: "공연", exact: true }),
+    page
+      .locator(".quick-category-grid")
+      .getByRole("button", { name: "공연", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.locator(".quick-category-grid").getByRole("button", { name: "아이와", exact: true }),
+    page
+      .locator(".quick-category-grid")
+      .getByRole("button", { name: "아이와", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 
   await page
@@ -143,18 +165,25 @@ test("아이와·데이트는 홈에서 한 번에 선택하고 주제와 조합
     .getByRole("button", { name: "전체", exact: true })
     .click();
   await expect(
-    page.locator(".quick-category-grid").getByRole("button", { name: "전체", exact: true }),
+    page
+      .locator(".quick-category-grid")
+      .getByRole("button", { name: "전체", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("빠른 카테고리는 세부필터를 자동으로 열거나 같은 주제를 중복 표시하지 않는다", async ({ page }) => {
+test("빠른 카테고리는 세부필터를 자동으로 열거나 같은 주제를 중복 표시하지 않는다", async ({
+  page,
+}) => {
   await page.goto("/");
   const advanced = page.locator(".advanced-filters");
   await expect(advanced).not.toHaveAttribute("open", "");
 
   const responsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return url.pathname === "/api/events" && url.searchParams.get("theme") === "performance";
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("theme") === "performance"
+    );
   });
 
   await page
@@ -167,11 +196,15 @@ test("빠른 카테고리는 세부필터를 자동으로 열거나 같은 주�
   await expect(advanced.getByText("무엇을", { exact: true })).toHaveCount(0);
   await expect(page.locator(".active-filters")).toHaveCount(0);
   await expect(
-    page.locator(".quick-category-grid").getByRole("button", { name: "공연", exact: true }),
+    page
+      .locator(".quick-category-grid")
+      .getByRole("button", { name: "공연", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("서울 이번 주말 SEO landing은 같은 필터 결과를 바로 보여준다", async ({ page }) => {
+test("서울 이번 주말 SEO landing은 같은 필터 결과를 바로 보여준다", async ({
+  page,
+}) => {
   const responsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return (
@@ -187,19 +220,22 @@ test("서울 이번 주말 SEO landing은 같은 필터 결과를 바로 보여�
   await expect(page.locator(".active-filter")).toContainText(["서울"]);
   await expect(page.locator(".event-card").first()).toBeVisible();
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
-  const cardsFitViewport = await page.locator(".event-card").evaluateAll((cards) =>
-    cards.every((card) => {
-      const rect = card.getBoundingClientRect();
-      return rect.left >= -1 && rect.right <= innerWidth + 1;
-    }),
-  );
+  const cardsFitViewport = await page
+    .locator(".event-card")
+    .evaluateAll((cards) =>
+      cards.every((card) => {
+        const rect = card.getBoundingClientRect();
+        return rect.left >= -1 && rect.right <= innerWidth + 1;
+      }),
+    );
   expect(cardsFitViewport).toBe(true);
-  await expect(page.getByRole("link", { name: "서울 이번 주말 행사" })).toHaveAttribute(
-    "href",
-    "/weekend/seoul",
-  );
+  await expect(
+    page.getByRole("link", { name: "서울 이번 주말 행사" }),
+  ).toHaveAttribute("href", "/weekend/seoul");
 });
 
 test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, context }) => {
@@ -210,36 +246,46 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await expect(page.getByLabel("정렬: 가까운순")).toBeVisible();
   await expect(page.locator(".event-card").first()).toContainText("1km 미만");
   await page.getByRole("button", { name: "내 주변 해제" }).click();
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("recommended");
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue(
+    "recommended",
+  );
   await expect(page.locator(".distance")).toHaveCount(0);
 });
 
-test("초기 화면은 1365x768과 1920x900에서 행사까지 바로 이어진다", async ({ page }) => {
+test("초기 화면은 결정 bar 뒤에 추천 행사가 바로 이어진다", async ({
+  page,
+}) => {
   for (const viewport of [
-    { width: 1365, height: 768, maxSceneY: 735 },
-    { width: 1920, height: 900, maxSceneY: 790 },
+    { width: 1365, height: 768, maxSceneY: 720 },
+    { width: 1920, height: 900, maxSceneY: 760 },
   ]) {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    });
     await page.goto("/");
     await expect(page.locator(".header")).not.toHaveClass(/header-compact/);
     const hero = await page.locator(".hero").boundingBox();
+    const decision = await page.locator(".decision-bar").boundingBox();
     const quick = await page.locator(".quick-discovery").boundingBox();
-    const category = await page.locator(".quick-category").first().boundingBox();
-    const firstScene = await page.locator(".event-card .scene").first().boundingBox();
+    const firstScene = await page
+      .locator(".event-card .scene")
+      .first()
+      .boundingBox();
     const sampleBanner = await page.locator(".sample-banner").boundingBox();
     expect(hero).not.toBeNull();
+    expect(decision).not.toBeNull();
     expect(quick).not.toBeNull();
-    expect(category).not.toBeNull();
     expect(firstScene).not.toBeNull();
-    expect(hero!.height).toBeGreaterThanOrEqual(214);
-    expect(hero!.height).toBeLessThanOrEqual(232);
-    expect(quick!.height).toBeLessThanOrEqual(64);
-    expect(category!.height).toBeGreaterThanOrEqual(44);
-    expect(category!.height).toBeLessThanOrEqual(50);
+    expect(hero!.height).toBeLessThanOrEqual(190);
+    expect(decision!.y).toBeGreaterThanOrEqual(hero!.y + hero!.height);
+    expect(quick!.y).toBeGreaterThan(firstScene!.y);
     const productionAdjustedY = firstScene!.y - (sampleBanner?.height ?? 0);
     expect(productionAdjustedY).toBeLessThanOrEqual(viewport.maxSceneY + 70);
     expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
     ).toBe(true);
   }
 });
@@ -268,21 +314,25 @@ test("데스크톱 홈 상단과 하단은 같은 가로 레일에 맞는다", a
   }
 });
 
-test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분리되고 카드 정보 위계가 유지된다", async ({ page }) => {
+test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분리되고 카드 정보 위계가 유지된다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
   await expect(page.locator(".all-events-section")).toBeVisible();
 
-  const featuredStyle = await page.locator(".featured-events").evaluate((el) => {
-    const style = getComputedStyle(el);
-    return {
-      paddingTop: parseFloat(style.paddingTop),
-      borderTopWidth: parseFloat(style.borderTopWidth),
-      borderRadius: parseFloat(style.borderRadius),
-      backgroundColor: style.backgroundColor,
-    };
-  });
+  const featuredStyle = await page
+    .locator(".featured-events")
+    .evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        paddingTop: parseFloat(style.paddingTop),
+        borderTopWidth: parseFloat(style.borderTopWidth),
+        borderRadius: parseFloat(style.borderRadius),
+        backgroundColor: style.backgroundColor,
+      };
+    });
   expect(featuredStyle.paddingTop).toBe(0);
   expect(featuredStyle.borderTopWidth).toBe(0);
   expect(featuredStyle.borderRadius).toBe(0);
@@ -298,27 +348,35 @@ test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분
   expect(allStyle.paddingTop).toBeGreaterThanOrEqual(28);
   expect(allStyle.borderTopWidth).toBeGreaterThanOrEqual(1);
 
-  const titleStyle = await page.locator(".featured-events .card-content h3").first().evaluate((el) => {
-    const style = getComputedStyle(el);
-    return {
-      fontSize: parseFloat(style.fontSize),
-      fontWeight: parseInt(style.fontWeight, 10),
-    };
-  });
+  const titleStyle = await page
+    .locator(".featured-events .card-content h3")
+    .first()
+    .evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        fontSize: parseFloat(style.fontSize),
+        fontWeight: parseInt(style.fontWeight, 10),
+      };
+    });
   expect(titleStyle.fontSize).toBeGreaterThanOrEqual(15);
   expect(titleStyle.fontWeight).toBeGreaterThanOrEqual(700);
 
-  const dateWeight = await page.locator(".featured-events .event-date").first().evaluate((el) =>
-    parseInt(getComputedStyle(el).fontWeight, 10),
-  );
+  const dateWeight = await page
+    .locator(".featured-events .event-date")
+    .first()
+    .evaluate((el) => parseInt(getComputedStyle(el).fontWeight, 10));
   expect(dateWeight).toBeGreaterThanOrEqual(500);
 
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 });
 
-test("홈 벤치마크 정리는 추천 박스를 걷어내고 카드 메타를 한 줄로 유지한다", async ({ page }) => {
+test("홈 벤치마크는 추천을 주인공으로 두고 카드 메타를 한 줄로 유지한다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
@@ -337,49 +395,69 @@ test("홈 벤치마크 정리는 추천 박스를 걷어내고 카드 메타를 
   expect(featured.borderRadius).toBe(0);
   expect(featured.backgroundColor).toBe("rgba(0, 0, 0, 0)");
 
-  await expect(page.getByRole("heading", { name: "전국의 축제 · 공연 · 행사" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "이번 주말 먼저 볼 곳" }),
+  ).toBeVisible();
   await expect(page.getByText("먼저 볼 곳", { exact: true })).toHaveCount(0);
 
   const firstCard = page.locator(".event-card").first();
   await expect(firstCard.locator(".venue")).toHaveCount(0);
   const meta = firstCard.locator(".card-meta");
-  await expect(meta).not.toBeVisible();
+  await expect(meta).toBeVisible();
 
-  const accent = await page.locator(".hero-search-submit").evaluate((el) =>
-    getComputedStyle(el).backgroundColor,
-  );
+  const accent = await page
+    .locator(".hero-search-submit")
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(accent).toBe("rgb(244, 90, 42)");
 
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 });
 
-test("홈 카테고리와 날짜 컨트롤은 보조 설명 없이 짧은 라벨만 유지한다", async ({ page }) => {
+test("홈 카테고리와 날짜 컨트롤은 보조 설명 없이 짧은 라벨만 유지한다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/");
 
-  await expect(page.getByText("빠르게 둘러보기", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("관심 있는 주제를 누르면 바로 골라드려요.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("빠르게 둘러보기", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByText("관심 있는 주제를 누르면 바로 골라드려요.", { exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByText("모든 행사", { exact: true })).toHaveCount(0);
   await expect(page.getByText("시장 · 푸드", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("지금 떠나볼까?", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("기다려온 쉬는 날", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("원하는 날을 골라요", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("지금 떠나볼까?", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText("기다려온 쉬는 날", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByText("원하는 날을 골라요", { exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByText("누구와 · 알림", { exact: true })).toHaveCount(0);
 
-  const quickHeight = await page.locator(".quick-category").first().evaluate((el) =>
-    parseFloat(getComputedStyle(el).height),
-  );
+  const quickHeight = await page
+    .locator(".quick-category")
+    .first()
+    .evaluate((el) => parseFloat(getComputedStyle(el).height));
   expect(quickHeight).toBeLessThanOrEqual(50);
 
-  const periodHeight = await page.locator(".period").first().evaluate((el) =>
-    parseFloat(getComputedStyle(el).height),
-  );
+  const periodHeight = await page
+    .locator(".period")
+    .first()
+    .evaluate((el) => parseFloat(getComputedStyle(el).height));
   expect(periodHeight).toBeLessThanOrEqual(44);
 
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 });
 
@@ -399,8 +477,13 @@ test("스크롤 후 상단 검색이 고정 탐색으로 전환된다", async ({
   }
 });
 
-test("데스크톱 스크롤 상단 탐색은 검색과 지역·카테고리가 겹치지 않는다", async ({ page }) => {
-  test.skip((page.viewportSize()?.width ?? 0) <= 760, "모바일은 지역·카테고리 퀵 스위치를 숨깁니다.");
+test("데스크톱 스크롤 상단 탐색은 검색과 지역·카테고리가 겹치지 않는다", async ({
+  page,
+}) => {
+  test.skip(
+    (page.viewportSize()?.width ?? 0) <= 760,
+    "모바일은 지역·카테고리 퀵 스위치를 숨깁니다.",
+  );
   await page.goto("/");
   await scrollToLoadedResults(page);
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
@@ -418,15 +501,22 @@ test("상세는 핵심 일정·장소를 소개보다 먼저 보여준다", asyn
   await page.locator(".event-card").first().getByRole("link").click();
   const detailPage = page.locator(".event-detail-page");
   await expect(detailPage.locator(".detail-primary-facts")).toBeVisible();
-  await expect(detailPage.locator(".detail-primary-fact").first()).toContainText("일정");
+  await expect(
+    detailPage.locator(".detail-primary-fact").first(),
+  ).toContainText("일정");
   const facts = await detailPage.locator(".detail-primary-facts").boundingBox();
-  const description = await detailPage.locator(".detail-description").first().boundingBox();
+  const description = await detailPage
+    .locator(".detail-description")
+    .first()
+    .boundingBox();
   if (description) {
     expect(facts).not.toBeNull();
     expect(facts!.y).toBeLessThan(description.y);
   }
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 });
 
@@ -435,7 +525,9 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   await page.goto("/");
 
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 
   const mobilePrinciple = await page.locator(".principle").boundingBox();
@@ -443,7 +535,9 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   expect(mobilePrinciple).not.toBeNull();
   expect(mobileFooter).not.toBeNull();
   expect(Math.abs(mobilePrinciple!.x - mobileFooter!.x)).toBeLessThanOrEqual(1);
-  expect(Math.abs(mobilePrinciple!.width - mobileFooter!.width)).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(mobilePrinciple!.width - mobileFooter!.width),
+  ).toBeLessThanOrEqual(1);
 
   await scrollToLoadedResults(page);
   await expect(page.locator(".header")).toHaveClass(/header-compact/);
@@ -457,7 +551,9 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   const detailPage = page.locator(".event-detail-page");
   await expect(detailPage).toBeVisible();
   await expect(detailPage.locator(".detail-primary-facts")).toBeVisible();
-  await expect(detailPage.getByRole("button", { name: "목록으로", exact: true })).toBeVisible();
+  await expect(
+    detailPage.getByRole("button", { name: "목록으로", exact: true }),
+  ).toBeVisible();
 
   const box = await detailPage.boundingBox();
   expect(box).not.toBeNull();
@@ -465,11 +561,16 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   expect(box!.width).toBeLessThanOrEqual(390);
 
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 
   const facts = await detailPage.locator(".detail-primary-facts").boundingBox();
-  const description = await detailPage.locator(".detail-description").first().boundingBox();
+  const description = await detailPage
+    .locator(".detail-description")
+    .first()
+    .boundingBox();
   if (description) {
     expect(facts).not.toBeNull();
     expect(facts!.y).toBeLessThan(description.y);
@@ -477,37 +578,51 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
 
   await detailPage.locator(".detail-source-row").scrollIntoViewIfNeeded();
   await expect(detailPage.locator(".detail-source-row")).toBeVisible();
-  await detailPage.getByRole("button", { name: "목록으로", exact: true }).click();
+  await detailPage
+    .getByRole("button", { name: "목록으로", exact: true })
+    .click();
   await expect(detailPage).not.toBeVisible();
   await expect(firstCardButton).toBeFocused();
 });
 
-test("모바일 추천 카드 위계는 2열과 가로 넘침을 깨지 않는다", async ({ page }) => {
+test("모바일 추천 카드 위계는 큰 1열과 가로 넘침 없이 유지된다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
 
-  const columns = await page.locator(".featured-grid").evaluate((el) =>
-    getComputedStyle(el).gridTemplateColumns.split(" ").length,
-  );
-  expect(columns).toBe(2);
+  const columns = await page
+    .locator(".featured-grid")
+    .evaluate(
+      (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+    );
+  expect(columns).toBe(1);
 
-  const titleSize = await page.locator(".featured-events .card-content h3").first().evaluate((el) =>
-    parseFloat(getComputedStyle(el).fontSize),
-  );
-  expect(titleSize).toBeGreaterThanOrEqual(14);
-  expect(titleSize).toBeLessThanOrEqual(15);
+  const titleSize = await page
+    .locator(".featured-events .card-content h3")
+    .first()
+    .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(titleSize).toBeGreaterThanOrEqual(18);
+  expect(titleSize).toBeLessThanOrEqual(20);
 
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 });
 
-test("소수 결과의 탐색 전환은 큰 박스 대신 가벼운 구분선으로 이어진다", async ({ page }) => {
+test("소수 결과의 탐색 전환은 큰 박스 대신 가벼운 구분선으로 이어진다", async ({
+  page,
+}) => {
   await page.goto("/");
   const responsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return url.pathname === "/api/events" && url.searchParams.get("theme") === "performance";
+    return (
+      url.pathname === "/api/events" &&
+      url.searchParams.get("theme") === "performance"
+    );
   });
   await page
     .locator(".quick-category-grid")
@@ -531,7 +646,9 @@ test("소수 결과의 탐색 전환은 큰 박스 대신 가벼운 구분선으
   expect(style.background).toBe("rgba(0, 0, 0, 0)");
 });
 
-test("하단 신뢰영역과 footer는 밝은 브랜드 마감으로 이어지고 준비중 문구가 없다", async ({ page }) => {
+test("하단 신뢰영역과 footer는 밝은 브랜드 마감으로 이어지고 준비중 문구가 없다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/");
   await expect(page.locator(".principle")).toBeVisible();
@@ -575,38 +692,46 @@ test("하단 신뢰영역과 footer는 밝은 브랜드 마감으로 이어지�
   expect(footerFinish.bottomBorder).toBeGreaterThanOrEqual(1);
   expect(footerFinish.marginBottom).toBeGreaterThanOrEqual(30);
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 });
 
-test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 눌리지 않는다", async ({ page }) => {
+test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 눌리지 않는다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 900, height: 800 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
   const detailPage = page.locator(".event-detail-page");
   await expect(detailPage).toBeVisible();
 
-  const hero = await detailPage.locator(".detail-hero-grid").evaluate((el) =>
-    getComputedStyle(el).display,
-  );
+  const hero = await detailPage
+    .locator(".detail-hero-grid")
+    .evaluate((el) => getComputedStyle(el).display);
   expect(hero).toBe("block");
 
   const sourceRow = detailPage.locator(".detail-source-row");
   await sourceRow.scrollIntoViewIfNeeded();
-  const direction = await sourceRow.evaluate((el) =>
-    getComputedStyle(el).flexDirection,
+  const direction = await sourceRow.evaluate(
+    (el) => getComputedStyle(el).flexDirection,
   );
   expect(direction).toBe("column");
 
   const source = await sourceRow.locator(".detail-source").boundingBox();
-  const back = await sourceRow.getByRole("button", { name: "목록으로 돌아가기" }).boundingBox();
+  const back = await sourceRow
+    .getByRole("button", { name: "목록으로 돌아가기" })
+    .boundingBox();
   expect(source).not.toBeNull();
   expect(back).not.toBeNull();
   expect(source!.width).toBeGreaterThan(240);
   expect(back!.width).toBeGreaterThan(240);
 });
 
-test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된다", async ({ page }) => {
+test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 470, height: 760 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
@@ -614,24 +739,30 @@ test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된�
   await expect(detailPage).toBeVisible();
 
   expect(
-    await detailPage.locator(".detail-hero-grid").evaluate((el) =>
-      getComputedStyle(el).display,
-    ),
+    await detailPage
+      .locator(".detail-hero-grid")
+      .evaluate((el) => getComputedStyle(el).display),
   ).toBe("block");
 
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBe(true);
 
   await detailPage.locator(".detail-source-row").scrollIntoViewIfNeeded();
-  const back = await detailPage.getByRole("button", { name: "목록으로 돌아가기" }).boundingBox();
+  const back = await detailPage
+    .getByRole("button", { name: "목록으로 돌아가기" })
+    .boundingBox();
   const detailPageBox = await detailPage.boundingBox();
   expect(back).not.toBeNull();
   expect(detailPageBox).not.toBeNull();
   expect(back!.width).toBeGreaterThan(90);
 });
 
-test("데스크톱 상세 대표이미지는 얕은 전체폭 상단 배너로 표시된다", async ({ page }) => {
+test("데스크톱 상세 대표이미지는 얕은 전체폭 상단 배너로 표시된다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
@@ -645,7 +776,9 @@ test("데스크톱 상세 대표이미지는 얕은 전체폭 상단 배너로 �
   expect(box!.width / box!.height).toBeGreaterThan(3.5);
 });
 
-test("모바일 상세 대표이미지는 높이가 제한된 전체폭 상단 배너로 표시된다", async ({ page }) => {
+test("모바일 상세 대표이미지는 높이가 제한된 전체폭 상단 배너로 표시된다", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 470, height: 760 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
