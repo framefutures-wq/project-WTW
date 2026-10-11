@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
-import { detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES } from "../worker/sources/municipal-detail-jobs";
+import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES } from "../worker/sources/municipal-detail-jobs";
 
 async function setup() {
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:"export default {fetch(){return new Response('ok')}}",compatibilityDate:"2026-09-18",d1Databases:["DB"],cf:false}));
@@ -37,5 +37,14 @@ test("oversize detail response fails closed before parser storage",async()=>{
     await detailFetchOne(DB,async()=>new Response("x".repeat(MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES+1)));
     const row=await DB.prepare("SELECT stage,raw_html,safe_error_category FROM municipal_detail_jobs").first<any>();
     assert.deepEqual(row,{stage:"RETRY",raw_html:null,safe_error_category:"raw_html_too_large"});
+  } finally {await mf.dispose();}
+});
+
+test("expired checkpoints are removed regardless of terminal stage",async()=>{
+  const {mf,DB}=await setup(); try {
+    await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate,eventId:"event-3"});
+    await DB.prepare("UPDATE municipal_detail_jobs SET stage='DONE',expires_at='2000-01-01T00:00:00.000Z'").run();
+    await cleanupExpiredMunicipalDetailJobs(DB);
+    const row=await DB.prepare("SELECT COUNT(*) count FROM municipal_detail_jobs").first<any>(); assert.equal(row.count,0);
   } finally {await mf.dispose();}
 });
