@@ -2,6 +2,13 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — production municipal micro schema ready; scheduler remains dormant
+
+- Production D1 `weekend-mwohae-production` applied additive migrations `0024_municipal_detail_jobs.sql` and `0025_municipal_scan_jobs.sql`. Both tables and ready indexes exist; both queues are empty. Existing production row counts were read-only checked (`events` 477, `sources` 801, `event_evidence` 2151).
+- `runMunicipalMicroJobOne` now selects exactly one due unit in durable order: detail persist → parse → fetch → candidate checkpoint → list page → one cleanup/no-op. It is deliberately not imported by `runScheduled`; no Worker deployment, Cron edit/cutover, or production ingestion occurred.
+- `seedMunicipalDailyScanOne` seeds one registry source cursor at a time, creates its bounded pagination checkpoints idempotently, and is not scheduled or invoked in production.
+- Next bounded task: deploy the dormant micro scheduler, then verify public/API regressions. Cron cutover remains out of scope.
+
 ## 2026-10-11 — LIST_PAGE checkpoint → CANDIDATE_ONE Free Preview proof
 
 - Added additive migration `0025_municipal_scan_jobs` and isolated page/candidate checkpoint functions. Page checkpoints are unique per operating date/source/page identity; list payloads cap at 25 candidates and 128 KiB, store no HTML, retry safely, and keep candidate cursor advancement conditional on one successful `runMunicipalCandidateOne` call. The existing source-wide call path is unchanged.

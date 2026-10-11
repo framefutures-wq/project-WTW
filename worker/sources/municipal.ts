@@ -1815,6 +1815,35 @@ export async function enqueueMunicipalListPage(
     .first<MunicipalScanJob>();
 }
 
+/**
+ * Seeds one registry source per invocation. The caller owns the cursor so a
+ * future daily trigger can stay within the Free Worker execution budget.
+ */
+export async function seedMunicipalDailyScanOne(
+  db: MunicipalScanDb,
+  input: { operatingDate: string; sourceCursor: number; now?: string },
+) {
+  const cursor = Math.max(0, Math.trunc(input.sourceCursor));
+  const source = SOURCES[cursor];
+  if (!source)
+    return { stage: "DONE" as const, source_key: null, next_cursor: null, seeded_pages: 0 };
+  const urls = municipalSourcePageUrls(source);
+  if (!urls) throw new Error("municipal_scan_invalid_pagination");
+  for (let pageIndex = 1; pageIndex <= urls.length; pageIndex += 1)
+    await enqueueMunicipalListPage(db, {
+      operatingDate: input.operatingDate,
+      sourceKey: source.key,
+      pageIndex,
+      now: input.now,
+    });
+  return {
+    stage: "DAILY_SCAN_SEED" as const,
+    source_key: source.key,
+    next_cursor: cursor + 1 < SOURCES.length ? cursor + 1 : null,
+    seeded_pages: urls.length,
+  };
+}
+
 const claimMunicipalScanJob = async (
   db: MunicipalScanDb,
   stage: "LIST_PENDING" | "CANDIDATE_PENDING",
