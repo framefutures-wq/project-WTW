@@ -1355,8 +1355,20 @@ export default function App() {
     !active &&
     sort === "recommended" &&
     !location;
-  const featuredEvents = discoveryMode ? events.slice(0, 4) : [];
-  const listEvents = discoveryMode ? events.slice(4) : events;
+  const featuredEvents = discoveryMode
+    ? events
+        .filter(
+          (event) =>
+            safeUrl(event.image_url) &&
+            !event.image_url?.startsWith("https://galteum.com/api/events/"),
+        )
+        .slice(0, 3)
+    : [];
+  const listEvents = discoveryMode
+    ? events.filter(
+        (event) => !featuredEvents.some((featured) => featured.id === event.id),
+      )
+    : events;
   const activeFilterLabels = [
     customRange ? selectedRangeLabel : null,
     region ? regionLabel(region) : null,
@@ -1366,8 +1378,8 @@ export default function App() {
     query ? `검색: ${query}` : null,
     location ? "내 주변" : null,
   ].filter(Boolean) as string[];
-  const renderEventCard = (event: EventItem) => (
-    <article className="event-card" key={event.id}>
+  const renderEventCard = (event: EventItem, variant = "") => (
+    <article className={`event-card ${variant}`.trim()} key={event.id}>
       <a
         className="card-button"
         href={`/events/${encodeURIComponent(event.id)}`}
@@ -1532,46 +1544,29 @@ export default function App() {
       <main hidden={Boolean(selected)}>
         <section ref={heroRef} className="hero">
           <div className="hero-copy">
-            <h1>이번엔 어디 갈까?</h1>
-            <p>오늘·이번 주말, 공식 행사만 골라보세요.</p>
+            <h1>이번 주말, 어디 갈까?</h1>
+            <p>사진으로 먼저 보고, 가고 싶은 행사를 골라보세요.</p>
           </div>
-          <form
-            className="hero-search"
-            role="search"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setQuery(search.trim());
-              resultsRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-            }}
-          >
-            <label className="hero-search-field">
-              <Search size={21} />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="축제, 행사, 장소를 검색해 보세요"
-                aria-label="행사 이름 또는 장소 검색"
-                maxLength={80}
-              />
-              {search && (
-                <button
-                  type="button"
-                  className="hero-search-clear"
-                  onClick={() => setSearch("")}
-                  aria-label="검색어 지우기"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </label>
-            <button type="submit" className="hero-search-submit">
-              찾아보기
-            </button>
-          </form>
         </section>
+        {discoveryMode &&
+          !busy &&
+          !error &&
+          featuredEvents.length > 0 && (
+            <section className="featured-events" aria-label="먼저 둘러볼 행사">
+              <div className="featured-heading">
+                <span>WEEKEND PICKS</span>
+                <h2>지금, 여기로 떠나볼까요?</h2>
+              </div>
+              <div className="featured-composition">
+                {featuredEvents.map((event, index) =>
+                  renderEventCard(
+                    event,
+                    index === 0 ? "feature-primary" : "feature-secondary",
+                  ),
+                )}
+              </div>
+            </section>
+          )}
         <section
           className="discovery decision-bar"
           aria-label="날짜와 지역 선택"
@@ -1683,6 +1678,37 @@ export default function App() {
             </div>
           )}
           <div className="filter-body">
+            <form
+              className="hero-search utility-search"
+              role="search"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setQuery(search.trim());
+                resultsRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+            >
+              <label className="hero-search-field">
+                <Search size={17} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="행사명이나 장소 검색"
+                  aria-label="행사 이름 또는 장소 검색"
+                  maxLength={80}
+                />
+                {search && (
+                  <button type="button" className="hero-search-clear" onClick={() => setSearch("")} aria-label="검색어 지우기">
+                    <X size={15} />
+                  </button>
+                )}
+              </label>
+              <button type="submit" className="hero-search-submit" aria-label="검색">
+                <Search size={16} />
+              </button>
+            </form>
             <div className="search-row">
               <label className="region-select">
                 <MapPin size={18} />
@@ -1885,7 +1911,7 @@ export default function App() {
           aria-label="추천 행사"
           aria-busy={busy}
         >
-          <div className="result-heading">
+          {!discoveryMode && <div className="result-heading">
             <div>
               <span className="section-kicker">
                 {discoveryMode ? "이번 주말" : "찾은 행사"}
@@ -1932,7 +1958,7 @@ export default function App() {
                 </label>
               )}
             </div>
-          </div>
+          </div>}
           <div role="status" className="sr-only">
             {busy
               ? "행사를 불러오는 중"
@@ -1985,31 +2011,16 @@ export default function App() {
                 </button>
               </div>
             </div>
-          ) : discoveryMode && events.length > 4 ? (
+          ) : discoveryMode && featuredEvents.length > 0 ? (
             <div className="discovery-results">
-              <section
-                className="featured-events"
-                aria-label="먼저 둘러볼 행사"
-              >
-                <div className="subsection-heading">
-                  <div>
-                    <span>이번 주말</span>
-                    <h3>이번 주말 먼저 볼 곳</h3>
-                  </div>
-                  <p>지금 가기 좋은 공식 행사를 골랐어요.</p>
-                </div>
-                <div className="event-grid featured-grid">
-                  {featuredEvents.map((event) => renderEventCard(event))}
-                </div>
-              </section>
               <section
                 className="all-events-section"
                 aria-label="더 둘러볼 행사"
               >
                 <div className="subsection-heading">
                   <div>
-                    <span>전체 행사</span>
-                    <h3>더 둘러보기</h3>
+                    <span>MORE TO EXPLORE</span>
+                    <h3>더 둘러볼 행사</h3>
                   </div>
                   <p>{selectedRangeLabel}</p>
                 </div>

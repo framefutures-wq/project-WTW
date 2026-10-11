@@ -32,7 +32,7 @@ const event = (id: string, title: string, image_url: string | null) => ({
   distance_km: null,
 });
 
-test("home keeps its editorial grid and the first featured card fits the viewport", async ({
+test("home gives the lead recommendation visual priority before its utilities", async ({
   page,
 }) => {
   const width = page.viewportSize()!.width;
@@ -40,10 +40,13 @@ test("home keeps its editorial grid and the first featured card fits the viewpor
     width: width >= 760 ? 1440 : 390,
     height: width >= 760 ? 900 : 844,
   });
-  const photoUrl = "https://tong.visitkorea.or.kr/home-polish.svg";
+  const photoUrl =
+    "https://tong.visitkorea.or.kr/cms/resource/65/4109965_image2_1.jpg";
+  const posterUrl =
+    "https://tong.visitkorea.or.kr/cms/resource/56/4114556_image2_1.jpg";
   const events = [
     event("landscape", "정상 가로 사진 행사", photoUrl),
-    event("poster", "정상 포스터 행사", photoUrl),
+    event("poster", "정상 포스터 행사", posterUrl),
     event("fallback", "이미지 없는 행사", null),
     event("feature-four", "추천 행사 네 번째", photoUrl),
     event(
@@ -59,7 +62,7 @@ test("home keeps its editorial grid and the first featured card fits the viewpor
   await page.route("**/api/meta", (route) =>
     route.fulfill({ json: { available_date_range: null } }),
   );
-  await page.route("**/api/events?*", (route) =>
+  await page.route("**/api/events?period=weekend**", (route) =>
     route.fulfill({
       json: {
         events,
@@ -73,19 +76,12 @@ test("home keeps its editorial grid and the first featured card fits the viewpor
       },
     }),
   );
-  await page.route(photoUrl, (route) =>
-    route.fulfill({
-      contentType: "image/svg+xml",
-      body: '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"/>',
-    }),
-  );
-
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "이번 주말 먼저 볼 곳" }),
+    page.getByRole("heading", { name: "지금, 여기로 떠나볼까요?" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "더 둘러보기", exact: true }),
+    page.getByRole("heading", { name: "더 둘러볼 행사", exact: true }),
   ).toBeVisible();
   await expect(
     page
@@ -94,16 +90,14 @@ test("home keeps its editorial grid and the first featured card fits the viewpor
   ).toBeVisible();
 
   const layout = await page.evaluate(() => {
-    const featured = document.querySelector<HTMLElement>(".featured-grid")!;
-    const allEvents = document.querySelector<HTMLElement>(
-      ".all-events-section",
-    )!;
+    const featured = document.querySelector<HTMLElement>(".featured-composition")!;
     const title = document.querySelector<HTMLElement>(".event-card h3")!;
     return {
       overflow: document.documentElement.scrollWidth > window.innerWidth,
       columns: getComputedStyle(featured)
         .gridTemplateColumns.trim()
         .split(/\s+/).length,
+      featuredDisplay: getComputedStyle(featured).display,
       allEventColumns: getComputedStyle(
         document.querySelector<HTMLElement>(
           ".all-events-section .event-grid",
@@ -111,24 +105,27 @@ test("home keeps its editorial grid and the first featured card fits the viewpor
       )
         .gridTemplateColumns.trim()
         .split(/\s+/).length,
-      secondSectionDivider: getComputedStyle(allEvents).borderTopWidth,
+      featuredBeforeControls:
+        featured.getBoundingClientRect().top <
+        document.querySelector<HTMLElement>(".decision-bar")!.getBoundingClientRect().top,
       titleWeight: Number(getComputedStyle(title).fontWeight),
     };
   });
 
   expect(layout.overflow).toBe(false);
-  expect(layout.secondSectionDivider).toBe("1px");
+  expect(layout.featuredBeforeControls).toBe(true);
   expect(layout.titleWeight).toBeGreaterThanOrEqual(700);
   if (page.viewportSize()!.width >= 760) {
-    expect(layout.columns).toBe(4);
+    expect(layout.columns).toBe(2);
+    expect(layout.featuredDisplay).toBe("grid");
     expect(layout.allEventColumns).toBe(4);
   } else {
-    expect(layout.columns).toBe(1);
+    expect(layout.featuredDisplay).toBe("flex");
     expect(layout.allEventColumns).toBe(2);
   }
 
   const firstScene = page.locator(".event-card .scene").first();
-  const firstFeaturedCard = page.locator(".featured-grid .event-card").first();
+  const firstFeaturedCard = page.locator(".featured-composition .feature-primary");
   const firstTitle = firstFeaturedCard.locator(".card-content h3");
   const firstDate = firstFeaturedCard.locator(".event-date");
   for (const element of [firstScene, firstTitle, firstDate]) {
@@ -141,18 +138,18 @@ test("home keeps its editorial grid and the first featured card fits the viewpor
   }
 
   const hero = await page.locator(".hero").boundingBox();
-  const search = await page.locator(".hero-search").boundingBox();
+  const controls = await page.locator(".decision-bar").boundingBox();
   expect(hero).not.toBeNull();
-  expect(search).not.toBeNull();
+  expect(controls).not.toBeNull();
   if (page.viewportSize()!.width >= 760) {
-    expect(search!.width).toBeGreaterThanOrEqual(500);
-    expect(hero!.height).toBeLessThanOrEqual(140);
-    expect(search!.x).toBeGreaterThanOrEqual(hero!.x + hero!.width * 0.4);
+    const featuredBox = await firstFeaturedCard.boundingBox();
+    expect(featuredBox).not.toBeNull();
+    expect(controls!.y).toBeGreaterThan(featuredBox!.y);
   }
   const sceneBox = await firstScene.boundingBox();
   expect(sceneBox).not.toBeNull();
   expect(sceneBox!.width / sceneBox!.height).toBeCloseTo(
-    page.viewportSize()!.width >= 760 ? 1 : 2.2,
+    page.viewportSize()!.width >= 760 ? 1.6 : 4 / 3,
     1,
   );
   await page.screenshot({

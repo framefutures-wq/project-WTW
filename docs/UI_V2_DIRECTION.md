@@ -331,3 +331,10 @@ Adaptive media:
 - Desktop 1440×900과 mobile 390×844에서 hero/search와 compact 날짜·지역 컨트롤 뒤에 추천 첫 카드의 이미지, 제목, 날짜까지 보여야 한다.
 - Desktop hero는 제목과 검색의 균형을 맞춰 오른쪽 죽은 여백을 줄인다. Mobile 추천은 1열, 전체 목록은 2열을 유지한다.
 - 첫 화면 요건은 카드 정보나 글자를 숨기거나 과도하게 줄여 충족하지 않는다.
+
+### 2026-10-11 HOME visual discovery composition
+
+- HOME 첫 콘텐츠는 큰 실제 공식 행사 이미지의 lead recommendation이다. 검색과 필터는 lead 뒤의 compact utility bar로 배치한다.
+- Desktop은 lead 1개와 보조 추천 2개를 비대칭 editorial composition으로 보인다. Mobile은 lead 1개를 크게 보이고 보조 추천은 수평 탐색으로 이어진다.
+- Featured lead에는 표시가 안정적인 실제 공식 이미지만 사용한다. 이미지가 비는 fallback은 전체 목록의 안전장치로 남기며 discovery hero를 대신하지 않는다.
+- 추천 카드는 이미지, 행사명, 날짜, 지역·장소만 기본으로 둔다. 작은 badge와 보조 metadata는 우선순위를 낮춘다.

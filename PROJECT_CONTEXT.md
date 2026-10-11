@@ -14,6 +14,13 @@
 - 2026-10-11 일요일 production `/api/events?period=weekend&limit=50`는 24건, range 10/11–10/11이며 10/10 토요일 하루짜리 행사는 0건이다. HOME 이미지와 card→detail/back/direct URL smoke도 정상이다.
 - HOME 코드 배포 commit `f2dff02`의 Worker version은 `1a62bf6a-4026-43da-8ea2-ac475949a819`이다. 후속 문서 정리 commit은 서비스 코드 변경이 아니다.
 
+## 2026-10-11 — HOME visual rebuild local 완료
+
+- HOME은 짧은 intro 뒤에 실제 공식 이미지의 lead recommendation을 우선 노출한다. Desktop은 큰 lead와 두 개의 보조 추천을 editorial composition으로, mobile은 lead card를 첫 화면에 두고 보조 추천을 수평 탐색으로 제공한다.
+- 날짜·지역·검색·상세 필터는 featured composition 뒤의 compact utility bar로 내렸다. 모바일 첫 화면에는 lead 이미지와 행사명·날짜·지역이 함께 보이며, 전체 목록은 2열을 유지한다.
+- Featured에는 표시가 안정적인 공식 직접 이미지만 선택한다. 내부 image proxy 결과는 전체 목록에서 유지하되 lead visual을 비어 보이게 하지 않는다.
+- Local visual QA screenshots: `artifacts/home-visual-rebuild-2026-10-11/`. 이 작업은 local commit/push까지만 하며 production deploy는 하지 않는다.
+
 - 사용자 공개 브랜드: **갈틈**
 - 핵심 문구: **드디어, 놀러 갈 틈이 생겼다.**
 - Header tagline: **오늘, 어디 가지?**
