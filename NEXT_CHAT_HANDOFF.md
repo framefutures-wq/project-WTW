@@ -2,6 +2,14 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — Free micro-job runner full proof complete
+
+- Isolated Free Preview + test D1 proof is complete: FETCH, PARSE, and PERSIST each reached 10/10 successful stage transitions with 0 observed 1102. PERSIST stored Uijeongbu contact `031-870-7386`, 2 images, and 2 programs; normalized checkpoint cleanup succeeded.
+- State checks passed: duplicate enqueue retained one row; DONE and empty-stage calls returned null/no-op; a future-dated RETRY remained unclaimed; the expiration predicate removed all 20 expired synthetic checkpoints.
+- A synthetic higher-priority organizer fixture retained its summary, program, operating hours, and price after a lower-priority municipal `detailPersistOne` run. Its checkpoint reached DONE and cleared normalized JSON.
+- Verdict: `FREE_RUNNER_FULLY_PROVEN`. The temporary D1 and Preview Worker were removed and read-only absence checks passed. Production migration, deployment, scheduler/cron cutover, and ingestion remain untouched.
+- Next bounded task: production migration + micro-job scheduler cutover design.
+
 ## 2026-10-11 — Free micro-job proof: LIST_SAFE_DETAIL_UNSAFE
 
 - Temporary D1-free Cloudflare probe measured each network unit independently. Gyeongsan LIST_PAGE page 1 and pagination page 2 were 10/10 HTTP 200 with 0 observed 1102; Uijeongbu LIST_PAGE was 9/10 HTTP 200, 0 observed 1102, and 1 other HTTP 503.
