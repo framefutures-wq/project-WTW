@@ -77,11 +77,9 @@ test("home gives the lead recommendation visual priority before its utilities", 
     }),
   );
   await page.goto("/");
+  await expect(page.getByText("이번 주말 추천", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "지금, 여기로 떠나볼까요?" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "더 둘러볼 행사", exact: true }),
+    page.getByRole("heading", { name: "더 둘러보기", exact: true }),
   ).toBeVisible();
   await expect(
     page

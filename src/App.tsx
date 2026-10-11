@@ -1554,8 +1554,7 @@ export default function App() {
           featuredEvents.length > 0 && (
             <section className="featured-events" aria-label="먼저 둘러볼 행사">
               <div className="featured-heading">
-                <span>WEEKEND PICKS</span>
-                <h2>지금, 여기로 떠나볼까요?</h2>
+                <span>이번 주말 추천</span>
               </div>
               <div className="featured-composition">
                 {featuredEvents.map((event, index) =>
@@ -2019,8 +2018,7 @@ export default function App() {
               >
                 <div className="subsection-heading">
                   <div>
-                    <span>MORE TO EXPLORE</span>
-                    <h3>더 둘러볼 행사</h3>
+                    <h3>더 둘러보기</h3>
                   </div>
                   <p>{selectedRangeLabel}</p>
                 </div>
