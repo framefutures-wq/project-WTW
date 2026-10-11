@@ -10,7 +10,9 @@
 
 - `weekend`는 월~금 및 토요일에는 해당 주말 토~일, 일요일에는 오늘(일요일)만 반환한다. `next-weekend`는 다음 토~일로 유지한다. 이미 끝난 토요일 하루 행사는 일요일의 이번 주말 결과/추천에 포함하지 않는다.
 - 홈은 desktop에서 제목·설명과 넓은 검색을 균형 잡힌 2열로 배치하고, 날짜/지역 컨트롤을 압축한다. desktop/mobile 첫 viewport 안에 추천 첫 카드의 이미지·제목·날짜가 모두 보여야 한다. 추천은 모바일 1열, 전체 목록은 모바일 2열이다.
-- 구현 후 로컬 및 production HOME visual QA 결과와 배포 Worker version을 이 항목에 반영한다.
+- Local 및 production visual QA 통과: desktop 1440×900, mobile 390×844 모두 첫 추천 카드 이미지·제목·날짜가 첫 화면에 보이고, mobile 추천 1열/전체 목록 2열 및 horizontal overflow 0을 확인했다.
+- 2026-10-11 일요일 production `/api/events?period=weekend&limit=50`는 24건, range 10/11–10/11이며 10/10 토요일 하루짜리 행사는 0건이다. HOME 이미지와 card→detail/back/direct URL smoke도 정상이다.
+- HOME 코드 배포 commit `f2dff02`의 Worker version은 `1a62bf6a-4026-43da-8ea2-ac475949a819`이다. 후속 문서 정리 commit은 서비스 코드 변경이 아니다.
 
 - 사용자 공개 브랜드: **갈틈**
 - 핵심 문구: **드디어, 놀러 갈 틈이 생겼다.**
