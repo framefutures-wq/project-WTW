@@ -6,6 +6,7 @@ import { runMunicipalAutonomous } from "./sources/municipal";
 import { MUNICIPAL_SOURCE_REGISTRY } from "../shared/municipal-source-registry";
 import {
   municipalRunPlan,
+  SCHEDULED_MUNICIPAL_MAX_DURATION_MS,
   type MunicipalRunPlan,
 } from "../shared/municipal-run-plan";
 import { runPrivateOfficialSources } from "./sources/private-official";
@@ -37,7 +38,10 @@ const MUNICIPAL_SOURCE_KEYS = MUNICIPAL_SOURCE_REGISTRY.map(
   (source) => source.key,
 );
 const scheduledMunicipalPlan = (shardIndex: number) =>
-  municipalRunPlan(MUNICIPAL_SOURCE_KEYS, shardIndex);
+  ({
+    ...municipalRunPlan(MUNICIPAL_SOURCE_KEYS, shardIndex),
+    maxDurationMs: SCHEDULED_MUNICIPAL_MAX_DURATION_MS,
+  });
 
 export type ScheduledDependencies = {
   syncTourApi: typeof syncTourApi;
@@ -246,10 +250,7 @@ export async function runDetailScheduled(
       )
       .run();
   }
-  let municipal:
-    | Awaited<ReturnType<typeof runMunicipalAutonomous>>
-    | { status: "failed"; reason: "subsystem_error" }
-    | null = null;
+  let municipal: Record<string, unknown> | null = null;
   let officialDetailRecovery:
     | Awaited<ReturnType<typeof runOfficialDetailRecovery>>
     | { status: "failed"; reason: "subsystem_error" }
@@ -264,6 +265,7 @@ export async function runDetailScheduled(
     started_at: string;
     finished_at: string | null;
   } | null = null;
+  let municipalProgress: Record<string, unknown> | null = null;
   const phase = async (value: string) => {
     if (!windowRunId) return;
     await env.DB.prepare("UPDATE sync_runs SET message=? WHERE id=?")
@@ -273,6 +275,7 @@ export async function runDetailScheduled(
           ledger: "scheduled_window",
           phase: value,
           ...(municipal ? { municipal } : {}),
+          ...(municipalProgress ? { municipal_progress: municipalProgress } : {}),
           ...(officialDetailRecovery
             ? { official_detail_recovery: officialDetailRecovery }
             : {}),
@@ -314,6 +317,7 @@ export async function runDetailScheduled(
     retry_rounds: {},
     ...detail,
     ...(municipal ? { municipal } : {}),
+    ...(municipalProgress ? { municipal_progress: municipalProgress } : {}),
     ...(officialDetailRecovery
       ? { official_detail_recovery: officialDetailRecovery }
       : {}),
@@ -332,12 +336,51 @@ export async function runDetailScheduled(
   };
   try {
     if (municipalPlan) {
+      municipalProgress = {
+        shard_index: municipalPlan.shardIndex,
+        source_keys: municipalPlan.sourceKeys,
+        current_source: null,
+        last_started_source: null,
+        completed_sources: [],
+        failed_sources: [],
+        skipped_due_to_budget: [],
+        municipal_budget_exhausted: false,
+        elapsed_ms: 0,
+      };
       await phase("municipal");
       try {
-        municipal = await dependencies.runMunicipalAutonomous(
-          env,
-          municipalPlan,
-        );
+        const controller = new AbortController();
+        const timeoutMs = municipalPlan.maxDurationMs ?? SCHEDULED_MUNICIPAL_MAX_DURATION_MS;
+        let municipalClosed = false;
+        const municipalWork = dependencies.runMunicipalAutonomous(env, {
+          ...municipalPlan,
+          signal: controller.signal,
+          onProgress: async (progress) => {
+            if (municipalClosed) return;
+            municipalProgress = progress;
+            await phase("municipal");
+          },
+        });
+        let timeout: ReturnType<typeof setTimeout>;
+        const timedOut = new Promise<Record<string, unknown>>((resolve) => {
+          timeout = setTimeout(() => {
+            controller.abort();
+            resolve({ status: "budget_exhausted", municipal_budget_exhausted: true });
+          // The municipal worker owns the exact deadline so it can report
+          // skipped sources. This is only a final guard for a dependency
+          // that ignores its abort signal entirely.
+          }, timeoutMs + 25);
+        });
+        municipal = await Promise.race([municipalWork, timedOut]);
+        municipalClosed = true;
+        clearTimeout(timeout!);
+        if (municipal?.municipal_budget_exhausted === true) {
+          municipalProgress = {
+            ...municipalProgress,
+            municipal_budget_exhausted: true,
+          };
+          await phase("municipal");
+        }
       } catch (error) {
         console.error("municipal_shard_failed", {
           shardIndex: municipalPlan.shardIndex,

@@ -2,6 +2,12 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — municipal scheduled-window bounding deployed pending natural verification
+
+- The natural 11:00 KST watchdog ledger `20036430-d1af-4c6b-a4d3-7733530f8e6f` started at `2026-10-11T02:00:45.340Z` and remained `running` in `municipal` for more than 20 minutes. It never reached official-detail or TourAPI-detail and had no `finished_at`; the responsible source was not observable from the previous telemetry.
+- Scheduled municipal shard 0/1/2 now has a 60-second whole-shard budget, abort-aware direct/Reader fetch transport, compact ledger progress (`shard_index`, source keys/current source, completed/failed/skipped sources, budget state, elapsed time), and a final hard guard. Budget exhaustion preserves completed work, reports the skipped sources, and continues the same scheduled window to official-detail and TourAPI detail. Explicit/manual municipal runs retain no wall-clock budget.
+- Next: do not manually invoke cron/recovery. Read-only inspect the next natural later window for `municipal_progress`, `municipal_budget_exhausted` if applicable, `official_detail`, `tourapi_detail`, and a final `finished_at`.
+
 ## 2026-10-10 — full-page detail production deployed
 
 - `/events/:id` now renders as a standalone document page rather than a `<dialog>` overlay: no home backdrop, bottom-sheet, internal dialog scroll, or floating close control. Card navigation, direct URL/reload, and browser back continue to use the existing route/history contract.

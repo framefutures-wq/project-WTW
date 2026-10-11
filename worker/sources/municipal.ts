@@ -59,6 +59,22 @@ export type MunicipalAutonomousOptions = {
   maxRetryCandidates?: number;
   maxDetailFetches?: number;
   maxExternalFetches?: number;
+  /** Scheduled-only whole-shard deadline; omitted for manual/explicit runs. */
+  maxDurationMs?: number;
+  signal?: AbortSignal;
+  onProgress?: (progress: MunicipalProgress) => Promise<void> | void;
+};
+
+export type MunicipalProgress = {
+  shard_index: number | null;
+  source_keys: string[];
+  current_source: string | null;
+  last_started_source: string | null;
+  completed_sources: string[];
+  failed_sources: string[];
+  skipped_due_to_budget: string[];
+  municipal_budget_exhausted: boolean;
+  elapsed_ms: number;
 };
 
 const DEFAULT_MAX_PUBLISH_MUTATIONS = 10;
@@ -229,17 +245,23 @@ type MunicipalFetchBudget = {
   readerSucceeded: number;
   readerFailures: number;
   readerFailureReasons: Record<string, number>;
+  signal?: AbortSignal;
+  assertActive?: () => void;
 };
 
 const budgetedFetch = async (
   url: string,
   budget: MunicipalFetchBudget,
 ) => {
+  budget.assertActive?.();
   if (budget.used >= Math.min(budget.limit, budget.activeLimit))
     throw new Error("municipal_fetch_budget_exhausted");
   budget.used += 1;
+  const signal = budget.signal
+    ? AbortSignal.any([AbortSignal.timeout(20_000), budget.signal])
+    : AbortSignal.timeout(20_000);
   return fetch(url, {
-    signal: AbortSignal.timeout(20_000),
+    signal,
     headers: {
       "user-agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
@@ -309,6 +331,7 @@ async function officialResponse(
   budget: MunicipalFetchBudget,
   preferredHosts?: Map<string, string>,
 ) {
+  budget.assertActive?.();
   const candidates = municipalFetchUrlCandidates(url);
   const source = SOURCES.find((item) =>
     municipalSourceAllowsUrl(item, url),
@@ -333,6 +356,7 @@ async function officialResponse(
   let directBudgetExhausted = false;
 
   for (let attempt = 0; attempt < attempts.length; attempt += 1) {
+    budget.assertActive?.();
     const candidateUrl = attempts[attempt];
     try {
       const response = await budgetedFetch(candidateUrl, budget);
@@ -383,8 +407,10 @@ async function officialResponse(
       if (budget.readerUsed >= budget.readerLimit) break;
       budget.readerUsed += 1;
       try {
+        budget.assertActive?.();
         const readerPage = await fetchOfficialPageViaReader(readerUrl, {
           refererUrl: source.url,
+          signal: budget.signal,
         });
         budget.readerSucceeded += 1;
         if (family && preferredHosts)
@@ -702,6 +728,24 @@ export async function runMunicipalAutonomous(
   env: Env,
   options: MunicipalAutonomousOptions = {},
 ) {
+  const startedMs = Date.now();
+  const deadlineMs = options.maxDurationMs
+    ? startedMs + options.maxDurationMs
+    : null;
+  const budgetController = new AbortController();
+  const budgetTimer = deadlineMs
+    ? setTimeout(() => budgetController.abort(), options.maxDurationMs)
+    : null;
+  const signal = deadlineMs !== null || options.signal
+    ? options.signal
+      ? AbortSignal.any([budgetController.signal, options.signal])
+      : budgetController.signal
+    : undefined;
+  const budgetExceeded = () => deadlineMs !== null && Date.now() >= deadlineMs;
+  const assertActive = () => {
+    if (budgetExceeded() || signal?.aborted)
+      throw new Error("municipal_wall_clock_budget_exhausted");
+  };
   const selectedSourceKeys = new Set(
       options.sourceKeys ?? SOURCES.map((source) => source.key),
     ),
@@ -723,6 +767,8 @@ export async function runMunicipalAutonomous(
       readerSucceeded: 0,
       readerFailures: 0,
       readerFailureReasons: {},
+      signal,
+      assertActive,
     },
     preferredOfficialHosts = new Map<string, string>(),
     fetchResponse = (url: string) =>
@@ -738,6 +784,26 @@ export async function runMunicipalAutonomous(
     now = new Date().toISOString(),
     koreaToday = today(),
     processed = new Set<string>();
+  const progress: MunicipalProgress = {
+    shard_index: options.shardIndex ?? null,
+    source_keys: selectedSources.map((source) => source.key),
+    current_source: null,
+    last_started_source: null,
+    completed_sources: [],
+    failed_sources: [],
+    skipped_due_to_budget: [],
+    municipal_budget_exhausted: false,
+    elapsed_ms: 0,
+  };
+  const reportProgress = async () => {
+    progress.elapsed_ms = Date.now() - startedMs;
+    await options.onProgress?.({ ...progress,
+      source_keys: [...progress.source_keys],
+      completed_sources: [...progress.completed_sources],
+      failed_sources: [...progress.failed_sources],
+      skipped_due_to_budget: [...progress.skipped_due_to_budget],
+    });
+  };
   let publishMutations = 0,
     detailFetches = 0,
     identityBridges = 0,
@@ -746,6 +812,35 @@ export async function runMunicipalAutonomous(
     richDetailPersisted = 0,
     richDetailErrors = 0;
   const richDetailBySource: Record<string, number> = {};
+  const finishBudget = async () => {
+    progress.municipal_budget_exhausted = true;
+    progress.current_source = null;
+    await reportProgress();
+    if (budgetTimer) clearTimeout(budgetTimer);
+    const result = {
+      ...summary,
+      ...progress,
+      status: "budget_exhausted" as const,
+      fetch_attempts: fetchBudget.used,
+      fetch_budget: fetchBudget.limit,
+      reader_attempts: fetchBudget.readerUsed,
+      reader_successes: fetchBudget.readerSucceeded,
+      reader_failures: fetchBudget.readerFailures,
+      reader_failure_reasons: fetchBudget.readerFailureReasons,
+      source_fetch_window: MUNICIPAL_MAX_FETCHES_PER_SOURCE_WINDOW,
+      source_fetch_reserve: MUNICIPAL_MIN_FETCH_RESERVE_PER_SOURCE,
+      detail_fetches: detailFetches,
+      identity_bridges: identityBridges,
+      rich_detail_attempted: richDetailAttempted,
+      rich_detail_candidates: richDetailCandidates,
+      rich_detail_persisted: richDetailPersisted,
+      rich_detail_errors: richDetailErrors,
+      rich_detail_by_source: richDetailBySource,
+      source_outcomes,
+    };
+    console.log("municipal_autonomous_summary", result);
+    return result;
+  };
   const persistRichDetail = async ({
     eventId,
     candidate,
@@ -795,6 +890,18 @@ export async function runMunicipalAutonomous(
   };
   for (let sourceIndex = 0; sourceIndex < selectedSources.length; sourceIndex += 1) {
     const source = selectedSources[sourceIndex];
+    if (budgetExceeded() || signal?.aborted) {
+      progress.municipal_budget_exhausted = true;
+      progress.current_source = null;
+      progress.skipped_due_to_budget.push(
+        ...selectedSources.slice(sourceIndex).map((item) => item.key),
+      );
+      await reportProgress();
+      break;
+    }
+    progress.current_source = source.key;
+    progress.last_started_source = source.key;
+    await reportProgress();
     fetchBudget.activeLimit = municipalSourceFetchCeiling({
       used: fetchBudget.used,
       hardLimit: fetchBudget.limit,
@@ -822,6 +929,7 @@ export async function runMunicipalAutonomous(
         candidates: candidates.length,
       });
       for (const sourceCandidate of candidates) {
+        assertActive();
         const {
           candidate,
           mode: candidateMode,
@@ -1002,6 +1110,7 @@ export async function runMunicipalAutonomous(
             reason: "daily_publish_circuit_breaker",
           };
         summary[decision.state] += 1;
+        assertActive();
         if (decision.state === "AUTO_PUBLISH") {
           const write = await publish(
             env,
@@ -1029,6 +1138,7 @@ export async function runMunicipalAutonomous(
             !coreConflict &&
             !detailCoreConflict,
         );
+        assertActive();
         if (
           richDetail &&
           (decision.state === "AUTO_PUBLISH" || safeExistingRichBackfill)
@@ -1039,6 +1149,7 @@ export async function runMunicipalAutonomous(
             detail: richDetail,
           });
 
+        assertActive();
         const saved = await saveState(
           env,
           effectiveCandidate,
@@ -1050,7 +1161,22 @@ export async function runMunicipalAutonomous(
         );
         summary.rows_written += saved.meta.changes ?? 0;
       }
+      progress.completed_sources.push(source.key);
+      progress.current_source = null;
+      await reportProgress();
     } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "municipal_wall_clock_budget_exhausted"
+      ) {
+        progress.municipal_budget_exhausted = true;
+        progress.current_source = null;
+        progress.skipped_due_to_budget.push(
+          ...selectedSources.slice(sourceIndex).map((item) => item.key),
+        );
+        await reportProgress();
+        break;
+      }
       summary.source_errors += 1;
       const reason = municipalSourceFailureReason(error);
       source_outcomes.push({
@@ -1063,8 +1189,12 @@ export async function runMunicipalAutonomous(
         source: source.key,
         reason,
       });
+      progress.failed_sources.push(source.key);
+      progress.current_source = null;
+      await reportProgress();
     }
   }
+  if (progress.municipal_budget_exhausted) return finishBudget();
   fetchBudget.activeLimit = fetchBudget.limit;
   // Retry candidates are intentionally re-fetched from their minimal core snapshot even when absent from today's listing.
   const retrySourceKeys = selectedSources.map((source) => source.key);
@@ -1090,8 +1220,10 @@ export async function runMunicipalAutonomous(
     }>();
   summary.rows_read += retries.meta.rows_read ?? 0;
   for (const row of retries.results) {
+    if (budgetExceeded() || signal?.aborted) return finishBudget();
     if (processed.has(row.candidate_id)) continue;
     try {
+      assertActive();
       const source = SOURCES.find((item) => item.key === row.source_key);
       if (
         !source ||
@@ -1291,6 +1423,7 @@ export async function runMunicipalAutonomous(
           reason: "daily_publish_circuit_breaker",
         };
       summary[decision.state] += 1;
+      assertActive();
       if (decision.state === "AUTO_PUBLISH") {
         const write = await publish(
           env,
@@ -1317,6 +1450,7 @@ export async function runMunicipalAutonomous(
           !detailError &&
           !detailCoreConflict,
       );
+      assertActive();
       if (
         richDetail &&
         (decision.state === "AUTO_PUBLISH" || safeExistingRichBackfill)
@@ -1327,6 +1461,7 @@ export async function runMunicipalAutonomous(
           detail: richDetail,
         });
 
+      assertActive();
       const saved = await saveState(
         env,
         effectiveCandidate,
@@ -1338,11 +1473,17 @@ export async function runMunicipalAutonomous(
       );
       summary.rows_written += saved.meta.changes ?? 0;
       processed.add(row.candidate_id);
-    } catch {
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "municipal_wall_clock_budget_exhausted"
+      )
+        return finishBudget();
       // Fetch failure is retryable; retain fixed retry_until and last-known-good publication.
       summary.AUTO_RETRY += 1;
     }
   }
+  assertActive();
   const expiredRetries = await env.DB.prepare(
     "UPDATE municipal_candidate_state SET decision_state='AUTO_EXCLUDE',decision_reason='retry_ttl_expired' WHERE decision_state='AUTO_RETRY' AND retry_until IS NOT NULL AND retry_until<?",
   )
@@ -1351,8 +1492,6 @@ export async function runMunicipalAutonomous(
   summary.rows_written += expiredRetries.meta.changes ?? 0;
   const result = {
     ...summary,
-    shard_index: options.shardIndex ?? null,
-    source_keys: selectedSources.map((source) => source.key),
     fetch_attempts: fetchBudget.used,
     fetch_budget: fetchBudget.limit,
     reader_attempts: fetchBudget.readerUsed,
@@ -1369,7 +1508,10 @@ export async function runMunicipalAutonomous(
     rich_detail_errors: richDetailErrors,
     rich_detail_by_source: richDetailBySource,
     source_outcomes,
+    ...progress,
+    status: "success" as const,
   };
   console.log("municipal_autonomous_summary", result);
+  if (budgetTimer) clearTimeout(budgetTimer);
   return result;
 }

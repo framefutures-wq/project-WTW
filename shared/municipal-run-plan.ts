@@ -1,4 +1,5 @@
 export const MUNICIPAL_DAILY_SHARD_COUNT = 3;
+export const SCHEDULED_MUNICIPAL_MAX_DURATION_MS = 60_000;
 
 const PUBLISH_MUTATION_CAPS = [4, 3, 3] as const;
 const RETRY_CANDIDATE_CAPS = [4, 4, 4] as const;
@@ -12,6 +13,7 @@ export type MunicipalRunPlan = {
   maxRetryCandidates: number;
   maxDetailFetches: number;
   maxExternalFetches: number;
+  maxDurationMs?: number;
 };
 
 export function municipalRunPlan(

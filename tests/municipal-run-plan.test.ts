@@ -17,6 +17,20 @@ test("daily municipal plan covers all 35 Registry sources exactly once", () => {
   assert.equal(flattened.length, 35);
   assert.equal(new Set(flattened).size, 35);
   assert.deepEqual(flattened, keys);
+  assert.deepEqual(plans[0].sourceKeys, [
+    "paju",
+    "suwon",
+    "goyang",
+    "hwaseong",
+    "bucheon",
+    "taebaek",
+    "seoul-hangang",
+    "daejeon-fvu",
+    "incheon-res",
+    "gyeonggi-과천",
+    "gyeonggi-하남",
+    "gyeongbuk-상주",
+  ]);
 });
 
 test("daily municipal plan preserves the global mutation breaker and bounded fetches", () => {

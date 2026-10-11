@@ -5,6 +5,8 @@ export type OfficialReaderOptions = {
   refererUrl?: string | null;
   /** Clamp scheduled recovery waits without changing manual/default behavior. */
   timeoutMs?: number;
+  /** Allows a scheduled parent budget to cancel this Reader request. */
+  signal?: AbortSignal;
 };
 
 export type OfficialReaderPage = {
@@ -140,9 +142,12 @@ export async function fetchOfficialPageViaReader(
     const timer = setTimeout(() => reject(new Error("official_reader_timeout")), timeoutMs);
     promise.then(resolve, reject).finally(() => clearTimeout(timer));
   });
+  const signal = options.signal
+    ? AbortSignal.any([AbortSignal.timeout(timeoutMs), options.signal])
+    : AbortSignal.timeout(timeoutMs);
   const request = fetch(readerUrl, {
     method: "GET",
-    signal: AbortSignal.timeout(timeoutMs),
+    signal,
     headers: {
       accept: "application/json",
       "x-respond-with": "html",
@@ -159,12 +164,13 @@ export async function fetchOfficialPageViaReader(
       ...(referer ? { "x-referer": referer } : {}),
     },
   });
-  const response = options.timeoutMs ? await withinTimeout(request) : await request;
+  const clampWait = Boolean(options.timeoutMs || options.signal);
+  const response = clampWait ? await withinTimeout(request) : await request;
   if (!response.ok)
     throw new Error("official_reader_http_" + response.status);
 
   const body = response.text();
-  const raw = options.timeoutMs ? await withinTimeout(body) : await body;
+  const raw = clampWait ? await withinTimeout(body) : await body;
   if (new TextEncoder().encode(raw).byteLength > MAX_READER_BYTES)
     throw new Error("official_reader_too_large");
 

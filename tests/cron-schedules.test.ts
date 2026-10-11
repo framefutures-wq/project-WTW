@@ -6,6 +6,7 @@ import {
   BASE_SYNC_CRON,
   DETAIL_SYNC_CRON,
   DETAIL_RETRY_RECOVERY_CRONS,
+  runDetailScheduled,
   runScheduled,
   type ScheduledDependencies,
 } from "../worker/cron";
@@ -611,13 +612,76 @@ test("watchdog creates its invocation ledger before municipal work completes", a
     ).first<{ status: string; finished_at: string | null; message: string }>();
     assert.equal(row?.status, "running");
     assert.equal(row?.finished_at, null);
-    assert.deepEqual(JSON.parse(row!.message), {
-      trigger: "watchdog",
-      ledger: "scheduled_window",
-      phase: "municipal",
-    });
+    const message = JSON.parse(row!.message);
+    assert.equal(message.trigger, "watchdog");
+    assert.equal(message.ledger, "scheduled_window");
+    assert.equal(message.phase, "municipal");
+    assert.deepEqual(message.municipal_progress.source_keys.slice(0, 2), [
+      "paju",
+      "suwon",
+    ]);
     releaseMunicipal();
     await run;
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("a hung scheduled municipal shard times out with compact progress and continues", async () => {
+  const { mf, DB, env } = await setup();
+  const calls: string[] = [];
+  try {
+    await DB.prepare(
+      "INSERT INTO sync_runs(id,started_at,finished_at,status,provider) VALUES('base',?,?, 'success','tourapi')",
+    )
+      .bind("2026-09-21T01:00:00.000Z", "2026-09-21T01:10:00.000Z")
+      .run();
+    const deps = dependencies(calls);
+    deps.runMunicipalAutonomous = async (_env, plan) => {
+      calls.push(`municipal:${plan!.shardIndex}`);
+      await plan!.onProgress?.({
+        shard_index: 0,
+        source_keys: ["paju", "suwon"],
+        current_source: "paju",
+        last_started_source: "paju",
+        completed_sources: [],
+        failed_sources: [],
+        skipped_due_to_budget: ["suwon"],
+        municipal_budget_exhausted: false,
+        elapsed_ms: 4,
+      });
+      await new Promise<void>((resolve) =>
+        plan!.signal?.addEventListener("abort", () => resolve(), { once: true }),
+      );
+      return { status: "budget_exhausted", municipal_budget_exhausted: true } as never;
+    };
+    await runDetailScheduled(
+      env as never,
+      detailTime,
+      deps,
+      "watchdog",
+      undefined,
+      {
+        shardIndex: 0,
+        sourceKeys: ["paju", "suwon"],
+        maxPublishMutations: 1,
+        maxRetryCandidates: 1,
+        maxDetailFetches: 1,
+        maxExternalFetches: 2,
+        maxDurationMs: 5,
+      },
+    );
+    assert.deepEqual(calls, ["municipal:0", "official-detail", "detail"]);
+    const row = await DB.prepare(
+      "SELECT status,finished_at,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid LIMIT 1",
+    ).first<{ status: string; finished_at: string | null; message: string }>();
+    assert.equal(row?.status, "success");
+    assert.ok(row?.finished_at);
+    const message = JSON.parse(row!.message);
+    assert.equal(message.municipal.status, "budget_exhausted");
+    assert.equal(message.municipal_progress.municipal_budget_exhausted, true);
+    assert.equal(message.municipal_progress.last_started_source, "paju");
+    assert.deepEqual(message.municipal_progress.skipped_due_to_budget, ["suwon"]);
   } finally {
     await mf.dispose();
   }
