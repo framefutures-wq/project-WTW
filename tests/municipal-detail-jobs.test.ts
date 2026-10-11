@@ -41,6 +41,18 @@ test("oversize detail response fails closed before parser storage",async()=>{
   } finally {await mf.dispose();}
 });
 
+test("a due detail retry resumes at fetch and an expired retry retains its safe error",async()=>{
+  const {mf,DB}=await setup(); try {
+    await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:{...candidate,source_candidate_id:"detail-retry"},eventId:"event-retry"});
+    await DB.prepare("UPDATE municipal_detail_jobs SET stage='RETRY',retry_stage='FETCH_PENDING',available_at='2000-01-01T00:00:00.000Z',safe_error_category='network_or_timeout'").run();
+    assert.equal((await detailFetchOne(DB,async()=>new Response("<h2>공연</h2>")))?.stage,"PARSE_PENDING");
+    await DB.prepare("UPDATE municipal_detail_jobs SET stage='RETRY',retry_stage='FETCH_PENDING',safe_error_category='network_or_timeout',expires_at='2000-01-01T00:00:00.000Z'").run();
+    await cleanupExpiredMunicipalDetailJobs(DB);
+    assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_detail_jobs").first(),
+      {stage:"DONE",safe_error_category:"terminal_network_or_timeout"});
+  } finally {await mf.dispose();}
+});
+
 test("expired checkpoints are removed regardless of terminal stage",async()=>{
   const {mf,DB}=await setup(); try {
     await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate,eventId:"event-3"});

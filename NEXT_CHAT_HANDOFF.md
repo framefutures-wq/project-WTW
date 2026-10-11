@@ -1,5 +1,13 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-11 — source budget 및 continuous cycle local implementation
+
+- `CUTOVER_BLOCKED_SOURCE_BUDGET`: 기존 micro LIST_PAGE는 페이지마다 25건을 checkpoint해 2/3-page source에서 50/75건까지 허용했다. Daily full scan을 every-minute Free에 강제하면 detail 3-stage를 포함한 극단적 3,621 units가 하루 usable 약 1,435회를 넘는다.
+- Local `SOURCE_FINALIZE`는 page별 최대 25 frontier와 compact observed identity set을 저장하고, 전 page를 합쳐 legacy priority/first-page duplicate 의미대로 source 전체 최대 25건만 canonical row에 release한다. Additive migration 0026은 이 상태와 durable `municipal_scan_cycles` ledger를 추가한다.
+- Continuous cycle은 due micro unit 하나를 우선 처리한다. Future retry·미완료 source/list/candidate/detail이 있으면 다음 source를 seed하지 않는다. Source가 drain되면 cursor의 source 하나만 seed하고, 마지막 source가 끝난 뒤 cycle을 DONE으로 기록한다. 같은 KST 날짜에는 두 번째 cycle을 만들지 않는다. Expired failures는 safe category를 남긴 terminal row로 14일간 보존하고 진행한다.
+- Registry 35 source, 51 list pages, source-wide max 875 candidates 기준 극단적인 full-cycle work는 35 seed + 51 LIST + 35 FINALIZE + 875 CANDIDATE + 2,625 DETAIL = 3,621 units다. DONE ledger 전환 1회를 포함해 retry 제외 3,622 invocations, usable 1,435/day 기준 약 2.52일이다. Cycle overlap을 막아 일별 유입으로 backlog가 구조적으로 늘지 않는다. 실제 소요시간은 retry/공식 source 상태에 따라 길어질 수 있다.
+- Targeted local tests 33/33, typecheck, diff-check 통과. Detail RETRY는 due 시 FETCH부터 재개하며, 만료된 scan/detail 실패는 safe error category를 남긴 terminal row로 전환한다. Production migration 0026, deploy, Cron cutover는 아직 하지 않는다. 다음 Gate는 **SOURCE_FINALIZE + continuous-cycle control Free Preview + isolated D1 proof** 하나다. 그 proof 전에는 production cutover를 재시도하지 않는다.
+
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
 ## 2026-10-11 — dormant municipal micro scheduler production deploy verified

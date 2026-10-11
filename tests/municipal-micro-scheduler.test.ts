@@ -12,6 +12,7 @@ const dependencies = (calls: string[], outcomes: Partial<Record<keyof MunicipalM
   detailPersistOne: async () => { calls.push("persist"); return outcomes.detailPersistOne ?? null; },
   detailParseOne: async () => { calls.push("parse"); return outcomes.detailParseOne ?? null; },
   detailFetchOne: async () => { calls.push("fetch"); return outcomes.detailFetchOne ?? null; },
+  runMunicipalSourceFinalizeOne: async () => { calls.push("finalize"); return outcomes.runMunicipalSourceFinalizeOne ?? null; },
   runMunicipalCandidateCheckpointOne: async () => { calls.push("candidate"); return outcomes.runMunicipalCandidateCheckpointOne ?? null; },
   runMunicipalListPageOne: async () => { calls.push("list"); return outcomes.runMunicipalListPageOne ?? null; },
   cleanupExpiredMunicipalDetailJobs: async () => { calls.push("cleanup-detail"); return emptyCleanup(); },
@@ -32,8 +33,9 @@ test("micro scheduler selects exactly one stage in durable priority order", asyn
     ["detailPersistOne", "DETAIL_PERSIST", "DONE"],
     ["detailParseOne", "DETAIL_PARSE", "PERSIST_PENDING"],
     ["detailFetchOne", "DETAIL_FETCH", "PARSE_PENDING"],
+    ["runMunicipalSourceFinalizeOne", "SOURCE_FINALIZE", "SOURCE_FINALIZED"],
     ["runMunicipalCandidateCheckpointOne", "CANDIDATE_PENDING", "DONE"],
-    ["runMunicipalListPageOne", "LIST_PENDING", "CANDIDATE_PENDING"],
+    ["runMunicipalListPageOne", "LIST_PENDING", "DONE"],
   ];
   for (const [winner, stage, status] of cases) {
     const calls: string[] = [];

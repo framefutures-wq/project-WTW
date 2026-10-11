@@ -6,9 +6,13 @@ import {
   enqueueMunicipalListPage,
   runMunicipalListPageOne,
   runMunicipalCandidateCheckpointOne,
+  runMunicipalSourceFinalizeOne,
   cleanupExpiredMunicipalScanJobs,
   serializeMunicipalScanBatch,
 } from "../worker/sources/municipal.ts";
+import {
+  mergePaginatedMunicipalCandidates,
+} from "../shared/municipal-pagination.ts";
 
 async function setup() {
   const mf = new Miniflare(
@@ -63,7 +67,7 @@ test("list page checkpoint stores normalized bounded items only and page identit
         finalUrl: "https://gsctf.or.kr/user/performance/all/gal?pageNum=1",
       }),
     });
-    assert.equal(result.stage, "CANDIDATE_PENDING");
+    assert.equal(result.stage, "DONE");
     assert.equal(result.raw_html_stored, false);
     assert.ok(result.candidate_batch_bytes <= 128 * 1024);
     const row = await DB.prepare(
@@ -71,7 +75,7 @@ test("list page checkpoint stores normalized bounded items only and page identit
     )
       .bind(first.id)
       .first();
-    assert.equal(row.stage, "CANDIDATE_PENDING");
+    assert.equal(row.stage, "DONE");
     assert.equal(row.candidate_cursor, 0);
     assert.equal(
       JSON.parse(row.candidate_batch_json).length,
@@ -111,11 +115,8 @@ test("empty stage is a no-op and expired checkpoints are cleaned", async () => {
       "UPDATE municipal_scan_jobs SET expires_at='2000-01-01T00:00:00.000Z'",
     ).run();
     await cleanupExpiredMunicipalScanJobs(DB, NOW);
-    assert.equal(
-      (await DB.prepare("SELECT COUNT(*) n FROM municipal_scan_jobs").first())
-        .n,
-      0,
-    );
+    assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_scan_jobs").first(),
+      { stage: "DONE", safe_error_category: "terminal_expired" });
   } finally {
     await mf.dispose();
   }
@@ -126,22 +127,22 @@ test("candidate checkpoint invokes one candidate and advances one cursor", async
   try {
     await enqueueMunicipalListPage(DB, {
       operatingDate: DATE,
-      sourceKey: "gyeongbuk-경산",
+      sourceKey: "paju",
       pageIndex: 1,
       now: NOW,
     });
     const batch = JSON.stringify([
       {
         candidate: {
-          source: "gyeongbuk-경산",
+          source: "paju",
           source_candidate_id: "synthetic-1",
           title: "경산 문화축제",
           start_date: "2027-10-03",
           end_date: "2027-10-04",
-          region: "경북",
-          locality: "경산",
-          venue: "경산문화회관",
-          official_url: "https://gsctf.or.kr/user/performance/all/gal?id=1",
+          region: "경기",
+          locality: "파주",
+          venue: "파주문화회관",
+          official_url: "https://tour.paju.go.kr/user/link/cultural/BD_index.do?id=1",
           category: "축제",
           snippet: "공식 행사",
           image_candidate: null,
@@ -150,10 +151,13 @@ test("candidate checkpoint invokes one candidate and advances one cursor", async
       },
     ]);
     await DB.prepare(
-      "UPDATE municipal_scan_jobs SET stage='CANDIDATE_PENDING',candidate_batch_json=?,candidate_count=1 WHERE source_key=?",
-    )
-      .bind(batch, "gyeongbuk-경산")
-      .run();
+      "UPDATE municipal_scan_jobs SET stage='DONE',candidate_batch_json=?,observed_identities_json=?,candidate_count=1 WHERE source_key=?",
+    ).bind(batch, JSON.stringify(["synthetic-1"]), "paju").run();
+    assert.equal(await runMunicipalCandidateCheckpointOne(
+      { DB, APP_MODE: "production", TOUR_API_ENABLED: "false", ASSETS: {} },
+      { now: NOW, koreaToday: DATE },
+    ), null);
+    await runMunicipalSourceFinalizeOne(DB, { now: NOW });
     const priorFetch = globalThis.fetch;
     globalThis.fetch = async () => {
       throw new Error("unexpected_network");
@@ -215,9 +219,9 @@ test("oversized candidate checkpoint is rejected without cursor advancement", as
       now: NOW,
     });
     await DB.prepare(
-      "UPDATE municipal_scan_jobs SET stage='CANDIDATE_PENDING',candidate_batch_json=?,candidate_count=1",
+      "UPDATE municipal_scan_jobs SET stage='CANDIDATE_PENDING',source_finalized_at=?,candidate_batch_json=?,candidate_count=1",
     )
-      .bind("x".repeat(128 * 1024 + 1))
+      .bind(NOW, "x".repeat(128 * 1024 + 1))
       .run();
     const result = await runMunicipalCandidateCheckpointOne(
       { DB, APP_MODE: "production", TOUR_API_ENABLED: "false", ASSETS: {} },
@@ -268,4 +272,130 @@ test("candidate checkpoint serialization enforces both count and UTF-8 byte caps
       ),
     /candidate_batch_too_large/,
   );
+});
+
+const sourceKey = "gyeongbuk-경산";
+const candidate = (id, start, end = start, title = id) => ({
+  candidate: {
+    source: sourceKey,
+    source_candidate_id: id,
+    title,
+    start_date: start,
+    end_date: end,
+    region: "경북",
+    locality: "경산",
+    venue: "경산문화회관",
+    official_url: `https://gsctf.or.kr/event/${id}`,
+    category: "공연",
+    snippet: null,
+    image_candidate: null,
+  },
+  mode: "generic_html",
+});
+
+test("source finalization exactly preserves the legacy three-page top-25 frontier", async () => {
+  const { mf, DB } = await setup();
+  try {
+    const pages = [
+      Array.from({ length: 25 }, (_, index) =>
+        candidate(index === 0 ? "duplicate" : `p1-${index}`, "2026-10-10", "2026-10-12", index === 0 ? "page-1 observation" : undefined),
+      ),
+      Array.from({ length: 25 }, (_, index) =>
+        candidate(index === 0 ? "duplicate" : `p2-${index}`, "2026-10-13", "2026-10-13", index === 0 ? "page-2 observation" : undefined),
+      ),
+      Array.from({ length: 25 }, (_, index) =>
+        candidate(`p3-${index}`, index < 8 ? "2026-10-11" : "2026-11-01"),
+      ),
+    ];
+    for (let pageIndex = 1; pageIndex <= 3; pageIndex += 1) {
+      await enqueueMunicipalListPage(DB, { operatingDate: DATE, sourceKey, pageIndex, now: NOW });
+      await DB.prepare(
+        "UPDATE municipal_scan_jobs SET stage='DONE',candidate_batch_json=?,observed_identities_json=?,candidate_count=? WHERE operating_date=? AND source_key=? AND page_index=?",
+      ).bind(JSON.stringify(pages[pageIndex - 1]), JSON.stringify(pages[pageIndex - 1].map((item) => item.candidate.source_candidate_id)), pages[pageIndex - 1].length, DATE, sourceKey, pageIndex).run();
+    }
+    const legacy = mergePaginatedMunicipalCandidates(pages.flat(), DATE)
+      .slice(0, 25)
+      .map((item) => item.candidate.source_candidate_id);
+    const finalized = await runMunicipalSourceFinalizeOne(DB, { now: NOW });
+    assert.equal(finalized.stage, "SOURCE_FINALIZED");
+    assert.ok(finalized.candidate_count <= 25);
+    const rows = await DB.prepare(
+      "SELECT page_index,stage,candidate_batch_json,candidate_count,source_finalized_at FROM municipal_scan_jobs WHERE operating_date=? AND source_key=? ORDER BY page_index",
+    ).bind(DATE, sourceKey).all();
+    assert.equal(rows.results[0].stage, "CANDIDATE_PENDING");
+    assert.equal(rows.results[0].source_finalized_at, NOW);
+    assert.deepEqual(
+      JSON.parse(rows.results[0].candidate_batch_json).map((item) => item.candidate.source_candidate_id),
+      legacy,
+    );
+    assert.equal(JSON.parse(rows.results[0].candidate_batch_json)[0].candidate.title, "page-1 observation");
+    for (const row of rows.results.slice(1)) {
+      assert.equal(row.stage, "DONE");
+      assert.equal(row.candidate_batch_json, null);
+      assert.equal(row.candidate_count, 0);
+    }
+    assert.equal(await runMunicipalSourceFinalizeOne(DB, { now: NOW }), null);
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("incomplete pagination cannot finalize or release candidates", async () => {
+  const { mf, DB } = await setup();
+  try {
+    for (let pageIndex = 1; pageIndex <= 3; pageIndex += 1)
+      await enqueueMunicipalListPage(DB, { operatingDate: DATE, sourceKey, pageIndex, now: NOW });
+    const batch = JSON.stringify([candidate("only-page-one", "2026-10-11")]);
+    await DB.prepare(
+      "UPDATE municipal_scan_jobs SET stage='DONE',candidate_batch_json=?,observed_identities_json=?,candidate_count=1 WHERE operating_date=? AND source_key=? AND page_index=1",
+    ).bind(batch, JSON.stringify(["only-page-one"]), DATE, sourceKey).run();
+    await DB.prepare(
+      "UPDATE municipal_scan_jobs SET stage='RETRY',retry_stage='LIST_PENDING' WHERE operating_date=? AND source_key=? AND page_index=2",
+    ).bind(DATE, sourceKey).run();
+    assert.equal(await runMunicipalSourceFinalizeOne(DB, { now: NOW }), null);
+    assert.equal(await runMunicipalCandidateCheckpointOne({ DB }, { now: NOW, koreaToday: DATE }), null);
+    const canonical = await DB.prepare(
+      "SELECT stage,source_finalized_at FROM municipal_scan_jobs WHERE operating_date=? AND source_key=? AND page_index=1",
+    ).bind(DATE, sourceKey).first();
+    assert.deepEqual(canonical, { stage: "DONE", source_finalized_at: null });
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("a later high-priority duplicate cannot replace an earlier observation outside the page frontier", async () => {
+  const { mf, DB } = await setup();
+  try {
+    const rawPages = [
+      [
+        ...Array.from({ length: 25 }, (_, index) => candidate(`earlier-${index}`, "2026-10-11")),
+        candidate("shadowed", "2027-10-11", "2027-10-11", "first-page observation"),
+      ],
+      [candidate("shadowed", "2026-10-11", "2026-10-11", "later observation")],
+      [candidate("third-page", "2026-10-12")],
+    ];
+    for (let pageIndex = 1; pageIndex <= 3; pageIndex += 1) {
+      const page = rawPages[pageIndex - 1];
+      await enqueueMunicipalListPage(DB, { operatingDate: DATE, sourceKey, pageIndex, now: NOW });
+      await DB.prepare(
+        "UPDATE municipal_scan_jobs SET stage='DONE',candidate_batch_json=?,observed_identities_json=?,candidate_count=? WHERE source_key=? AND page_index=?",
+      ).bind(
+        JSON.stringify(mergePaginatedMunicipalCandidates(page, DATE).slice(0, 25)),
+        JSON.stringify(page.map((item) => item.candidate.source_candidate_id)),
+        Math.min(page.length, 25),
+        sourceKey,
+        pageIndex,
+      ).run();
+    }
+    const legacy = mergePaginatedMunicipalCandidates(rawPages.flat(), DATE)
+      .slice(0, 25).map((item) => item.candidate.source_candidate_id);
+    await runMunicipalSourceFinalizeOne(DB, { now: NOW });
+    const canonical = await DB.prepare(
+      "SELECT candidate_batch_json FROM municipal_scan_jobs WHERE source_key=? AND page_index=1",
+    ).bind(sourceKey).first();
+    const actual = JSON.parse(canonical.candidate_batch_json)
+      .map((item) => item.candidate.source_candidate_id);
+    assert.deepEqual(actual, legacy);
+    assert.equal(actual.includes("shadowed"), false);
+  } finally { await mf.dispose(); }
 });

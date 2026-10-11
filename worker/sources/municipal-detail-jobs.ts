@@ -7,7 +7,7 @@ export const MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES = 300 * 1024;
 export const MUNICIPAL_DETAIL_NORMALIZED_MAX_BYTES = 64 * 1024;
 export const MUNICIPAL_DETAIL_TTL_MS = 15 * 60_000;
 export type MunicipalDetailStage = "FETCH_PENDING" | "PARSE_PENDING" | "PERSIST_PENDING" | "DONE" | "RETRY";
-type Job = { id:string; source_key:string; candidate_id:string; event_id:string; official_url:string; candidate_json:string; stage:MunicipalDetailStage; raw_html:string|null; normalized_json:string|null; attempt_count:number; expires_at:string };
+type Job = { id:string; source_key:string; candidate_id:string; event_id:string; official_url:string; candidate_json:string; stage:MunicipalDetailStage; retry_stage:MunicipalDetailStage|null; raw_html:string|null; normalized_json:string|null; attempt_count:number; expires_at:string };
 const now = () => new Date().toISOString();
 const size = (value: string) => new TextEncoder().encode(value).byteLength;
 const hash = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))), byte => byte.toString(16).padStart(2,"0")).join("");
@@ -42,12 +42,12 @@ export async function fetchMunicipalDetailTransport(source: NonNullable<ReturnTy
   throw last ?? new Error("official_fetch_failed");
 }
 const claim = async (db:D1Database, stage:MunicipalDetailStage): Promise<Job|null> => {
-  const candidate = await db.prepare("SELECT * FROM municipal_detail_jobs WHERE stage=? AND available_at<=? AND expires_at>? ORDER BY available_at,id LIMIT 1").bind(stage,now(),now()).first<Job>();
+  const candidate = await db.prepare("SELECT * FROM municipal_detail_jobs WHERE (stage=? OR (stage='RETRY' AND retry_stage=?)) AND available_at<=? AND expires_at>? ORDER BY available_at,id LIMIT 1").bind(stage,stage,now(),now()).first<Job>();
   if (!candidate) return null;
-  const result = await db.prepare("UPDATE municipal_detail_jobs SET available_at=?,updated_at=? WHERE id=? AND stage=? AND available_at<=?").bind(new Date(Date.now()+60_000).toISOString(),now(),candidate.id,stage,now()).run();
-  return result.meta.changes ? candidate : null;
+  const result = await db.prepare("UPDATE municipal_detail_jobs SET stage=?,retry_stage=NULL,available_at=?,updated_at=? WHERE id=? AND (stage=? OR (stage='RETRY' AND retry_stage=?)) AND available_at<=?").bind(stage,new Date(Date.now()+60_000).toISOString(),now(),candidate.id,stage,stage,now()).run();
+  return result.meta.changes ? {...candidate,stage,retry_stage:null} : null;
 };
-const fail = (db:D1Database, job:Job, category:string) => db.prepare("UPDATE municipal_detail_jobs SET stage='RETRY',attempt_count=attempt_count+1,retry_at=?,available_at=?,safe_error_category=?,raw_html=NULL,normalized_json=NULL,updated_at=? WHERE id=? AND stage!= 'DONE'").bind(retryAt(job.attempt_count+1),retryAt(job.attempt_count+1),category,now(),job.id).run();
+const fail = (db:D1Database, job:Job, category:string) => db.prepare("UPDATE municipal_detail_jobs SET stage='RETRY',retry_stage='FETCH_PENDING',attempt_count=attempt_count+1,retry_at=?,available_at=?,safe_error_category=?,raw_html=NULL,normalized_json=NULL,updated_at=? WHERE id=? AND stage!= 'DONE'").bind(retryAt(job.attempt_count+1),retryAt(job.attempt_count+1),category,now(),job.id).run();
 
 /** Enqueue only. Existing scheduled municipal execution deliberately never calls this yet. */
 export async function enqueueMunicipalDetailJob(db:D1Database, input:{ sourceKey:string; candidate:MunicipalCandidate; eventId:string }) {
@@ -74,4 +74,11 @@ export async function detailPersistOne(db:D1Database) {
   try { const candidate=JSON.parse(job.candidate_json) as MunicipalCandidate; const detail=JSON.parse(job.normalized_json ?? "null") as MunicipalRichDetail|null; if(!detail || !candidate.start_date || !candidate.end_date) throw new Error("missing_normalized_detail"); await persistMunicipalRichDetail(db,{eventId:job.event_id,startDate:candidate.start_date,endDate:candidate.end_date,sourceId:`municipal-source-${job.event_id}`,sourceName:`${candidate.source} 공식 행사 안내`,sourceUrl:job.official_url,checkedAt:now(),detail}); await db.prepare("UPDATE municipal_detail_jobs SET stage='DONE',normalized_json=NULL,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='PERSIST_PENDING'").bind(now(),job.id).run(); return {id:job.id,stage:"DONE" as const}; } catch {await fail(db,job,"detail_persist_failed");return {id:job.id,stage:"RETRY" as const};}
 }
 /** DONE rows are observability-only and share the short checkpoint TTL. */
-export const cleanupExpiredMunicipalDetailJobs = (db:D1Database) => db.prepare("DELETE FROM municipal_detail_jobs WHERE expires_at<?").bind(now()).run();
+export const cleanupExpiredMunicipalDetailJobs = async (db:D1Database, at=now()) => {
+  const retainUntil=new Date(Date.parse(at)+14*86400000).toISOString();
+  const results=await db.batch([
+    db.prepare("UPDATE municipal_detail_jobs SET stage='DONE',retry_stage=NULL,raw_html=NULL,raw_html_sha256=NULL,normalized_json=NULL,safe_error_category='terminal_'||COALESCE(safe_error_category,'expired'),retry_at=NULL,expires_at=?,updated_at=? WHERE stage<>'DONE' AND expires_at<=?").bind(retainUntil,at,at),
+    db.prepare("DELETE FROM municipal_detail_jobs WHERE stage='DONE' AND expires_at<=?").bind(at),
+  ]);
+  return {meta:{changes:results.reduce((count,result)=>count+(result.meta.changes??0),0)}};
+};

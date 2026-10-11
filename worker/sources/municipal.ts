@@ -12,6 +12,7 @@ import {
 } from "../../shared/municipal-source-registry";
 import {
   fetchMunicipalSourcePages,
+  mergePaginatedMunicipalCandidates,
   municipalSourcePageUrls,
   selectBoundedMunicipalCandidates,
 } from "../../shared/municipal-pagination";
@@ -1747,8 +1748,12 @@ type MunicipalScanJob = {
   candidate_cursor: number;
   candidate_count: number;
   attempt_count: number;
+  source_finalized_at: string | null;
+  observed_identities_json: string | null;
+  safe_error_category: string | null;
   available_at: string;
   retry_at: string | null;
+  expires_at: string;
 };
 type MunicipalScanDb = Env["DB"];
 
@@ -1849,10 +1854,14 @@ const claimMunicipalScanJob = async (
   stage: "LIST_PENDING" | "CANDIDATE_PENDING",
   now: string,
 ) => {
+  const candidateGuard =
+    stage === "CANDIDATE_PENDING"
+      ? " AND source_finalized_at IS NOT NULL AND page_index=1"
+      : "";
   const row = await db
     .prepare(
       `SELECT * FROM municipal_scan_jobs WHERE
-    (stage=? OR (stage='RETRY' AND retry_stage=?)) AND available_at<=? AND expires_at>? ORDER BY available_at,created_at,id LIMIT 1`,
+    (stage=? OR (stage='RETRY' AND retry_stage=?)) AND available_at<=? AND expires_at>?${candidateGuard} ORDER BY available_at,created_at,id LIMIT 1`,
     )
     .bind(stage, stage, now, now)
     .first<MunicipalScanJob>();
@@ -1861,7 +1870,7 @@ const claimMunicipalScanJob = async (
   const claimed = await db
     .prepare(
       `UPDATE municipal_scan_jobs SET stage=CASE WHEN stage='RETRY' THEN retry_stage ELSE stage END,retry_stage=NULL,available_at=?,attempt_count=attempt_count+1,updated_at=?
-    WHERE id=? AND available_at<=? AND (stage=? OR (stage='RETRY' AND retry_stage=?))`,
+    WHERE id=? AND available_at<=? AND (stage=? OR (stage='RETRY' AND retry_stage=?))${candidateGuard}`,
     )
     .bind(lease, now, row.id, now, stage, stage)
     .run();
@@ -1886,9 +1895,11 @@ const retryMunicipalScanJob = async (
   await db
     .prepare(
       `UPDATE municipal_scan_jobs SET stage='RETRY',retry_stage=?,candidate_batch_json=CASE WHEN ?='LIST_PENDING' THEN NULL ELSE candidate_batch_json END,
+    observed_identities_json=CASE WHEN ?='LIST_PENDING' THEN NULL ELSE observed_identities_json END,
     safe_error_category=?,retry_at=?,available_at=?,updated_at=? WHERE id=? AND available_at=?`,
     )
     .bind(
+      from,
       from,
       from,
       category.slice(0, 64),
@@ -1940,16 +1951,40 @@ export async function runMunicipalListPageOne(
     if (extraction.partialCandidates?.length)
       throw new Error("list_parse_requires_fallback");
     const mode = extraction.mode as MunicipalCandidateMode;
-    const batch = extraction.candidates
-      .slice(0, MUNICIPAL_SCAN_CANDIDATE_MAX)
-      .map((candidate) => ({ candidate, mode }));
+    const pageCandidates = extraction.candidates.map((candidate) => ({
+      candidate,
+      mode,
+    }));
+    // Keep only a deterministic per-page frontier. For paginated sources this
+    // uses the same ordering and first-observation dedupe as the legacy merge,
+    // so no item outside this frontier can enter the final source-wide top 25.
+    const batch = source.pagination
+      ? mergePaginatedMunicipalCandidates(pageCandidates, job.operating_date).slice(
+          0,
+          MUNICIPAL_SCAN_CANDIDATE_MAX,
+        )
+      : selectBoundedMunicipalCandidates(
+          pageCandidates,
+          job.operating_date,
+          MUNICIPAL_SCAN_CANDIDATE_MAX,
+        );
+    // An earlier page can contain an identity outside its top-25 frontier.
+    // Keep its compact identity set so a later duplicate cannot replace the
+    // first-page observation during source finalization.
+    const identities = JSON.stringify([
+      ...new Set(extraction.candidates.map((candidate) => candidate.source_candidate_id)),
+    ]);
+    if (new TextEncoder().encode(identities).byteLength > MUNICIPAL_SCAN_BATCH_MAX_BYTES)
+      throw new Error("candidate_batch_too_large");
     const json = serializeMunicipalScanBatch(batch);
-    const nextStage = batch.length ? "CANDIDATE_PENDING" : "DONE";
+    // Candidate work is released only by source finalization, after every
+    // pagination page has been observed.
+    const nextStage = "DONE";
     const result = await db
       .prepare(
-        `UPDATE municipal_scan_jobs SET stage=?,retry_stage=NULL,candidate_batch_json=?,candidate_cursor=0,candidate_count=?,safe_error_category=NULL,retry_at=NULL,available_at=?,updated_at=? WHERE id=? AND stage IN ('LIST_PENDING','RETRY') AND available_at=?`,
+        `UPDATE municipal_scan_jobs SET stage=?,retry_stage=NULL,candidate_batch_json=?,observed_identities_json=?,candidate_cursor=0,candidate_count=?,safe_error_category=NULL,retry_at=NULL,available_at=?,updated_at=? WHERE id=? AND stage IN ('LIST_PENDING','RETRY') AND available_at=?`,
       )
-      .bind(nextStage, json, batch.length, now, now, job.id, job.available_at)
+      .bind(nextStage, json, identities, batch.length, now, now, job.id, job.available_at)
       .run();
     if (!(result.meta.changes ?? 0)) return null;
     return {
@@ -1978,6 +2013,146 @@ export async function runMunicipalListPageOne(
       safe_error_category:
         msg === "candidate_batch_too_large" ? msg : "list_page_failed",
     };
+  }
+}
+
+/**
+ * Finalizes one fully parsed source into the legacy source-wide candidate
+ * frontier. The canonical first-page row is the only row released to the
+ * candidate worker; all other page payloads are discarded atomically.
+ */
+export async function runMunicipalSourceFinalizeOne(
+  db: MunicipalScanDb,
+  options: { now?: string } = {},
+) {
+  const now = options.now ?? new Date().toISOString();
+  const canonical = await db
+    .prepare(
+      `SELECT * FROM municipal_scan_jobs WHERE page_index=1 AND stage='DONE'
+       AND candidate_batch_json IS NOT NULL AND safe_error_category IS NULL
+       AND source_finalized_at IS NULL AND available_at<=? AND expires_at>?
+       ORDER BY available_at,created_at,id LIMIT 1`,
+    )
+    .bind(now, now)
+    .first<MunicipalScanJob>();
+  if (!canonical) return null;
+  const source = SOURCES.find((item) => item.key === canonical.source_key);
+  const urls = source ? municipalSourcePageUrls(source) : null;
+  if (!source || !urls) return null;
+
+  const lease = new Date(Date.parse(now) + 120000).toISOString();
+  const claimed = await db
+    .prepare(
+      `UPDATE municipal_scan_jobs SET available_at=?,updated_at=? WHERE id=?
+       AND page_index=1 AND stage='DONE' AND source_finalized_at IS NULL AND available_at<=?`,
+    )
+    .bind(lease, now, canonical.id, now)
+    .run();
+  if (!(claimed.meta.changes ?? 0)) return null;
+
+  const pages = await db
+    .prepare(
+      `SELECT * FROM municipal_scan_jobs WHERE operating_date=? AND source_key=?
+       ORDER BY page_index`,
+    )
+    .bind(canonical.operating_date, canonical.source_key)
+    .all<MunicipalScanJob>();
+  const rows = pages.results;
+  const failedPage = rows.find((row) => row.safe_error_category?.startsWith("terminal_"));
+  if (failedPage) {
+    const terminal = await db
+      .prepare(
+        `UPDATE municipal_scan_jobs SET candidate_batch_json=NULL,observed_identities_json=NULL,candidate_count=0,
+         safe_error_category='terminal_source_page_expired',updated_at=? WHERE id=? AND stage='DONE'
+         AND source_finalized_at IS NULL AND available_at=?`,
+      )
+      .bind(now, canonical.id, lease)
+      .run();
+    return (terminal.meta.changes ?? 0) > 0
+      ? { job_id: canonical.id, stage: "SOURCE_SKIPPED" as const, source_key: canonical.source_key, candidate_count: 0 }
+      : null;
+  }
+  const complete =
+    rows.length === urls.length &&
+    rows.every(
+      (row, index) =>
+        row.page_index === index + 1 &&
+        row.stage === "DONE" &&
+        row.candidate_batch_json !== null &&
+        row.observed_identities_json !== null &&
+        row.expires_at > now,
+    );
+  if (!complete) {
+    await db
+      .prepare("UPDATE municipal_scan_jobs SET available_at=?,updated_at=? WHERE id=? AND available_at=?")
+      .bind(now, now, canonical.id, lease)
+      .run();
+    return null;
+  }
+
+  try {
+    const seen = new Set<string>();
+    const all = rows.flatMap((row) => {
+      const batch = JSON.parse(row.candidate_batch_json ?? "[]") as Array<{
+        candidate: MunicipalCandidate;
+        mode: MunicipalCandidateMode;
+      }>;
+      const identities = JSON.parse(row.observed_identities_json ?? "[]") as string[];
+      if (batch.length > MUNICIPAL_SCAN_CANDIDATE_MAX)
+        throw new Error("candidate_batch_too_large");
+      const frontier = batch.filter((item) => !seen.has(item.candidate.source_candidate_id));
+      for (const identity of identities) seen.add(identity);
+      return frontier;
+    });
+    const finalBatch = source.pagination
+      ? mergePaginatedMunicipalCandidates(all, canonical.operating_date).slice(
+          0,
+          MUNICIPAL_SCAN_CANDIDATE_MAX,
+        )
+      : selectBoundedMunicipalCandidates(
+          all,
+          canonical.operating_date,
+          MUNICIPAL_SCAN_CANDIDATE_MAX,
+        );
+    const json = serializeMunicipalScanBatch(finalBatch);
+    const canonicalStage = finalBatch.length ? "CANDIDATE_PENDING" : "DONE";
+    const statements = [
+      db
+        .prepare(
+          `UPDATE municipal_scan_jobs SET stage=?,retry_stage=NULL,candidate_batch_json=?,candidate_cursor=0,candidate_count=?,source_finalized_at=?,available_at=?,updated_at=?
+           WHERE id=? AND stage='DONE' AND source_finalized_at IS NULL AND available_at=?`,
+        )
+        .bind(
+          canonicalStage,
+          json,
+          finalBatch.length,
+          now,
+          now,
+          now,
+          canonical.id,
+          lease,
+        ),
+      db
+        .prepare(
+          `UPDATE municipal_scan_jobs SET candidate_batch_json=NULL,observed_identities_json=NULL,candidate_cursor=0,candidate_count=0,updated_at=?
+           WHERE operating_date=? AND source_key=? AND page_index<>1 AND stage='DONE' AND source_finalized_at IS NULL`,
+        )
+        .bind(now, canonical.operating_date, canonical.source_key),
+    ];
+    const results = await db.batch(statements);
+    if (!((results[0].meta.changes ?? 0) > 0)) return null;
+    return {
+      job_id: canonical.id,
+      stage: "SOURCE_FINALIZED" as const,
+      source_key: canonical.source_key,
+      candidate_count: finalBatch.length,
+    };
+  } catch (error) {
+    await db
+      .prepare("UPDATE municipal_scan_jobs SET available_at=?,updated_at=? WHERE id=? AND available_at=?")
+      .bind(now, now, canonical.id, lease)
+      .run();
+    throw error;
   }
 }
 
@@ -2070,8 +2245,15 @@ export async function cleanupExpiredMunicipalScanJobs(
   db: MunicipalScanDb,
   now = new Date().toISOString(),
 ) {
-  return db
-    .prepare("DELETE FROM municipal_scan_jobs WHERE expires_at<=?")
-    .bind(now)
-    .run();
+  const retainUntil = new Date(Date.parse(now) + 14 * 86400000).toISOString();
+  const results = await db.batch([
+    db.prepare(
+      `UPDATE municipal_scan_jobs SET stage='DONE',retry_stage=NULL,candidate_batch_json=NULL,
+       observed_identities_json=NULL,candidate_count=0,safe_error_category='terminal_'||COALESCE(safe_error_category,'expired'),
+       retry_at=NULL,expires_at=?,updated_at=? WHERE expires_at<=? AND
+       (stage<>'DONE' OR (source_finalized_at IS NULL AND candidate_batch_json IS NOT NULL))`,
+    ).bind(retainUntil, now, now),
+    db.prepare("DELETE FROM municipal_scan_jobs WHERE stage='DONE' AND expires_at<=?").bind(now),
+  ]);
+  return { meta: { changes: results.reduce((count, result) => count + (result.meta.changes ?? 0), 0) } };
 }
