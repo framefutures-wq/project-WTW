@@ -70,9 +70,6 @@ Production Cron 현재 상태:
 2026-10-11 municipal scheduled-window bound:
 - Scheduled municipal shards have a 60-second whole-shard wall-clock limit and compact `scheduled_window` progress telemetry. A budget exit preserves completed source work, identifies skipped sources, and continues to later scheduled subsystems; manual/explicit municipal runs do not receive this limit.
 
-2026-10-11 scheduled Worker CPU alignment:
-- Production Worker configuration explicitly sets `limits.cpu_ms` to 120,000ms. This leaves headroom for the 60-second municipal and 90-second official-detail wall-clock budgets to report bounded exits and continue later scheduled subsystems, while staying below the 300,000ms Workers Paid maximum.
-
 2026-10-10 detail presentation update:
 - Public `/events/:id` is a standalone full-page route rather than a modal/dialog. It retains direct URLs, reload, card navigation, and browser-back list restoration while using normal document scroll, a shallow contained media header, and an editorial content rail.
 - Follow-up visual polish enlarges contained posters (desktop 440px / mobile 340px), widens the centered information rail, and removes home footer/promo content from detail routes. Mobile multi-image media uses large horizontally scrollable slides instead of two narrow columns.

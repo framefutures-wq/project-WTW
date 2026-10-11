@@ -4,7 +4,6 @@
   "account_id": "a3ced956d23f59da4cfcf41377cf3ec6",
   "main": "worker/index.ts",
   "compatibility_date": "2026-09-18",
-  "limits": { "cpu_ms": 120000 },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
