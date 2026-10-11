@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("municipal rich detail is actually visible in the event page", async ({ page }) => {
+test("municipal rich detail is actually visible in the event page", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1100, height: 820 });
   const id = "municipal-seoul-hangang-ui";
-  const image1 = "https://galteum.com/api/events/municipal-seoul-hangang-ui/image/1";
-  const image2 = "https://galteum.com/api/events/municipal-seoul-hangang-ui/image/2";
+  const image1 =
+    "https://galteum.com/api/events/municipal-seoul-hangang-ui/image/1";
+  const image2 =
+    "https://galteum.com/api/events/municipal-seoul-hangang-ui/image/2";
 
   const event = {
     id,
@@ -42,11 +46,13 @@ test("municipal rich detail is actually visible in the event page", async ({ pag
 
   await page.route("**/api/events/**", async (route) => {
     const url = new URL(route.request().url());
-    if (url.pathname.endsWith("/image/1") || url.pathname.endsWith("/image/2")) {
+    if (
+      url.pathname.endsWith("/image/1") ||
+      url.pathname.endsWith("/image/2")
+    ) {
       return route.fulfill({
         contentType: "image/svg+xml",
-        body:
-          '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="white"/></svg>',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="white"/></svg>',
       });
     }
     return route.fulfill({
@@ -167,10 +173,16 @@ test("municipal rich detail is actually visible in the event page", async ({ pag
 
   await page.goto("/events/" + encodeURIComponent(id));
 
-  await expect(page.getByText("6개국 전통 공연과 한복 대여, 전통놀이 체험을 즐길 수 있습니다.")).toBeVisible();
+  await expect(
+    page.getByText(
+      "6개국 전통 공연과 한복 대여, 전통놀이 체험을 즐길 수 있습니다.",
+    ),
+  ).toBeVisible();
   await expect(page.getByText("15:00 ~ 16:00 · 17:00 ~ 18:00")).toBeVisible();
   await expect(page.getByText("120", { exact: true })).toBeVisible();
-  await expect(page.getByText("6개국 전통 공연", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("6개국 전통 공연", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("한복 대여", { exact: true })).toBeVisible();
   await expect(page.getByText("전통놀이 체험", { exact: true })).toBeVisible();
 
@@ -181,13 +193,20 @@ test("municipal rich detail is actually visible in the event page", async ({ pag
   const detailPage = page.locator(".event-detail-page");
   const detailPageBox = await detailPage.boundingBox();
   const mediaBox = await media.boundingBox();
-  const summaryBox = await detailPage.locator(".detail-summary-panel").boundingBox();
+  const summaryBox = await detailPage
+    .locator(".detail-summary-panel")
+    .boundingBox();
   expect(detailPageBox).not.toBeNull();
   expect(mediaBox).not.toBeNull();
   expect(summaryBox).not.toBeNull();
-  expect(mediaBox!.y).toBeLessThan(summaryBox!.y);
-  expect(mediaBox!.height).toBeLessThanOrEqual(320);
-  expect(mediaBox!.width / detailPageBox!.width).toBeGreaterThan(0.9);
+  const mobile = (page.viewportSize()?.width ?? 0) <= 760;
+  if (mobile) {
+    expect(summaryBox!.y).toBeLessThan(mediaBox!.y);
+    expect(mediaBox!.height).toBeLessThanOrEqual(280);
+  } else {
+    expect(Math.abs(mediaBox!.y - summaryBox!.y)).toBeLessThanOrEqual(32);
+    expect(mediaBox!.width / detailPageBox!.width).toBeLessThan(0.6);
+  }
   await expect(page.locator("dialog.detail-dialog")).toHaveCount(0);
 
   const primaryFacts = detailPage.locator(".detail-primary-fact");
@@ -199,16 +218,21 @@ test("municipal rich detail is actually visible in the event page", async ({ pag
   expect(Math.abs(dateBox!.y - locationBox!.y)).toBeLessThanOrEqual(2);
   expect(dateBox!.x).toBeLessThan(locationBox!.x);
 
-  const programGrid = detailPage.locator(".detail-program-list .detail-programs");
+  const programGrid = detailPage.locator(
+    ".detail-program-list .detail-programs",
+  );
   await expect(programGrid).toBeVisible();
-  const programColumns = await programGrid.evaluate((element) =>
-    getComputedStyle(element).gridTemplateColumns
-      .split(" ")
-      .filter(Boolean).length,
+  const programColumns = await programGrid.evaluate(
+    (element) =>
+      getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean)
+        .length,
   );
   expect(programColumns).toBeGreaterThanOrEqual(2);
 
-  const firstProgram = await detailPage.locator(".detail-program-card").first().boundingBox();
+  const firstProgram = await detailPage
+    .locator(".detail-program-card")
+    .first()
+    .boundingBox();
   expect(firstProgram).not.toBeNull();
   expect(firstProgram!.y - detailPageBox!.y).toBeLessThan(1100);
 });

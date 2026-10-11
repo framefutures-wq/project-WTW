@@ -32,24 +32,41 @@ test("detail enrichment renders only populated summaries, highlights and program
   assert.match(app, /detail\.enrichment\?\.programs\.some/);
 });
 
-test("detail v2 prioritizes date and venue, then CTA and populated content", () => {
+test("detail prioritizes date and venue, then CTA and populated content", () => {
   const primaryFacts = app.indexOf('className="detail-primary-facts"');
   const officialCta = app.indexOf("detail-official-link-top");
   const supportingFacts = app.indexOf('className="detail-supporting-facts"');
-  const highlights = app.indexOf('className="detail-enrichment detail-highlights"');
+  const highlights = app.indexOf(
+    'className="detail-enrichment detail-highlights"',
+  );
   const timeline = app.indexOf('className="detail-programs detail-timeline"');
-  const programs = app.indexOf('className="detail-enrichment detail-program-list"');
-  const description = app.indexOf('className="detail-description detail-enrichment-summary"');
+  const programs = app.indexOf(
+    'className="detail-enrichment detail-program-list"',
+  );
+  const description = app.indexOf(
+    'className="detail-description detail-enrichment-summary"',
+  );
   const source = app.indexOf('className="detail-source-row"');
   assert(primaryFacts < officialCta);
   assert(officialCta < supportingFacts);
-  assert(highlights < timeline && timeline < programs && programs < description);
+  assert(
+    highlights < timeline && timeline < programs && programs < description,
+  );
   assert(description < source);
-  assert.match(redesign, /\.detail-official-link-top\s*\{[^}]*background: #f26b38/);
+  assert.match(
+    redesign,
+    /\.detail-official-link-top\s*\{[^}]*background: #f26b38/,
+  );
   assert.match(redesign, /\.detail-timeline-item::before/);
   assert.match(redesign, /\.detail-program-card\s*\{/);
-  assert.match(redesign, /\.detail-body > \.detail-enrichment-summary\s*\{\s*order: 7/);
-  assert.match(redesign, /\.detail-body > \.detail-source-row\s*\{\s*order: 10/);
+  assert.match(
+    redesign,
+    /\.detail-body > \.detail-enrichment-summary\s*\{\s*order: 7/,
+  );
+  assert.match(
+    redesign,
+    /\.detail-body > \.detail-source-row\s*\{\s*order: 10/,
+  );
 });
 
 test("detail renders derived event status without replacing official status notices", () => {
@@ -63,7 +80,10 @@ test("detail renders derived event status without replacing official status noti
 
 test("home event cards expose canonical crawlable detail links", () => {
   assert.match(app, /className="card-button"/);
-  assert.match(app, /href=\{\`\/events\/\$\{encodeURIComponent\(event\.id\)\}\`\}/);
+  assert.match(
+    app,
+    /href=\{\`\/events\/\$\{encodeURIComponent\(event\.id\)\}\`\}/,
+  );
   assert.match(app, /clickEvent\.preventDefault\(\)/);
   assert.match(app, /setSelected\(event\.id\)/);
 });
@@ -73,11 +93,20 @@ test("detail exploration reuses scoped API queries and canonical links", () => {
   assert.match(app, /event\.lat !== null && event\.lng !== null/);
   assert.match(app, /event\.tags\.find\(\(tag\) => tag in THEMES\)/);
   assert.match(app, /nearbyDetailEvents\(body\.events, event\.id\)/);
-  assert.match(app, /similarDetailEvents\(body\.events, event\.id, eventTheme\)/);
+  assert.match(
+    app,
+    /similarDetailEvents\(body\.events, event\.id, eventTheme\)/,
+  );
   assert.match(app, /controller\.abort\(\)/);
-  assert.match(app, /href=\{`\/events\/\$\{encodeURIComponent\(event\.id\)\}`\}/);
+  assert.match(
+    app,
+    /href=\{`\/events\/\$\{encodeURIComponent\(event\.id\)\}`\}/,
+  );
   assert.match(app, /detail-exploration/);
-  assert.match(redesign, /\.detail-body > \.detail-exploration\s*\{\s*order: 9/);
+  assert.match(
+    redesign,
+    /\.detail-body > \.detail-exploration\s*\{\s*order: 9/,
+  );
 });
 
 test("detail content follows the user-first hierarchy", () => {
@@ -95,25 +124,31 @@ test("detail content follows the user-first hierarchy", () => {
 
 test("detail uses encoded event ids for API and canonical paths while accepting legacy query URLs", () => {
   assert.match(app, /eventIdFromPath/);
-  assert.match(app, /fetch\("\/api\/events\/" \+ encodeURIComponent\(selected\)/);
+  assert.match(
+    app,
+    /fetch\("\/api\/events\/" \+ encodeURIComponent\(selected\)/,
+  );
   assert.match(app, /\/events\/\$\{encodeURIComponent\(selected\)\}/);
   assert.match(app, /detailUrl\.searchParams\.get\("event"\) === selected/);
 });
 
 test("detail delegates official-page and map actions to deterministic helpers", () => {
-  assert.match(app, /detailOfficialUrl\(\s*detail\.event,\s*detail\.enrichment/);
+  assert.match(
+    app,
+    /detailOfficialUrl\(\s*detail\.event,\s*detail\.enrichment/,
+  );
   assert.match(app, /detailMapAction\(detail\.event\)/);
   assert.match(app, /mapAction\.href/);
   assert.match(app, /mapAction\.label/);
 });
 
-test("mobile two-image detail media stays compact instead of stacking two full cards", () => {
+test("mobile detail puts the decision summary before a compact swipeable media row", () => {
   assert.match(
     redesign,
-    /\.detail-media-pair\s*\{[^}]*grid-template-columns: minmax\(0, 1\.55fr\) minmax\(0, \.85fr\)[^}]*height: clamp\(220px, 64vw, 250px\)[^}]*max-height: 250px/s,
+    /\.event-detail-page \.detail-summary-panel\s*\{[^}]*order: -1/s,
   );
   assert.match(
     redesign,
-    /\.detail-media-pair button\s*\{[^}]*height: 100%[^}]*max-height: none[^}]*aspect-ratio: auto/s,
+    /\.event-detail-page \.detail-media-pair\s*\{[^}]*grid-auto-columns: 88%[^}]*scroll-snap-type: x mandatory/s,
   );
 });

@@ -2,6 +2,14 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — 상세 decision-first 재설계 완료, production 배포 대기
+
+- `/events/:id`는 desktop에서 contained official media와 결정 요약을 같은 hero에 배치한다. 제목, 일정, 장소, 공식/지도 CTA와 있는 보조 사실을 poster 높이에 맞춰 첫 화면에서 함께 읽는다. 포스터는 contain, 사진도 기존 공식 media만 사용한다.
+- mobile은 제목 → 일정·장소 → CTA/보조 사실 → compact media 순서다. 긴 포스터가 핵심 정보를 밀어내지 않으며, 2장 media는 가로 swipe로 유지된다.
+- 일정/장소와 운영시간/비용/문의는 card 묶음이 아니라 typography와 divider로 정리했다. 프로그램은 timeline 및 responsive schedule rows, 소개는 읽기 폭을 제한한 본문, 주변/출처는 조용한 후순위다.
+- 로컬 typecheck/build/detail UI contract 및 desktop/mobile rich-detail browser tests를 통과했다. 이 UI commit도 production에는 배포하지 않는다.
+- 다음 bounded task: 홈+상세 통합 visual QA 후 production release 1회.
+
 ## 2026-10-11 — YES 제품화 홈 decision-first 재설계 완료
 
 - 홈은 hero/search → compact 날짜·지역 discovery bar → `이번 주말 먼저 볼 곳` 추천 → `더 둘러보기` 전체 행사 → 빠른 카테고리 순서로 재구성됐다.

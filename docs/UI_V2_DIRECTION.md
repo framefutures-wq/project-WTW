@@ -318,3 +318,9 @@ Adaptive media:
 - desktop은 header 아래의 넓은 content rail에 shallow full-width media와 editorial content flow를 사용한다. 기본 `이미지 | 정보` hero 분할과 dark backdrop은 사용하지 않는다.
 - mobile도 header → 목록으로 → media → 본문으로 이어지는 normal document scroll을 사용한다. 내부 dialog scroll, floating close button, sheet radius를 사용하지 않는다.
 - 제목·일정·장소·공식 CTA·supporting facts는 미디어 바로 뒤에서 읽히고, 프로그램·소개·주변 탐색·공식 출처는 같은 문서 흐름에서 조용히 이어진다.
+
+### 2026-10-11 decision-first detail 확정 구조
+
+- Desktop 첫 화면은 **공식 media + 결정 요약**의 editorial composition이다. 제목, 일정, 장소, 공식/지도 CTA, 존재하는 보조 사실을 함께 배치하며 poster는 contain을 유지한다.
+- Mobile은 **제목 → 일정·장소 → CTA/보조 사실 → media** 순서로 핵심 결정을 먼저 돕는다. 2장 media는 compact horizontal swipe를 유지한다.
+- 일정/장소와 운영시간/비용/문의는 반복 card 대신 typography와 divider로 구분한다. 프로그램은 timeline 또는 schedule row, 소개는 가독성 있는 좁은 본문, 탐색/출처는 낮은 위계로 이어진다.
