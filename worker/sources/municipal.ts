@@ -40,6 +40,7 @@ import {
   type MunicipalRichDetail,
 } from "../../shared/municipal-rich-detail";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
+import { enqueueMunicipalDetailJob } from "./municipal-detail-jobs";
 import {
   MUNICIPAL_MAX_FETCHES_PER_SOURCE_WINDOW,
   MUNICIPAL_MIN_FETCH_RESERVE_PER_SOURCE,
@@ -439,10 +440,14 @@ async function officialResponse(
     ? lastError
     : new Error("official_fetch_failed");
 }
+export type MunicipalCandidateMode =
+  | "registered"
+  | "structured_event"
+  | "generic_html"
+  | MunicipalDocumentMode;
 type SourceCandidate = {
   candidate: MunicipalCandidate;
-  mode:
-    "registered" | "structured_event" | "generic_html" | MunicipalDocumentMode;
+  mode: MunicipalCandidateMode;
   pageHtml: string;
   detailHtml?: string;
 };
@@ -721,6 +726,10 @@ async function publish(
     inserted: existing ? 0 : 1,
     updated: existing ? 1 : 0,
     rows: result.reduce((total, item) => total + (item.meta.changes ?? 0), 0),
+    rows_written: result.reduce(
+      (total, item) => total + (item.meta.rows_written ?? item.meta.changes ?? 0),
+      0,
+    ),
   };
 }
 
@@ -1514,4 +1523,207 @@ export async function runMunicipalAutonomous(
   console.log("municipal_autonomous_summary", result);
   if (budgetTimer) clearTimeout(budgetTimer);
   return result;
+}
+
+export type MunicipalCandidateOneResult = {
+  candidate_id: string;
+  decision: AutonomousDecision;
+  reason: string;
+  inserted: number;
+  updated: number;
+  rows_read: number;
+  rows_written: number;
+  detail_required: boolean;
+};
+
+/**
+ * Process one already-normalized municipal candidate without touching a list
+ * or detail network resource. Detail-dependent candidates are checkpointed
+ * for the separate detail runner and remain AUTO_RETRY until validated.
+ */
+export async function runMunicipalCandidateOne(
+  env: Env,
+  input: {
+    candidate: MunicipalCandidate;
+    mode: MunicipalCandidateMode;
+    now?: string;
+    koreaToday?: string;
+    publishMutations: number;
+    maxPublishMutations: number;
+  },
+): Promise<MunicipalCandidateOneResult> {
+  const { candidate, mode } = input;
+  const source = SOURCES.find((item) => item.key === candidate.source);
+  if (!source || !municipalSourceAllowsUrl(source, candidate.official_url))
+    throw new Error("municipal_candidate_invalid_source");
+
+  const now = input.now ?? new Date().toISOString();
+  const koreaToday = input.koreaToday ?? today();
+  let rowsRead = 0;
+  let rowsWritten = 0;
+  const provisionalId = candidateId(
+    candidate.source,
+    candidate.source_candidate_id,
+    candidate.start_date,
+  );
+  const identity = await resolveImprovedGenericIdentity(
+    env,
+    source,
+    candidate,
+    mode,
+    provisionalId,
+  );
+  const id = identity.id;
+  rowsRead += identity.rows;
+
+  const payloadHash = await hash({
+    title: candidate.title,
+    start_date: candidate.start_date,
+    end_date: candidate.end_date,
+    venue: candidate.venue,
+    official_url: candidate.official_url,
+  });
+  const previousResult = await env.DB.prepare(
+    "SELECT last_payload_hash,decision_state,first_seen_at,last_seen_at,retry_until FROM municipal_candidate_state WHERE candidate_id=?",
+  )
+    .bind(id)
+    .all<{
+      last_payload_hash: string;
+      decision_state: AutonomousDecision;
+      first_seen_at: string;
+      last_seen_at: string;
+      retry_until: string | null;
+    }>();
+  rowsRead += previousResult.meta.rows_read ?? 0;
+  const previous = previousResult.results[0] ?? null;
+  const effectiveCandidate =
+    mode === "image_vision"
+      ? confirmRepeatedImageVisionCandidate(candidate, {
+          previousPayloadHash: previous?.last_payload_hash,
+          currentPayloadHash: payloadHash,
+          previousSeenAt: previous?.last_seen_at,
+          currentSeenAt: now,
+        })
+      : candidate;
+  const gate = selectMunicipalGate(effectiveCandidate);
+  const duplicateResult = await duplicate(env, effectiveCandidate, id);
+  rowsRead += duplicateResult.rows;
+
+  const existingResult = await env.DB.prepare(
+    "SELECT id,start_date,end_date,venue,status FROM events WHERE id=? LIMIT 1",
+  )
+    .bind(id)
+    .all<{
+      id: string;
+      start_date: string;
+      end_date: string;
+      venue: string;
+      status: string;
+    }>();
+  rowsRead += existingResult.meta.rows_read ?? 0;
+  const existing = existingResult.results[0] ?? null;
+  const changedExisting = Boolean(
+    existing &&
+      (existing.start_date !== effectiveCandidate.start_date ||
+        existing.end_date !== effectiveCandidate.end_date ||
+        existing.venue !== effectiveCandidate.venue),
+  );
+  const coreConflict = hasUnconfirmedMunicipalCoreChange({
+    changedExisting,
+    previousPayloadHash: previous?.last_payload_hash,
+    payloadHash,
+    previousSeenAt: previous?.last_seen_at,
+    currentSeenAt: now,
+  });
+  const candidateTemporal = temporal(effectiveCandidate, koreaToday);
+  const coreValid = Boolean(
+    effectiveCandidate.title &&
+      effectiveCandidate.start_date &&
+      effectiveCandidate.end_date &&
+      effectiveCandidate.venue &&
+      effectiveCandidate.official_url,
+  );
+  const explicitCoreMode =
+    mode === "structured_event" ||
+    mode === "pdf_text" ||
+    mode === "image_vision";
+  const detailRequired = Boolean(
+    gate.gate === "MAIN" &&
+      duplicateResult.decision === "NEW" &&
+      !effectiveCandidate.parse_error &&
+      !explicitCoreMode &&
+      coreValid &&
+      candidateTemporal !== "EXPIRED",
+  );
+  let decision = decideAutonomousMunicipal({
+    gate: gate.gate,
+    duplicate: duplicateResult.decision,
+    temporal: candidateTemporal,
+    trusted: true,
+    coreValid,
+    parserError: Boolean(effectiveCandidate.parse_error),
+    detailError: detailRequired,
+    coreConflict,
+  });
+  const publicationMutation = isMunicipalPublicationMutation({
+    existing,
+    previousPayloadHash: previous?.last_payload_hash,
+    payloadHash,
+  });
+  if (
+    decision.state === "AUTO_PUBLISH" &&
+    !municipalPublishSlotAvailable({
+      publishMutations: input.publishMutations,
+      isMutation: publicationMutation,
+      maxPublish: input.maxPublishMutations,
+    })
+  )
+    decision = {
+      state: "AUTO_RETRY",
+      reason: "daily_publish_circuit_breaker",
+    };
+
+  if (detailRequired)
+    await enqueueMunicipalDetailJob(env.DB, {
+      sourceKey: candidate.source,
+      candidate: effectiveCandidate,
+      eventId: id,
+    });
+
+  let inserted = 0;
+  let updated = 0;
+  if (decision.state === "AUTO_PUBLISH") {
+    const write = await publish(
+      env,
+      effectiveCandidate,
+      id,
+      effectiveCandidate.snippet,
+      now,
+      existing,
+    );
+    inserted += write.inserted;
+    updated += write.updated;
+    rowsWritten += write.rows_written;
+  }
+  const saved = await saveState(
+    env,
+    effectiveCandidate,
+    id,
+    decision,
+    payloadHash,
+    now,
+    previous,
+  );
+  rowsWritten += saved.meta.rows_written ?? saved.meta.changes ?? 0;
+
+  return {
+    candidate_id: id,
+    decision: decision.state,
+    reason: decision.reason,
+    inserted,
+    updated,
+    rows_read: rowsRead,
+    rows_written: rowsWritten,
+    detail_required: detailRequired,
+  };
 }

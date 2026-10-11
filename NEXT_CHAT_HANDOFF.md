@@ -2,6 +2,14 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — CANDIDATE_ONE Free Preview proof complete
+
+- Extracted `runMunicipalCandidateOne`: it accepts one normalized candidate, reuses existing identity/duplicate/state/decision/publish helpers, writes core/source/evidence/state, and queues detail-required work without list/detail fetch or parser execution. Existing source-wide runner call path remains unchanged.
+- Final deployed temporary Preview version processed 10 unique synthetic NEW candidates in 10 independent invocations: 10/10 HTTP 200, AUTO_PUBLISH, one event and one state row each, 1102=0. Per-call D1 metadata: rows_read 14–23, rows_written 30; wall time 696–996ms (not CPU time). The first temporary deployment had two Cloudflare front-door 404s before the final-version repeat; the final ten-run series had no HTTP failures.
+- Core/state contracts passed: duplicate, invalid/expired core, same-day changed core retry, publish cap, deterministic rerun, source/evidence/event writes, and generic detail-required duplicate enqueue. Detail-required Preview calls returned AUTO_RETRY and one FETCH_PENDING checkpoint with no fetch/parser.
+- Targeted node tests (10) and `npm run typecheck` passed. Temporary Worker `galteum-candidate-probe` and D1 `weekend-mwohae-candidate-probe` (ID `173e2354-c7cb-47d8-ae4d-4f532ab97695`) were removed and read-only absence checks passed; production Worker/D1 still exist. No production deployment, migration, cron change, or write occurred.
+- Next bounded task: LIST_PAGE checkpoint → CANDIDATE_ONE connection proof.
+
 ## 2026-10-11 — Free micro-job runner full proof complete
 
 - Isolated Free Preview + test D1 proof is complete: FETCH, PARSE, and PERSIST each reached 10/10 successful stage transitions with 0 observed 1102. PERSIST stored Uijeongbu contact `031-870-7386`, 2 images, and 2 programs; normalized checkpoint cleanup succeeded.
