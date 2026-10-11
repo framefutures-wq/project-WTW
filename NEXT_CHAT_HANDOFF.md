@@ -8,6 +8,12 @@
 - Uijeongbu DETAIL_ONE for one official detail URL was 2/10 HTTP 200; 6/10 were confirmed Cloudflare resource-limit/1102 responses, with one other HTTP 503 and one HTTP 500 after the probe fetch timeout. Rich-detail successes returned 3 populated field groups (contact, 2 images, 2 programs).
 - Verdict: `LIST_SAFE_DETAIL_UNSAFE`. Do not run source-wide invocations on Free. Next bounded task: design and prove a smaller detail split (fetch versus parse) with D1 cursor/checkpoint semantics; no production implementation was made here.
 
+## 2026-10-11 — Free detail split proof: FETCH_SAFE_PARSE_SAFE_SEPARATELY
+
+- The same Uijeongbu official detail URL completed `DETAIL_FETCH_ONLY` 10/10 HTTP 200 with 0 observed 1102 (2.625–3.469s; 249,733-character response after decoding). Each response was hashed; the page is dynamic so hashes varied while the decoded length was stable.
+- A temporary 249,733-character fixture from that page completed `PARSE_ONLY` 10/10 HTTP 200 with 0 observed 1102 (228–542ms). Results were identical: contact, 2 images, and 2 programs.
+- Verdict: `FETCH_SAFE_PARSE_SAFE_SEPARATELY`. The smallest Free-safe detail contract is exactly `detail_fetch checkpoint → detail_parse → persist_one`; retain only a bounded normalized intermediate payload in existing D1, never raw HTML. No migration or production implementation was made.
+
 ## 2026-10-11 — HOME final visual finish 완료 / production deploy 대기
 
 - HOME의 section label은 한국어로 정리했고, hero headline 하나만 남겨 첫 화면의 이중 시작을 제거했다.
