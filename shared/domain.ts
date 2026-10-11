@@ -103,6 +103,8 @@ export function dateRange(period: Period, now = new Date()) {
   if (period === "today") return { start: today, end: today };
   const d = new Date(today + "T00:00:00Z");
   const day = d.getUTCDay();
+  if (period === "weekend" && day === 0)
+    return { start: today, end: today };
   d.setUTCDate(
     d.getUTCDate() +
       (day === 0 ? -1 : 6 - day) +

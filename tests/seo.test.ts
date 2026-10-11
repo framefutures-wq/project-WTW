@@ -27,7 +27,7 @@ async function setup() {
   const now = new Date().toISOString();
   await DB.batch([
     DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('source','tourapi',3,'공식 TourAPI','https://example.test',?)").bind(now),
-    DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES('seo-event_1','봄 <행사>','설명','서울','서울 광장','서울특별시 중구 세종대로','2026-09-21','2026-10-01','unknown','scheduled','verified',0,'source',?,?)").bind(now, now),
+    DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,status,verification,is_sample,primary_source_id,checked_at,updated_at) VALUES('seo-event_1','봄 <행사>','설명','서울','서울 광장','서울특별시 중구 세종대로','2026-11-21','2026-11-30','unknown','scheduled','verified',0,'source',?,?)").bind(now, now),
     ...["schedule", "venue", "status"].map((field) =>
       DB.prepare("INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES('seo-event_1','source',?,?,?)").bind(field, "확인", now),
     ),
@@ -64,10 +64,10 @@ test("event pages are self-canonical, escaped, and expose one factual Event JSON
       "@context": "https://schema.org",
       "@type": "Event",
       name: "봄 <행사>",
-      startDate: "2026-09-21",
-      endDate: "2026-10-01",
+      startDate: "2026-11-21",
+      endDate: "2026-11-30",
       url: "https://galteum.com/events/seo-event_1",
-      description: "봄 <행사> · 2026-09-21~2026-10-01 · 서울 광장. 갈틈에서 공식 확인 정보를 확인하세요.",
+      description: "봄 <행사> · 2026-11-21~2026-11-30 · 서울 광장. 갈틈에서 공식 확인 정보를 확인하세요.",
       location: { "@type": "Place", name: "서울 광장", address: { "@type": "PostalAddress", streetAddress: "서울특별시 중구 세종대로" } },
       image: ["https://images.example.test/event.jpg"],
       eventStatus: "https://schema.org/EventScheduled",
@@ -89,6 +89,46 @@ test("detail API returns primary then distinct usable additional images only", a
       { image_url: "https://images.example.test/event-3.jpg", source_type: "tourapi", source_page_url: "https://example.test/event", sort_order: 3, is_primary: false },
     ]);
   } finally { await mf.dispose(); }
+});
+
+test("Sunday weekend API returns only events that overlap Sunday", async () => {
+  const { mf, env } = await setup();
+  const DB = (env as { DB: D1Database }).DB;
+  await DB.prepare(
+    "UPDATE events SET start_date='2026-10-10',end_date='2026-10-10' WHERE id='seo-event_1'",
+  ).run();
+
+  const NativeDate = globalThis.Date;
+  const fixedNow = new NativeDate("2026-10-11T02:00:00Z");
+  globalThis.Date = (class extends NativeDate {
+    constructor(...args: [string | number] | []) {
+      if (args.length === 0) super(fixedNow.getTime());
+      else super(args[0]);
+    }
+
+    static now() {
+      return fixedNow.getTime();
+    }
+  }) as unknown as DateConstructor;
+  try {
+    const response = await worker.fetch(
+      new Request("https://galteum.com/api/events?period=weekend"),
+      env as never,
+    );
+    assert.equal(response.status, 200);
+    const body = (await response.json()) as {
+      events: { id: string }[];
+      range: { start: string; end: string };
+    };
+    assert.deepEqual(body.range, {
+      start: "2026-10-11",
+      end: "2026-10-11",
+    });
+    assert.equal(body.events.some((event) => event.id === "seo-event_1"), false);
+  } finally {
+    globalThis.Date = NativeDate;
+    await mf.dispose();
+  }
 });
 
 test("encoded municipal ids with URL punctuation and Korean text work for detail API and public event pages", async () => {

@@ -5611,3 +5611,160 @@ footer {
     font-size: 12px;
   }
 }
+
+/* Final HOME first-viewport sizing. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(480px, 1.1fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+  margin-top: 12px;
+  padding: 10px 0 12px;
+}
+.hero-copy {
+  max-width: none;
+}
+.hero-search {
+  width: 100%;
+  max-width: 640px;
+  justify-self: stretch;
+}
+.discovery.decision-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+}
+.discovery.decision-bar .periods {
+  flex: 0 0 auto;
+  gap: 2px;
+}
+.discovery.decision-bar .period {
+  padding: 0 10px;
+}
+.discovery.decision-bar .filter-body {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0;
+}
+.discovery.decision-bar .search-row {
+  flex: 0 1 420px;
+  min-width: 300px;
+}
+.discovery.decision-bar .region-select {
+  flex: 1 1 auto;
+  min-width: 150px;
+}
+.discovery.decision-bar .location-button,
+.discovery.decision-bar .advanced-filters > summary {
+  white-space: nowrap;
+}
+.results {
+  margin-top: 16px;
+}
+.result-heading {
+  margin-bottom: 12px;
+}
+.featured-events .subsection-heading,
+.all-events-section .subsection-heading {
+  margin-bottom: 9px;
+}
+.featured-grid {
+  gap: 18px 20px;
+}
+.featured-grid .scene {
+  aspect-ratio: 1 / 1;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    display: block;
+    margin-top: 6px;
+    padding: 10px 16px 8px;
+  }
+  .hero h1 {
+    font-size: 29px;
+    line-height: 1.15;
+  }
+  .hero-copy > p {
+    margin: 4px 0 8px;
+  }
+  .hero-search {
+    width: 100%;
+    max-width: none;
+  }
+  .hero-search-field,
+  .hero-search-submit {
+    height: 38px;
+  }
+  .discovery.decision-bar {
+    display: block;
+    padding: 7px 0;
+  }
+  .discovery.decision-bar .periods {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .discovery.decision-bar .period {
+    min-width: 0;
+    min-height: 35px;
+    padding: 0 3px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .discovery.decision-bar .filter-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px;
+    margin-top: 6px;
+  }
+  .discovery.decision-bar .search-row {
+    display: contents;
+    flex: initial;
+    min-width: 0;
+  }
+  .discovery.decision-bar .region-select {
+    grid-column: 1;
+    min-width: 0;
+  }
+  .discovery.decision-bar .location-button,
+  .discovery.decision-bar .advanced-filters > summary {
+    min-height: 34px;
+  }
+  .discovery.decision-bar .advanced-filters {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-width: 0;
+    margin: 0;
+  }
+  .results {
+    margin-top: 14px;
+  }
+  .result-heading {
+    margin-bottom: 10px;
+  }
+  .featured-events .subsection-heading h3,
+  .all-events-section .subsection-heading h3 {
+    font-size: 20px;
+  }
+  .featured-events .subsection-heading p {
+    display: none;
+  }
+  .featured-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .featured-grid .scene {
+    aspect-ratio: 2.2 / 1;
+  }
+  .featured-events .card-content h3 {
+    font-size: 18px;
+  }
+  .featured-events .event-date {
+    font-size: 12px;
+  }
+}

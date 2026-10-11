@@ -1534,43 +1534,43 @@ export default function App() {
           <div className="hero-copy">
             <h1>이번엔 어디 갈까?</h1>
             <p>오늘·이번 주말, 공식 행사만 골라보세요.</p>
-            <form
-              className="hero-search"
-              role="search"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setQuery(search.trim());
-                resultsRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                });
-              }}
-            >
-              <label className="hero-search-field">
-                <Search size={21} />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="축제, 행사, 장소를 검색해 보세요"
-                  aria-label="행사 이름 또는 장소 검색"
-                  maxLength={80}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    className="hero-search-clear"
-                    onClick={() => setSearch("")}
-                    aria-label="검색어 지우기"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </label>
-              <button type="submit" className="hero-search-submit">
-                찾아보기
-              </button>
-            </form>
           </div>
+          <form
+            className="hero-search"
+            role="search"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setQuery(search.trim());
+              resultsRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }}
+          >
+            <label className="hero-search-field">
+              <Search size={21} />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="축제, 행사, 장소를 검색해 보세요"
+                aria-label="행사 이름 또는 장소 검색"
+                maxLength={80}
+              />
+              {search && (
+                <button
+                  type="button"
+                  className="hero-search-clear"
+                  onClick={() => setSearch("")}
+                  aria-label="검색어 지우기"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </label>
+            <button type="submit" className="hero-search-submit">
+              찾아보기
+            </button>
+          </form>
         </section>
         <section
           className="discovery decision-bar"

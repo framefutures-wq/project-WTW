@@ -324,3 +324,10 @@ Adaptive media:
 - Desktop 첫 화면은 **공식 media + 결정 요약**의 editorial composition이다. 제목, 일정, 장소, 공식/지도 CTA, 존재하는 보조 사실을 함께 배치하며 poster는 contain을 유지한다.
 - Mobile은 **제목 → 일정·장소 → CTA/보조 사실 → media** 순서로 핵심 결정을 먼저 돕는다. 2장 media는 compact horizontal swipe를 유지한다.
 - 일정/장소와 운영시간/비용/문의는 반복 card 대신 typography와 divider로 구분한다. 프로그램은 timeline 또는 schedule row, 소개는 가독성 있는 좁은 본문, 탐색/출처는 낮은 위계로 이어진다.
+
+### 2026-10-11 HOME first-viewport 계약
+
+- `weekend` 추천은 월~금/토요일에는 토~일, 일요일에는 당일 일요일만 포함한다. `next-weekend`는 다음 토~일이다.
+- Desktop 1440×900과 mobile 390×844에서 hero/search와 compact 날짜·지역 컨트롤 뒤에 추천 첫 카드의 이미지, 제목, 날짜까지 보여야 한다.
+- Desktop hero는 제목과 검색의 균형을 맞춰 오른쪽 죽은 여백을 줄인다. Mobile 추천은 1열, 전체 목록은 2열을 유지한다.
+- 첫 화면 요건은 카드 정보나 글자를 숨기거나 과도하게 줄여 충족하지 않는다.

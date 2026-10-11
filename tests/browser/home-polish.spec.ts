@@ -7,8 +7,8 @@ const event = (id: string, title: string, image_url: string | null) => ({
   region: "서울",
   venue: "테스트 장소",
   address: "서울특별시 테스트구",
-  start_date: "2026-09-25",
-  end_date: "2026-09-26",
+  start_date: "2026-10-11",
+  end_date: "2026-10-11",
   lat: null,
   lng: null,
   cost: "unknown",
@@ -32,9 +32,14 @@ const event = (id: string, title: string, image_url: string | null) => ({
   distance_km: null,
 });
 
-test("home keeps a dense four-column desktop grid and a safe mobile structure", async ({
+test("home keeps its editorial grid and the first featured card fits the viewport", async ({
   page,
 }) => {
+  const width = page.viewportSize()!.width;
+  await page.setViewportSize({
+    width: width >= 760 ? 1440 : 390,
+    height: width >= 760 ? 900 : 844,
+  });
   const photoUrl = "https://tong.visitkorea.or.kr/home-polish.svg";
   const events = [
     event("landscape", "정상 가로 사진 행사", photoUrl),
@@ -61,7 +66,7 @@ test("home keeps a dense four-column desktop grid and a safe mobile structure", 
         total: events.length,
         page: 1,
         limit: 20,
-        range: { start: "2026-09-25", end: "2026-09-26" },
+        range: { start: "2026-10-11", end: "2026-10-11" },
         available_date_range: null,
         range_outside_available: false,
         mode: "mock",
@@ -99,6 +104,13 @@ test("home keeps a dense four-column desktop grid and a safe mobile structure", 
       columns: getComputedStyle(featured)
         .gridTemplateColumns.trim()
         .split(/\s+/).length,
+      allEventColumns: getComputedStyle(
+        document.querySelector<HTMLElement>(
+          ".all-events-section .event-grid",
+        )!,
+      )
+        .gridTemplateColumns.trim()
+        .split(/\s+/).length,
       secondSectionDivider: getComputedStyle(allEvents).borderTopWidth,
       titleWeight: Number(getComputedStyle(title).fontWeight),
     };
@@ -109,15 +121,41 @@ test("home keeps a dense four-column desktop grid and a safe mobile structure", 
   expect(layout.titleWeight).toBeGreaterThanOrEqual(700);
   if (page.viewportSize()!.width >= 760) {
     expect(layout.columns).toBe(4);
+    expect(layout.allEventColumns).toBe(4);
   } else {
     expect(layout.columns).toBe(1);
+    expect(layout.allEventColumns).toBe(2);
   }
 
   const firstScene = page.locator(".event-card .scene").first();
+  const firstFeaturedCard = page.locator(".featured-grid .event-card").first();
+  const firstTitle = firstFeaturedCard.locator(".card-content h3");
+  const firstDate = firstFeaturedCard.locator(".event-date");
+  for (const element of [firstScene, firstTitle, firstDate]) {
+    const box = await element.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(
+      page.viewportSize()!.height + 1,
+    );
+  }
+
+  const hero = await page.locator(".hero").boundingBox();
+  const search = await page.locator(".hero-search").boundingBox();
+  expect(hero).not.toBeNull();
+  expect(search).not.toBeNull();
+  if (page.viewportSize()!.width >= 760) {
+    expect(search!.width).toBeGreaterThanOrEqual(500);
+    expect(hero!.height).toBeLessThanOrEqual(140);
+    expect(search!.x).toBeGreaterThanOrEqual(hero!.x + hero!.width * 0.4);
+  }
   const sceneBox = await firstScene.boundingBox();
   expect(sceneBox).not.toBeNull();
   expect(sceneBox!.width / sceneBox!.height).toBeCloseTo(
-    page.viewportSize()!.width >= 760 ? 0.75 : 4 / 3,
+    page.viewportSize()!.width >= 760 ? 1 : 2.2,
     1,
   );
+  await page.screenshot({
+    path: `test-results/home-first-viewport-${page.viewportSize()!.width >= 760 ? "desktop" : "mobile"}.png`,
+  });
 });

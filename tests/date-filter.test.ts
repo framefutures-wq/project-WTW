@@ -51,11 +51,30 @@ test("date validation rejects malformed and reversed ranges", () => {
 
 test("preset ranges remain unchanged at Korean date boundaries", () => {
   assert.deepEqual(dateRange("weekend", new Date("2026-09-20T02:00:00Z")), {
-    start: "2026-09-19",
+    start: "2026-09-20",
     end: "2026-09-20",
   });
   assert.deepEqual(dateRange("next-weekend", new Date("2026-09-20T02:00:00Z")), {
     start: "2026-09-26",
     end: "2026-09-27",
   });
+});
+
+test("weekend excludes Saturday after Sunday begins in Korea", () => {
+  assert.deepEqual(dateRange("weekend", new Date("2026-10-09T02:00:00Z")), {
+    start: "2026-10-10",
+    end: "2026-10-11",
+  });
+  assert.deepEqual(dateRange("weekend", new Date("2026-10-10T02:00:00Z")), {
+    start: "2026-10-10",
+    end: "2026-10-11",
+  });
+  assert.deepEqual(dateRange("weekend", new Date("2026-10-11T02:00:00Z")), {
+    start: "2026-10-11",
+    end: "2026-10-11",
+  });
+  assert.deepEqual(
+    dateRange("next-weekend", new Date("2026-10-11T02:00:00Z")),
+    { start: "2026-10-17", end: "2026-10-18" },
+  );
 });

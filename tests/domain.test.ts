@@ -5,7 +5,7 @@ import { parseFilters, parseNearbyFilters } from "../worker/filters";
 test("한국 날짜 경계와 토·일 주말 정의", () => {
   assert.equal(koreaDate(new Date("2026-09-18T15:01:00Z")), "2026-09-19");
   assert.deepEqual(dateRange("weekend", new Date("2026-09-20T02:00:00Z")), {
-    start: "2026-09-19",
+    start: "2026-09-20",
     end: "2026-09-20",
   });
   assert.deepEqual(
