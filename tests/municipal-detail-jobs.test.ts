@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
-import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES } from "../worker/sources/municipal-detail-jobs";
+import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES } from "../worker/sources/municipal-detail-jobs";
+import { municipalSourceByKey } from "../shared/municipal-source-registry";
 
 async function setup() {
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:"export default {fetch(){return new Response('ok')}}",compatibilityDate:"2026-09-18",d1Databases:["DB"],cf:false}));
@@ -47,4 +48,11 @@ test("expired checkpoints are removed regardless of terminal stage",async()=>{
     await cleanupExpiredMunicipalDetailJobs(DB);
     const row=await DB.prepare("SELECT COUNT(*) count FROM municipal_detail_jobs").first<any>(); assert.equal(row.count,0);
   } finally {await mf.dispose();}
+});
+
+test("official transport sends browser headers and retries only retryable errors", async () => {
+  const source=municipalSourceByKey("gyeonggi-의정부")!; let calls=0, headers: Headers|undefined;
+  const result=await fetchMunicipalDetailTransport(source,candidate.official_url,async (_url,init)=>{calls++;headers=new Headers(init?.headers); if(calls===1) return new Response("",{status:503}); return new Response("official",{status:200});});
+  assert.equal(result.html,"official"); assert.equal(calls,2); assert.match(headers?.get("user-agent")??"",/Mozilla/); assert.match(headers?.get("accept-language")??"",/ko-KR/);
+  calls=0; await assert.rejects(()=>fetchMunicipalDetailTransport(source,candidate.official_url,async()=>{calls++;return new Response("",{status:404});})); assert.equal(calls,1);
 });

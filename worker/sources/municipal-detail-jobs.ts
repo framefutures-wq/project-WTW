@@ -13,6 +13,34 @@ const size = (value: string) => new TextEncoder().encode(value).byteLength;
 const hash = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))), byte => byte.toString(16).padStart(2,"0")).join("");
 const retryAt = (attempt: number) => new Date(Date.now() + Math.min(24 * 60, 5 * 2 ** Math.min(attempt, 8)) * 60_000).toISOString();
 const normalized = (detail: MunicipalRichDetail) => JSON.stringify(detail);
+const browserHeaders = {
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+  "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.7,en;q=0.5",
+  "cache-control": "no-cache", pragma: "no-cache", "upgrade-insecure-requests": "1",
+};
+const retryableFetch = (error: unknown) => {
+  if (error instanceof TypeError) return true;
+  const name = error && typeof error === "object" && "name" in error ? String((error as {name?:unknown}).name ?? "") : "";
+  if (name === "AbortError" || name === "TimeoutError") return true;
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const http = /^official_http_(\d{3})$/.exec(message);
+  return /fetch failed|network|timeout/i.test(message) || Boolean(http && (Number(http[1]) === 429 || Number(http[1]) >= 500));
+};
+const officialUrls = (source: NonNullable<ReturnType<typeof municipalSourceByKey>>, raw: string) => {
+  const original = new URL(raw), urls = [original.toString()], family = original.hostname.replace(/^www\./, "");
+  for (const host of source.allowedHosts) if (host.replace(/^www\./, "") === family && host !== original.hostname) { const next = new URL(original); next.hostname = host; if (municipalSourceAllowsUrl(source,next.toString())) urls.push(next.toString()); }
+  return urls;
+};
+export async function fetchMunicipalDetailTransport(source: NonNullable<ReturnType<typeof municipalSourceByKey>>, url: string, fetcher: typeof fetch = fetch) {
+  const urls=officialUrls(source,url); let last: unknown;
+  for (const candidate of urls) for(let attempt=0;attempt<2;attempt++) try {
+    const response=await fetcher(candidate,{redirect:"follow",headers:browserHeaders,signal:AbortSignal.timeout(20_000)});
+    if(!response.ok) throw new Error(`official_http_${response.status}`);
+    return {html:await response.text(),finalUrl:response.url||candidate};
+  } catch(error) {last=error;if(!retryableFetch(error)) throw error;}
+  throw last ?? new Error("official_fetch_failed");
+}
 const claim = async (db:D1Database, stage:MunicipalDetailStage): Promise<Job|null> => {
   const candidate = await db.prepare("SELECT * FROM municipal_detail_jobs WHERE stage=? AND available_at<=? AND expires_at>? ORDER BY available_at,id LIMIT 1").bind(stage,now(),now()).first<Job>();
   if (!candidate) return null;
@@ -34,7 +62,7 @@ export async function detailFetchOne(db:D1Database, fetcher:typeof fetch=fetch) 
   const job=await claim(db,"FETCH_PENDING"); if(!job) return null;
   const source=municipalSourceByKey(job.source_key);
   if(!source || !municipalSourceAllowsUrl(source,job.official_url)){ await fail(db,job,"detail_host_not_allowed"); return {id:job.id,stage:"RETRY" as const}; }
-  try { const response=await fetcher(job.official_url,{signal:AbortSignal.timeout(20_000)}); if(!response.ok) throw new Error(`official_http_${response.status}`); const html=await response.text(); if(size(html)>MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES){await fail(db,job,"raw_html_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=?,raw_html_sha256=?,stage='PARSE_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='FETCH_PENDING'").bind(html,await hash(html),now(),now(),job.id).run(); return {id:job.id,stage:"PARSE_PENDING" as const}; } catch { await fail(db,job,"network_or_timeout"); return {id:job.id,stage:"RETRY" as const}; }
+  try { const {html}=await fetchMunicipalDetailTransport(source,job.official_url,fetcher); if(size(html)>MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES){await fail(db,job,"raw_html_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=?,raw_html_sha256=?,stage='PARSE_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='FETCH_PENDING'").bind(html,await hash(html),now(),now(),job.id).run(); return {id:job.id,stage:"PARSE_PENDING" as const}; } catch { await fail(db,job,"network_or_timeout"); return {id:job.id,stage:"RETRY" as const}; }
 }
 export async function detailParseOne(db:D1Database) {
   const job=await claim(db,"PARSE_PENDING"); if(!job) return null;
