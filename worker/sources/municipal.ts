@@ -7,10 +7,12 @@ import {
 } from "../../shared/municipal-discovery";
 import {
   municipalSourceAllowsUrl,
+  assessMunicipalSourceDocument,
   MUNICIPAL_SOURCE_REGISTRY,
 } from "../../shared/municipal-source-registry";
 import {
   fetchMunicipalSourcePages,
+  municipalSourcePageUrls,
   selectBoundedMunicipalCandidates,
 } from "../../shared/municipal-pagination";
 import { followUpMunicipalListDetails } from "../../shared/municipal-list-detail-followup";
@@ -1726,4 +1728,321 @@ export async function runMunicipalCandidateOne(
     rows_written: rowsWritten,
     detail_required: detailRequired,
   };
+}
+
+export const MUNICIPAL_SCAN_CANDIDATE_MAX = 25;
+export const MUNICIPAL_SCAN_BATCH_MAX_BYTES = 128 * 1024;
+type MunicipalScanStage =
+  "LIST_PENDING" | "CANDIDATE_PENDING" | "DONE" | "RETRY";
+type MunicipalScanJob = {
+  id: string;
+  operating_date: string;
+  source_key: string;
+  page_url: string;
+  page_identity: string;
+  page_index: number;
+  stage: MunicipalScanStage;
+  retry_stage: "LIST_PENDING" | "CANDIDATE_PENDING" | null;
+  candidate_batch_json: string | null;
+  candidate_cursor: number;
+  candidate_count: number;
+  attempt_count: number;
+  available_at: string;
+  retry_at: string | null;
+};
+type MunicipalScanDb = Env["DB"];
+
+export function serializeMunicipalScanBatch(
+  batch: Array<{ candidate: MunicipalCandidate; mode: MunicipalCandidateMode }>,
+) {
+  if (batch.length > MUNICIPAL_SCAN_CANDIDATE_MAX)
+    throw new Error("candidate_batch_too_large");
+  const json = JSON.stringify(batch);
+  if (
+    new TextEncoder().encode(json).byteLength > MUNICIPAL_SCAN_BATCH_MAX_BYTES
+  )
+    throw new Error("candidate_batch_too_large");
+  return json;
+}
+
+/** Idempotently creates a single official list-page checkpoint. */
+export async function enqueueMunicipalListPage(
+  db: MunicipalScanDb,
+  input: {
+    operatingDate: string;
+    sourceKey: string;
+    pageIndex: number;
+    now?: string;
+  },
+) {
+  const source = SOURCES.find((item) => item.key === input.sourceKey);
+  const urls = source ? municipalSourcePageUrls(source) : null;
+  if (
+    !source ||
+    !urls ||
+    !Number.isInteger(input.pageIndex) ||
+    !urls[input.pageIndex - 1]
+  )
+    throw new Error("municipal_scan_invalid_page");
+  const pageUrl = urls[input.pageIndex - 1];
+  if (!municipalSourceAllowsUrl(source, pageUrl))
+    throw new Error("municipal_scan_invalid_url");
+  const now = input.now ?? new Date().toISOString();
+  const identity = `page:${input.pageIndex}:${new URL(pageUrl).pathname}${new URL(pageUrl).search}`;
+  const id = `municipal-scan-${(await hash([input.operatingDate, input.sourceKey, identity])).slice(0, 32)}`;
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO municipal_scan_jobs
+    (id,operating_date,source_key,page_url,page_identity,page_index,stage,retry_stage,candidate_batch_json,candidate_cursor,candidate_count,attempt_count,available_at,created_at,updated_at,expires_at)
+    VALUES(?,?,?,?,?,?,'LIST_PENDING',NULL,NULL,0,0,0,?,?,?,?)`,
+    )
+    .bind(
+      id,
+      input.operatingDate,
+      input.sourceKey,
+      pageUrl,
+      identity,
+      input.pageIndex,
+      now,
+      now,
+      now,
+      new Date(Date.parse(now) + 14 * 86400000).toISOString(),
+    )
+    .run();
+  return db
+    .prepare("SELECT * FROM municipal_scan_jobs WHERE id=?")
+    .bind(id)
+    .first<MunicipalScanJob>();
+}
+
+const claimMunicipalScanJob = async (
+  db: MunicipalScanDb,
+  stage: "LIST_PENDING" | "CANDIDATE_PENDING",
+  now: string,
+) => {
+  const row = await db
+    .prepare(
+      `SELECT * FROM municipal_scan_jobs WHERE
+    (stage=? OR (stage='RETRY' AND retry_stage=?)) AND available_at<=? AND expires_at>? ORDER BY available_at,created_at,id LIMIT 1`,
+    )
+    .bind(stage, stage, now, now)
+    .first<MunicipalScanJob>();
+  if (!row) return null;
+  const lease = new Date(Date.parse(now) + 120000).toISOString();
+  const claimed = await db
+    .prepare(
+      `UPDATE municipal_scan_jobs SET stage=CASE WHEN stage='RETRY' THEN retry_stage ELSE stage END,retry_stage=NULL,available_at=?,attempt_count=attempt_count+1,updated_at=?
+    WHERE id=? AND available_at<=? AND (stage=? OR (stage='RETRY' AND retry_stage=?))`,
+    )
+    .bind(lease, now, row.id, now, stage, stage)
+    .run();
+  if (!(claimed.meta.changes ?? 0)) return null;
+  return {
+    ...row,
+    stage,
+    retry_stage: null,
+    available_at: lease,
+    attempt_count: row.attempt_count + 1,
+  };
+};
+
+const retryMunicipalScanJob = async (
+  db: MunicipalScanDb,
+  row: MunicipalScanJob,
+  from: "LIST_PENDING" | "CANDIDATE_PENDING",
+  category: string,
+  now: string,
+) => {
+  const delayMinutes = Math.min(24 * 60, 2 ** Math.min(row.attempt_count, 10));
+  await db
+    .prepare(
+      `UPDATE municipal_scan_jobs SET stage='RETRY',retry_stage=?,candidate_batch_json=CASE WHEN ?='LIST_PENDING' THEN NULL ELSE candidate_batch_json END,
+    safe_error_category=?,retry_at=?,available_at=?,updated_at=? WHERE id=? AND available_at=?`,
+    )
+    .bind(
+      from,
+      from,
+      category.slice(0, 64),
+      new Date(Date.parse(now) + delayMinutes * 60000).toISOString(),
+      new Date(Date.parse(now) + delayMinutes * 60000).toISOString(),
+      now,
+      row.id,
+      row.available_at,
+    )
+    .run();
+};
+
+/** Fetches and parses one official list page, then stores only bounded normalized candidates. */
+export async function runMunicipalListPageOne(
+  db: MunicipalScanDb,
+  options: {
+    now?: string;
+    fetchPage?: (url: string) => Promise<{ html: string; finalUrl: string }>;
+  } = {},
+) {
+  const now = options.now ?? new Date().toISOString();
+  const job = await claimMunicipalScanJob(db, "LIST_PENDING", now);
+  if (!job) return null;
+  const source = SOURCES.find((item) => item.key === job.source_key);
+  try {
+    if (!source || !municipalSourceAllowsUrl(source, job.page_url))
+      throw new Error("invalid_source_url");
+    const budget: MunicipalFetchBudget = {
+      used: 0,
+      limit: 3,
+      activeLimit: 3,
+      readerUsed: 0,
+      readerLimit: 0,
+      readerSucceeded: 0,
+      readerFailures: 0,
+      readerFailureReasons: {},
+    };
+    const fetched = await (
+      options.fetchPage ?? ((url) => officialResponse(url, budget))
+    )(job.page_url);
+    if (!municipalSourceAllowsUrl(source, fetched.finalUrl))
+      throw new Error("final_url_not_allowed");
+    const health = assessMunicipalSourceDocument(source, fetched.html);
+    if (health.status === "unparseable")
+      throw new Error("list_health_check_failed");
+    const extraction = extractMunicipalCandidates(source, fetched.html);
+    if (extraction.mode === "retry")
+      throw new Error("list_parse_requires_fallback");
+    if (extraction.partialCandidates?.length)
+      throw new Error("list_parse_requires_fallback");
+    const mode = extraction.mode as MunicipalCandidateMode;
+    const batch = extraction.candidates
+      .slice(0, MUNICIPAL_SCAN_CANDIDATE_MAX)
+      .map((candidate) => ({ candidate, mode }));
+    const json = serializeMunicipalScanBatch(batch);
+    const nextStage = batch.length ? "CANDIDATE_PENDING" : "DONE";
+    const result = await db
+      .prepare(
+        `UPDATE municipal_scan_jobs SET stage=?,retry_stage=NULL,candidate_batch_json=?,candidate_cursor=0,candidate_count=?,safe_error_category=NULL,retry_at=NULL,available_at=?,updated_at=? WHERE id=? AND stage IN ('LIST_PENDING','RETRY') AND available_at=?`,
+      )
+      .bind(nextStage, json, batch.length, now, now, job.id, job.available_at)
+      .run();
+    if (!(result.meta.changes ?? 0)) return null;
+    return {
+      job_id: job.id,
+      stage: nextStage,
+      candidate_count: batch.length,
+      candidate_batch_bytes: new TextEncoder().encode(json).byteLength,
+      raw_html_stored: false,
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "list_page_error";
+    await retryMunicipalScanJob(
+      db,
+      job,
+      "LIST_PENDING",
+      /invalid_source_url|final_url_not_allowed/.test(msg)
+        ? "unsafe_url"
+        : msg === "candidate_batch_too_large"
+          ? msg
+          : "list_page_failed",
+      now,
+    );
+    return {
+      job_id: job.id,
+      stage: "RETRY" as const,
+      safe_error_category:
+        msg === "candidate_batch_too_large" ? msg : "list_page_failed",
+    };
+  }
+}
+
+/** Processes exactly one checkpoint candidate and advances the cursor only after success. */
+export async function runMunicipalCandidateCheckpointOne(
+  env: Env,
+  options: {
+    now?: string;
+    koreaToday?: string;
+    publishMutations?: number;
+    maxPublishMutations?: number;
+  } = {},
+) {
+  const db = env.DB;
+  const now = options.now ?? new Date().toISOString();
+  const job = await claimMunicipalScanJob(db, "CANDIDATE_PENDING", now);
+  if (!job) return null;
+  try {
+    if (
+      !job.candidate_batch_json ||
+      new TextEncoder().encode(job.candidate_batch_json).byteLength >
+        MUNICIPAL_SCAN_BATCH_MAX_BYTES
+    )
+      throw new Error("candidate_batch_invalid");
+    const batch = JSON.parse(job.candidate_batch_json) as Array<{
+      candidate: MunicipalCandidate;
+      mode: MunicipalCandidateMode;
+    }>;
+    if (
+      batch.length !== job.candidate_count ||
+      job.candidate_cursor >= batch.length
+    )
+      throw new Error("candidate_cursor_invalid");
+    const item = batch[job.candidate_cursor];
+    const result = await runMunicipalCandidateOne(env, {
+      ...item,
+      now,
+      koreaToday: options.koreaToday,
+      publishMutations: options.publishMutations ?? 0,
+      maxPublishMutations: options.maxPublishMutations ?? 10,
+    });
+    const next = job.candidate_cursor + 1;
+    const done = next >= batch.length;
+    const transition = await db
+      .prepare(
+        `UPDATE municipal_scan_jobs SET candidate_cursor=?,stage=?,retry_stage=NULL,available_at=?,updated_at=?,safe_error_category=NULL,retry_at=NULL WHERE id=? AND stage='CANDIDATE_PENDING' AND candidate_cursor=? AND available_at=?`,
+      )
+      .bind(
+        next,
+        done ? "DONE" : "CANDIDATE_PENDING",
+        now,
+        now,
+        job.id,
+        job.candidate_cursor,
+        job.available_at,
+      )
+      .run();
+    if (!(transition.meta.changes ?? 0))
+      throw new Error("candidate_checkpoint_transition_conflict");
+    return {
+      job_id: job.id,
+      candidate_cursor_before: job.candidate_cursor,
+      candidate_cursor_after: next,
+      stage: done ? "DONE" : "CANDIDATE_PENDING",
+      ...result,
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "candidate_one_failed";
+    await retryMunicipalScanJob(
+      db,
+      job,
+      "CANDIDATE_PENDING",
+      msg === "candidate_batch_invalid" || msg === "candidate_cursor_invalid"
+        ? msg
+        : "candidate_one_failed",
+      now,
+    );
+    return {
+      job_id: job.id,
+      stage: "RETRY" as const,
+      safe_error_category:
+        msg === "candidate_batch_invalid" || msg === "candidate_cursor_invalid"
+          ? msg
+          : "candidate_one_failed",
+    };
+  }
+}
+
+export async function cleanupExpiredMunicipalScanJobs(
+  db: MunicipalScanDb,
+  now = new Date().toISOString(),
+) {
+  return db
+    .prepare("DELETE FROM municipal_scan_jobs WHERE expires_at<=?")
+    .bind(now)
+    .run();
 }

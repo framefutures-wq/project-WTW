@@ -2,6 +2,14 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — LIST_PAGE checkpoint → CANDIDATE_ONE Free Preview proof
+
+- Added additive migration `0025_municipal_scan_jobs` and isolated page/candidate checkpoint functions. Page checkpoints are unique per operating date/source/page identity; list payloads cap at 25 candidates and 128 KiB, store no HTML, retry safely, and keep candidate cursor advancement conditional on one successful `runMunicipalCandidateOne` call. The existing source-wide call path is unchanged.
+- Real Gyeongsan page 1 completed in the temporary Free Preview: HTTP 200, 10 candidates, 6,360-byte normalized batch, cursor 0, and no HTML persisted. Ten independent candidate invocations were 10/10 HTTP 200 with 0 observed 1102 or other failures; cursor advanced exactly 0→10 and page reached DONE. Decisions: 2 AUTO_RETRY, 2 AUTO_EXCLUDE, 6 EXPIRED. D1 ended with 10 candidate states, 0 events, and 1 FETCH_PENDING detail handoff. Detail processing was not run.
+- Gyeongsan page 2 was a distinct checkpoint and completed one LIST_PAGE invocation: HTTP 200, 10 candidates, 6,204-byte batch, cursor 0; page 1 remained DONE. Duplicate page seed, one-cursor transition, due-time retry, oversized payload rejection, no-op/expiry, and no network in candidate stage passed targeted contracts.
+- Verdict: `LIST_TO_CANDIDATE_FREE_PROVEN`. Targeted tests: 15 passed; `npm run typecheck` and `git diff --check` passed. Temporary resources are removed after recording results; production Worker/D1/cron/secrets/domain were not changed.
+- Next bounded task: production D1 migration 0024+0025 적용 + micro scheduler code 준비, 단 cron cutover는 아직 하지 않음.
+
 ## 2026-10-11 — CANDIDATE_ONE Free Preview proof complete
 
 - Extracted `runMunicipalCandidateOne`: it accepts one normalized candidate, reuses existing identity/duplicate/state/decision/publish helpers, writes core/source/evidence/state, and queues detail-required work without list/detail fetch or parser execution. Existing source-wide runner call path remains unchanged.
