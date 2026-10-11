@@ -2,6 +2,12 @@
 
 > 2026-09-23 기준. 새 ChatGPT 세션에서 이 파일과 `PROJECT_CONTEXT.md`를 먼저 읽고 바로 이어서 작업한다.
 
+## 2026-10-11 — Free micro-job proof: LIST_SAFE_DETAIL_UNSAFE
+
+- Temporary D1-free Cloudflare probe measured each network unit independently. Gyeongsan LIST_PAGE page 1 and pagination page 2 were 10/10 HTTP 200 with 0 observed 1102; Uijeongbu LIST_PAGE was 9/10 HTTP 200, 0 observed 1102, and 1 other HTTP 503.
+- Uijeongbu DETAIL_ONE for one official detail URL was 2/10 HTTP 200; 6/10 were confirmed Cloudflare resource-limit/1102 responses, with one other HTTP 503 and one HTTP 500 after the probe fetch timeout. Rich-detail successes returned 3 populated field groups (contact, 2 images, 2 programs).
+- Verdict: `LIST_SAFE_DETAIL_UNSAFE`. Do not run source-wide invocations on Free. Next bounded task: design and prove a smaller detail split (fetch versus parse) with D1 cursor/checkpoint semantics; no production implementation was made here.
+
 ## 2026-10-11 — HOME final visual finish 완료 / production deploy 대기
 
 - HOME의 section label은 한국어로 정리했고, hero headline 하나만 남겨 첫 화면의 이중 시작을 제거했다.
