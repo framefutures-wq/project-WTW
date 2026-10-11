@@ -12,20 +12,26 @@
 
 - The same Uijeongbu official detail URL completed `DETAIL_FETCH_ONLY` 10/10 HTTP 200 with 0 observed 1102 (2.625–3.469s; 249,733-character response after decoding). Each response was hashed; the page is dynamic so hashes varied while the decoded length was stable.
 - A temporary 249,733-character fixture from that page completed `PARSE_ONLY` 10/10 HTTP 200 with 0 observed 1102 (228–542ms). Results were identical: contact, 2 images, and 2 programs.
-- Verdict: `FETCH_SAFE_PARSE_SAFE_SEPARATELY`. The smallest Free-safe detail contract is exactly `detail_fetch checkpoint → detail_parse → persist_one`; retain only a bounded normalized intermediate payload in existing D1, never raw HTML. No migration or production implementation was made.
+- Verdict: `FETCH_SAFE_PARSE_SAFE_SEPARATELY`. The smallest Free-safe detail contract is exactly `detail_fetch checkpoint → detail_parse → persist_one`; parse requires a short-lived, size-capped raw checkpoint before it can leave bounded normalized JSON. No production implementation was made.
 
-## 2026-10-11 — HOME final visual finish 완료 / production deploy 대기
+## 2026-10-11 — D1 detail micro-job runner code ready, not cut over
+
+- Additive local migration and isolated enqueue/fetch/parse/persist stage functions are ready. Existing scheduled municipal, official-detail, TourAPI, cron, API, and UI paths do not call them yet.
+- The temporary raw checkpoint is capped at 300 KiB and cleared after parse; normalized JSON is capped at 64 KiB. No production migration, deploy, or runner cutover has occurred.
+- Next: verify each runner stage ten times against Free Preview with a local/test D1 binding.
+
+## 2026-10-11 — HOME final visual finish production 완료
 
 - HOME의 section label은 한국어로 정리했고, hero headline 하나만 남겨 첫 화면의 이중 시작을 제거했다.
 - Desktop lead + 보조 추천 구조, mobile lead 우선 구조와 utility bar 순서는 유지했다. 보조 portrait poster는 contain을 유지하면서 더 깊은 media frame과 warm mat으로 균형을 맞췄다.
-- Local screenshots는 `artifacts/home-final-finish-2026-10-11/`에 저장한다. 이 commit은 production deploy 대기 상태다.
+- Local screenshots는 `artifacts/home-final-finish-2026-10-11/`에 저장했다. 후속 HOME production 검증까지 완료됐다.
 
-## 2026-10-11 — 상세 decision-first 재설계 완료, production 배포 대기
+## 2026-10-11 — 상세 decision-first 재설계 production 완료
 
 - `/events/:id`는 desktop에서 contained official media와 결정 요약을 같은 hero에 배치한다. 제목, 일정, 장소, 공식/지도 CTA와 있는 보조 사실을 poster 높이에 맞춰 첫 화면에서 함께 읽는다. 포스터는 contain, 사진도 기존 공식 media만 사용한다.
 - mobile은 제목 → 일정·장소 → CTA/보조 사실 → compact media 순서다. 긴 포스터가 핵심 정보를 밀어내지 않으며, 2장 media는 가로 swipe로 유지된다.
 - 일정/장소와 운영시간/비용/문의는 card 묶음이 아니라 typography와 divider로 정리했다. 프로그램은 timeline 및 responsive schedule rows, 소개는 읽기 폭을 제한한 본문, 주변/출처는 조용한 후순위다.
-- 로컬 typecheck/build/detail UI contract 및 desktop/mobile rich-detail browser tests를 통과했다. 이 UI commit도 production에는 배포하지 않는다.
+- 로컬 typecheck/build/detail UI contract 및 desktop/mobile rich-detail browser tests와 production 검증을 통과했다.
 - 다음 bounded task: 홈+상세 통합 visual QA 후 production release 1회.
 
 ## 2026-10-11 — YES 제품화 홈 decision-first 재설계 완료
