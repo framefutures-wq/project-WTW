@@ -2569,6 +2569,14 @@ Humans are not part of the normal approval loop; only unresolved exceptions shou
 - The same policy is passed by all watchdog/retry windows. After recovery returns, existing subsystem order continues: at 17:55 private official then retry-due TourAPI detail. No manual cron, recovery, OCR/AI call, or production D1 write was run for verification.
 - Next: read-only inspect the next natural later window. It should reach `private`, `tourapi_detail`, and `finished` (or finalize with the appropriate base/detail skip reason) with `finished_at` set.
 
+## 2026-10-11 — scheduled Worker CPU budget alignment
+
+- The 13:50 KST `scheduled_window` remained `running` at `phase=municipal`; its last persisted progress had `current_source=chungbuk-옥천`, `elapsed_ms=29782`, and `municipal_budget_exhausted=false`. This snapshot does not prove the invocation's eventual CPU or wall-clock termination.
+- Local pure-parser timing for the Okcheon list parser (100 synthetic cards, 30 runs) was median 2.818ms, p95 15.500ms, max 32.657ms. It is not evidence of a parser CPU bottleneck in production.
+- Cloudflare invocation telemetry was not accessible, so `exceededCpu` is not asserted as fact. Production Worker settings readback showed no explicit `limits` object before this change.
+- Production configuration now explicitly sets `limits.cpu_ms: 120000`; scheduled municipal remains 60 seconds and official-detail remains 90 seconds. Scheduler/parser/OCR/D1/cron logic is unchanged.
+- Next: read-only inspect the next natural 17:55 KST window. Confirm the ledger reaches bounded municipal completion, `official_detail`, `tourapi_detail`, and has `finished_at`; do not manually invoke any cron, municipal, recovery, or detail operation.
+
 ## 2026-10-07 — base invocation isolation
 
 - Production base runs for 2026-10-05, 10-06, and 10-07 remained `running` with no `finished_at`. Read-only evidence narrowed the likely cause to an oversized base invocation / Worker execution-time termination; exact timeout was not proven because there was no invocation termination log. Stale rows did not prevent the following day's new base run.
