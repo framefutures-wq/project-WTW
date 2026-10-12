@@ -6,10 +6,12 @@ import {
   BASE_SYNC_CRON,
   DETAIL_SYNC_CRON,
   DETAIL_RETRY_RECOVERY_CRONS,
+  FAIR_MICRO_DISPATCHER_CRON,
   runDetailScheduled,
   runScheduled,
   type ScheduledDependencies,
 } from "../worker/cron";
+import { handleScheduled } from "../worker/index";
 import { SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS } from "../worker/sources/official-detail-recovery";
 
 async function setup() {
@@ -37,6 +39,7 @@ async function setup() {
       APP_MODE: "production",
       TOUR_API_ENABLED: "true",
       TOUR_API_KEY: "test",
+      FAIR_MICRO_DISPATCHER_ENABLED: "false",
       ASSETS: {},
       WEB_PUSH_ENABLED: "false",
     },
@@ -102,6 +105,10 @@ function dependencies(
     processPushDeliveries: async () => {
       calls.push("push");
       return { delivered: 0 } as never;
+    },
+    runFairMicroDispatcherOne: async () => {
+      calls.push("dispatcher");
+      return { status: "NO_OP", lane: null, stage: null, job_id: null };
     },
   };
 }
@@ -773,6 +780,146 @@ test("a real in-flight TourAPI detail run still skips only detail, not scheduled
     assert.equal(row?.status, "skipped");
     assert.ok(row?.finished_at);
     assert.equal(JSON.parse(row!.message).reason, "detail_already_running");
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("without explicit opt-in every existing Cron retains its legacy route", async () => {
+  const { mf, env } = await setup();
+  const calls: string[] = [];
+  try {
+    await runScheduled(
+      env as never,
+      DETAIL_SYNC_CRON,
+      detailTime,
+      dependencies(calls),
+    );
+    assert.deepEqual(calls, ["municipal:0", "official-detail"]);
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("explicit cutover sends a due window through one dispatcher call and skips legacy bulk work", async () => {
+  const { mf, env } = await setup();
+  const calls: string[] = [];
+  try {
+    env.FAIR_MICRO_DISPATCHER_ENABLED = "true";
+    const result = await runScheduled(
+      env as never,
+      DETAIL_SYNC_CRON,
+      detailTime,
+      dependencies(calls),
+    );
+    assert.deepEqual(calls, ["dispatcher"]);
+    assert.deepEqual(result, {
+      status: "NO_OP",
+      lane: null,
+      stage: null,
+      job_id: null,
+    });
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("overlapping minute and legacy Cron deliveries claim one dispatcher minute", async () => {
+  const { mf, env } = await setup();
+  const calls: string[] = [];
+  try {
+    env.FAIR_MICRO_DISPATCHER_ENABLED = "true";
+    const at = new Date("2026-09-21T02:01:00.000Z");
+    const deps = dependencies(calls);
+    await runScheduled(env as never, FAIR_MICRO_DISPATCHER_CRON, at, deps);
+    const result = await runScheduled(env as never, DETAIL_SYNC_CRON, at, deps);
+    assert.deepEqual(calls, ["dispatcher"]);
+    assert.deepEqual(result, { skipped: "dispatcher_already_routed_this_minute" });
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("cutover preserves the base contract and excludes the minute dispatcher at 01:00", async () => {
+  const { mf, env } = await setup();
+  const calls: string[] = [];
+  try {
+    env.FAIR_MICRO_DISPATCHER_ENABLED = "true";
+    const deps = dependencies(calls);
+    assert.deepEqual(
+      await runScheduled(env as never, FAIR_MICRO_DISPATCHER_CRON, baseTime, deps),
+      { skipped: "base_window" },
+    );
+    await runScheduled(env as never, BASE_SYNC_CRON, baseTime, deps);
+    assert.deepEqual(calls, ["tourapi", "detail", "push"]);
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("cutover keeps the private window and does not run a dispatcher alongside it", async () => {
+  const { mf, env } = await setup();
+  const calls: string[] = [];
+  try {
+    env.FAIR_MICRO_DISPATCHER_ENABLED = "true";
+    const at = new Date("2026-09-21T08:55:00.000Z");
+    const deps = dependencies(calls);
+    assert.deepEqual(
+      await runScheduled(env as never, FAIR_MICRO_DISPATCHER_CRON, at, deps),
+      { skipped: "private_legacy_window" },
+    );
+    const result = await runScheduled(
+      env as never,
+      DETAIL_RETRY_RECOVERY_CRONS[2],
+      at,
+      deps,
+    );
+    assert.equal((result as { status?: string }).status, "success");
+    assert.deepEqual(calls, ["private"]);
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("cutover forwards BUSY, FAILED, and NO_OP dispatcher outcomes", async () => {
+  const { mf, env } = await setup();
+  const calls: string[] = [];
+  try {
+    env.FAIR_MICRO_DISPATCHER_ENABLED = "true";
+    const deps = dependencies(calls);
+    const outcomes = [
+      { status: "BUSY", lane: null, stage: null, job_id: null },
+      { status: "FAILED", lane: "official", stage: "FAILED", job_id: null },
+      { status: "NO_OP", lane: null, stage: null, job_id: null },
+    ] as const;
+    for (const [index, outcome] of outcomes.entries()) {
+      deps.runFairMicroDispatcherOne = async () => outcome;
+      assert.deepEqual(
+        await runScheduled(
+          env as never,
+          FAIR_MICRO_DISPATCHER_CRON,
+          new Date(`2026-09-21T03:0${index}:00.000Z`),
+          deps,
+        ),
+        outcome,
+      );
+    }
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("Worker scheduled handler delegates the opt-in minute Cron to scheduled routing", async () => {
+  const { mf, env } = await setup();
+  const calls: string[] = [];
+  try {
+    env.FAIR_MICRO_DISPATCHER_ENABLED = "true";
+    await handleScheduled(
+      { cron: FAIR_MICRO_DISPATCHER_CRON },
+      env as never,
+      dependencies(calls),
+    );
+    assert.deepEqual(calls, ["dispatcher"]);
   } finally {
     await mf.dispose();
   }

@@ -10,7 +10,7 @@ import {
 } from "../shared/domain";
 import type { Env } from "./env";
 import { parseFilters, parseNearbyFilters, InputError } from "./filters";
-import { runScheduled } from "./cron";
+import { runScheduled, type ScheduledDependencies } from "./cron";
 import {
   disableSubscription,
   isSameOrigin,
@@ -545,6 +545,14 @@ async function publicSitemap(env: Env) {
     .bind(...visibilityBindings(env), today)
     .all<SeoEvent>();
   return sitemapXml(rows.results);
+}
+
+export async function handleScheduled(
+  controller: Pick<ScheduledController, "cron">,
+  env: Env,
+  dependencies?: ScheduledDependencies,
+) {
+  await runScheduled(env, controller.cron, new Date(), dependencies);
 }
 
 export default {
@@ -1136,6 +1144,6 @@ export default {
     }
   },
   async scheduled(controller: ScheduledController, env: Env) {
-    await runScheduled(env, controller.cron);
+    await handleScheduled(controller, env);
   },
 } satisfies ExportedHandler<Env>;

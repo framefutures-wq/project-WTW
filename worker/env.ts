@@ -9,6 +9,8 @@ export interface Env {
   MUNICIPAL_DOCUMENT_AI_ENABLED?: string;
   APP_MODE: "sample" | "production";
   TOUR_API_ENABLED: string;
+  /** Explicit cutover switch. Any other value keeps the legacy Cron routing. */
+  FAIR_MICRO_DISPATCHER_ENABLED?: string;
   /** Cloudflare Secret 전용. 현재 값 없음. */
   TOUR_API_KEY?: string;
   WEB_PUSH_ENABLED?: string;

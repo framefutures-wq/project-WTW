@@ -11,6 +11,7 @@ import {
 } from "../shared/municipal-run-plan";
 import { runPrivateOfficialSources } from "./sources/private-official";
 import { SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS, runOfficialDetailRecovery } from "./sources/official-detail-recovery";
+import { runFairMicroDispatcherOne } from "./sources/fair-micro-dispatcher";
 import { processPushDeliveries } from "./push";
 import { trustedPrivateLkgSources } from "../shared/private-official-sources";
 const privateLkgClause = (alias: string) => {
@@ -26,6 +27,7 @@ const privateLkgClause = (alias: string) => {
 const LKG_PRIMARY_SOURCE = `(ms.kind='municipality' OR (${privateLkgClause("ms")}))`;
 export const BASE_SYNC_CRON = "0 1 * * *";
 export const DETAIL_SYNC_CRON = "0 2 * * *";
+export const FAIR_MICRO_DISPATCHER_CRON = "* * * * *";
 // 11:45 / 13:50 / 17:55 KST: each leaves room after the preceding bounded pass
 // for the 30m → 2h → 4h retry schedule, without polling candidates that are not due.
 export const DETAIL_RETRY_RECOVERY_CRONS = [
@@ -50,6 +52,7 @@ export type ScheduledDependencies = {
   runPrivateOfficialSources: typeof runPrivateOfficialSources;
   runOfficialDetailRecovery: typeof runOfficialDetailRecovery;
   processPushDeliveries: typeof processPushDeliveries;
+  runFairMicroDispatcherOne: typeof runFairMicroDispatcherOne;
 };
 const productionDependencies: ScheduledDependencies = {
   syncTourApi,
@@ -58,7 +61,55 @@ const productionDependencies: ScheduledDependencies = {
   runPrivateOfficialSources,
   runOfficialDetailRecovery,
   processPushDeliveries,
+  runFairMicroDispatcherOne,
 };
+
+const isCronMinute = (now: Date, cron: string) => {
+  const [minute, hour] = cron.split(" ");
+  return Number(minute) === now.getUTCMinutes() && Number(hour) === now.getUTCHours();
+};
+const dispatcherCutoverEnabled = (env: Env) =>
+  env.FAIR_MICRO_DISPATCHER_ENABLED === "true";
+
+/**
+ * The fair-dispatcher lease blocks concurrent work. This minute claim also
+ * suppresses a later overlapping Cron delivery after the first has finished.
+ */
+async function runFairMicroScheduled(
+  env: Env,
+  now: Date,
+  dependencies: ScheduledDependencies,
+) {
+  const at = now.toISOString();
+  const minute = at.slice(0, 16);
+  const claimed = await env.DB.prepare(
+    "UPDATE fair_micro_dispatcher_state SET updated_at=? WHERE id=1 AND substr(updated_at,1,16)<>?",
+  )
+    .bind(at, minute)
+    .run();
+  if (!(claimed.meta.changes ?? 0))
+    return { skipped: "dispatcher_already_routed_this_minute" };
+  return dependencies.runFairMicroDispatcherOne(env, at);
+}
+
+/** Private-source work remains available as its own bounded legacy window. */
+async function runPrivateOfficialScheduled(
+  env: Env,
+  dependencies: ScheduledDependencies,
+) {
+  try {
+    return {
+      status: "success" as const,
+      private: await dependencies.runPrivateOfficialSources(env),
+    };
+  } catch (error) {
+    console.error("private_official_failed", {
+      trigger: "private_only",
+      error: error instanceof Error ? error.name : "unknown",
+    });
+    return { status: "failed" as const, reason: "subsystem_error" as const };
+  }
+}
 function baseWindow(now: Date) {
   // A KST operating date starts at 10:00 KST (01:00 UTC); ISO timestamps sort safely in D1.
   const start = new Date(`${koreaDate(now)}T01:00:00.000Z`);
@@ -516,6 +567,23 @@ export async function runScheduled(
   dependencies = productionDependencies,
 ) {
   if (cron === BASE_SYNC_CRON) return runBaseScheduled(env, now, dependencies);
+  if (dispatcherCutoverEnabled(env)) {
+    const privateCron = DETAIL_RETRY_RECOVERY_CRONS[2];
+    if (cron === privateCron)
+      return runPrivateOfficialScheduled(env, dependencies);
+    if (cron === FAIR_MICRO_DISPATCHER_CRON) {
+      if (isCronMinute(now, BASE_SYNC_CRON)) return { skipped: "base_window" };
+      if (isCronMinute(now, privateCron))
+        return { skipped: "private_legacy_window" };
+      return runFairMicroScheduled(env, now, dependencies);
+    }
+    if (
+      cron === DETAIL_SYNC_CRON ||
+      cron === DETAIL_RETRY_RECOVERY_CRONS[0] ||
+      cron === DETAIL_RETRY_RECOVERY_CRONS[1]
+    )
+      return runFairMicroScheduled(env, now, dependencies);
+  }
   if (cron === DETAIL_SYNC_CRON)
     return runDetailScheduled(
       env,
