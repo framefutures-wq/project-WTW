@@ -1,5 +1,13 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-12 — production continuous-cycle runtime ready, dormant
+
+- Production D1 `weekend-mwohae-production` applied additive migration `0026_municipal_scan_source_finalize.sql`. The source-finalize columns, detail retry stage, cycle table, and both new indexes are present; cycle/scan/detail queue counts are all 0.
+- Commit `22c67f6` runtime code deployed through the verified path as Worker `42118736-7993-4b03-a644-7af4dcf10024`. D1, AI, Assets, and required secret bindings remain present.
+- The five existing Cron triggers remain unchanged (`0 1`, `0 2`, `45 2`, `50 4`, `55 8` UTC). `runScheduled()` still does not call the continuous-cycle dispatcher, so no production cycle, seed, or micro ingestion was started.
+- HOME, today/weekend events APIs, and an encoded real event detail API/page all returned HTTP 200 with valid app/data schemas.
+- Next bounded task: actual production Cron cutover — `0 2 * * *` to `* * * * *`, connect the continuous-cycle dispatcher, remove legacy scheduled municipal shards, preserve official-detail/TourAPI watchdog semantics, then observe a natural minute tick. Requires explicit user approval.
+
 ## 2026-10-12 — Free Preview cycle proof complete
 
 - After OAuth renewal, isolated temporary D1 `weekend-mwohae-cycle-probe` and Worker `weekend-mwohae-cycle-probe` (version `738077df-bd02-4c0b-8a30-3d6bb512e34c`) proved the current `0026` schema and controller on Cloudflare Free infrastructure.

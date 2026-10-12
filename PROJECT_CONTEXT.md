@@ -6,10 +6,10 @@
 
 ## 1. 프로젝트 정체성
 
-## 2026-10-11 — Free municipal continuous cycle local contract
+## 2026-10-12 — continuous-cycle production runtime ready, scheduler dormant
 
 - Free production municipal 운영 계약은 전국 source를 하루 안에 완료하는 daily full scan이 아니라, 한 source의 LIST/finalize/candidate/detail work를 drain한 뒤 다음 source로 진행하는 continuous bounded cycle이다. 한 cycle이 끝난 뒤 현재 KST 날짜에 새 cycle이 없을 때만 다시 source 0부터 시작한다.
-- 이 계약과 source-wide 25 candidate cap은 local 코드·테스트 단계이며 production에는 아직 적용되지 않았다. 기존 Worker/Cron/D1 운영 상태는 아래 기록을 따른다.
+- Production D1 migration `0026_municipal_scan_source_finalize` and Worker `42118736-7993-4b03-a644-7af4dcf10024` include the continuous-cycle schema/runtime. The cycle and job queues are 0; `runScheduled()` and the five existing Cron triggers do not call it yet, so activation remains dormant.
 
 ## 2026-10-12 — Free municipal cycle Preview proof complete
 
