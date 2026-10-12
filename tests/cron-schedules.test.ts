@@ -4,14 +4,13 @@ import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { readFileSync, readdirSync } from "node:fs";
 import {
   BASE_SYNC_CRON,
-  MICRO_SYNC_CRON,
+  DETAIL_SYNC_CRON,
   DETAIL_RETRY_RECOVERY_CRONS,
   runDetailScheduled,
   runScheduled,
   type ScheduledDependencies,
 } from "../worker/cron";
 import { SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS } from "../worker/sources/official-detail-recovery";
-import { parse } from "jsonc-parser";
 
 async function setup() {
   const mf = new Miniflare(
@@ -75,10 +74,6 @@ function dependencies(
       calls.push(`municipal:${plan!.shardIndex}`);
       return { imported: 0 } as never;
     },
-    runMunicipalContinuousCycleOne: async () => {
-      calls.push("continuous-cycle");
-      return { stage: "NO_OP", operating_date: "2026-09-21" };
-    },
     runPrivateOfficialSources: async () => {
       calls.push("private");
       return { imported: 0 } as never;
@@ -112,78 +107,6 @@ function dependencies(
 }
 const baseTime = new Date("2026-09-21T01:00:00.000Z");
 const detailTime = new Date("2026-09-21T02:00:00.000Z");
-const legacyManualPlan = {
-  shardIndex: 0,
-  sourceKeys: ["paju", "suwon"],
-  maxPublishMutations: 1,
-  maxRetryCandidates: 1,
-  maxDetailFetches: 1,
-  maxExternalFetches: 2,
-};
-
-test("production config has exactly the five cutover Cron triggers", () => {
-  const config = parse(readFileSync("wrangler.production.jsonc", "utf8")) as { triggers: { crons: string[] } };
-  assert.deepEqual(config.triggers.crons, [
-    BASE_SYNC_CRON,
-    MICRO_SYNC_CRON,
-    ...DETAIL_RETRY_RECOVERY_CRONS,
-  ]);
-});
-
-test("regular minute dispatches exactly one continuous-cycle unit with its ISO time", async () => {
-  const calls: string[] = [];
-  const deps = dependencies(calls);
-  const at = new Date("2026-09-21T02:22:14.000Z");
-  deps.runMunicipalContinuousCycleOne = async (_env, timestamp) => {
-    assert.equal(timestamp, at.toISOString());
-    calls.push("continuous-cycle");
-    return { stage: "SOURCE_SEED", operating_date: "2026-09-21", source_key: "paju", source_cursor: 0 };
-  };
-  const result = await runScheduled({} as never, MICRO_SYNC_CRON, at, deps);
-  assert.deepEqual(calls, ["continuous-cycle"]);
-  assert.deepEqual(result, { stage: "SOURCE_SEED", operating_date: "2026-09-21", source_key: "paju", source_cursor: 0 });
-});
-
-for (const [timestamp, reason] of [
-  ["2026-09-21T01:00:00.000Z", "dedicated_base_minute"],
-  ["2026-09-21T02:45:00.000Z", "dedicated_recovery_minute"],
-  ["2026-09-21T04:50:00.000Z", "dedicated_recovery_minute"],
-  ["2026-09-21T08:55:00.000Z", "dedicated_recovery_minute"],
-] as const) {
-  test(`wildcard at ${timestamp} yields to its dedicated Cron`, async () => {
-    const calls: string[] = [];
-    const result = await runScheduled({} as never, MICRO_SYNC_CRON, new Date(timestamp), dependencies(calls));
-    assert.deepEqual(result, { skipped: reason });
-    assert.deepEqual(calls, []);
-  });
-}
-
-for (const [cron, timestamp, limit] of [
-  [MICRO_SYNC_CRON, "2026-09-21T02:00:00.000Z", 4],
-  [DETAIL_RETRY_RECOVERY_CRONS[0], "2026-09-21T02:45:00.000Z", 4],
-  [DETAIL_RETRY_RECOVERY_CRONS[1], "2026-09-21T04:50:00.000Z", 4],
-  [DETAIL_RETRY_RECOVERY_CRONS[2], "2026-09-21T08:55:00.000Z", 8],
-] as const) {
-  test(`${cron} at ${timestamp} retains official-detail limit ${limit} without a scheduled shard`, async () => {
-    const { mf, env } = await setup();
-    const calls: string[] = [];
-    try {
-      const deps = dependencies(calls);
-      const originalRecovery = deps.runOfficialDetailRecovery;
-      deps.runOfficialDetailRecovery = async (workerEnv, at, options) => {
-        assert.equal(options?.limit, limit);
-        return originalRecovery(workerEnv, at, options);
-      };
-      await runScheduled(env as never, cron, new Date(timestamp), deps);
-      assert.equal(calls.filter((call) => call === "official-detail").length, 1);
-      assert.equal(calls.some((call) => call.startsWith("municipal:")), false);
-      assert.equal(calls.includes("continuous-cycle"), false);
-      assert.equal(calls.includes("private"), limit === 8);
-    } finally {
-      await mf.dispose();
-    }
-  });
-}
 
 test("10:00 KST finalizes the TourAPI-only base before immediate detail handoff", async () => {
   const { mf, DB, env } = await setup();
@@ -290,7 +213,7 @@ test("base upstream failure finalizes failed without official-detail recovery", 
   }
 });
 
-test("11:00 KST runs watchdog detail without municipal shard after the same KST date base succeeds", async () => {
+test("11:00 KST runs municipal shard then detail after the same KST date base succeeds", async () => {
   const { mf, DB, env } = await setup();
   const calls: string[] = [];
   try {
@@ -301,11 +224,11 @@ test("11:00 KST runs watchdog detail without municipal shard after the same KST 
       .run();
     await runScheduled(
       env as never,
-      MICRO_SYNC_CRON,
+      DETAIL_SYNC_CRON,
       detailTime,
       dependencies(calls),
     );
-    assert.deepEqual(calls, ["official-detail", "detail"]);
+    assert.deepEqual(calls, ["municipal:0", "official-detail", "detail"]);
     const row = await DB.prepare(
       "SELECT provider,status,message FROM sync_runs WHERE provider='tourapi-detail'",
     ).first<{ provider: string; status: string; message: string }>();
@@ -356,7 +279,7 @@ test("retry recovery Cron runs detail with retry-due scope only", async () => {
       new Date("2026-09-21T02:45:00.000Z"),
       deps,
     );
-    assert.deepEqual(calls, ["official-detail", "detail-retry"]);
+    assert.deepEqual(calls, ["municipal:1", "official-detail", "detail-retry"]);
     assert.equal(scope, "retry_due");
     const row = await DB.prepare(
       "SELECT message FROM sync_runs WHERE provider='tourapi-detail'",
@@ -373,7 +296,7 @@ for (const [cron, timestamp, expectedCalls] of [
   [
     DETAIL_RETRY_RECOVERY_CRONS[1],
     "2026-09-21T04:50:00.000Z",
-    ["official-detail", "detail-retry"],
+    ["municipal:2", "official-detail", "detail-retry"],
   ],
   [
     DETAIL_RETRY_RECOVERY_CRONS[2],
@@ -448,11 +371,11 @@ for (const [name, status] of [
           .run();
       await runScheduled(
         env as never,
-        MICRO_SYNC_CRON,
+        DETAIL_SYNC_CRON,
         detailTime,
         dependencies(calls),
       );
-      assert.deepEqual(calls, ["official-detail"]);
+      assert.deepEqual(calls, ["municipal:0", "official-detail"]);
       const row = await DB.prepare(
         "SELECT status,finished_at,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid LIMIT 1",
       ).first<{
@@ -464,7 +387,7 @@ for (const [name, status] of [
       assert.ok(row?.finished_at);
       assert.match(row!.message, /base_run_(missing|not_successful|running)/);
       const message = JSON.parse(row!.message);
-      assert.equal(Object.hasOwn(message, "municipal"), false);
+      assert.equal(message.municipal.imported, 0);
       assert.equal(message.official_detail_recovery.recovered, 1);
     } finally {
       await mf.dispose();
@@ -504,11 +427,15 @@ test("immediate detail failure stays isolated and the 11:00 watchdog can retry",
     const watchdogCalls: string[] = [];
     await runScheduled(
       env as never,
-      MICRO_SYNC_CRON,
+      DETAIL_SYNC_CRON,
       detailTime,
       dependencies(watchdogCalls),
     );
-    assert.deepEqual(watchdogCalls, ["official-detail", "detail"]);
+    assert.deepEqual(watchdogCalls, [
+      "municipal:0",
+      "official-detail",
+      "detail",
+    ]);
     const latest = await DB.prepare(
       "SELECT status,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid DESC LIMIT 1",
     ).first<{ status: string; message: string }>();
@@ -549,7 +476,7 @@ test("unknown cron is fail-closed and detail failure does not block the next bas
     await assert.rejects(
       runScheduled(
         env as never,
-        MICRO_SYNC_CRON,
+        DETAIL_SYNC_CRON,
         detailTime,
         failingDependencies,
       ),
@@ -570,7 +497,7 @@ for (const [cron, timestamp, expectedCalls] of [
   [
     DETAIL_RETRY_RECOVERY_CRONS[1],
     "2026-09-21T04:50:00.000Z",
-    ["official-detail"],
+    ["municipal:2", "official-detail"],
   ],
   [
     DETAIL_RETRY_RECOVERY_CRONS[2],
@@ -602,7 +529,7 @@ for (const [cron, timestamp, expectedCalls] of [
   });
 }
 
-test("optional municipal plan failure remains isolated from official-detail and TourAPI detail", async () => {
+test("municipal shard failure remains isolated from official-detail and TourAPI detail", async () => {
   const { mf, DB, env } = await setup();
   const calls: string[] = [];
   try {
@@ -616,7 +543,7 @@ test("optional municipal plan failure remains isolated from official-detail and 
       calls.push(`municipal:${plan!.shardIndex}`);
       throw new Error("municipal down");
     };
-    await runDetailScheduled(env as never, detailTime, deps, "watchdog", undefined, legacyManualPlan);
+    await runScheduled(env as never, DETAIL_SYNC_CRON, detailTime, deps);
     assert.deepEqual(calls, ["municipal:0", "official-detail", "detail"]);
     const row = await DB.prepare(
       "SELECT finished_at,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid LIMIT 1",
@@ -659,7 +586,7 @@ test("17:55 private official failure remains isolated from official-detail and T
   }
 });
 
-test("optional municipal plan creates its invocation ledger before work completes", async () => {
+test("watchdog creates its invocation ledger before municipal work completes", async () => {
   const { mf, DB, env } = await setup();
   const calls: string[] = [];
   let releaseMunicipal!: () => void;
@@ -678,7 +605,7 @@ test("optional municipal plan creates its invocation ledger before work complete
       await municipalGate;
       return { imported: 0 } as never;
     };
-    const run = runDetailScheduled(env as never, detailTime, deps, "watchdog", undefined, legacyManualPlan);
+    const run = runScheduled(env as never, DETAIL_SYNC_CRON, detailTime, deps);
     await started;
     const row = await DB.prepare(
       "SELECT status,finished_at,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid LIMIT 1",
@@ -774,8 +701,8 @@ test("official-detail failure finalizes the watchdog ledger and keeps detail run
       calls.push("official-detail");
       throw new Error("official detail down");
     };
-    await runScheduled(env as never, MICRO_SYNC_CRON, detailTime, deps);
-    assert.deepEqual(calls, ["official-detail", "detail"]);
+    await runScheduled(env as never, DETAIL_SYNC_CRON, detailTime, deps);
+    assert.deepEqual(calls, ["municipal:0", "official-detail", "detail"]);
     const row = await DB.prepare(
       "SELECT status,finished_at,message FROM sync_runs WHERE provider='tourapi-detail' ORDER BY rowid LIMIT 1",
     ).first<{ status: string; finished_at: string | null; message: string }>();
@@ -813,7 +740,7 @@ test("a stale scheduled-window ledger does not block the next retry window", asy
       new Date("2026-09-21T02:45:00.000Z"),
       dependencies(calls),
     );
-    assert.deepEqual(calls, ["official-detail", "detail"]);
+    assert.deepEqual(calls, ["municipal:1", "official-detail", "detail"]);
   } finally {
     await mf.dispose();
   }
@@ -835,11 +762,11 @@ test("a real in-flight TourAPI detail run still skips only detail, not scheduled
       .run();
     await runScheduled(
       env as never,
-      MICRO_SYNC_CRON,
+      DETAIL_SYNC_CRON,
       detailTime,
       dependencies(calls),
     );
-    assert.deepEqual(calls, ["official-detail"]);
+    assert.deepEqual(calls, ["municipal:0", "official-detail"]);
     const row = await DB.prepare(
       "SELECT status,finished_at,message FROM sync_runs WHERE id!='detail-lock' AND provider='tourapi-detail' ORDER BY rowid LIMIT 1",
     ).first<{ status: string; finished_at: string | null; message: string }>();
