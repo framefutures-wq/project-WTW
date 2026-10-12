@@ -11,6 +11,11 @@
 - Free production municipal 운영 계약은 전국 source를 하루 안에 완료하는 daily full scan이 아니라, 한 source의 LIST/finalize/candidate/detail work를 drain한 뒤 다음 source로 진행하는 continuous bounded cycle이다. 한 cycle이 끝난 뒤 현재 KST 날짜에 새 cycle이 없을 때만 다시 source 0부터 시작한다.
 - 이 계약과 source-wide 25 candidate cap은 local 코드·테스트 단계이며 production에는 아직 적용되지 않았다. 기존 Worker/Cron/D1 운영 상태는 아래 기록을 따른다.
 
+## 2026-10-12 — Free municipal cycle Preview proof complete
+
+- Temporary Cloudflare D1/Worker proof completed SOURCE_FINALIZE 10/10, controller source-seed 12/12, future-retry backpressure, expiry advance, and same-day cycle completion/no-op. Temporary resources were deleted after verification.
+- Production has not received migration `0026`, continuous-cycle code, or a Cron cutover. Existing production Worker/D1/Cron behavior remains unchanged.
+
 ## 2026-10-11 — municipal micro scheduler deployed, scheduler dormant
 
 - Production D1 `weekend-mwohae-production` has additive migrations `0024_municipal_detail_jobs` and `0025_municipal_scan_jobs`; both job tables and ready indexes are present and both queues contain 0 rows.

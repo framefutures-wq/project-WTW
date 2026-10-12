@@ -1,5 +1,13 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-12 — Free Preview cycle proof complete
+
+- After OAuth renewal, isolated temporary D1 `weekend-mwohae-cycle-probe` and Worker `weekend-mwohae-cycle-probe` (version `738077df-bd02-4c0b-8a30-3d6bb512e34c`) proved the current `0026` schema and controller on Cloudflare Free infrastructure.
+- SOURCE_FINALIZE completed 10/10 HTTP 200 runs, each releasing exactly one canonical candidate row. The continuous-cycle controller completed 12/12 HTTP 200 runs, each creating only the first `paju` source seed from an otherwise empty isolated D1.
+- Backpressure held a future retry at `WAITING_RETRY`; expiry terminalized one failed page and advanced to `suwon`; cycle completion returned `CYCLE_DONE` followed by same-day `NO_OP`. Final temporary ledger was `DONE`, cursor 35/35.
+- Temporary Worker and D1 were deleted and read-only absence checks passed. Production Worker/D1/Cron were not changed. The pre-existing `municipal-retry-worker.test.mjs` main assertion was not run or modified.
+- Verdict: `FREE_CYCLE_PREVIEW_PROVEN`. Next gate is a separately approved production migration `0026` and Cron-cutover preparation; do not activate micro scheduling before that approval.
+
 ## 2026-10-11 — source budget 및 continuous cycle local implementation
 
 - `CUTOVER_BLOCKED_SOURCE_BUDGET`: 기존 micro LIST_PAGE는 페이지마다 25건을 checkpoint해 2/3-page source에서 50/75건까지 허용했다. Daily full scan을 every-minute Free에 강제하면 detail 3-stage를 포함한 극단적 3,621 units가 하루 usable 약 1,435회를 넘는다.
