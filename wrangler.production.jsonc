@@ -22,6 +22,7 @@
   "vars": {
     "APP_MODE": "production",
     "TOUR_API_ENABLED": "true",
+    "FAIR_MICRO_DISPATCHER_ENABLED": "true",
     "MUNICIPAL_DOCUMENT_AI_ENABLED": "true",
     "WEB_PUSH_ENABLED": "true",
     "WEB_PUSH_VAPID_PUBLIC_KEY": "BNHKagyZenwP0ldvTxb-Uw0eTKqom0s6kzx0xEEjOFWMGWeSk2W0UVIhqD0qTQUR7U0JxmTAyL01Xe1ib3tphno",
@@ -32,7 +33,7 @@
   },
   "secrets": { "required": ["TOUR_API_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"] },
   "triggers": {
-    "crons": ["0 1 * * *", "0 2 * * *", "45 2 * * *", "50 4 * * *", "55 8 * * *"],
+    "crons": ["0 1 * * *","* * * * *","55 8 * * *"],
   },
   "observability": { "enabled": true },
 }
