@@ -1,5 +1,11 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-12 — official-detail micro checkpoints local ready
+
+- The 02:45 UTC production 1102 was isolated to the `official_detail` phase; the direct-only Free probe passed, so the mixed Reader/parse/poster/persist recovery path was split locally. Additive migration candidate `0027_official_detail_jobs.sql` and dormant `runOfficialDetailMicroJobOne` implement one candidate/stage per invocation: enqueue → direct fetch → optional Reader → parse → optional poster → persist. Generation, stage and lease-token guards prevent stale transitions; raw HTML is capped at 300 KiB, normalized checkpoints at 64 KiB, and retries/expiry release stuck jobs. The legacy scheduled `runOfficialDetailRecovery` behavior was not changed.
+- Synthetic direct, Reader, and poster fixture chains matched the legacy final D1 facts; the new targeted suite passed 13/13 and existing official-detail recovery tests passed 34/34. Typecheck and diff-check passed. A direct candidate takes 4 invocations; Reader or poster adds one each, for 6 in the combined path, before retry units. The future global dispatcher needs explicit fairness with the municipal continuous cycle; scheduling integration is not part of this change.
+- Production remains on the rollback five-Cron schedule. Migration 0027, Worker deploy, official-detail cutover, and recovery execution were **not** performed. Next bounded gate: **official-detail micro stages Free Preview + isolated D1 proof**. Production migration 0027 and any scheduled/global Cron cutover remain forbidden until that proof.
+
 ## 2026-10-12 — 02:45 recovery CPU culprit isolated
 
 - The 2026-10-12 02:45 UTC cutover run left scheduled-window ledger `ec8aaa95-4a71-4855-a133-bb466871676b` running at phase `official_detail`; it has no `finished_at`, no persisted recovery result, and never entered `tourapi_detail`. Cloudflare recorded the matching invocation as `exceededCpu` (1102). Production rollback remains deployed with its original five Cron triggers and no cycle/job rows.

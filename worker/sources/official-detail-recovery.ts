@@ -34,7 +34,7 @@ const MAX_HTML_BYTES = 2_000_000;
 const MAX_REDIRECTS = 4;
 
 type SourceKind = "municipality" | "organizer";
-type RecoveryRow = {
+export type RecoveryRow = {
   id: string;
   title: string;
   region: string;
@@ -72,7 +72,7 @@ export type OfficialDetailRecoveryResult = {
   poster_timeouts?: number;
 };
 
-type RecoveryPage = { html: string; finalUrl: string };
+export type RecoveryPage = { html: string; finalUrl: string };
 type RecoveryOptions = {
   limit?: number;
   fetchPage?: (url: string) => Promise<RecoveryPage>;
@@ -91,7 +91,7 @@ const timeout = <T>(promise: Promise<T>, timeoutMs: number, reason: string) =>
     promise.then(resolve, reject).finally(() => clearTimeout(timer));
   });
 
-const sourceId = (eventId: string) => `official-detail-${eventId}`;
+export const sourceId = (eventId: string) => `official-detail-${eventId}`;
 
 function hostFamily(hostname: string) {
   const host = hostname.toLowerCase().replace(/^www\./, "");
@@ -207,7 +207,7 @@ async function fetchOfficialDetailPageOnce(
   throw new Error("official_detail_redirect_failed");
 }
 
-const retryableFetchFailure = (error: unknown) => {
+export const retryableFetchFailure = (error: unknown) => {
   if (error instanceof TypeError) return true;
   const name =
     error && typeof error === "object" && "name" in error
@@ -239,7 +239,7 @@ export async function fetchOfficialDetailPage(
     : new Error("official_detail_fetch_failed");
 }
 
-function inferredSourceKind(row: RecoveryRow): SourceKind {
+export function inferredSourceKind(row: RecoveryRow): SourceKind {
   if (row.link_source_kind === "organizer") return "organizer";
   if (row.link_source_kind === "municipality") return "municipality";
   if (row.primary_source_kind === "organizer") return "organizer";
@@ -268,7 +268,7 @@ function recoveryMunicipalSource(row: RecoveryRow) {
   );
 }
 
-function recoveryReferer(row: RecoveryRow) {
+export function recoveryReferer(row: RecoveryRow) {
   const source = recoveryMunicipalSource(row);
   if (!source) return null;
   try {
@@ -282,7 +282,7 @@ function recoveryReferer(row: RecoveryRow) {
   }
 }
 
-function recoveryUrlCandidates(row: RecoveryRow) {
+export function recoveryUrlCandidates(row: RecoveryRow) {
   const output = [row.official_url];
   const source = recoveryMunicipalSource(row);
   if (!source) return output;
@@ -301,7 +301,7 @@ function recoveryUrlCandidates(row: RecoveryRow) {
   return [...new Set(output)];
 }
 
-function fetchFailureReason(error: unknown) {
+export function fetchFailureReason(error: unknown) {
   if (error instanceof TypeError) return "network_error";
   const name =
     error && typeof error === "object" && "name" in error
@@ -317,7 +317,7 @@ function normalizedCore(value: string) {
   return value.replace(/[\s()\[\]{}.,·ㆍ:：/\\_-]+/g, "").toLowerCase();
 }
 
-function pageHasPositiveCoreSignal(row: RecoveryRow, html: string) {
+export function pageHasPositiveCoreSignal(row: RecoveryRow, html: string) {
   const text = municipalRichText(html);
   const normalized = normalizedCore(text);
   const venue = normalizedCore(row.venue);
@@ -338,7 +338,7 @@ function pageHasPositiveCoreSignal(row: RecoveryRow, html: string) {
   return false;
 }
 
-function fieldCount(detail: MunicipalRichDetail) {
+export function fieldCount(detail: MunicipalRichDetail) {
   return (
     Number(Boolean(detail.summary)) +
     Number(detail.operating_hours.length > 0) +
@@ -385,7 +385,7 @@ const genericProgramLabels = [
   "프로그램",
 ].map((value) => value.replace(/\s+/g, ""));
 
-function meaningfulHtmlProgram(name: string) {
+export function meaningfulHtmlProgram(name: string) {
   const normalized = name
     .normalize("NFKC")
     .toLocaleLowerCase()
@@ -394,7 +394,7 @@ function meaningfulHtmlProgram(name: string) {
     !genericProgramLabels.some((label) => normalized.startsWith(label));
 }
 
-function meaningfulHtmlSummary(eventTitle: string, summary: string | null) {
+export function meaningfulHtmlSummary(eventTitle: string, summary: string | null) {
   const text = summary?.replace(/\s+/g, " ").trim();
   if (!text) return false;
   const promotional =
@@ -494,7 +494,7 @@ function hasSufficientStoredRichDetail(row: RecoveryRow, facts: StoredRichDetail
   });
 }
 
-async function markAttempt(
+export async function markAttempt(
   db: D1Database,
   row: RecoveryRow,
   sourceKind: SourceKind,
@@ -833,7 +833,7 @@ async function writePosterOCRState(
   ).bind(id, row.official_url, attemptedAt, JSON.stringify(payload)).run();
 }
 
-async function enrichFromVerifiedPoster(
+export async function enrichFromVerifiedPoster(
   env: Env,
   row: RecoveryRow,
   checkedAt: string,
@@ -963,7 +963,7 @@ async function sha256Hex(bytes: Uint8Array) {
     .map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
-async function markPosterSuccess(db: D1Database, row: RecoveryRow, checkedAt: string, posterUrl: string, text: string, posterHash: string) {
+export async function markPosterSuccess(db: D1Database, row: RecoveryRow, checkedAt: string, posterUrl: string, text: string, posterHash: string) {
   await writePosterOCRState(db, row, checkedAt, posterUrl, "success", { transcription: text, posterHash });
 }
 
