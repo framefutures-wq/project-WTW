@@ -1,5 +1,11 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-12 — 02:45 recovery CPU culprit isolated
+
+- The 2026-10-12 02:45 UTC cutover run left scheduled-window ledger `ec8aaa95-4a71-4855-a133-bb466871676b` running at phase `official_detail`; it has no `finished_at`, no persisted recovery result, and never entered `tourapi_detail`. Cloudflare recorded the matching invocation as `exceededCpu` (1102). Production rollback remains deployed with its original five Cron triggers and no cycle/job rows.
+- An isolated Free probe used the public Paju official page only, with no TourAPI/private/push dependencies. Official-detail direct transport completed limit 1 (10/10), limit 2 (5/5), and limit 4 (5/5) with no observed 1102; every measured fixture candidate fetched and recovered, with no Reader or poster path. This bounds that simple direct-page path but does not clear the production `official_detail` phase, whose mixed candidates can exercise Reader/poster and parsing paths.
+- Verdict: `OFFICIAL_DETAIL_CPU_CONFIRMED` from the durable production phase ledger and matching 1102. The temporary Worker/D1 were removed after the probe. Next bounded task: split official-detail recovery into stage/candidate micro checkpoints before another Cron cutover attempt.
+
 ## 2026-10-12 — production continuous-cycle runtime ready, dormant
 
 - Production D1 `weekend-mwohae-production` applied additive migration `0026_municipal_scan_source_finalize.sql`. The source-finalize columns, detail retry stage, cycle table, and both new indexes are present; cycle/scan/detail queue counts are all 0.
