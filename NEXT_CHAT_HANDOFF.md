@@ -1,5 +1,12 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-12 — official-detail micro Free Preview proof complete
+
+- Verdict: `FREE_OFFICIAL_DETAIL_MICRO_PROVEN`. The isolated Free Preview/Test-D1 proof completed the dormant official-detail micro path as separate one-stage invocations. Direct, Reader-fallback, and poster chains all reached `DONE` without an observed 1102; retry, lease, generation, and expiry contracts also passed.
+- Temporary D1 `weekend-mwohae-official-detail-probe` and Worker `galteum-official-detail-probe` were deleted after proof and are absent. Production Worker `weekend-mwohae` and D1 `weekend-mwohae-production` remain present.
+- Production has **not** applied migration `0027_official_detail_jobs.sql`, has no `official_detail_jobs` table from that migration, and received no official-detail micro deploy, recovery run, or Cron cutover. Production remains on the rollback five-Cron schedule.
+- Next bounded task: **apply production migration 0027 and deploy the official-detail micro runtime dormant, while keeping the existing five Cron triggers unchanged**. Fairness integration with the municipal continuous cycle and any final Cron cutover remain a later, separate task.
+
 ## 2026-10-12 — official-detail micro checkpoints local ready
 
 - The 02:45 UTC production 1102 was isolated to the `official_detail` phase; the direct-only Free probe passed, so the mixed Reader/parse/poster/persist recovery path was split locally. Additive migration candidate `0027_official_detail_jobs.sql` and dormant `runOfficialDetailMicroJobOne` implement one candidate/stage per invocation: enqueue → direct fetch → optional Reader → parse → optional poster → persist. Generation, stage and lease-token guards prevent stale transitions; raw HTML is capped at 300 KiB, normalized checkpoints at 64 KiB, and retries/expiry release stuck jobs. The legacy scheduled `runOfficialDetailRecovery` behavior was not changed.

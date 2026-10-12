@@ -1,10 +1,16 @@
 # 갈틈 프로젝트 컨텍스트
 
-> 마지막 갱신: 2026-10-11
+> 마지막 갱신: 2026-10-12
 >
 > 이 문서는 대화 전체를 그대로 저장하는 로그가 아니라, 새 ChatGPT/Codex 세션에서도 작업을 바로 이어갈 수 있도록 **현재 상태·결정사항·운영 원칙·다음 작업**만 압축해 보존하는 handoff 문서다.
 
 ## 1. 프로젝트 정체성
+
+## 2026-10-12 — official-detail micro Free Preview proven, production still rollback
+
+- The production 02:45 UTC CPU 1102 was isolated to the legacy `official_detail` phase. The mixed recovery path was split into a dormant one-candidate/one-stage checkpoint chain (enqueue → direct fetch → optional Reader → parse → optional poster → persist) backed by migration candidate `0027_official_detail_jobs.sql`.
+- Isolated Cloudflare Free proof completed the direct, Reader-fallback, and poster chains to `DONE` with no observed 1102, and verified retry/lease/generation/expiry handling. Verdict: `FREE_OFFICIAL_DETAIL_MICRO_PROVEN`.
+- Production has not applied migration 0027 and has not activated the new path. The rollback five-Cron schedule remains in force. The next production gate is migration 0027 + dormant runtime deployment only; scheduler fairness/cutover is a later bounded task.
 
 ## 2026-10-12 — continuous-cycle production runtime ready, scheduler dormant
 
