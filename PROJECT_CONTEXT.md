@@ -4,6 +4,12 @@
 >
 > 이 문서는 대화 전체를 그대로 저장하는 로그가 아니라, 새 ChatGPT/Codex 세션에서도 작업을 바로 이어갈 수 있도록 **현재 상태·결정사항·운영 원칙·다음 작업**만 압축해 보존하는 handoff 문서다.
 
+## 2026-10-12 — official-detail micro production runtime deployed, scheduler dormant
+
+- Production D1 `weekend-mwohae-production` has additive migration `0027_official_detail_jobs.sql`; `official_detail_jobs` and its ready index are present, and the queue has 0 rows.
+- Worker version `1bf85a7f-573e-41cb-b33c-818410bc369b` deploys the dormant micro runtime. `runScheduled()` still calls legacy `runOfficialDetailRecovery`, not `runOfficialDetailMicroJobOne`; the existing five Cron triggers remain unchanged.
+- Public HOME, today/weekend APIs, and an encoded real event detail API/page returned HTTP 200. Scheduler fairness/cutover remains a separate later task.
+
 ## 1. 프로젝트 정체성
 
 ## 2026-10-12 — official-detail micro Free Preview proven, production still rollback

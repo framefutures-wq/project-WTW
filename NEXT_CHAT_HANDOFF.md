@@ -1,5 +1,11 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-12 — official-detail micro production runtime deployed, scheduler dormant
+
+- Production D1 `weekend-mwohae-production` applied additive migration `0027_official_detail_jobs.sql`. The job table, generation/stage/lease/retry/checkpoint fields, and ready index are present; the queue contains 0 rows.
+- Commit `c7c8c3a` deployed as Worker `1bf85a7f-573e-41cb-b33c-818410bc369b`. `runOfficialDetailMicroJobOne` remains outside `runScheduled()`; legacy `runOfficialDetailRecovery` and the five existing Cron triggers remain unchanged.
+- HOME, today/weekend APIs, and an encoded real event detail API/page returned HTTP 200. Next bounded task: municipal continuous-cycle + official-detail micro fairness dispatcher design; scheduler connection remains out of scope.
+
 ## 2026-10-12 — official-detail micro Free Preview proof complete
 
 - Verdict: `FREE_OFFICIAL_DETAIL_MICRO_PROVEN`. The isolated Free Preview/Test-D1 proof completed the dormant official-detail micro path as separate one-stage invocations. Direct, Reader-fallback, and poster chains all reached `DONE` without an observed 1102; retry, lease, generation, and expiry contracts also passed.
