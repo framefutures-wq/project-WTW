@@ -3,9 +3,8 @@ import type { Env } from "./env";
 import { tourApiReadiness, syncTourApi } from "./sources/tourapi";
 import { enrichTourApiDetails } from "./sources/tourapi-detail";
 import { runMunicipalAutonomous } from "./sources/municipal";
-import { MUNICIPAL_SOURCE_REGISTRY } from "../shared/municipal-source-registry";
+import { runMunicipalContinuousCycleOne } from "./sources/municipal-continuous-cycle";
 import {
-  municipalRunPlan,
   SCHEDULED_MUNICIPAL_MAX_DURATION_MS,
   type MunicipalRunPlan,
 } from "../shared/municipal-run-plan";
@@ -25,7 +24,7 @@ const privateLkgClause = (alias: string) => {
 };
 const LKG_PRIMARY_SOURCE = `(ms.kind='municipality' OR (${privateLkgClause("ms")}))`;
 export const BASE_SYNC_CRON = "0 1 * * *";
-export const DETAIL_SYNC_CRON = "0 2 * * *";
+export const MICRO_SYNC_CRON = "* * * * *";
 // 11:45 / 13:50 / 17:55 KST: each leaves room after the preceding bounded pass
 // for the 30m → 2h → 4h retry schedule, without polling candidates that are not due.
 export const DETAIL_RETRY_RECOVERY_CRONS = [
@@ -34,19 +33,11 @@ export const DETAIL_RETRY_RECOVERY_CRONS = [
   "55 8 * * *",
 ] as const;
 
-const MUNICIPAL_SOURCE_KEYS = MUNICIPAL_SOURCE_REGISTRY.map(
-  (source) => source.key,
-);
-const scheduledMunicipalPlan = (shardIndex: number) =>
-  ({
-    ...municipalRunPlan(MUNICIPAL_SOURCE_KEYS, shardIndex),
-    maxDurationMs: SCHEDULED_MUNICIPAL_MAX_DURATION_MS,
-  });
-
 export type ScheduledDependencies = {
   syncTourApi: typeof syncTourApi;
   enrichTourApiDetails: typeof enrichTourApiDetails;
   runMunicipalAutonomous: typeof runMunicipalAutonomous;
+  runMunicipalContinuousCycleOne: typeof runMunicipalContinuousCycleOne;
   runPrivateOfficialSources: typeof runPrivateOfficialSources;
   runOfficialDetailRecovery: typeof runOfficialDetailRecovery;
   processPushDeliveries: typeof processPushDeliveries;
@@ -55,6 +46,7 @@ const productionDependencies: ScheduledDependencies = {
   syncTourApi,
   enrichTourApiDetails,
   runMunicipalAutonomous,
+  runMunicipalContinuousCycleOne,
   runPrivateOfficialSources,
   runOfficialDetailRecovery,
   processPushDeliveries,
@@ -226,6 +218,7 @@ export async function runDetailScheduled(
   manualRunId?: string,
   municipalPlan?: MunicipalRunPlan,
   runPrivateOfficial = false,
+  officialDetailLimit?: number,
 ) {
   const scheduledWindow =
     trigger === "watchdog" || trigger === "retry_recovery";
@@ -395,7 +388,7 @@ export async function runDetailScheduled(
         officialDetailRecovery = await dependencies.runOfficialDetailRecovery(
           env,
           now,
-          { limit: municipalPlan ? 4 : 8, maxDurationMs: SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS },
+          { limit: officialDetailLimit ?? (municipalPlan ? 4 : 8), maxDurationMs: SCHEDULED_OFFICIAL_DETAIL_MAX_DURATION_MS },
         );
       } catch (error) {
         console.error("official_detail_recovery_retry_failed", {
@@ -516,15 +509,19 @@ export async function runScheduled(
   dependencies = productionDependencies,
 ) {
   if (cron === BASE_SYNC_CRON) return runBaseScheduled(env, now, dependencies);
-  if (cron === DETAIL_SYNC_CRON)
-    return runDetailScheduled(
-      env,
-      now,
-      dependencies,
-      "watchdog",
-      undefined,
-      scheduledMunicipalPlan(0),
-    );
+  if (cron === MICRO_SYNC_CRON) {
+    const hour = now.getUTCHours();
+    const minute = now.getUTCMinutes();
+    // The dedicated Cron owns each shared minute; 02:00 moves the watchdog here.
+    if (hour === 1 && minute === 0) return { skipped: "dedicated_base_minute" };
+    if (hour === 2 && minute === 0)
+      return runDetailScheduled(env, now, dependencies, "watchdog", undefined, undefined, false, 4);
+    if ((hour === 2 && minute === 45) ||
+        (hour === 4 && minute === 50) ||
+        (hour === 8 && minute === 55))
+      return { skipped: "dedicated_recovery_minute" };
+    return dependencies.runMunicipalContinuousCycleOne(env, now.toISOString());
+  }
   if (cron === DETAIL_RETRY_RECOVERY_CRONS[0])
     return runDetailScheduled(
       env,
@@ -532,7 +529,9 @@ export async function runScheduled(
       dependencies,
       "retry_recovery",
       undefined,
-      scheduledMunicipalPlan(1),
+      undefined,
+      false,
+      4,
     );
   if (cron === DETAIL_RETRY_RECOVERY_CRONS[1])
     return runDetailScheduled(
@@ -541,7 +540,9 @@ export async function runScheduled(
       dependencies,
       "retry_recovery",
       undefined,
-      scheduledMunicipalPlan(2),
+      undefined,
+      false,
+      4,
     );
   if (cron === DETAIL_RETRY_RECOVERY_CRONS[2])
     return runDetailScheduled(
@@ -552,6 +553,7 @@ export async function runScheduled(
       undefined,
       undefined,
       true,
+      8,
     );
   console.warn("unknown_scheduled_cron", { cron });
   return { skipped: "unknown_cron" };
