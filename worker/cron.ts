@@ -209,27 +209,34 @@ export async function runBaseScheduled(
     let detailHandoff:
       | Awaited<ReturnType<typeof runDetailScheduled>>
       | { status: "failed"; reason: "subsystem_error" }
+      | { deferred_to_fair_micro_dispatcher: true }
       | { skipped: "base_not_successful" } = {
       skipped: "base_not_successful",
     };
     if (baseStatus === "success") {
-      try {
-        // Do not wait for the 11:00 watchdog. Start the bounded detail pass as soon
-        // as the 10:00 base run has committed its success marker.
-        detailHandoff = await runDetailScheduled(
-          env,
-          now,
-          dependencies,
-          "base_handoff",
-        );
-      } catch (error) {
-        // Detail is an isolated subsystem: its failure must never turn a
-        // successfully completed base ingestion into a failed base run.
-        console.error("tourapi_detail_handoff_failed", {
-          baseRunId: id,
-          error: error instanceof Error ? error.name : "unknown",
-        });
-        detailHandoff = { status: "failed", reason: "subsystem_error" };
+      if (dispatcherCutoverEnabled(env)) {
+        // The minute dispatcher owns all detail lanes after cutover. It must run in
+        // its own invocation so BASE remains bounded and never calls legacy bulk detail.
+        detailHandoff = { deferred_to_fair_micro_dispatcher: true };
+      } else {
+        try {
+          // Do not wait for the 11:00 watchdog. Start the bounded detail pass as soon
+          // as the 10:00 base run has committed its success marker.
+          detailHandoff = await runDetailScheduled(
+            env,
+            now,
+            dependencies,
+            "base_handoff",
+          );
+        } catch (error) {
+          // Detail is an isolated subsystem: its failure must never turn a
+          // successfully completed base ingestion into a failed base run.
+          console.error("tourapi_detail_handoff_failed", {
+            baseRunId: id,
+            error: error instanceof Error ? error.name : "unknown",
+          });
+          detailHandoff = { status: "failed", reason: "subsystem_error" };
+        }
       }
     }
     return { id, status: baseStatus, detail_handoff: detailHandoff };

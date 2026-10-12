@@ -840,8 +840,8 @@ test("overlapping minute and legacy Cron deliveries claim one dispatcher minute"
   }
 });
 
-test("cutover preserves the base contract and excludes the minute dispatcher at 01:00", async () => {
-  const { mf, env } = await setup();
+test("cutover defers BASE detail to the next dispatcher invocation and excludes 01:00", async () => {
+  const { mf, DB, env } = await setup();
   const calls: string[] = [];
   try {
     env.FAIR_MICRO_DISPATCHER_ENABLED = "true";
@@ -850,8 +850,28 @@ test("cutover preserves the base contract and excludes the minute dispatcher at 
       await runScheduled(env as never, FAIR_MICRO_DISPATCHER_CRON, baseTime, deps),
       { skipped: "base_window" },
     );
-    await runScheduled(env as never, BASE_SYNC_CRON, baseTime, deps);
-    assert.deepEqual(calls, ["tourapi", "detail", "push"]);
+    const base = await runScheduled(env as never, BASE_SYNC_CRON, baseTime, deps);
+    assert.deepEqual(base, {
+      id: (base as { id: string }).id,
+      status: "success",
+      detail_handoff: { deferred_to_fair_micro_dispatcher: true },
+    });
+    assert.deepEqual(calls, ["tourapi", "push"]);
+    assert.deepEqual(
+      await DB.prepare("SELECT COUNT(*) AS count FROM sync_runs WHERE provider='tourapi-detail'")
+        .first<{ count: number }>(),
+      { count: 0 },
+    );
+    assert.deepEqual(
+      await runScheduled(
+        env as never,
+        FAIR_MICRO_DISPATCHER_CRON,
+        new Date("2026-09-21T01:01:00.000Z"),
+        deps,
+      ),
+      { status: "NO_OP", lane: null, stage: null, job_id: null },
+    );
+    assert.deepEqual(calls, ["tourapi", "push", "dispatcher"]);
   } finally {
     await mf.dispose();
   }
