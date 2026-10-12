@@ -9,10 +9,13 @@ export const MAX_TOURAPI_DETAIL_REQUESTS_PER_RUN = 75;
 export const MAX_DETAIL_RETRIES_PER_RUN = 25;
 export const DETAIL_RETRY_DELAY_MS = 500;
 export const DETAIL_REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const DETAIL_ENDPOINTS = ["detailCommon2", "detailIntro2", "detailInfo2"] as const;
+export const TOURAPI_DETAIL_ENDPOINTS = ["detailCommon2", "detailIntro2", "detailInfo2"] as const;
+const DETAIL_ENDPOINTS = TOURAPI_DETAIL_ENDPOINTS;
 const GENERIC_DESCRIPTION = "한국관광공사 TourAPI에 등록된 행사입니다.";
-type Candidate = { id: string; title: string; venue: string; address: string; start_date: string; end_date: string; summary_priority: number | null; venue_priority: number | null; price_priority: number | null; programs_priority: number | null; hours_priority: number | null; failure_count: number | null; };
-type DetailPayload = { common: TourApiRow; intro: TourApiRow; info: TourApiRow[] };
+export type TourApiDetailCandidate = { id: string; title: string; venue: string; address: string; start_date: string; end_date: string; summary_priority: number | null; venue_priority: number | null; price_priority: number | null; programs_priority: number | null; hours_priority: number | null; failure_count: number | null; };
+type Candidate = TourApiDetailCandidate;
+export type TourApiDetailPayload = { common: TourApiRow; intro: TourApiRow; info: TourApiRow[] };
+type DetailPayload = TourApiDetailPayload;
 export type DetailFailureReason = "network_or_timeout" | "http_429" | "http_5xx" | "provider_error" | "content_id_mismatch" | "response_bound" | "other";
 export type FailureLatencyBucket = "under_1s" | "1_to_5s" | "5_to_15s" | "15_to_25s" | "over_25s";
 export type DetailResult = { candidates: number; requested: number; attempts: number; retry_attempted: number; retry_recovered: number; retry_exhausted: number; enriched: number; empty: number; failed: number; failure_reasons: Partial<Record<DetailFailureReason, number>>; failure_endpoints: Partial<Record<(typeof DETAIL_ENDPOINTS)[number], number>>; network_failure_subtypes: Partial<Record<TourApiNetworkFailureSubtype, number>>; failure_latency: Partial<Record<FailureLatencyBucket, number>>; retry_rounds: RetryRounds };
@@ -167,6 +170,27 @@ async function fetchDetailEndpoint(
   }
 }
 
+/** One network request with the same response invariants used by the legacy batch path. */
+export async function fetchTourApiDetailEndpointOne(
+  key: string,
+  endpoint: (typeof TOURAPI_DETAIL_ENDPOINTS)[number],
+  contentId: string,
+) {
+  const params: Record<string, string> = endpoint === "detailCommon2"
+    ? { contentId, numOfRows: "1", pageNo: "1" }
+    : endpoint === "detailIntro2"
+      ? { contentId, contentTypeId: "15", numOfRows: "1", pageNo: "1" }
+      : { contentId, contentTypeId: "15", numOfRows: "20", pageNo: "1" };
+  const result = await tourApiRequest(key, endpoint, params);
+  if (result.items.some((row) => text(row.contentid) !== contentId || text(row.contenttypeid) !== "15"))
+    throw new Error("TourAPI detail content_id_mismatch");
+  if ((endpoint === "detailCommon2" || endpoint === "detailIntro2") && result.items.length > 1)
+    throw new Error("TourAPI detail response exceeds bound");
+  if (endpoint === "detailInfo2" && result.total > 20)
+    throw new Error("TourAPI detail response exceeds bound");
+  return result.items;
+}
+
 async function fetchPayload(key: string, contentId: string, stats: DetailRequestStats, sleep: (milliseconds: number) => Promise<void>, nowMs: () => number) {
   const common = await fetchDetailEndpoint(key, "detailCommon2", { contentId, numOfRows: "1", pageNo: "1" }, stats, sleep, nowMs);
   const intro = await fetchDetailEndpoint(key, "detailIntro2", { contentId, contentTypeId: "15", numOfRows: "1", pageNo: "1" }, stats, sleep, nowMs);
@@ -176,7 +200,7 @@ async function fetchPayload(key: string, contentId: string, stats: DetailRequest
   return { common: common.items[0] ?? {}, intro: intro.items[0] ?? {}, info: info.items } satisfies DetailPayload;
 }
 
-async function saveSuccess(db: D1Database, candidate: Candidate, payload: DetailPayload, checkedAt: string) {
+export async function saveTourApiDetailSuccess(db: D1Database, candidate: Candidate, payload: DetailPayload, checkedAt: string) {
   const sourceId = detailSourceId(candidate.id); const contentId = candidate.id.slice("tourapi-".length);
   const statements: D1PreparedStatement[] = [db.prepare(`INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,'tourapi',3,'한국관광공사 TourAPI 상세',?,?,?) ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at,raw_payload=excluded.raw_payload`).bind(sourceId, TOUR_API_DOC, checkedAt, JSON.stringify(payload))];
   let changed = 0; const summary = usefulOverview(payload.common.overview);
@@ -228,7 +252,7 @@ async function saveSuccess(db: D1Database, candidate: Candidate, payload: Detail
   statements.push(db.prepare(`INSERT INTO tourapi_detail_state(event_id,source_id,content_id,last_checked_at,last_success_at,status,failure_count,next_retry_at,updated_at) VALUES(?,?,?,?,?,?,0,NULL,?) ON CONFLICT(event_id) DO UPDATE SET source_id=excluded.source_id,content_id=excluded.content_id,last_checked_at=excluded.last_checked_at,last_success_at=excluded.last_success_at,status=excluded.status,failure_count=0,next_retry_at=NULL,updated_at=excluded.updated_at`).bind(candidate.id, sourceId, contentId, checkedAt, checkedAt, status, checkedAt));
   await db.batch(statements); return status as "success" | "empty";
 }
-async function saveFailure(db: D1Database, candidate: Candidate, checkedAt: string) {
+export async function saveTourApiDetailFailure(db: D1Database, candidate: Candidate, checkedAt: string) {
   const failures = (candidate.failure_count ?? 0) + 1; const retry = detailRetryAt(checkedAt, failures); const sourceId = detailSourceId(candidate.id);
   await db.batch([
     db.prepare(`INSERT INTO sources(id,kind,priority,name,url,fetched_at,raw_payload) VALUES(?,'tourapi',3,'한국관광공사 TourAPI 상세',?,?,NULL) ON CONFLICT(id) DO UPDATE SET fetched_at=excluded.fetched_at`).bind(sourceId, TOUR_API_DOC, checkedAt),
@@ -254,7 +278,7 @@ export async function enrichTourApiDetails(env: Env, now = new Date(), options: 
     try {
       result.requested += DETAIL_ENDPOINTS.length;
       const payload = await fetchPayload(env.TOUR_API_KEY, candidate.id.slice("tourapi-".length), stats, sleep, nowMs);
-      const status = await saveSuccess(env.DB, candidate, payload, checkedAt);
+      const status = await saveTourApiDetailSuccess(env.DB, candidate, payload, checkedAt);
       result[status === "success" ? "enriched" : "empty"]++;
       if (retryRound) retryRounds[retryRound][status === "success" ? "enriched" : "empty"]++;
     } catch (error) {
@@ -268,7 +292,7 @@ export async function enrichTourApiDetails(env: Env, now = new Date(), options: 
         if (error.networkSubtype)
           stats.network_failure_subtypes[error.networkSubtype] = (stats.network_failure_subtypes[error.networkSubtype] ?? 0) + 1;
       }
-      await saveFailure(env.DB, candidate, checkedAt);
+      await saveTourApiDetailFailure(env.DB, candidate, checkedAt);
       console.error("tourapi_detail_failed", { eventId: candidate.id, endpoint: error instanceof DetailEndpointFailure ? error.endpoint : undefined, reason, networkSubtype: error instanceof DetailEndpointFailure ? error.networkSubtype : undefined, latencyBucket: error instanceof DetailEndpointFailure ? error.latencyBucket : undefined, retried: error instanceof DetailEndpointFailure ? error.retried : false });
     }
   }
