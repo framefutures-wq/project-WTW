@@ -62,9 +62,13 @@ export async function fairMicroLaneReadiness(env: Env, at: string): Promise<Lane
     municipal = cycle || !done ? 1 : 0;
   } else {
     municipal = (await db.prepare(`SELECT COUNT(*) AS count FROM (
-      SELECT id FROM municipal_scan_jobs WHERE stage<>'DONE' AND (expires_at<=? OR available_at<=?)
+      SELECT id FROM municipal_scan_jobs WHERE
+        (stage<>'DONE' AND (expires_at<=? OR available_at<=?)) OR
+        (page_index=1 AND stage='DONE' AND source_finalized_at IS NULL
+         AND candidate_batch_json IS NOT NULL AND safe_error_category IS NULL
+         AND available_at<=? AND expires_at>?)
       UNION ALL SELECT id FROM municipal_detail_jobs WHERE stage<>'DONE' AND (expires_at<=? OR available_at<=?)
-    )`).bind(at, at, at, at).first<{ count: number }>())?.count ?? 0;
+    )`).bind(at, at, at, at, at, at).first<{ count: number }>())?.count ?? 0;
   }
   return { municipal, official: officialJobs + officialCandidates.length, tourapi: tourapiJobs + tourapiCandidates.length };
 }

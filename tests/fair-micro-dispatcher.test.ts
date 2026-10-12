@@ -20,6 +20,28 @@ const deps = (lanes: Partial<Record<"municipal" | "official" | "tourapi", number
   tourapi: async () => { calls.push("tourapi"); return { stage: "T", status: "ok", job_id: "t" }; },
 });
 
+async function insertSourceFinalizePage(DB: D1Database, overrides: Partial<{ stage: "DONE" | "RETRY"; available_at: string; expires_at: string; source_finalized_at: string | null; safe_error_category: string | null }> = {}) {
+  await DB.prepare(
+    `INSERT INTO municipal_scan_jobs
+     (id,operating_date,source_key,page_url,page_identity,page_index,stage,candidate_batch_json,available_at,safe_error_category,source_finalized_at,created_at,updated_at,expires_at)
+     VALUES('finalize-page','2026-10-12','paju','https://tour.paju.go.kr/','finalize-page',1,?,'[]',?,?,?,?,?,?)`,
+  ).bind(
+    overrides.stage ?? "DONE",
+    overrides.available_at ?? AT,
+    overrides.safe_error_category ?? null,
+    overrides.source_finalized_at ?? null,
+    AT,
+    AT,
+    overrides.expires_at ?? "2026-10-13T01:00:00.000Z",
+  ).run();
+}
+
+async function insertCompletedMunicipalCycle(DB: D1Database) {
+  await DB.prepare(
+    "INSERT INTO municipal_scan_cycles(id,operating_date,status,source_count,created_at,updated_at,completed_at) VALUES('completed-cycle','2026-10-12','DONE',1,?,?,?)",
+  ).bind(AT, AT, AT).run();
+}
+
 test("one invocation calls exactly one heavy engine and records its result", async () => {
   const { mf, DB, env } = await setup(); try {
     const calls: string[] = [];
@@ -72,6 +94,36 @@ test("real future retries do not make official or TourAPI lanes ready", async ()
     assert.equal(lanes.official, 0);
     assert.equal(lanes.tourapi, 0);
   } finally { await mf.dispose(); }
+});
+
+test("due source finalize page makes municipal ready and selectable without other active work", async () => {
+  const { mf, DB, env } = await setup(); try {
+    await insertSourceFinalizePage(DB);
+    assert.equal((await fairMicroLaneReadiness(env, AT)).municipal, 1);
+    const calls: string[] = [];
+    const dispatcherDeps = {
+      ...deps({}, calls),
+      ready: fairMicroLaneReadiness,
+    };
+    assert.deepEqual(await runFairMicroDispatcherOne(env, AT, dispatcherDeps), { status: "DONE", lane: "municipal", stage: "M", job_id: "m" });
+    assert.deepEqual(calls, ["municipal"]);
+  } finally { await mf.dispose(); }
+});
+
+test("future retries, leased, finalized, and expired source pages do not make municipal ready", async () => {
+  const cases = [
+    { stage: "RETRY" as const, available_at: "2026-10-12T02:00:00.000Z" },
+    { available_at: "2026-10-12T02:00:00.000Z" },
+    { source_finalized_at: AT },
+    { expires_at: AT },
+  ];
+  for (const overrides of cases) {
+    const { mf, DB, env } = await setup(); try {
+      await insertCompletedMunicipalCycle(DB);
+      await insertSourceFinalizePage(DB, overrides);
+      assert.equal((await fairMicroLaneReadiness(env, AT)).municipal, 0);
+    } finally { await mf.dispose(); }
+  }
 });
 
 test("cursor tie-break and starvation guard give all due lanes a turn without fixed one-to-one allocation", () => {
