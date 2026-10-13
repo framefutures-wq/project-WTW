@@ -51,6 +51,26 @@ test("one invocation calls exactly one heavy engine and records its result", asy
   } finally { await mf.dispose(); }
 });
 
+test("dispatcher emits fixed checkpoints around a selected municipal micro job", async () => {
+  const { mf, env } = await setup();
+  const originalLog = console.log;
+  const logs: Array<{ event: unknown; payload: unknown }> = [];
+  console.log = (event: unknown, payload: unknown) => { logs.push({ event, payload }); };
+  try {
+    await runFairMicroDispatcherOne(env, AT, deps({ municipal: 1 }, []));
+    assert.deepEqual(logs, [
+      { event: "fair_micro_dispatcher_stage", payload: { stage: "LEASE_CLAIMED" } },
+      { event: "fair_micro_dispatcher_stage", payload: { stage: "LANE_MUNICIPAL_SELECTED" } },
+      { event: "fair_micro_dispatcher_stage", payload: { stage: "LANE_MUNICIPAL_STARTED" } },
+      { event: "fair_micro_dispatcher_stage", payload: { stage: "MUNICIPAL_MICRO_STARTED" } },
+      { event: "fair_micro_dispatcher_stage", payload: { stage: "LANE_MUNICIPAL_FINISHED" } },
+    ]);
+  } finally {
+    console.log = originalLog;
+    await mf.dispose();
+  }
+});
+
 test("global lease makes a concurrent caller BUSY and stale lease is recoverable", async () => {
   const { mf, DB, env } = await setup(); try {
     const calls: string[] = [];
