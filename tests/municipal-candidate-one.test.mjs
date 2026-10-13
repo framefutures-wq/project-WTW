@@ -120,7 +120,7 @@ test("external duplicate, invalid core, expired candidate and publish cap fail c
   } finally { await mf.dispose(); }
 });
 
-test("generic candidate only queues detail work; it never fetches/parses and enqueue is idempotent", async () => {
+test("new generic candidate defers detail work until an event exists", async () => {
   const { mf, DB } = await setup();
   const priorFetch = globalThis.fetch;
   let fetches = 0;
@@ -128,12 +128,10 @@ test("generic candidate only queues detail work; it never fetches/parses and enq
   try {
     const value = candidate("detail-required", { official_url: "https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=987654" });
     const first = await run(DB, value, { mode: "generic_html" });
-    const second = await run(DB, value, { mode: "generic_html" });
     assert.equal(first.decision, "AUTO_RETRY");
     assert.equal(first.detail_required, true);
-    assert.equal(second.detail_required, true);
     assert.equal(fetches, 0);
     const jobs = await DB.prepare("SELECT candidate_id,stage FROM municipal_detail_jobs WHERE candidate_id=?").bind("detail-required").all();
-    assert.deepEqual(jobs.results, [{ candidate_id: "detail-required", stage: "FETCH_PENDING" }]);
+    assert.deepEqual(jobs.results, []);
   } finally { globalThis.fetch = priorFetch; await mf.dispose(); }
 });

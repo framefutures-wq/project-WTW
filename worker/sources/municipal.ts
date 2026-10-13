@@ -1686,7 +1686,10 @@ export async function runMunicipalCandidateOne(
       reason: "daily_publish_circuit_breaker",
     };
 
-  if (detailRequired)
+  // A generic candidate remains AUTO_RETRY until its detail has been
+  // validated.  Do not create a detail-persist job before an existing event
+  // is available: rich-detail persistence writes event-owned records.
+  if (detailRequired && existing)
     await enqueueMunicipalDetailJob(env.DB, {
       sourceKey: candidate.source,
       candidate: effectiveCandidate,

@@ -12,9 +12,14 @@ async function setup() {
   return {mf,DB};
 }
 const candidate={source:"paju",source_candidate_id:"detail-job-1",title:"파주 행사",start_date:"2099-10-03",end_date:"2099-10-04",region:"경기",locality:"파주",venue:"파주",official_url:"https://tour.paju.go.kr/user/link/cultural/BD_index.do",category:"축제",snippet:null,image_candidate:null};
+async function insertEvent(DB:D1Database,id:string) {
+  await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES(?, 'municipality',2,'파주 공식 행사 안내',?,?)").bind(`municipal-source-${id}`,candidate.official_url,"2099-01-01T00:00:00.000Z").run();
+  await DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at) VALUES(?,?,'공식 행사','경기','파주','파주',? ,?,'unknown','unknown','scheduled','verified',0,?,?)").bind(id,candidate.title,candidate.start_date,candidate.end_date,`municipal-source-${id}`,"2099-01-01T00:00:00.000Z").run();
+}
 
 test("detail micro-job stages never combine fetch, parse, and persist",async()=>{
   const {mf,DB}=await setup(); try {
+    await insertEvent(DB,"event-1");
     await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate,eventId:"event-1"});
     let fetches=0;
     await detailFetchOne(DB,async()=>{fetches++;return new Response("<h2>프로그램</h2><h3>공연</h3><p>공식 행사</p>");});
@@ -29,6 +34,15 @@ test("detail micro-job stages never combine fetch, parse, and persist",async()=>
     assert.equal(row.stage,"DONE");
     const duplicate=await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate,eventId:"event-1"});
     assert.ok(duplicate); const count=await DB.prepare("SELECT COUNT(*) count FROM municipal_detail_jobs").first<any>(); assert.equal(count.count,1);
+  } finally {await mf.dispose();}
+});
+
+test("detail persistence reports a missing parent event before FK-backed writes",async()=>{
+  const {mf,DB}=await setup(); try {
+    await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:{...candidate,source_candidate_id:"missing-parent"},eventId:"missing-event"});
+    await DB.prepare("UPDATE municipal_detail_jobs SET stage='PERSIST_PENDING',normalized_json=?,available_at='2000-01-01T00:00:00.000Z'").bind(JSON.stringify({summary:"공식 상세",operating_hours:[],programs:[],price_text:null,contact_phone:null,images:[]})).run();
+    assert.deepEqual(await detailPersistOne(DB),{id:(await DB.prepare("SELECT id FROM municipal_detail_jobs").first<any>()).id,stage:"RETRY"});
+    assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_detail_jobs").first(),{stage:"RETRY",safe_error_category:"detail_event_missing"});
   } finally {await mf.dispose();}
 });
 
