@@ -1782,6 +1782,70 @@ type VerifiedGenericCheckpointJob = {
   event_id: string;
   candidate_json: string;
   normalized_json: string | null;
+  attempt_count: number;
+  expires_at: string;
+};
+
+type VerifiedGenericCandidateState = {
+  candidate_id: string;
+  source_key: string;
+  decision_state: AutonomousDecision;
+  source_candidate_id: string | null;
+  title_snapshot: string | null;
+  start_date_snapshot: string | null;
+  end_date_snapshot: string | null;
+  venue_snapshot: string | null;
+  official_url_snapshot: string | null;
+};
+
+const koreaDayWindow = (at: string) => {
+  const day = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(at));
+  const start = new Date(`${day}T00:00:00+09:00`).toISOString();
+  return {
+    start,
+    end: new Date(Date.parse(start) + 86400_000).toISOString(),
+  };
+};
+
+/**
+ * The generic checkpoint has no separate daily-ledger migration. Its durable
+ * terminal record is sufficient for new-path publications; event creation is
+ * included as a crash-safe conservative fallback for a write that completed
+ * before its checkpoint could be terminalized.
+ */
+const verifiedGenericPublicationMutationsToday = async (
+  db: Env["DB"],
+  at: string,
+) => {
+  const { start, end } = koreaDayWindow(at);
+  const row = await db.prepare(
+    `SELECT COUNT(*) AS count FROM (
+       SELECT event_id FROM municipal_detail_jobs
+        WHERE safe_error_category='candidate_registration_public'
+          AND updated_at>=? AND updated_at<?
+       UNION
+       SELECT e.id FROM events e
+        JOIN sources s ON s.id=e.primary_source_id
+        WHERE e.id LIKE 'municipal-%' AND s.kind='municipality'
+          AND e.created_at>=? AND e.created_at<?
+     )`,
+  ).bind(start, end, start, end).first<{ count: number }>();
+  return Number(row?.count ?? 0);
+};
+
+const verifiedGenericRetryAt = (job: VerifiedGenericCheckpointJob, at: string) => {
+  const delayMinutes = Math.min(24 * 60, 2 ** Math.min(job.attempt_count + 1, 10));
+  return new Date(
+    Math.min(
+      Date.parse(job.expires_at),
+      Date.parse(at) + delayMinutes * 60_000,
+    ),
+  ).toISOString();
 };
 
 /**
@@ -1794,8 +1858,8 @@ export async function runVerifiedGenericMunicipalPublicationOne(
   at = new Date().toISOString(),
 ): Promise<{ id: string; stage: string } | null> {
   const job = await env.DB.prepare(
-    `SELECT id,event_id,candidate_json,normalized_json FROM municipal_detail_jobs
-     WHERE stage='DONE' AND safe_error_category='candidate_core_verified'
+    `SELECT id,event_id,candidate_json,normalized_json,attempt_count,expires_at FROM municipal_detail_jobs
+     WHERE stage='DONE' AND safe_error_category IN ('candidate_core_verified','candidate_registration_retry')
        AND available_at<=? AND expires_at>?
      ORDER BY available_at,id LIMIT 1`,
   ).bind(at, at).first<VerifiedGenericCheckpointJob>();
@@ -1804,7 +1868,7 @@ export async function runVerifiedGenericMunicipalPublicationOne(
   const leaseUntil = new Date(Date.parse(at) + 60_000).toISOString();
   const claimed = await env.DB.prepare(
     `UPDATE municipal_detail_jobs SET available_at=?,updated_at=?
-     WHERE id=? AND stage='DONE' AND safe_error_category='candidate_core_verified'
+     WHERE id=? AND stage='DONE' AND safe_error_category IN ('candidate_core_verified','candidate_registration_retry')
        AND available_at<=? AND expires_at>?`,
   ).bind(leaseUntil, at, job.id, at, at).run();
   if (!(claimed.meta.changes ?? 0)) return null;
@@ -1816,6 +1880,22 @@ export async function runVerifiedGenericMunicipalPublicationOne(
       candidate_snapshot?: Pick<MunicipalCandidate, "title" | "start_date" | "end_date" | "venue" | "official_url">;
     } | null;
     const snapshot = checkpoint?.candidate_snapshot;
+    const source = SOURCES.find((item) => item.key === candidate.source);
+    const identity = source
+      ? await resolveImprovedGenericIdentity(
+          env,
+          source,
+          candidate,
+          "generic_html",
+          candidateId(candidate.source, candidate.source_candidate_id, candidate.start_date),
+        )
+      : null;
+    const currentState = identity
+      ? await env.DB.prepare(
+          `SELECT candidate_id,source_key,decision_state,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,official_url_snapshot
+             FROM municipal_candidate_state WHERE candidate_id=?`,
+        ).bind(identity.id).first<VerifiedGenericCandidateState>()
+      : null;
     if (
       checkpoint?.candidate_verification?.status !== "verified" ||
       !checkpoint.candidate_verification.title ||
@@ -1826,7 +1906,20 @@ export async function runVerifiedGenericMunicipalPublicationOne(
       snapshot.start_date !== candidate.start_date ||
       snapshot.end_date !== candidate.end_date ||
       snapshot.venue !== candidate.venue ||
-      snapshot.official_url !== candidate.official_url
+      snapshot.official_url !== candidate.official_url ||
+      !source ||
+      !municipalSourceAllowsUrl(source, candidate.official_url) ||
+      !identity ||
+      identity.id !== job.event_id ||
+      !currentState ||
+      !["AUTO_RETRY", "AUTO_PUBLISH"].includes(currentState.decision_state) ||
+      currentState.source_key !== candidate.source ||
+      currentState.source_candidate_id !== candidate.source_candidate_id ||
+      currentState.title_snapshot !== snapshot.title ||
+      currentState.start_date_snapshot !== snapshot.start_date ||
+      currentState.end_date_snapshot !== snapshot.end_date ||
+      currentState.venue_snapshot !== snapshot.venue ||
+      currentState.official_url_snapshot !== snapshot.official_url
     ) {
       await env.DB.prepare("UPDATE municipal_detail_jobs SET safe_error_category='candidate_registration_hold',available_at=?,updated_at=? WHERE id=?")
         .bind(at, at, job.id).run();
@@ -1838,7 +1931,7 @@ export async function runVerifiedGenericMunicipalPublicationOne(
       mode: "generic_html",
       now: at,
       koreaToday: today(),
-      publishMutations: 0,
+      publishMutations: await verifiedGenericPublicationMutationsToday(env.DB, at),
       maxPublishMutations: DEFAULT_MAX_PUBLISH_MUTATIONS,
       verifiedGenericCore: true,
     });
@@ -1849,8 +1942,16 @@ export async function runVerifiedGenericMunicipalPublicationOne(
         : result.decision === "EXPIRED"
           ? "candidate_registration_expired"
           : "candidate_registration_retry";
-    await env.DB.prepare("UPDATE municipal_detail_jobs SET safe_error_category=?,available_at=?,updated_at=? WHERE id=? AND stage='DONE'")
-      .bind(category, at, at, job.id).run();
+    if (result.decision === "AUTO_RETRY") {
+      const retryAt = verifiedGenericRetryAt(job, at);
+      await env.DB.prepare(
+        `UPDATE municipal_detail_jobs
+            SET safe_error_category='candidate_registration_retry',available_at=?,retry_at=?,attempt_count=attempt_count+1,updated_at=?
+          WHERE id=? AND stage='DONE'`,
+      ).bind(retryAt, retryAt, at, job.id).run();
+    } else
+      await env.DB.prepare("UPDATE municipal_detail_jobs SET safe_error_category=?,available_at=?,retry_at=NULL,updated_at=? WHERE id=? AND stage='DONE'")
+        .bind(category, at, at, job.id).run();
     return { id: job.id, stage: result.decision };
   } catch {
     // Do not terminalize a checkpoint after an interrupted attempt. Once the

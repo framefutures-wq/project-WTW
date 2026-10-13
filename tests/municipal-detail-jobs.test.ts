@@ -5,6 +5,7 @@ import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES, MUNICIPAL_DETAIL_TTL_MS, MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS } from "../worker/sources/municipal-detail-jobs";
 import { runVerifiedGenericMunicipalPublicationOne } from "../worker/sources/municipal";
 import { municipalSourceByKey } from "../shared/municipal-source-registry";
+import type { MunicipalCandidate } from "../shared/municipal-discovery";
 
 async function setup() {
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:"export default {fetch(){return new Response('ok')}}",compatibilityDate:"2026-09-18",d1Databases:["DB"],cf:false}));
@@ -16,6 +17,10 @@ const candidate={source:"paju",source_candidate_id:"detail-job-1",title:"파주 
 async function insertEvent(DB:D1Database,id:string) {
   await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES(?, 'municipality',2,'파주 공식 행사 안내',?,?)").bind(`municipal-source-${id}`,candidate.official_url,"2099-01-01T00:00:00.000Z").run();
   await DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at) VALUES(?,?,'공식 행사','경기','파주','파주',? ,?,'unknown','unknown','scheduled','verified',0,?,?)").bind(id,candidate.title,candidate.start_date,candidate.end_date,`municipal-source-${id}`,"2099-01-01T00:00:00.000Z").run();
+}
+async function insertCandidateState(DB:D1Database,eventId:string,value:MunicipalCandidate,at:string,decision="AUTO_RETRY") {
+  await DB.prepare("INSERT INTO municipal_candidate_state(candidate_id,source_key,first_seen_at,last_seen_at,decision_state,decision_reason,retry_until,last_payload_hash,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot) VALUES(?,?,?,?,?,?,NULL,'test-hash',?,?,?,?,?,?,?)")
+    .bind(eventId,value.source,at,at,decision,"test",value.source_candidate_id,value.title,value.start_date,value.end_date,value.venue,value.locality,value.official_url).run();
 }
 
 test("detail micro-job stages never combine fetch, parse, and persist",async()=>{
@@ -84,6 +89,7 @@ test("one verified generic checkpoint publishes once, rechecks gates, and recove
     const env={DB,APP_MODE:"production",TOUR_API_ENABLED:"false",ASSETS:{}} as any;
     const verified={...candidate,source_candidate_id:"verified-register",title:"파주 공식 문화축제",start_date:"2099-10-03",end_date:"2099-10-04",venue:"파주 문화회관",official_url:"https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=verified",snippet:"파주 시민과 방문객을 위한 공식 문화축제 행사입니다."};
     await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:verified,eventId:"municipal-paju-verified-register"});
+    await insertCandidateState(DB,"municipal-paju-verified-register",verified,at);
     await detailFetchOne(DB,async()=>new Response("<h1>파주 공식 문화축제</h1><table><tr><th>기간</th><td>2099-10-03 ~ 2099-10-04</td></tr><tr><th>장소</th><td>파주 문화회관</td></tr></table>")); await detailParseOne(DB); await detailPersistOne(DB);
     await DB.prepare("UPDATE municipal_detail_jobs SET available_at=? WHERE candidate_id='verified-register'").bind(at).run();
     assert.deepEqual(await runVerifiedGenericMunicipalPublicationOne(env,at),{id:(await DB.prepare("SELECT id FROM municipal_detail_jobs WHERE candidate_id=?").bind("verified-register").first<any>()).id,stage:"AUTO_PUBLISH"});
@@ -100,14 +106,16 @@ test("one verified generic checkpoint publishes once, rechecks gates, and recove
     assert.equal((await DB.prepare("SELECT COUNT(*) count FROM alert_events WHERE event_id='municipal-paju-verified-register'").first<any>()).count,1);
     assert.equal((await DB.prepare("SELECT COUNT(*) count FROM event_evidence WHERE event_id='municipal-paju-verified-register'").first<any>()).count,3);
 
-    for (const [id,override,stage] of [
-      ["expired",{start_date:"2020-01-01",end_date:"2020-01-01"},"EXPIRED"],
-      ["changed",{venue:"파주 새 문화회관"},"HOLD"],
+    for (const [id,override,stage,stateOverride] of [
+      ["expired",{start_date:"2020-01-01",end_date:"2020-01-01"},"EXPIRED",{}],
+      ["stale-state",{},"HOLD",{venue:"파주 이전 문화회관"}],
     ] as const) {
-      await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:{...verified,source_candidate_id:id,...override},eventId:`municipal-paju-${id}`});
+      const next={...verified,source_candidate_id:id,...override};
+      await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:next,eventId:`municipal-paju-${id}`});
+      await insertCandidateState(DB,`municipal-paju-${id}`,{...next,...stateOverride},at);
       const job=await DB.prepare("SELECT id,normalized_json FROM municipal_detail_jobs WHERE candidate_id=?").bind(id).first<any>();
       const checkpoint=JSON.parse((await DB.prepare("SELECT normalized_json FROM municipal_detail_jobs WHERE candidate_id='verified-register'").first<any>()).normalized_json);
-      if (id === "expired") checkpoint.candidate_snapshot={...checkpoint.candidate_snapshot,...override};
+      checkpoint.candidate_snapshot={...checkpoint.candidate_snapshot,...override};
       await DB.prepare("UPDATE municipal_detail_jobs SET stage='DONE',safe_error_category='candidate_core_verified',normalized_json=?,available_at=?,expires_at=? WHERE id=?").bind(JSON.stringify(checkpoint),at,new Date(Date.parse(at)+86400_000).toISOString(),job.id).run();
       assert.equal((await runVerifiedGenericMunicipalPublicationOne(env,at))?.stage,stage);
       assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id=?").bind(`municipal-paju-${id}`).first<any>()).count,0);
@@ -116,11 +124,36 @@ test("one verified generic checkpoint publishes once, rechecks gates, and recove
     await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('duplicate-source','municipality',2,'duplicate',?,?)").bind(verified.official_url,at).run();
     await DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at) VALUES('external-duplicate',?,'official','경기',? ,?, ?,?,'unknown','unknown','scheduled','verified',0,'duplicate-source',?)").bind(verified.title,verified.venue,verified.venue,verified.start_date,verified.end_date,at).run();
     await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:{...verified,source_candidate_id:"duplicate"},eventId:"municipal-paju-duplicate"});
+    await insertCandidateState(DB,"municipal-paju-duplicate",{...verified,source_candidate_id:"duplicate"},at);
     const duplicateJob=await DB.prepare("SELECT id FROM municipal_detail_jobs WHERE candidate_id='duplicate'").first<any>();
     const duplicateCheckpoint=JSON.parse((await DB.prepare("SELECT normalized_json FROM municipal_detail_jobs WHERE candidate_id='verified-register'").first<any>()).normalized_json);
     await DB.prepare("UPDATE municipal_detail_jobs SET stage='DONE',safe_error_category='candidate_core_verified',normalized_json=?,available_at=?,expires_at=? WHERE id=?").bind(JSON.stringify(duplicateCheckpoint),at,new Date(Date.parse(at)+86400_000).toISOString(),duplicateJob.id).run();
     assert.equal((await runVerifiedGenericMunicipalPublicationOne(env,at))?.stage,"AUTO_EXCLUDE");
     assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id='municipal-paju-duplicate'").first<any>()).count,0);
+
+    // The durable KST-day cap includes prior generic registrations and a
+    // crash-safe municipal-event fallback. A cap retry must become eligible
+    // again after its bounded backoff instead of becoming terminal.
+    for (let index=0; index<9; index+=1) {
+      const id=`municipal-paju-prior-${index}`;
+      await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES(?, 'municipality',2,'prior',?,?)").bind(`municipal-source-prior-${index}`,verified.official_url,at).run();
+      await DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at,created_at) VALUES(?,?,'official','경기',? ,?, ?,?,'unknown','unknown','scheduled','verified',0,?,?,?)").bind(id,`prior-${index}`,verified.venue,verified.venue,verified.start_date,verified.end_date,`municipal-source-prior-${index}`,at,at).run();
+    }
+    const capped={...verified,source_candidate_id:"capped-retry",title:"파주 발행 제한 재시도 행사",official_url:"https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=capped"};
+    await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:capped,eventId:"municipal-paju-capped-retry"});
+    await insertCandidateState(DB,"municipal-paju-capped-retry",capped,at);
+    const cappedJob=await DB.prepare("SELECT id FROM municipal_detail_jobs WHERE candidate_id='capped-retry'").first<any>();
+    const cappedCheckpoint=JSON.parse((await DB.prepare("SELECT normalized_json FROM municipal_detail_jobs WHERE candidate_id='verified-register'").first<any>()).normalized_json);
+    cappedCheckpoint.candidate_snapshot={...cappedCheckpoint.candidate_snapshot,title:capped.title,official_url:capped.official_url};
+    await DB.prepare("UPDATE municipal_detail_jobs SET stage='DONE',safe_error_category='candidate_core_verified',normalized_json=?,available_at=?,expires_at=? WHERE id=?").bind(JSON.stringify(cappedCheckpoint),at,new Date(Date.parse(at)+86400_000).toISOString(),cappedJob.id).run();
+    assert.equal((await runVerifiedGenericMunicipalPublicationOne(env,at))?.stage,"AUTO_RETRY");
+    const retry=await DB.prepare("SELECT safe_error_category,available_at,retry_at FROM municipal_detail_jobs WHERE id=?").bind(cappedJob.id).first<any>();
+    assert.equal(retry.safe_error_category,"candidate_registration_retry");
+    assert.ok(Date.parse(retry.available_at)>Date.parse(at));
+    assert.equal(retry.available_at,retry.retry_at);
+    await DB.prepare("UPDATE events SET created_at='2000-01-01T00:00:00.000Z' WHERE id LIKE 'municipal-paju-prior-%'").run();
+    assert.equal((await runVerifiedGenericMunicipalPublicationOne(env,retry.available_at))?.stage,"AUTO_PUBLISH");
+    assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id='municipal-paju-capped-retry'").first<any>()).count,1);
   } finally {await mf.dispose();}
 });
 
