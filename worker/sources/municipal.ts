@@ -191,11 +191,12 @@ async function resolveImprovedGenericIdentity(
     .all<{ id: string; rank: number }>();
 
   const exact = matches.results.find((row) => Number(row.rank) === 0);
-  if (exact) return {
-    id: provisionalId,
-    rows: matches.meta.rows_read ?? 0,
-    bridged: false,
-  };
+  if (exact)
+    return {
+      id: provisionalId,
+      rows: matches.meta.rows_read ?? 0,
+      bridged: false,
+    };
 
   const legacy = matches.results.filter((row) => Number(row.rank) === 1);
   return legacy.length === 1
@@ -253,10 +254,7 @@ type MunicipalFetchBudget = {
   assertActive?: () => void;
 };
 
-const budgetedFetch = async (
-  url: string,
-  budget: MunicipalFetchBudget,
-) => {
+const budgetedFetch = async (url: string, budget: MunicipalFetchBudget) => {
   budget.assertActive?.();
   if (budget.used >= Math.min(budget.limit, budget.activeLimit))
     throw new Error("municipal_fetch_budget_exhausted");
@@ -337,9 +335,7 @@ async function officialResponse(
 ) {
   budget.assertActive?.();
   const candidates = municipalFetchUrlCandidates(url);
-  const source = SOURCES.find((item) =>
-    municipalSourceAllowsUrl(item, url),
-  );
+  const source = SOURCES.find((item) => municipalSourceAllowsUrl(item, url));
   let family = "";
   try {
     family = new URL(url).hostname.replace(/^www\./, "");
@@ -388,14 +384,14 @@ async function officialResponse(
 
   const readerEligible = Boolean(
     source &&
-      (source.detailLinkTemplate ||
-        (() => {
-          try {
-            return new URL(url).href !== new URL(source.url).href;
-          } catch {
-            return false;
-          }
-        })()),
+    (source.detailLinkTemplate ||
+      (() => {
+        try {
+          return new URL(url).href !== new URL(source.url).href;
+        } catch {
+          return false;
+        }
+      })()),
   );
   if (
     source &&
@@ -444,10 +440,7 @@ async function officialResponse(
     : new Error("official_fetch_failed");
 }
 export type MunicipalCandidateMode =
-  | "registered"
-  | "structured_event"
-  | "generic_html"
-  | MunicipalDocumentMode;
+  "registered" | "structured_event" | "generic_html" | MunicipalDocumentMode;
 type SourceCandidate = {
   candidate: MunicipalCandidate;
   mode: MunicipalCandidateMode;
@@ -730,7 +723,8 @@ async function publish(
     updated: existing ? 1 : 0,
     rows: result.reduce((total, item) => total + (item.meta.changes ?? 0), 0),
     rows_written: result.reduce(
-      (total, item) => total + (item.meta.rows_written ?? item.meta.changes ?? 0),
+      (total, item) =>
+        total + (item.meta.rows_written ?? item.meta.changes ?? 0),
       0,
     ),
   };
@@ -748,11 +742,12 @@ export async function runMunicipalAutonomous(
   const budgetTimer = deadlineMs
     ? setTimeout(() => budgetController.abort(), options.maxDurationMs)
     : null;
-  const signal = deadlineMs !== null || options.signal
-    ? options.signal
-      ? AbortSignal.any([budgetController.signal, options.signal])
-      : budgetController.signal
-    : undefined;
+  const signal =
+    deadlineMs !== null || options.signal
+      ? options.signal
+        ? AbortSignal.any([budgetController.signal, options.signal])
+        : budgetController.signal
+      : undefined;
   const budgetExceeded = () => deadlineMs !== null && Date.now() >= deadlineMs;
   const assertActive = () => {
     if (budgetExceeded() || signal?.aborted)
@@ -768,8 +763,7 @@ export async function runMunicipalAutonomous(
       options.maxPublishMutations ?? DEFAULT_MAX_PUBLISH_MUTATIONS,
     maxRetryCandidates =
       options.maxRetryCandidates ?? DEFAULT_MAX_RETRY_CANDIDATES,
-    maxDetailFetches =
-      options.maxDetailFetches ?? DEFAULT_MAX_DETAIL_FETCHES,
+    maxDetailFetches = options.maxDetailFetches ?? DEFAULT_MAX_DETAIL_FETCHES,
     fetchBudget: MunicipalFetchBudget = {
       used: 0,
       limit: options.maxExternalFetches ?? DEFAULT_MAX_EXTERNAL_FETCHES,
@@ -809,7 +803,8 @@ export async function runMunicipalAutonomous(
   };
   const reportProgress = async () => {
     progress.elapsed_ms = Date.now() - startedMs;
-    await options.onProgress?.({ ...progress,
+    await options.onProgress?.({
+      ...progress,
       source_keys: [...progress.source_keys],
       completed_sources: [...progress.completed_sources],
       failed_sources: [...progress.failed_sources],
@@ -900,7 +895,11 @@ export async function runMunicipalAutonomous(
       });
     }
   };
-  for (let sourceIndex = 0; sourceIndex < selectedSources.length; sourceIndex += 1) {
+  for (
+    let sourceIndex = 0;
+    sourceIndex < selectedSources.length;
+    sourceIndex += 1
+  ) {
     const source = selectedSources[sourceIndex];
     if (budgetExceeded() || signal?.aborted) {
       progress.municipal_budget_exhausted = true;
@@ -1089,10 +1088,10 @@ export async function runMunicipalAutonomous(
         const candidateTemporal = temporal(effectiveCandidate, koreaToday);
         const coreValid = Boolean(
           effectiveCandidate.title &&
-            effectiveCandidate.start_date &&
-            effectiveCandidate.end_date &&
-            effectiveCandidate.venue &&
-            effectiveCandidate.official_url,
+          effectiveCandidate.start_date &&
+          effectiveCandidate.end_date &&
+          effectiveCandidate.venue &&
+          effectiveCandidate.official_url,
         );
         let decision = decideAutonomousMunicipal({
           gate: gate.gate,
@@ -1140,15 +1139,15 @@ export async function runMunicipalAutonomous(
 
         const safeExistingRichBackfill = Boolean(
           existing &&
-            gate.gate === "MAIN" &&
-            duplicateResult.decision === "NEW" &&
-            candidateTemporal !== "EXPIRED" &&
-            coreValid &&
-            !effectiveCandidate.parse_error &&
-            !detailError &&
-            !changedExisting &&
-            !coreConflict &&
-            !detailCoreConflict,
+          gate.gate === "MAIN" &&
+          duplicateResult.decision === "NEW" &&
+          candidateTemporal !== "EXPIRED" &&
+          coreValid &&
+          !effectiveCandidate.parse_error &&
+          !detailError &&
+          !changedExisting &&
+          !coreConflict &&
+          !detailCoreConflict,
         );
         assertActive();
         if (
@@ -1367,8 +1366,7 @@ export async function runMunicipalAutonomous(
             effectiveCandidate.official_url,
             detail,
           );
-          if (richDetailFieldCount(richDetail) > 0)
-            richDetailCandidates += 1;
+          if (richDetailFieldCount(richDetail) > 0) richDetailCandidates += 1;
         } catch {
           richDetailErrors += 1;
           richDetail = null;
@@ -1388,17 +1386,17 @@ export async function runMunicipalAutonomous(
         }>();
       const changedExisting = Boolean(
         existing &&
-          (existing.start_date !== effectiveCandidate.start_date ||
-            existing.end_date !== effectiveCandidate.end_date ||
-            existing.venue !== effectiveCandidate.venue),
+        (existing.start_date !== effectiveCandidate.start_date ||
+          existing.end_date !== effectiveCandidate.end_date ||
+          existing.venue !== effectiveCandidate.venue),
       );
       const candidateTemporal = temporal(effectiveCandidate, koreaToday);
       const coreValid = Boolean(
         effectiveCandidate.title &&
-          effectiveCandidate.start_date &&
-          effectiveCandidate.end_date &&
-          effectiveCandidate.venue &&
-          effectiveCandidate.official_url,
+        effectiveCandidate.start_date &&
+        effectiveCandidate.end_date &&
+        effectiveCandidate.venue &&
+        effectiveCandidate.official_url,
       );
       const retryCoreConflict = hasUnconfirmedMunicipalCoreChange({
         changedExisting,
@@ -1453,14 +1451,14 @@ export async function runMunicipalAutonomous(
 
       const safeExistingRichBackfill = Boolean(
         existing &&
-          !changedExisting &&
-          gate.gate === "MAIN" &&
-          duplicateResult.decision === "NEW" &&
-          candidateTemporal !== "EXPIRED" &&
-          coreValid &&
-          !effectiveCandidate.parse_error &&
-          !detailError &&
-          !detailCoreConflict,
+        !changedExisting &&
+        gate.gate === "MAIN" &&
+        duplicateResult.decision === "NEW" &&
+        candidateTemporal !== "EXPIRED" &&
+        coreValid &&
+        !effectiveCandidate.parse_error &&
+        !detailError &&
+        !detailCoreConflict,
       );
       assertActive();
       if (
@@ -1546,7 +1544,8 @@ const hasDistinctOfficialDetailUrl = (
   const list = new URL(source.url);
   const detail = new URL(candidateUrl);
   return (
-    list.hostname.replace(/^www\./, "") !== detail.hostname.replace(/^www\./, "") ||
+    list.hostname.replace(/^www\./, "") !==
+      detail.hostname.replace(/^www\./, "") ||
     list.pathname !== detail.pathname ||
     list.search !== detail.search
   );
@@ -1642,9 +1641,9 @@ export async function runMunicipalCandidateOne(
   const existing = existingResult.results[0] ?? null;
   const changedExisting = Boolean(
     existing &&
-      (existing.start_date !== effectiveCandidate.start_date ||
-        existing.end_date !== effectiveCandidate.end_date ||
-        existing.venue !== effectiveCandidate.venue),
+    (existing.start_date !== effectiveCandidate.start_date ||
+      existing.end_date !== effectiveCandidate.end_date ||
+      existing.venue !== effectiveCandidate.venue),
   );
   const coreConflict = hasUnconfirmedMunicipalCoreChange({
     changedExisting,
@@ -1656,23 +1655,34 @@ export async function runMunicipalCandidateOne(
   const candidateTemporal = temporal(effectiveCandidate, koreaToday);
   const coreValid = Boolean(
     effectiveCandidate.title &&
-      effectiveCandidate.start_date &&
-      effectiveCandidate.end_date &&
-      effectiveCandidate.venue &&
-      effectiveCandidate.official_url,
+    effectiveCandidate.start_date &&
+    effectiveCandidate.end_date &&
+    effectiveCandidate.venue &&
+    effectiveCandidate.official_url,
   );
   const explicitCoreMode =
     mode === "structured_event" ||
     mode === "pdf_text" ||
     mode === "image_vision";
+  // Only the Taebaek parser can set this marker, after extracting title,
+  // date, and venue from one `schedule_<number>` table. A common calendar
+  // URL remains insufficient generic evidence everywhere else.
+  const selfContainedGenericCore = Boolean(
+    mode === "generic_html" &&
+    source.key === "taebaek" &&
+    effectiveCandidate.official_url === source.url &&
+    effectiveCandidate.self_contained_core_evidence ===
+      "taebaek_schedule_block",
+  );
   const detailPending = Boolean(
     gate.gate === "MAIN" &&
-      duplicateResult.decision === "NEW" &&
-      !effectiveCandidate.parse_error &&
-      !explicitCoreMode &&
-      coreValid &&
-      candidateTemporal !== "EXPIRED" &&
-      !input.verifiedGenericCore,
+    duplicateResult.decision === "NEW" &&
+    !effectiveCandidate.parse_error &&
+    !explicitCoreMode &&
+    coreValid &&
+    candidateTemporal !== "EXPIRED" &&
+    !input.verifiedGenericCore &&
+    !selfContainedGenericCore,
   );
   const detailRequired =
     detailPending &&
@@ -1691,7 +1701,10 @@ export async function runMunicipalCandidateOne(
   // retained official-detail checkpoint verified the exact core. Apply the
   // product visibility gate before any source/event/evidence write so HOLD
   // and EXCLUDE never create a hidden pseudo-public record on this path.
-  if (input.verifiedGenericCore && decision.state === "AUTO_PUBLISH") {
+  if (
+    (input.verifiedGenericCore || selfContainedGenericCore) &&
+    decision.state === "AUTO_PUBLISH"
+  ) {
     const quality = decidePublishQuality({
       title: effectiveCandidate.title,
       description:
@@ -1823,8 +1836,9 @@ const verifiedGenericPublicationMutationsToday = async (
   at: string,
 ) => {
   const { start, end } = koreaDayWindow(at);
-  const row = await db.prepare(
-    `SELECT COUNT(*) AS count FROM (
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS count FROM (
        SELECT event_id FROM municipal_detail_jobs
         WHERE safe_error_category='candidate_registration_public'
           AND updated_at>=? AND updated_at<?
@@ -1834,12 +1848,20 @@ const verifiedGenericPublicationMutationsToday = async (
         WHERE e.id LIKE 'municipal-%' AND s.kind='municipality'
           AND e.created_at>=? AND e.created_at<?
      )`,
-  ).bind(start, end, start, end).first<{ count: number }>();
+    )
+    .bind(start, end, start, end)
+    .first<{ count: number }>();
   return Number(row?.count ?? 0);
 };
 
-const verifiedGenericRetryAt = (job: VerifiedGenericCheckpointJob, at: string) => {
-  const delayMinutes = Math.min(24 * 60, 2 ** Math.min(job.attempt_count + 1, 10));
+const verifiedGenericRetryAt = (
+  job: VerifiedGenericCheckpointJob,
+  at: string,
+) => {
+  const delayMinutes = Math.min(
+    24 * 60,
+    2 ** Math.min(job.attempt_count + 1, 10),
+  );
   return new Date(
     Math.min(
       Date.parse(job.expires_at),
@@ -1862,7 +1884,9 @@ export async function runVerifiedGenericMunicipalPublicationOne(
      WHERE stage='DONE' AND safe_error_category IN ('candidate_core_verified','candidate_registration_retry')
        AND available_at<=? AND expires_at>?
      ORDER BY available_at,id LIMIT 1`,
-  ).bind(at, at).first<VerifiedGenericCheckpointJob>();
+  )
+    .bind(at, at)
+    .first<VerifiedGenericCheckpointJob>();
   if (!job) return null;
 
   const leaseUntil = new Date(Date.parse(at) + 60_000).toISOString();
@@ -1870,14 +1894,24 @@ export async function runVerifiedGenericMunicipalPublicationOne(
     `UPDATE municipal_detail_jobs SET available_at=?,updated_at=?
      WHERE id=? AND stage='DONE' AND safe_error_category IN ('candidate_core_verified','candidate_registration_retry')
        AND available_at<=? AND expires_at>?`,
-  ).bind(leaseUntil, at, job.id, at, at).run();
+  )
+    .bind(leaseUntil, at, job.id, at, at)
+    .run();
   if (!(claimed.meta.changes ?? 0)) return null;
 
   try {
     const candidate = JSON.parse(job.candidate_json) as MunicipalCandidate;
     const checkpoint = JSON.parse(job.normalized_json ?? "null") as {
-      candidate_verification?: { status?: string; title?: boolean; schedule?: boolean; venue?: boolean };
-      candidate_snapshot?: Pick<MunicipalCandidate, "title" | "start_date" | "end_date" | "venue" | "official_url">;
+      candidate_verification?: {
+        status?: string;
+        title?: boolean;
+        schedule?: boolean;
+        venue?: boolean;
+      };
+      candidate_snapshot?: Pick<
+        MunicipalCandidate,
+        "title" | "start_date" | "end_date" | "venue" | "official_url"
+      >;
     } | null;
     const snapshot = checkpoint?.candidate_snapshot;
     const source = SOURCES.find((item) => item.key === candidate.source);
@@ -1887,14 +1921,20 @@ export async function runVerifiedGenericMunicipalPublicationOne(
           source,
           candidate,
           "generic_html",
-          candidateId(candidate.source, candidate.source_candidate_id, candidate.start_date),
+          candidateId(
+            candidate.source,
+            candidate.source_candidate_id,
+            candidate.start_date,
+          ),
         )
       : null;
     const currentState = identity
       ? await env.DB.prepare(
           `SELECT candidate_id,source_key,decision_state,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,official_url_snapshot
              FROM municipal_candidate_state WHERE candidate_id=?`,
-        ).bind(identity.id).first<VerifiedGenericCandidateState>()
+        )
+          .bind(identity.id)
+          .first<VerifiedGenericCandidateState>()
       : null;
     if (
       checkpoint?.candidate_verification?.status !== "verified" ||
@@ -1921,8 +1961,11 @@ export async function runVerifiedGenericMunicipalPublicationOne(
       currentState.venue_snapshot !== snapshot.venue ||
       currentState.official_url_snapshot !== snapshot.official_url
     ) {
-      await env.DB.prepare("UPDATE municipal_detail_jobs SET safe_error_category='candidate_registration_hold',available_at=?,updated_at=? WHERE id=?")
-        .bind(at, at, job.id).run();
+      await env.DB.prepare(
+        "UPDATE municipal_detail_jobs SET safe_error_category='candidate_registration_hold',available_at=?,updated_at=? WHERE id=?",
+      )
+        .bind(at, at, job.id)
+        .run();
       return { id: job.id, stage: "HOLD" };
     }
 
@@ -1931,34 +1974,46 @@ export async function runVerifiedGenericMunicipalPublicationOne(
       mode: "generic_html",
       now: at,
       koreaToday: today(),
-      publishMutations: await verifiedGenericPublicationMutationsToday(env.DB, at),
+      publishMutations: await verifiedGenericPublicationMutationsToday(
+        env.DB,
+        at,
+      ),
       maxPublishMutations: DEFAULT_MAX_PUBLISH_MUTATIONS,
       verifiedGenericCore: true,
     });
-    const category = result.decision === "AUTO_PUBLISH"
-      ? "candidate_registration_public"
-      : result.decision === "AUTO_EXCLUDE"
-        ? "candidate_registration_exclude"
-        : result.decision === "EXPIRED"
-          ? "candidate_registration_expired"
-          : "candidate_registration_retry";
+    const category =
+      result.decision === "AUTO_PUBLISH"
+        ? "candidate_registration_public"
+        : result.decision === "AUTO_EXCLUDE"
+          ? "candidate_registration_exclude"
+          : result.decision === "EXPIRED"
+            ? "candidate_registration_expired"
+            : "candidate_registration_retry";
     if (result.decision === "AUTO_RETRY") {
       const retryAt = verifiedGenericRetryAt(job, at);
       await env.DB.prepare(
         `UPDATE municipal_detail_jobs
             SET safe_error_category='candidate_registration_retry',available_at=?,retry_at=?,attempt_count=attempt_count+1,updated_at=?
           WHERE id=? AND stage='DONE'`,
-      ).bind(retryAt, retryAt, at, job.id).run();
+      )
+        .bind(retryAt, retryAt, at, job.id)
+        .run();
     } else
-      await env.DB.prepare("UPDATE municipal_detail_jobs SET safe_error_category=?,available_at=?,retry_at=NULL,updated_at=? WHERE id=? AND stage='DONE'")
-        .bind(category, at, at, job.id).run();
+      await env.DB.prepare(
+        "UPDATE municipal_detail_jobs SET safe_error_category=?,available_at=?,retry_at=NULL,updated_at=? WHERE id=? AND stage='DONE'",
+      )
+        .bind(category, at, at, job.id)
+        .run();
     return { id: job.id, stage: result.decision };
   } catch {
     // Do not terminalize a checkpoint after an interrupted attempt. Once the
     // short lease expires it is safely retried; existing INSERT OR IGNORE and
     // evidence upserts make a post-write retry harmless.
-    await env.DB.prepare("UPDATE municipal_detail_jobs SET available_at=?,updated_at=? WHERE id=? AND stage='DONE' AND safe_error_category='candidate_core_verified'")
-      .bind(at, at, job.id).run();
+    await env.DB.prepare(
+      "UPDATE municipal_detail_jobs SET available_at=?,updated_at=? WHERE id=? AND stage='DONE' AND safe_error_category='candidate_core_verified'",
+    )
+      .bind(at, at, job.id)
+      .run();
     return { id: job.id, stage: "RETRY" };
   }
 }
@@ -2063,7 +2118,12 @@ export async function seedMunicipalDailyScanOne(
   const cursor = Math.max(0, Math.trunc(input.sourceCursor));
   const source = SOURCES[cursor];
   if (!source)
-    return { stage: "DONE" as const, source_key: null, next_cursor: null, seeded_pages: 0 };
+    return {
+      stage: "DONE" as const,
+      source_key: null,
+      next_cursor: null,
+      seeded_pages: 0,
+    };
   const urls = municipalSourcePageUrls(source);
   if (!urls) throw new Error("municipal_scan_invalid_pagination");
   for (let pageIndex = 1; pageIndex <= urls.length; pageIndex += 1)
@@ -2191,10 +2251,10 @@ export async function runMunicipalListPageOne(
     // uses the same ordering and first-observation dedupe as the legacy merge,
     // so no item outside this frontier can enter the final source-wide top 25.
     const batch = source.pagination
-      ? mergePaginatedMunicipalCandidates(pageCandidates, job.operating_date).slice(
-          0,
-          MUNICIPAL_SCAN_CANDIDATE_MAX,
-        )
+      ? mergePaginatedMunicipalCandidates(
+          pageCandidates,
+          job.operating_date,
+        ).slice(0, MUNICIPAL_SCAN_CANDIDATE_MAX)
       : selectBoundedMunicipalCandidates(
           pageCandidates,
           job.operating_date,
@@ -2204,9 +2264,14 @@ export async function runMunicipalListPageOne(
     // Keep its compact identity set so a later duplicate cannot replace the
     // first-page observation during source finalization.
     const identities = JSON.stringify([
-      ...new Set(extraction.candidates.map((candidate) => candidate.source_candidate_id)),
+      ...new Set(
+        extraction.candidates.map((candidate) => candidate.source_candidate_id),
+      ),
     ]);
-    if (new TextEncoder().encode(identities).byteLength > MUNICIPAL_SCAN_BATCH_MAX_BYTES)
+    if (
+      new TextEncoder().encode(identities).byteLength >
+      MUNICIPAL_SCAN_BATCH_MAX_BYTES
+    )
       throw new Error("candidate_batch_too_large");
     const json = serializeMunicipalScanBatch(batch);
     // Candidate work is released only by source finalization, after every
@@ -2216,7 +2281,16 @@ export async function runMunicipalListPageOne(
       .prepare(
         `UPDATE municipal_scan_jobs SET stage=?,retry_stage=NULL,candidate_batch_json=?,observed_identities_json=?,candidate_cursor=0,candidate_count=?,safe_error_category=NULL,retry_at=NULL,available_at=?,updated_at=? WHERE id=? AND stage IN ('LIST_PENDING','RETRY') AND available_at=?`,
       )
-      .bind(nextStage, json, identities, batch.length, now, now, job.id, job.available_at)
+      .bind(
+        nextStage,
+        json,
+        identities,
+        batch.length,
+        now,
+        now,
+        job.id,
+        job.available_at,
+      )
       .run();
     if (!(result.meta.changes ?? 0)) return null;
     return {
@@ -2290,7 +2364,9 @@ export async function runMunicipalSourceFinalizeOne(
     .bind(canonical.operating_date, canonical.source_key)
     .all<MunicipalScanJob>();
   const rows = pages.results;
-  const failedPage = rows.find((row) => row.safe_error_category?.startsWith("terminal_"));
+  const failedPage = rows.find((row) =>
+    row.safe_error_category?.startsWith("terminal_"),
+  );
   if (failedPage) {
     const terminal = await db
       .prepare(
@@ -2301,7 +2377,12 @@ export async function runMunicipalSourceFinalizeOne(
       .bind(now, canonical.id, lease)
       .run();
     return (terminal.meta.changes ?? 0) > 0
-      ? { job_id: canonical.id, stage: "SOURCE_SKIPPED" as const, source_key: canonical.source_key, candidate_count: 0 }
+      ? {
+          job_id: canonical.id,
+          stage: "SOURCE_SKIPPED" as const,
+          source_key: canonical.source_key,
+          candidate_count: 0,
+        }
       : null;
   }
   const complete =
@@ -2316,7 +2397,9 @@ export async function runMunicipalSourceFinalizeOne(
     );
   if (!complete) {
     await db
-      .prepare("UPDATE municipal_scan_jobs SET available_at=?,updated_at=? WHERE id=? AND available_at=?")
+      .prepare(
+        "UPDATE municipal_scan_jobs SET available_at=?,updated_at=? WHERE id=? AND available_at=?",
+      )
       .bind(now, now, canonical.id, lease)
       .run();
     return null;
@@ -2329,10 +2412,14 @@ export async function runMunicipalSourceFinalizeOne(
         candidate: MunicipalCandidate;
         mode: MunicipalCandidateMode;
       }>;
-      const identities = JSON.parse(row.observed_identities_json ?? "[]") as string[];
+      const identities = JSON.parse(
+        row.observed_identities_json ?? "[]",
+      ) as string[];
       if (batch.length > MUNICIPAL_SCAN_CANDIDATE_MAX)
         throw new Error("candidate_batch_too_large");
-      const frontier = batch.filter((item) => !seen.has(item.candidate.source_candidate_id));
+      const frontier = batch.filter(
+        (item) => !seen.has(item.candidate.source_candidate_id),
+      );
       for (const identity of identities) seen.add(identity);
       return frontier;
     });
@@ -2381,7 +2468,9 @@ export async function runMunicipalSourceFinalizeOne(
     };
   } catch (error) {
     await db
-      .prepare("UPDATE municipal_scan_jobs SET available_at=?,updated_at=? WHERE id=? AND available_at=?")
+      .prepare(
+        "UPDATE municipal_scan_jobs SET available_at=?,updated_at=? WHERE id=? AND available_at=?",
+      )
       .bind(now, now, canonical.id, lease)
       .run();
     throw error;
@@ -2479,13 +2568,26 @@ export async function cleanupExpiredMunicipalScanJobs(
 ) {
   const retainUntil = new Date(Date.parse(now) + 14 * 86400000).toISOString();
   const results = await db.batch([
-    db.prepare(
-      `UPDATE municipal_scan_jobs SET stage='DONE',retry_stage=NULL,candidate_batch_json=NULL,
+    db
+      .prepare(
+        `UPDATE municipal_scan_jobs SET stage='DONE',retry_stage=NULL,candidate_batch_json=NULL,
        observed_identities_json=NULL,candidate_count=0,safe_error_category='terminal_'||COALESCE(safe_error_category,'expired'),
        retry_at=NULL,expires_at=?,updated_at=? WHERE expires_at<=? AND
        (stage<>'DONE' OR (source_finalized_at IS NULL AND candidate_batch_json IS NOT NULL))`,
-    ).bind(retainUntil, now, now),
-    db.prepare("DELETE FROM municipal_scan_jobs WHERE stage='DONE' AND expires_at<=?").bind(now),
+      )
+      .bind(retainUntil, now, now),
+    db
+      .prepare(
+        "DELETE FROM municipal_scan_jobs WHERE stage='DONE' AND expires_at<=?",
+      )
+      .bind(now),
   ]);
-  return { meta: { changes: results.reduce((count, result) => count + (result.meta.changes ?? 0), 0) } };
+  return {
+    meta: {
+      changes: results.reduce(
+        (count, result) => count + (result.meta.changes ?? 0),
+        0,
+      ),
+    },
+  };
 }

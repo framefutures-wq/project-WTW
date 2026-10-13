@@ -513,6 +513,78 @@ test("Taebaek generic calendar keeps the explicit in-block venue but excludes ad
   assert.equal(selectMunicipalGate(result.candidates[0]).gate, "EXCLUDE");
 });
 
+test("Taebaek schedule blocks verify an exhibition core without absorbing its contact line", () => {
+  const taebaek = MUNICIPAL_SOURCE_REGISTRY.find(
+    (item) => item.key === "taebaek",
+  );
+  assert(taebaek);
+  const result = extractMunicipalCandidates(
+    taebaek,
+    `id="scheduler"
+    <table id="schedule_5460" class="table"><tbody>
+      <tr><th>행사명</th><td><span>권중모 개인전시회</span></td></tr>
+      <tr><th>기간</th><td>2026년 10월 23일 00시 00분 ~ 2026년 10월 29일 00시 00분</td></tr>
+      <tr><th>내용</th><td><pre>전시명: 권중모 개인전시회
+장   소: 태백문화예술회관 전시컨벤션홀
+문   의: 01052892663</pre></td></tr>
+      <tr><th>장소</th><td></td></tr>
+    </tbody></table>`,
+  );
+  assert.equal(result.mode, "generic_html");
+  assert.deepEqual(
+    result.candidates.map((candidate) => [
+      candidate.source_candidate_id,
+      candidate.title,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
+      candidate.official_url,
+      candidate.self_contained_core_evidence,
+      selectMunicipalGate(candidate).gate,
+    ]),
+    [
+      [
+        "schedule-5460",
+        "권중모 개인전시회",
+        "2026-10-23",
+        "2026-10-29",
+        "태백문화예술회관 전시컨벤션홀",
+        taebaek.url,
+        "taebaek_schedule_block",
+        "MAIN",
+      ],
+    ],
+  );
+});
+
+test("Taebaek schedule blocks keep education/internal entries excluded and incomplete blocks unverified", () => {
+  const taebaek = MUNICIPAL_SOURCE_REGISTRY.find(
+    (item) => item.key === "taebaek",
+  );
+  assert(taebaek);
+  const complete = extractMunicipalCandidates(
+    taebaek,
+    `id="scheduler"<table id="schedule_7001"><tbody>
+      <tr><th>행사명</th><td>시민 대상 안전교육</td></tr>
+      <tr><th>기간</th><td>2026년 10월 24일 10시 00분 ~ 2026년 10월 24일 12시 00분</td></tr>
+      <tr><th>내용</th><td><pre>장 소: 태백시청 대회의실
+문 의: 033-000-0000</pre></td></tr>
+    </tbody></table>`,
+  );
+  assert.equal(complete.candidates.length, 1);
+  assert.equal(selectMunicipalGate(complete.candidates[0]).gate, "EXCLUDE");
+  const incomplete = extractMunicipalCandidates(
+    taebaek,
+    `id="scheduler"<table id="schedule_7002"><tbody>
+      <tr><th>행사명</th><td>불완전 전시</td></tr>
+      <tr><th>기간</th><td>2026년 10월 24일 00시 00분</td></tr>
+      <tr><th>내용</th><td><pre>문 의: 033-000-0000</pre></td></tr>
+    </tbody></table>`,
+  );
+  assert.equal(incomplete.mode, "retry");
+  assert.deepEqual(incomplete.candidates, []);
+});
+
 test("Seoul Hangang generic cards require an explicit festival, culture, or performance category", () => {
   const hangang = {
     key: "seoul-hangang",
@@ -542,7 +614,6 @@ test("Seoul Hangang generic cards require an explicit festival, culture, or perf
     [["2026 한강 종이비행기 축제", "축제", hangang.url]],
   );
 });
-
 
 test("generic extractor reads an outer anchor event card and prefers its detail URL over the inner card copy", () => {
   const result = extracted(`
@@ -590,7 +661,6 @@ test("generic extractor core-dedupes nested list and anchor candidates in favor 
     "https://events.example.go.kr/events/detail.do?eventSn=77",
   );
 });
-
 
 test("Uijeongbu generic table resolves JavaScript view ids to exact official detail URLs", () => {
   const source = MUNICIPAL_SOURCE_REGISTRY.find(

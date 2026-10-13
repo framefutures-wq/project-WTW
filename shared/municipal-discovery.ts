@@ -19,6 +19,8 @@ export type MunicipalCandidate = {
   category: string | null;
   snippet: string | null;
   image_candidate: { url: string; source_url: string } | null;
+  /** A source-specific block supplied every core field without cross-page inference. */
+  self_contained_core_evidence?: "taebaek_schedule_block";
   parse_error?: string;
 };
 
@@ -226,9 +228,7 @@ const isValidVenue = (value: string) => {
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(venue)) return false;
   if (
     /^(?:https?:\/\/|www\.)/i.test(venue) ||
-    /^(?:[\w-]+\.)+(?:com|net|org|kr|go\.kr|or\.kr)(?:[/:?#]|$)/i.test(
-      venue,
-    )
+    /^(?:[\w-]+\.)+(?:com|net|org|kr|go\.kr|or\.kr)(?:[/:?#]|$)/i.test(venue)
   )
     return false;
   if (
@@ -253,8 +253,9 @@ const isValidVenue = (value: string) => {
 };
 
 const firstValidVenue = (...values: Array<string | null>) =>
-  values.find((value): value is string => Boolean(value && isValidVenue(value))) ??
-  null;
+  values.find((value): value is string =>
+    Boolean(value && isValidVenue(value)),
+  ) ?? null;
 
 const titleFromBlock = (html: string, text: string) =>
   htmlAttribute(html, "data-title") ??
@@ -440,21 +441,22 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^$()|[\]\\{}]/g, (match) => "\\" + match);
 }
 
-function templateDetailId(
-  source: MunicipalSourceDefinition,
-  html: string,
-) {
+function templateDetailId(source: MunicipalSourceDefinition, html: string) {
   const template = source.detailLinkTemplate;
   if (!template) return null;
   const escaped = escapeRegex(template.idParam);
   const explicit = new RegExp(
-    "(?:" + escaped + "|eventSn|eventId|evntSn)\\s*[:=]\\s*[\"']?([A-Za-z0-9_-]{1,80})",
+    "(?:" +
+      escaped +
+      "|eventSn|eventId|evntSn)\\s*[:=]\\s*[\"']?([A-Za-z0-9_-]{1,80})",
     "i",
   ).exec(html)?.[1];
   if (explicit) return explicit;
-  return /(?:detail|view|read)[A-Za-z0-9_]*\s*\(\s*["']?([A-Za-z0-9_-]{1,80})/i.exec(
-    html,
-  )?.[1] ?? null;
+  return (
+    /(?:detail|view|read)[A-Za-z0-9_]*\s*\(\s*["']?([A-Za-z0-9_-]{1,80})/i.exec(
+      html,
+    )?.[1] ?? null
+  );
 }
 
 export function discoverMunicipalDetailUrl(
@@ -471,8 +473,7 @@ export function discoverMunicipalDetailUrl(
     for (const [key, value] of Object.entries(template.fixedQuery ?? {}))
       url.searchParams.set(key, value);
     url.searchParams.set(template.idParam, id);
-    if (municipalSourceAllowsUrl(source, url.toString()))
-      return url.toString();
+    if (municipalSourceAllowsUrl(source, url.toString())) return url.toString();
   }
 
   const firstParty = firstSafeFirstPartyLink(source, html);
@@ -615,6 +616,65 @@ const tableRows = (source: MunicipalSourceDefinition, html: string) => {
   });
 };
 
+/**
+ * Taebaek's official calendar renders each entry as its own hidden
+ * `schedule_<number>` table. The public list link is a shared calendar URL,
+ * so title, full-year period, and venue must all come from this one table.
+ */
+const parseTaebaekScheduleBlocks = (
+  source: MunicipalSourceDefinition,
+  html: string,
+): MunicipalCandidate[] => {
+  if (source.key !== "taebaek") return [];
+  const tables = [
+    ...html.matchAll(
+      /<table\b[^>]*\bid=["']schedule_(\d+)["'][^>]*>[\s\S]*?<\/table>/gi,
+    ),
+  ];
+  return tables.flatMap<MunicipalCandidate>((match) => {
+    const table = match[0];
+    const value = (label: string) =>
+      new RegExp(
+        `<tr\\b[^>]*>\\s*<th\\b[^>]*>\\s*${label}\\s*<\\/th>\\s*<td\\b[^>]*>([\\s\\S]*?)<\\/td>\\s*<\\/tr>`,
+        "i",
+      ).exec(table)?.[1] ?? null;
+    const title = clean(value("행사명") ?? "");
+    const dates = explicitDateRange(blockText(value("기간") ?? ""));
+    const content = value("내용") ?? "";
+    // Preserve the line boundary that separates `장 소` from `문 의`.
+    const venue = clean(
+      /(?:^|\n)\s*(?:○\s*)?장\s*소\s*[-–:：]\s*([^\n|｜<]{2,120})/im.exec(
+        content
+          .replace(/<br\s*\/?>/gi, "\n")
+          .replace(/<\/?[A-Za-z][^>]*>/g, ""),
+      )?.[1] ?? "",
+    );
+    if (!title || !dates || !venue || !isValidVenue(venue)) return [];
+    return [
+      {
+        source: source.key,
+        source_candidate_id: `schedule-${match[1]}`,
+        title,
+        ...dates,
+        region: source.region,
+        locality: source.locality,
+        venue,
+        official_url: source.url,
+        category: "공식 일정표 행사",
+        snippet: null,
+        image_candidate: null,
+        self_contained_core_evidence: "taebaek_schedule_block",
+      },
+    ];
+  });
+};
+
+const withoutTaebaekScheduleBlocks = (html: string) =>
+  html.replace(
+    /<table\b[^>]*\bid=["']schedule_\d+["'][^>]*>[\s\S]*?<\/table>/gi,
+    "",
+  );
+
 const elementBlocks = (html: string, tag: string, classPattern?: string) => {
   const opening = new RegExp(
     `<${tag}\\b[^>]*${classPattern ? `class=["'][^"']*${classPattern}[^"']*["']` : ""}[^>]*>`,
@@ -642,7 +702,9 @@ export function parseGenericMunicipalHtml(
   source: MunicipalSourceDefinition,
   html: string,
 ): MunicipalCandidate[] {
-  const document = html.replace(/<!--[\s\S]*?-->/g, "");
+  const document = (
+    source.key === "taebaek" ? withoutTaebaekScheduleBlocks(html) : html
+  ).replace(/<!--[\s\S]*?-->/g, "");
   const tableCandidates = tableRows(source, document);
   const listBlocks = elementBlocks(document, "li");
   const anchorBlocks = elementBlocks(document, "a");
@@ -1090,17 +1152,18 @@ export function parseDaeguSeoMusicSchedule(html: string): MunicipalCandidate[] {
     return playList.flatMap<MunicipalCandidate>((item) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return [];
       const record = item as Record<string, unknown>;
-      const title =
-        typeof record.title === "string" ? clean(record.title) : "";
+      const title = typeof record.title === "string" ? clean(record.title) : "";
       const venue =
         typeof record.place === "string" ? clean(record.place) || null : null;
       const start_date =
         typeof record.startDate === "string"
-          ? /^(20\d{2}-\d{2}-\d{2})/.exec(record.startDate.trim())?.[1] ?? null
+          ? (/^(20\d{2}-\d{2}-\d{2})/.exec(record.startDate.trim())?.[1] ??
+            null)
           : null;
       const end_date =
         typeof record.endDate === "string"
-          ? /^(20\d{2}-\d{2}-\d{2})/.exec(record.endDate.trim())?.[1] ?? start_date
+          ? (/^(20\d{2}-\d{2}-\d{2})/.exec(record.endDate.trim())?.[1] ??
+            start_date)
           : start_date;
       if (!title || !venue || !start_date || !end_date) return [];
       const rawId =
@@ -1139,7 +1202,6 @@ export function parseDaeguSeoMusicSchedule(html: string): MunicipalCandidate[] {
     ).values(),
   ];
 }
-
 
 export function parseOkcheonFestivalList(html: string): MunicipalCandidate[] {
   const sourceUrl =
@@ -1193,8 +1255,9 @@ export function parseAndongCultureList(html: string): MunicipalCandidate[] {
       const period = classValue(block, "ct_list_date");
       const dates = period ? explicitDateRange(period) : null;
       const category = classValue(block, "ct_list_cat");
-      const href =
-        /<a\b[^>]*href=["']([^"']*mode=detail[^"']*)["']/i.exec(block)?.[1];
+      const href = /<a\b[^>]*href=["']([^"']*mode=detail[^"']*)["']/i.exec(
+        block,
+      )?.[1];
       const official_url = href ? absolute(sourceUrl, clean(href)) : null;
       const source_candidate_id = official_url
         ? new URL(official_url).searchParams.get("clturEventId")
@@ -1277,8 +1340,9 @@ export function parseBusanDongCultureList(html: string): MunicipalCandidate[] {
   });
 }
 
-
-export function parseYeongjuCultureCalendar(html: string): MunicipalCandidate[] {
+export function parseYeongjuCultureCalendar(
+  html: string,
+): MunicipalCandidate[] {
   const sourceUrl =
     "https://www.yeongju.go.kr/open_content/main/page.do?mnu_uid=10618";
   const candidates = elementBlocks(html, "li").flatMap<MunicipalCandidate>(
@@ -1287,8 +1351,9 @@ export function parseYeongjuCultureCalendar(html: string): MunicipalCandidate[] 
         /<p\b[^>]*class=["'][^"']*\btit\b[^"']*["'][^>]*>([\s\S]*?)<\/p>/i.exec(
           block,
         );
-      const href =
-        /<a\b[^>]*href=["']([^"']*mon_uid=\d+[^"']*)["']/i.exec(block)?.[1];
+      const href = /<a\b[^>]*href=["']([^"']*mon_uid=\d+[^"']*)["']/i.exec(
+        block,
+      )?.[1];
       if (!titleMatch || !href) return [];
 
       const paragraphs = [
@@ -1300,7 +1365,9 @@ export function parseYeongjuCultureCalendar(html: string): MunicipalCandidate[] 
       const titleRaw = clean(titleMatch[1]);
       const categoryMatch = /^\[([^\]]+)\]\s*/.exec(titleRaw);
       const title = titleRaw.replace(/^\[[^\]]+\]\s*/, "").trim();
-      const dateEntry = paragraphs.find((entry) => explicitDateRange(entry.value));
+      const dateEntry = paragraphs.find((entry) =>
+        explicitDateRange(entry.value),
+      );
       const dates = dateEntry ? explicitDateRange(dateEntry.value) : null;
       const titleIndex = paragraphs.findIndex((entry) =>
         /\btit\b/i.test(entry.attrs),
@@ -1308,22 +1375,16 @@ export function parseYeongjuCultureCalendar(html: string): MunicipalCandidate[] 
       const dateIndex = dateEntry ? paragraphs.indexOf(dateEntry) : -1;
       const venue =
         titleIndex >= 0 && dateIndex > titleIndex + 1
-          ? paragraphs
+          ? (paragraphs
               .slice(titleIndex + 1, dateIndex)
               .map((entry) => entry.value)
-              .find((value) => isValidVenue(value)) ?? null
+              .find((value) => isValidVenue(value)) ?? null)
           : null;
       const official_url = absolute(sourceUrl, clean(href));
       const source_candidate_id = official_url
         ? new URL(official_url).searchParams.get("mon_uid")
         : null;
-      if (
-        !title ||
-        !venue ||
-        !dates ||
-        !official_url ||
-        !source_candidate_id
-      )
+      if (!title || !venue || !dates || !official_url || !source_candidate_id)
         return [];
       return [
         {
@@ -1349,7 +1410,6 @@ export function parseYeongjuCultureCalendar(html: string): MunicipalCandidate[] 
   ];
 }
 
-
 export function parseHaeundaeAnnualEvents(html: string): MunicipalCandidate[] {
   const sourceUrl =
     "https://www.haeundae.go.kr/index.do?menuCd=DOM_000000104002004000";
@@ -1370,14 +1430,8 @@ export function parseHaeundaeAnnualEvents(html: string): MunicipalCandidate[] {
       );
     if (range) {
       const start_date = toExplicitDate(year, range[1], range[2]);
-      const end_date = toExplicitDate(
-        year,
-        range[3] ?? range[1],
-        range[4],
-      );
-      return validRange(start_date, end_date)
-        ? { start_date, end_date }
-        : null;
+      const end_date = toExplicitDate(year, range[3] ?? range[1], range[4]);
+      return validRange(start_date, end_date) ? { start_date, end_date } : null;
     }
     const single = /^(\d{1,2})\.(\d{1,2})\.\s*$/.exec(text);
     if (!single) return null;
@@ -1387,43 +1441,36 @@ export function parseHaeundaeAnnualEvents(html: string): MunicipalCandidate[] {
       : null;
   };
 
-  return (html.match(/<tr\b[\s\S]*?<\/tr>/gi) ?? []).flatMap<MunicipalCandidate>(
-    (row) => {
-      if (/<th\b[^>]*>\s*행사명\s*<\/th>/i.test(row)) return [];
-      const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(
-        (match) => clean(match[1]),
-      );
-      if (cells.length < 4) return [];
-      const [title, period, venue] = cells;
-      const dates = yearlessDates(period);
-      if (!title || !dates || !venue || !isValidVenue(venue)) return [];
-      return [
-        {
-          source: "busan-해운대",
-          source_candidate_id: normalizeMunicipalTitle(
-            title +
-              "|" +
-              dates.start_date +
-              "|" +
-              dates.end_date +
-              "|" +
-              venue,
-          ).slice(0, 120),
-          title,
-          ...dates,
-          venue,
-          region: "부산",
-          locality: "해운대",
-          official_url: sourceUrl,
-          category: "연간행사",
-          snippet: null,
-          image_candidate: null,
-        },
-      ];
-    },
-  );
+  return (
+    html.match(/<tr\b[\s\S]*?<\/tr>/gi) ?? []
+  ).flatMap<MunicipalCandidate>((row) => {
+    if (/<th\b[^>]*>\s*행사명\s*<\/th>/i.test(row)) return [];
+    const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(
+      (match) => clean(match[1]),
+    );
+    if (cells.length < 4) return [];
+    const [title, period, venue] = cells;
+    const dates = yearlessDates(period);
+    if (!title || !dates || !venue || !isValidVenue(venue)) return [];
+    return [
+      {
+        source: "busan-해운대",
+        source_candidate_id: normalizeMunicipalTitle(
+          title + "|" + dates.start_date + "|" + dates.end_date + "|" + venue,
+        ).slice(0, 120),
+        title,
+        ...dates,
+        venue,
+        region: "부산",
+        locality: "해운대",
+        official_url: sourceUrl,
+        category: "연간행사",
+        snippet: null,
+        image_candidate: null,
+      },
+    ];
+  });
 }
-
 
 export function parseGyeongjuCultureList(html: string): MunicipalCandidate[] {
   const sourceUrl =
@@ -1448,8 +1495,9 @@ export function parseGyeongjuCultureList(html: string): MunicipalCandidate[] {
       )?.[1] ?? "",
     );
     const dates = period ? explicitDateRange(period) : null;
-    const href =
-      /<a\b[^>]*href=["']([^"']*con_uid=\d+[^"']*)["']/i.exec(block)?.[1];
+    const href = /<a\b[^>]*href=["']([^"']*con_uid=\d+[^"']*)["']/i.exec(
+      block,
+    )?.[1];
     const official_url = href ? absolute(sourceUrl, clean(href)) : null;
     const source_candidate_id = official_url
       ? new URL(official_url).searchParams.get("con_uid")
@@ -1481,7 +1529,6 @@ export function parseGyeongjuCultureList(html: string): MunicipalCandidate[] {
   });
 }
 
-
 export function parseUlsanJungCultureSchedule(
   html: string,
 ): MunicipalCandidate[] {
@@ -1500,9 +1547,7 @@ export function parseUlsanJungCultureSchedule(
   const candidates: MunicipalCandidate[] = [];
 
   for (const row of rows) {
-    const rawCells = [
-      ...row.matchAll(/<td\b([^>]*)>([\s\S]*?)<\/td>/gi),
-    ];
+    const rawCells = [...row.matchAll(/<td\b([^>]*)>([\s\S]*?)<\/td>/gi)];
     if (!rawCells.length) continue;
 
     const expanded: string[] = [];
@@ -1519,8 +1564,7 @@ export function parseUlsanJungCultureSchedule(
       const rowspan = Number(
         /rowspan\s*=\s*["']?(\d+)/i.exec(cell[1])?.[1] ?? "1",
       );
-      if (rowspan > 1)
-        newCarry[column] = { value, left: rowspan - 1 };
+      if (rowspan > 1) newCarry[column] = { value, left: rowspan - 1 };
       column += 1;
     }
     while (column < 6) {
@@ -1545,16 +1589,10 @@ export function parseUlsanJungCultureSchedule(
       continue;
 
     const monthDays = [
-      ...dateText.matchAll(
-        /(\d{1,2})\.\s*(\d{1,2})\.\s*(?:\([^)]*\))?/g,
-      ),
+      ...dateText.matchAll(/(\d{1,2})\.\s*(\d{1,2})\.\s*(?:\([^)]*\))?/g),
     ];
     if (!monthDays.length || monthDays.length > 2) continue;
-    const start_date = toExplicitDate(
-      year,
-      monthDays[0][1],
-      monthDays[0][2],
-    );
+    const start_date = toExplicitDate(year, monthDays[0][1], monthDays[0][2]);
     const endMatch = monthDays[1] ?? monthDays[0];
     const end_date = toExplicitDate(year, endMatch[1], endMatch[2]);
     if (!validRange(start_date, end_date)) continue;
@@ -1584,10 +1622,7 @@ export function parseUlsanJungCultureSchedule(
   ];
 }
 
-
-export function parsePohangCultureApi(
-  body: string,
-): MunicipalCandidate[] {
+export function parsePohangCultureApi(body: string): MunicipalCandidate[] {
   let payload: unknown;
   try {
     payload = JSON.parse(body);
@@ -1610,8 +1645,7 @@ export function parsePohangCultureApi(
     const start_date =
       /^(20\d{2}-\d{2}-\d{2})/.exec(stringValue("start_date"))?.[1] ?? null;
     const end_date =
-      /^(20\d{2}-\d{2}-\d{2})/.exec(stringValue("end_date"))?.[1] ??
-      start_date;
+      /^(20\d{2}-\d{2}-\d{2})/.exec(stringValue("end_date"))?.[1] ?? start_date;
     const status = stringValue("event_status").toUpperCase();
     if (status === "CANCELLED" || status === "CANCELED") return [];
 
@@ -1648,10 +1682,7 @@ export function parsePohangCultureApi(
           : "/phcf/performance_detail/view.do?eventId=" +
             encodeURIComponent(eventId) +
             "&menu_site_id=performance_detail";
-    const official_url = absolute(
-      "https://www.phcf.or.kr",
-      detailPath,
-    );
+    const official_url = absolute("https://www.phcf.or.kr", detailPath);
     if (!official_url) return [];
 
     const category =
@@ -1686,7 +1717,6 @@ export function parsePohangCultureApi(
     ];
   });
 }
-
 
 export function parsePocheonHomepageEvents(html: string): MunicipalCandidate[] {
   const sourceUrl = "https://www.pcfac.or.kr/";
@@ -1743,7 +1773,6 @@ export function parsePocheonHomepageEvents(html: string): MunicipalCandidate[] {
     },
   );
 }
-
 
 export function parseGeojeMonthlyEvents(html: string): MunicipalCandidate[] {
   const sourceUrl =
@@ -1810,16 +1839,13 @@ export function parseGeojeMonthlyEvents(html: string): MunicipalCandidate[] {
     const end_date = toExplicitDate(pageYear, range[5], range[6]);
     if (!validRange(start_date, end_date)) return [];
 
-    const href = /<a\b[^>]*href=["']([^"']+)["']/i.exec(
-      cells[titleIndex],
-    )?.[1];
+    const href = /<a\b[^>]*href=["']([^"']+)["']/i.exec(cells[titleIndex])?.[1];
     const resolved =
       href && !/^(?:javascript:|#)/i.test(href)
         ? absolute(sourceUrl, clean(href))
         : null;
     const official_url =
-      resolved &&
-      /^https:\/\/(?:[^/]+\.)?geoje\.go\.kr\//i.test(resolved)
+      resolved && /^https:\/\/(?:[^/]+\.)?geoje\.go\.kr\//i.test(resolved)
         ? resolved
         : sourceUrl;
     const source_candidate_id =
@@ -2157,7 +2183,10 @@ export function extractMunicipalCandidates(
         signal === "html_cards",
     )
   ) {
-    const candidates = parseGenericMunicipalHtml(source, html);
+    const candidates = [
+      ...parseTaebaekScheduleBlocks(source, html),
+      ...parseGenericMunicipalHtml(source, html),
+    ];
     const partialCandidates = parseGenericMunicipalListDetailPartials(
       source,
       html,
