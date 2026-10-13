@@ -151,6 +151,17 @@ test("due source finalize page makes municipal ready and selectable without othe
   } finally { await mf.dispose(); }
 });
 
+test("an active municipal candidate is ready without recounting every municipal checkpoint", async () => {
+  const { mf, DB } = await setup(); try {
+    await insertSourceFinalizePage(DB);
+    await DB.prepare("UPDATE municipal_scan_jobs SET stage='CANDIDATE_PENDING',source_finalized_at=?").bind(AT).run();
+    const queries: string[] = [];
+    const env = { DB: { prepare(sql: string) { queries.push(sql); return DB.prepare(sql); } } } as never;
+    assert.equal((await fairMicroLaneReadiness(env, AT)).municipal, 1);
+    assert.equal(queries.some((sql) => sql.includes("SELECT COUNT(*) AS count FROM (")), false);
+  } finally { await mf.dispose(); }
+});
+
 test("a retained verified generic publication checkpoint makes municipal ready", async () => {
   const { mf, DB, env } = await setup(); try {
     await insertCompletedMunicipalCycle(DB);

@@ -73,16 +73,14 @@ export async function fairMicroLaneReadiness(env: Env, at: string): Promise<Lane
     ]);
     municipal = cycle || !done || verifiedPublication ? 1 : 0;
   } else {
-    municipal = (await db.prepare(`SELECT COUNT(*) AS count FROM (
-      SELECT id FROM municipal_scan_jobs WHERE
-        (stage<>'DONE' AND (expires_at<=? OR available_at<=?)) OR
-        (page_index=1 AND stage='DONE' AND source_finalized_at IS NULL
-         AND candidate_batch_json IS NOT NULL AND safe_error_category IS NULL
-         AND available_at<=? AND expires_at>?)
-      UNION ALL SELECT id FROM municipal_detail_jobs WHERE
-        (stage<>'DONE' AND (expires_at<=? OR available_at<=?)) OR
-        (stage='DONE' AND safe_error_category='candidate_core_verified' AND available_at<=? AND expires_at>?)
-    )`).bind(at, at, at, at, at, at, at, at).first<{ count: number }>())?.count ?? 0;
+    // `hasActiveMunicipalMicroWork` has already found a due checkpoint. The
+    // dispatcher only needs a non-zero readiness value to choose this lane;
+    // recounting every scan/detail row here duplicates that work immediately
+    // before the one-unit municipal runner. In particular, a candidate batch
+    // would pay a full UNION/COUNT on every cursor advance under Free's CPU
+    // budget. Keep municipal's bounded base share and starvation guarantee,
+    // while leaving per-lane backlog sizing out of this hot path.
+    municipal = 1;
   }
   return { municipal, official: officialJobs + officialCandidates.length, tourapi: tourapiJobs + tourapiCandidates.length };
 }
