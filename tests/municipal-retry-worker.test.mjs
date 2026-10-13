@@ -2,6 +2,17 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runMunicipalAutonomous } from "../worker/sources/municipal.ts";
 
+// The fixtures exercise a current October 2026 listing and retry window. Keep
+// that operating date fixed so temporal eligibility and downstream ordering do
+// not change as wall-clock time advances.
+test.before(() => {
+  test.mock.timers.enable({
+    apis: ["Date"],
+    now: new Date("2026-10-01T00:00:00.000Z"),
+  });
+});
+test.after(() => test.mock.timers.reset());
+
 const sourceUrls = {
   paju: "https://tour.paju.go.kr/user/link/cultural/BD_index.do",
   suwon: "https://www.swcf.or.kr/?p=29",
