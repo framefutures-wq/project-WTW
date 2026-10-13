@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
-import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES } from "../worker/sources/municipal-detail-jobs";
+import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES, MUNICIPAL_DETAIL_TTL_MS, MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS } from "../worker/sources/municipal-detail-jobs";
 import { municipalSourceByKey } from "../shared/municipal-source-registry";
 
 async function setup() {
@@ -30,8 +30,9 @@ test("detail micro-job stages never combine fetch, parse, and persist",async()=>
     row=await DB.prepare("SELECT stage,raw_html,normalized_json FROM municipal_detail_jobs").first<any>();
     assert.equal(row.stage,"PERSIST_PENDING"); assert.equal(row.raw_html,null); assert.ok(row.normalized_json);
     await detailPersistOne(DB);
-    row=await DB.prepare("SELECT stage FROM municipal_detail_jobs").first<any>();
+    row=await DB.prepare("SELECT stage,created_at,expires_at FROM municipal_detail_jobs").first<any>();
     assert.equal(row.stage,"DONE");
+    assert.equal(Date.parse(row.expires_at)-Date.parse(row.created_at),MUNICIPAL_DETAIL_TTL_MS);
     const duplicate=await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate,eventId:"event-1"});
     assert.ok(duplicate); const count=await DB.prepare("SELECT COUNT(*) count FROM municipal_detail_jobs").first<any>(); assert.equal(count.count,1);
   } finally {await mf.dispose();}
@@ -52,8 +53,13 @@ test("new generic detail retains explicit official core verification without pub
     await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:next,eventId:"unregistered-event"});
     await detailFetchOne(DB,async()=>new Response("<h1>파주 공식 행사</h1><table><tr><th>기간</th><td>2099-10-03 ~ 2099-10-04</td></tr><tr><th>장소</th><td>파주 문화회관</td></tr></table>"));
     await detailParseOne(DB); await detailPersistOne(DB);
-    const row=await DB.prepare("SELECT stage,safe_error_category,normalized_json FROM municipal_detail_jobs").first<any>();
+    const row=await DB.prepare("SELECT stage,safe_error_category,normalized_json,updated_at,expires_at FROM municipal_detail_jobs").first<any>();
     assert.equal(row.stage,"DONE"); assert.equal(row.safe_error_category,"candidate_core_verified"); assert.equal(JSON.parse(row.normalized_json).candidate_verification.status,"verified");
+    assert.equal(Date.parse(row.expires_at)-Date.parse(row.updated_at),MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS);
+    await cleanupExpiredMunicipalDetailJobs(DB,new Date(Date.parse(row.updated_at)+MUNICIPAL_DETAIL_TTL_MS).toISOString());
+    assert.equal((await DB.prepare("SELECT COUNT(*) count FROM municipal_detail_jobs").first<any>()).count,1);
+    await cleanupExpiredMunicipalDetailJobs(DB,row.expires_at);
+    assert.equal((await DB.prepare("SELECT COUNT(*) count FROM municipal_detail_jobs").first<any>()).count,0);
     assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id='unregistered-event'").first<any>()).count,0);
   } finally {await mf.dispose();}
 });
@@ -63,7 +69,9 @@ test("incomplete or conflicting official core stays non-public and is retained",
     for (const [id,html,category] of [["insufficient","<h1>파주 공식 행사</h1>","candidate_core_insufficient"],["conflict","<h1>파주 공식 행사</h1><table><tr><th>기간</th><td>2099-10-05</td></tr><tr><th>장소</th><td>파주 문화회관</td></tr></table>","candidate_core_conflict"]] as const) {
       const next={...candidate,source_candidate_id:id,title:"파주 공식 행사",start_date:"2099-10-03",end_date:"2099-10-04",venue:"파주 문화회관",official_url:`https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=${id}`};
       await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:next,eventId:`unregistered-${id}`}); await detailFetchOne(DB,async()=>new Response(html)); await detailParseOne(DB); await detailPersistOne(DB);
-      assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_detail_jobs WHERE candidate_id=?").bind(id).first(),{stage:"DONE",safe_error_category:category});
+      const row=await DB.prepare("SELECT stage,safe_error_category,updated_at,expires_at FROM municipal_detail_jobs WHERE candidate_id=?").bind(id).first<any>();
+      assert.deepEqual({stage:row.stage,safe_error_category:row.safe_error_category},{stage:"DONE",safe_error_category:category});
+      assert.equal(Date.parse(row.expires_at)-Date.parse(row.updated_at),MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS);
     }
     assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id LIKE 'unregistered-%'").first<any>()).count,0);
   } finally {await mf.dispose();}
