@@ -24,6 +24,7 @@ type DispatcherState = {
 type MicroResult = { stage: string; status: string; job_id: string | null };
 export type FairMicroDispatcherResult =
   | { status: "BUSY" | "NO_OP"; lane: null; stage: null; job_id: null }
+  | { status: "FAILED"; lane: null; stage: null; job_id: null }
   | { status: "DONE" | "FAILED"; lane: FairMicroLane; stage: string; job_id: string | null };
 export type FairMicroDispatcherDependencies = {
   ready: (env: Env, at: string) => Promise<LaneReady>;
@@ -123,7 +124,18 @@ export async function runFairMicroDispatcherOne(
   const state = await db.prepare("SELECT * FROM fair_micro_dispatcher_state WHERE id=1 AND lease_token=?")
     .bind(token).first<DispatcherState>();
   if (!state) return { status: "BUSY", lane: null, stage: null, job_id: null };
-  const lane = chooseFairMicroLane(state, await dependencies.ready(env, at));
+  let ready: LaneReady;
+  try {
+    ready = await dependencies.ready(env, at);
+  } catch {
+    // Readiness is not a dispatched turn. Release only our lease so the next
+    // scheduled invocation can retry without changing fairness accounting.
+    await db.prepare(
+      "UPDATE fair_micro_dispatcher_state SET last_lane=NULL,last_stage='FAILED',last_status='failed',last_error_category='readiness_failed',lease_token=NULL,lease_until=NULL,updated_at=? WHERE id=1 AND lease_token=?",
+    ).bind(at, token).run();
+    return { status: "FAILED", lane: null, stage: null, job_id: null };
+  }
+  const lane = chooseFairMicroLane(state, ready);
   if (!lane) {
     await db.prepare("UPDATE fair_micro_dispatcher_state SET lease_token=NULL,lease_until=NULL,last_lane=NULL,last_stage='NO_OP',last_status='empty',last_error_category=NULL,updated_at=? WHERE id=1 AND lease_token=?")
       .bind(at, token).run();

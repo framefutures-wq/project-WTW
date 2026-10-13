@@ -73,6 +73,33 @@ test("global lease makes a concurrent caller BUSY and stale lease is recoverable
   } finally { await mf.dispose(); }
 });
 
+test("a readiness failure releases only its lease so the next invocation can recover", async () => {
+  const { mf, DB, env } = await setup(); try {
+    const calls: string[] = [];
+    await DB.prepare("UPDATE fair_micro_dispatcher_state SET dispatch_count=107,cursor=2,municipal_last_dispatch=106,official_last_dispatch=101,tourapi_last_dispatch=102").run();
+    const unavailable = { ...deps({ municipal: 1 }, calls), ready: async () => { throw new Error("D1 readiness unavailable"); } };
+    assert.deepEqual(
+      await runFairMicroDispatcherOne(env, AT, unavailable),
+      { status: "FAILED", lane: null, stage: null, job_id: null },
+    );
+    assert.deepEqual(
+      await DB.prepare("SELECT lease_token,lease_until,dispatch_count,cursor,municipal_last_dispatch,official_last_dispatch,tourapi_last_dispatch,last_lane,last_stage,last_status,last_error_category FROM fair_micro_dispatcher_state").first(),
+      { lease_token: null, lease_until: null, dispatch_count: 107, cursor: 2, municipal_last_dispatch: 106, official_last_dispatch: 101, tourapi_last_dispatch: 102, last_lane: null, last_stage: "FAILED", last_status: "failed", last_error_category: "readiness_failed" },
+    );
+    assert.deepEqual(await runFairMicroDispatcherOne(env, AT, deps({ municipal: 1 }, calls)), { status: "DONE", lane: "municipal", stage: "M", job_id: "m" });
+    assert.deepEqual(calls, ["municipal"]);
+  } finally { await mf.dispose(); }
+});
+
+test("empty readiness remains a released NO_OP", async () => {
+  const { mf, DB, env } = await setup(); try {
+    assert.deepEqual(await runFairMicroDispatcherOne(env, AT, deps({}, [])), { status: "NO_OP", lane: null, stage: null, job_id: null });
+    assert.deepEqual(await DB.prepare("SELECT lease_token,lease_until,last_stage,last_status,last_error_category FROM fair_micro_dispatcher_state").first(), {
+      lease_token: null, lease_until: null, last_stage: "NO_OP", last_status: "empty", last_error_category: null,
+    });
+  } finally { await mf.dispose(); }
+});
+
 test("future retry-equivalent empty lane is bypassed, and a failed lane releases the next turn", async () => {
   const { mf, env } = await setup(); try {
     const calls: string[] = [];
