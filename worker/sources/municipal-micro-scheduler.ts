@@ -10,6 +10,7 @@ import {
   runMunicipalCandidateCheckpointOne,
   runMunicipalListPageOne,
   runMunicipalSourceFinalizeOne,
+  runVerifiedGenericMunicipalPublicationOne,
 } from "./municipal";
 
 type MicroResult = { id?: string; job_id?: string; stage: string } | null;
@@ -20,6 +21,7 @@ export type MunicipalMicroSchedulerResult = {
     | "DETAIL_PERSIST"
     | "DETAIL_PARSE"
     | "DETAIL_FETCH"
+    | "VERIFIED_GENERIC_PUBLICATION"
     | "SOURCE_FINALIZE"
     | "CANDIDATE_PENDING"
     | "LIST_PENDING"
@@ -35,6 +37,7 @@ export type MunicipalMicroSchedulerDependencies = {
   detailParseOne: (db: Env["DB"]) => Promise<MicroResult>;
   detailFetchOne: (db: Env["DB"]) => Promise<MicroResult>;
   runMunicipalCandidateCheckpointOne: (env: Env) => Promise<MicroResult>;
+  runVerifiedGenericMunicipalPublicationOne: (env: Env) => Promise<MicroResult>;
   runMunicipalSourceFinalizeOne: (db: Env["DB"]) => Promise<MicroResult>;
   runMunicipalListPageOne: (db: Env["DB"]) => Promise<MicroResult>;
   cleanupExpiredMunicipalDetailJobs: (db: Env["DB"]) => Promise<CleanupResult>;
@@ -46,6 +49,7 @@ const productionDependencies: MunicipalMicroSchedulerDependencies = {
   detailParseOne,
   detailFetchOne,
   runMunicipalCandidateCheckpointOne,
+  runVerifiedGenericMunicipalPublicationOne,
   runMunicipalSourceFinalizeOne,
   runMunicipalListPageOne,
   cleanupExpiredMunicipalDetailJobs,
@@ -77,6 +81,9 @@ export async function runMunicipalMicroJobOne(
 
   const fetch = await dependencies.detailFetchOne(env.DB);
   if (fetch) return completed("DETAIL_FETCH", fetch);
+
+  const verifiedPublication = await dependencies.runVerifiedGenericMunicipalPublicationOne(env);
+  if (verifiedPublication) return completed("VERIFIED_GENERIC_PUBLICATION", verifiedPublication);
 
   const finalize = await dependencies.runMunicipalSourceFinalizeOne(env.DB);
   if (finalize) return completed("SOURCE_FINALIZE", finalize);

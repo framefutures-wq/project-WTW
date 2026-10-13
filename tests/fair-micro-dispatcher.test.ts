@@ -151,6 +151,17 @@ test("due source finalize page makes municipal ready and selectable without othe
   } finally { await mf.dispose(); }
 });
 
+test("a retained verified generic publication checkpoint makes municipal ready", async () => {
+  const { mf, DB, env } = await setup(); try {
+    await insertCompletedMunicipalCycle(DB);
+    await DB.prepare(
+      `INSERT INTO municipal_detail_jobs(id,source_key,candidate_id,event_id,official_url,candidate_json,stage,normalized_json,available_at,safe_error_category,created_at,updated_at,expires_at)
+       VALUES('verified-generic','paju','verified','municipal-paju-verified','https://tour.paju.go.kr/', '{}','DONE','{}',?,'candidate_core_verified',?,?,?)`,
+    ).bind(AT, AT, AT, "2026-10-13T01:00:00.000Z").run();
+    assert.equal((await fairMicroLaneReadiness(env, AT)).municipal, 1);
+  } finally { await mf.dispose(); }
+});
+
 test("future retries, leased, finalized, and expired source pages do not make municipal ready", async () => {
   const cases = [
     { stage: "RETRY" as const, available_at: "2026-10-12T02:00:00.000Z" },

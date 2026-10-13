@@ -1566,6 +1566,8 @@ export async function runMunicipalCandidateOne(
     koreaToday?: string;
     publishMutations: number;
     maxPublishMutations: number;
+    /** Internal-only: an exact generic-detail checkpoint verified this core. */
+    verifiedGenericCore?: boolean;
   },
 ): Promise<MunicipalCandidateOneResult> {
   const { candidate, mode } = input;
@@ -1669,7 +1671,8 @@ export async function runMunicipalCandidateOne(
       !effectiveCandidate.parse_error &&
       !explicitCoreMode &&
       coreValid &&
-      candidateTemporal !== "EXPIRED",
+      candidateTemporal !== "EXPIRED" &&
+      !input.verifiedGenericCore,
   );
   const detailRequired =
     detailPending &&
@@ -1684,6 +1687,30 @@ export async function runMunicipalCandidateOne(
     detailError: detailPending,
     coreConflict,
   });
+  // Generic list candidates may only cross into publication after their
+  // retained official-detail checkpoint verified the exact core. Apply the
+  // product visibility gate before any source/event/evidence write so HOLD
+  // and EXCLUDE never create a hidden pseudo-public record on this path.
+  if (input.verifiedGenericCore && decision.state === "AUTO_PUBLISH") {
+    const quality = decidePublishQuality({
+      title: effectiveCandidate.title,
+      description:
+        effectiveCandidate.snippet ??
+        "공식 지자체 행사 안내를 바탕으로 등록된 행사입니다.",
+      start_date: effectiveCandidate.start_date,
+      end_date: effectiveCandidate.end_date,
+      venue: effectiveCandidate.venue,
+      address: effectiveCandidate.venue,
+      source_kind: "municipality",
+      source_url: effectiveCandidate.official_url,
+      event_official_url: exactOfficialDetailUrl(effectiveCandidate),
+    });
+    if (quality.state !== "PUBLIC")
+      decision = {
+        state: quality.state === "EXCLUDE" ? "AUTO_EXCLUDE" : "AUTO_RETRY",
+        reason: `publish_quality_${quality.reason}`,
+      };
+  }
   const publicationMutation = isMunicipalPublicationMutation({
     existing,
     previousPayloadHash: previous?.last_payload_hash,
@@ -1748,6 +1775,91 @@ export async function runMunicipalCandidateOne(
     rows_written: rowsWritten,
     detail_required: detailRequired,
   };
+}
+
+type VerifiedGenericCheckpointJob = {
+  id: string;
+  event_id: string;
+  candidate_json: string;
+  normalized_json: string | null;
+};
+
+/**
+ * Promotes exactly one retained, detail-verified generic candidate. The
+ * checkpoint itself is leased through available_at; publication is idempotent
+ * through the existing event/source/evidence/alert contracts.
+ */
+export async function runVerifiedGenericMunicipalPublicationOne(
+  env: Env,
+  at = new Date().toISOString(),
+): Promise<{ id: string; stage: string } | null> {
+  const job = await env.DB.prepare(
+    `SELECT id,event_id,candidate_json,normalized_json FROM municipal_detail_jobs
+     WHERE stage='DONE' AND safe_error_category='candidate_core_verified'
+       AND available_at<=? AND expires_at>?
+     ORDER BY available_at,id LIMIT 1`,
+  ).bind(at, at).first<VerifiedGenericCheckpointJob>();
+  if (!job) return null;
+
+  const leaseUntil = new Date(Date.parse(at) + 60_000).toISOString();
+  const claimed = await env.DB.prepare(
+    `UPDATE municipal_detail_jobs SET available_at=?,updated_at=?
+     WHERE id=? AND stage='DONE' AND safe_error_category='candidate_core_verified'
+       AND available_at<=? AND expires_at>?`,
+  ).bind(leaseUntil, at, job.id, at, at).run();
+  if (!(claimed.meta.changes ?? 0)) return null;
+
+  try {
+    const candidate = JSON.parse(job.candidate_json) as MunicipalCandidate;
+    const checkpoint = JSON.parse(job.normalized_json ?? "null") as {
+      candidate_verification?: { status?: string; title?: boolean; schedule?: boolean; venue?: boolean };
+      candidate_snapshot?: Pick<MunicipalCandidate, "title" | "start_date" | "end_date" | "venue" | "official_url">;
+    } | null;
+    const snapshot = checkpoint?.candidate_snapshot;
+    if (
+      checkpoint?.candidate_verification?.status !== "verified" ||
+      !checkpoint.candidate_verification.title ||
+      !checkpoint.candidate_verification.schedule ||
+      !checkpoint.candidate_verification.venue ||
+      !snapshot ||
+      snapshot.title !== candidate.title ||
+      snapshot.start_date !== candidate.start_date ||
+      snapshot.end_date !== candidate.end_date ||
+      snapshot.venue !== candidate.venue ||
+      snapshot.official_url !== candidate.official_url
+    ) {
+      await env.DB.prepare("UPDATE municipal_detail_jobs SET safe_error_category='candidate_registration_hold',available_at=?,updated_at=? WHERE id=?")
+        .bind(at, at, job.id).run();
+      return { id: job.id, stage: "HOLD" };
+    }
+
+    const result = await runMunicipalCandidateOne(env, {
+      candidate,
+      mode: "generic_html",
+      now: at,
+      koreaToday: today(),
+      publishMutations: 0,
+      maxPublishMutations: DEFAULT_MAX_PUBLISH_MUTATIONS,
+      verifiedGenericCore: true,
+    });
+    const category = result.decision === "AUTO_PUBLISH"
+      ? "candidate_registration_public"
+      : result.decision === "AUTO_EXCLUDE"
+        ? "candidate_registration_exclude"
+        : result.decision === "EXPIRED"
+          ? "candidate_registration_expired"
+          : "candidate_registration_retry";
+    await env.DB.prepare("UPDATE municipal_detail_jobs SET safe_error_category=?,available_at=?,updated_at=? WHERE id=? AND stage='DONE'")
+      .bind(category, at, at, job.id).run();
+    return { id: job.id, stage: result.decision };
+  } catch {
+    // Do not terminalize a checkpoint after an interrupted attempt. Once the
+    // short lease expires it is safely retried; existing INSERT OR IGNORE and
+    // evidence upserts make a post-write retry harmless.
+    await env.DB.prepare("UPDATE municipal_detail_jobs SET available_at=?,updated_at=? WHERE id=? AND stage='DONE' AND safe_error_category='candidate_core_verified'")
+      .bind(at, at, job.id).run();
+    return { id: job.id, stage: "RETRY" };
+  }
 }
 
 export const MUNICIPAL_SCAN_CANDIDATE_MAX = 25;

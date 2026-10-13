@@ -60,13 +60,18 @@ export async function fairMicroLaneReadiness(env: Env, at: string): Promise<Lane
   let municipal = 0;
   if (!activeMunicipal) {
     const today = municipalOperatingDate(at);
-    const cycle = await db.prepare(
-      "SELECT 1 AS pending FROM municipal_scan_cycles WHERE operating_date=? AND status<>'DONE' AND (lease_until IS NULL OR lease_until<=?) LIMIT 1",
-    ).bind(today, at).first();
-    const done = await db.prepare(
-      "SELECT 1 AS done FROM municipal_scan_cycles WHERE operating_date=? AND status='DONE' LIMIT 1",
-    ).bind(today).first();
-    municipal = cycle || !done ? 1 : 0;
+    const [cycle, done, verifiedPublication] = await Promise.all([
+      db.prepare(
+        "SELECT 1 AS pending FROM municipal_scan_cycles WHERE operating_date=? AND status<>'DONE' AND (lease_until IS NULL OR lease_until<=?) LIMIT 1",
+      ).bind(today, at).first(),
+      db.prepare(
+        "SELECT 1 AS done FROM municipal_scan_cycles WHERE operating_date=? AND status='DONE' LIMIT 1",
+      ).bind(today).first(),
+      db.prepare(
+        "SELECT 1 AS pending FROM municipal_detail_jobs WHERE stage='DONE' AND safe_error_category='candidate_core_verified' AND available_at<=? AND expires_at>? LIMIT 1",
+      ).bind(at, at).first(),
+    ]);
+    municipal = cycle || !done || verifiedPublication ? 1 : 0;
   } else {
     municipal = (await db.prepare(`SELECT COUNT(*) AS count FROM (
       SELECT id FROM municipal_scan_jobs WHERE
@@ -74,8 +79,10 @@ export async function fairMicroLaneReadiness(env: Env, at: string): Promise<Lane
         (page_index=1 AND stage='DONE' AND source_finalized_at IS NULL
          AND candidate_batch_json IS NOT NULL AND safe_error_category IS NULL
          AND available_at<=? AND expires_at>?)
-      UNION ALL SELECT id FROM municipal_detail_jobs WHERE stage<>'DONE' AND (expires_at<=? OR available_at<=?)
-    )`).bind(at, at, at, at, at, at).first<{ count: number }>())?.count ?? 0;
+      UNION ALL SELECT id FROM municipal_detail_jobs WHERE
+        (stage<>'DONE' AND (expires_at<=? OR available_at<=?)) OR
+        (stage='DONE' AND safe_error_category='candidate_core_verified' AND available_at<=? AND expires_at>?)
+    )`).bind(at, at, at, at, at, at, at, at).first<{ count: number }>())?.count ?? 0;
   }
   return { municipal, official: officialJobs + officialCandidates.length, tourapi: tourapiJobs + tourapiCandidates.length };
 }
