@@ -1,5 +1,5 @@
 import type { MunicipalCandidate } from "../../shared/municipal-discovery";
-import { extractMunicipalRichDetail, type MunicipalRichDetail } from "../../shared/municipal-rich-detail";
+import { extractMunicipalRichDetail, municipalRichText, type MunicipalRichDetail } from "../../shared/municipal-rich-detail";
 import { municipalSourceAllowsUrl, municipalSourceByKey } from "../../shared/municipal-source-registry";
 import { persistMunicipalRichDetail } from "./municipal-rich-detail";
 
@@ -8,11 +8,33 @@ export const MUNICIPAL_DETAIL_NORMALIZED_MAX_BYTES = 64 * 1024;
 export const MUNICIPAL_DETAIL_TTL_MS = 15 * 60_000;
 export type MunicipalDetailStage = "FETCH_PENDING" | "PARSE_PENDING" | "PERSIST_PENDING" | "DONE" | "RETRY";
 type Job = { id:string; source_key:string; candidate_id:string; event_id:string; official_url:string; candidate_json:string; stage:MunicipalDetailStage; retry_stage:MunicipalDetailStage|null; raw_html:string|null; normalized_json:string|null; attempt_count:number; expires_at:string };
+type CandidateVerification = { status:"verified"|"insufficient"|"conflict"; title:boolean; schedule:boolean; venue:boolean };
+type CandidateCheckpoint = { detail:MunicipalRichDetail; candidate_verification:CandidateVerification };
 const now = () => new Date().toISOString();
 const size = (value: string) => new TextEncoder().encode(value).byteLength;
 const hash = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))), byte => byte.toString(16).padStart(2,"0")).join("");
 const retryAt = (attempt: number) => new Date(Date.now() + Math.min(24 * 60, 5 * 2 ** Math.min(attempt, 8)) * 60_000).toISOString();
 const normalized = (detail: MunicipalRichDetail) => JSON.stringify(detail);
+const compact = (value:string) => value.replace(/\s+/g, "").toLocaleLowerCase();
+const datePattern = (date:string) => date.replace(/-/g, "[-./년\\s]*").replace(/(\d{2})$/, "$1(?:일)?");
+const fieldValue = (html:string, labels:string[]) => {
+  const label=labels.join("|");
+  const patterns=[new RegExp(`<dt[^>]*>\\s*(?:${label})\\s*<\\/dt>\\s*<dd[^>]*>([\\s\\S]*?)<\\/dd>`,"i"),new RegExp(`<th[^>]*>\\s*(?:${label})\\s*<\\/th>\\s*<td[^>]*>([\\s\\S]*?)<\\/td>`,"i"),new RegExp(`(?:${label})\\s*[|:：]\\s*([^\\n<]{1,300})`,"i")];
+  for(const pattern of patterns){const match=pattern.exec(html);if(match)return municipalRichText(match[1]);} return null;
+};
+/** A new candidate needs explicit official title, schedule, and venue fields. */
+export function verifyMunicipalCandidateCore(candidate:MunicipalCandidate, html:string):CandidateVerification {
+  const titleValue=fieldValue(html,["행사명","공연명","전시명","제목"]);
+  const headings=[...html.matchAll(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)].map(match=>municipalRichText(match[1]));
+  const title=Boolean(candidate.title && [titleValue,...headings].some(value=>value!==null&&compact(value)===compact(candidate.title)));
+  const scheduleValue=fieldValue(html,["기간","일정","행사기간","공연기간","전시기간"]);
+  const schedule=Boolean(scheduleValue&&candidate.start_date&&candidate.end_date&&new RegExp(datePattern(candidate.start_date)).test(scheduleValue)&&new RegExp(datePattern(candidate.end_date)).test(scheduleValue));
+  const venueValue=fieldValue(html,["장소","행사장","전시장소","공연장","위치"]);
+  const venue=Boolean(venueValue&&candidate.venue&&compact(venueValue)===compact(candidate.venue));
+  const titleExplicit=titleValue!==null||headings.length>0;
+  const conflict=(titleExplicit&&!title)||(scheduleValue!==null&&!schedule)||(venueValue!==null&&!venue);
+  return {status:title&&schedule&&venue?"verified":conflict?"conflict":"insufficient",title,schedule,venue};
+}
 const browserHeaders = {
   "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -67,11 +89,11 @@ export async function detailFetchOne(db:D1Database, fetcher:typeof fetch=fetch) 
 export async function detailParseOne(db:D1Database) {
   const job=await claim(db,"PARSE_PENDING"); if(!job) return null;
   if(!job.raw_html){await fail(db,job,"missing_raw_html");return {id:job.id,stage:"RETRY" as const};}
-  try { const value=normalized(extractMunicipalRichDetail(job.official_url,job.raw_html)); if(size(value)>MUNICIPAL_DETAIL_NORMALIZED_MAX_BYTES){await fail(db,job,"normalized_detail_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=NULL,raw_html_sha256=NULL,normalized_json=?,stage='PERSIST_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='PARSE_PENDING'").bind(value,now(),now(),job.id).run(); return {id:job.id,stage:"PERSIST_PENDING" as const}; } catch {await fail(db,job,"detail_parse_failed");return {id:job.id,stage:"RETRY" as const};}
+  try { const candidate=JSON.parse(job.candidate_json) as MunicipalCandidate; const detail=extractMunicipalRichDetail(job.official_url,job.raw_html); const event=await db.prepare("SELECT 1 AS present FROM events WHERE id=? LIMIT 1").bind(job.event_id).first(); const value=event?normalized(detail):JSON.stringify({detail,candidate_verification:verifyMunicipalCandidateCore(candidate,job.raw_html)} satisfies CandidateCheckpoint); if(size(value)>MUNICIPAL_DETAIL_NORMALIZED_MAX_BYTES){await fail(db,job,"normalized_detail_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=NULL,raw_html_sha256=NULL,normalized_json=?,stage='PERSIST_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='PARSE_PENDING'").bind(value,now(),now(),job.id).run(); return {id:job.id,stage:"PERSIST_PENDING" as const}; } catch {await fail(db,job,"detail_parse_failed");return {id:job.id,stage:"RETRY" as const};}
 }
 export async function detailPersistOne(db:D1Database) {
   const job=await claim(db,"PERSIST_PENDING"); if(!job) return null;
-  try { const candidate=JSON.parse(job.candidate_json) as MunicipalCandidate; const detail=JSON.parse(job.normalized_json ?? "null") as MunicipalRichDetail|null; if(!detail || !candidate.start_date || !candidate.end_date) throw new Error("missing_normalized_detail"); const event=await db.prepare("SELECT id FROM events WHERE id=? LIMIT 1").bind(job.event_id).first<{id:string}>(); if(!event) {await fail(db,job,"detail_event_missing");return {id:job.id,stage:"RETRY" as const};} await persistMunicipalRichDetail(db,{eventId:job.event_id,startDate:candidate.start_date,endDate:candidate.end_date,sourceId:`municipal-source-${job.event_id}`,sourceName:`${candidate.source} 공식 행사 안내`,sourceUrl:job.official_url,checkedAt:now(),detail}); await db.prepare("UPDATE municipal_detail_jobs SET stage='DONE',normalized_json=NULL,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='PERSIST_PENDING'").bind(now(),job.id).run(); return {id:job.id,stage:"DONE" as const}; } catch {await fail(db,job,"detail_persist_failed");return {id:job.id,stage:"RETRY" as const};}
+  try { const candidate=JSON.parse(job.candidate_json) as MunicipalCandidate; const stored=JSON.parse(job.normalized_json ?? "null") as MunicipalRichDetail|CandidateCheckpoint|null; if(!stored || !candidate.start_date || !candidate.end_date) throw new Error("missing_normalized_detail"); const event=await db.prepare("SELECT id FROM events WHERE id=? LIMIT 1").bind(job.event_id).first<{id:string}>(); if(!event) {const checkpoint=stored as CandidateCheckpoint; const status=checkpoint.candidate_verification?.status;if(!status){await fail(db,job,"detail_event_missing");return {id:job.id,stage:"RETRY" as const};}const category=status==="verified"?"candidate_core_verified":status==="conflict"?"candidate_core_conflict":"candidate_core_insufficient";await db.prepare("UPDATE municipal_detail_jobs SET stage='DONE',safe_error_category=?,updated_at=? WHERE id=? AND stage='PERSIST_PENDING'").bind(category,now(),job.id).run();return {id:job.id,stage:"DONE" as const};} const detail=("detail" in stored?stored.detail:stored) as MunicipalRichDetail; await persistMunicipalRichDetail(db,{eventId:job.event_id,startDate:candidate.start_date,endDate:candidate.end_date,sourceId:`municipal-source-${job.event_id}`,sourceName:`${candidate.source} 공식 행사 안내`,sourceUrl:job.official_url,checkedAt:now(),detail}); await db.prepare("UPDATE municipal_detail_jobs SET stage='DONE',normalized_json=NULL,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='PERSIST_PENDING'").bind(now(),job.id).run(); return {id:job.id,stage:"DONE" as const}; } catch {await fail(db,job,"detail_persist_failed");return {id:job.id,stage:"RETRY" as const};}
 }
 /** DONE rows are observability-only and share the short checkpoint TTL. */
 export const cleanupExpiredMunicipalDetailJobs = async (db:D1Database, at=now()) => {

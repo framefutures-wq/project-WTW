@@ -46,6 +46,29 @@ test("detail persistence reports a missing parent event before FK-backed writes"
   } finally {await mf.dispose();}
 });
 
+test("new generic detail retains explicit official core verification without publishing",async()=>{
+  const {mf,DB}=await setup(); try {
+    const next={...candidate,source_candidate_id:"new-core",title:"파주 공식 행사",start_date:"2099-10-03",end_date:"2099-10-04",venue:"파주 문화회관",official_url:"https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=999"};
+    await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:next,eventId:"unregistered-event"});
+    await detailFetchOne(DB,async()=>new Response("<h1>파주 공식 행사</h1><table><tr><th>기간</th><td>2099-10-03 ~ 2099-10-04</td></tr><tr><th>장소</th><td>파주 문화회관</td></tr></table>"));
+    await detailParseOne(DB); await detailPersistOne(DB);
+    const row=await DB.prepare("SELECT stage,safe_error_category,normalized_json FROM municipal_detail_jobs").first<any>();
+    assert.equal(row.stage,"DONE"); assert.equal(row.safe_error_category,"candidate_core_verified"); assert.equal(JSON.parse(row.normalized_json).candidate_verification.status,"verified");
+    assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id='unregistered-event'").first<any>()).count,0);
+  } finally {await mf.dispose();}
+});
+
+test("incomplete or conflicting official core stays non-public and is retained",async()=>{
+  const {mf,DB}=await setup(); try {
+    for (const [id,html,category] of [["insufficient","<h1>파주 공식 행사</h1>","candidate_core_insufficient"],["conflict","<h1>파주 공식 행사</h1><table><tr><th>기간</th><td>2099-10-05</td></tr><tr><th>장소</th><td>파주 문화회관</td></tr></table>","candidate_core_conflict"]] as const) {
+      const next={...candidate,source_candidate_id:id,title:"파주 공식 행사",start_date:"2099-10-03",end_date:"2099-10-04",venue:"파주 문화회관",official_url:`https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=${id}`};
+      await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:next,eventId:`unregistered-${id}`}); await detailFetchOne(DB,async()=>new Response(html)); await detailParseOne(DB); await detailPersistOne(DB);
+      assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_detail_jobs WHERE candidate_id=?").bind(id).first(),{stage:"DONE",safe_error_category:category});
+    }
+    assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id LIKE 'unregistered-%'").first<any>()).count,0);
+  } finally {await mf.dispose();}
+});
+
 test("oversize detail response fails closed before parser storage",async()=>{
   const {mf,DB}=await setup(); try {
     await enqueueMunicipalDetailJob(DB,{sourceKey:"paju",candidate:{...candidate,source_candidate_id:"detail-job-2"},eventId:"event-2"});

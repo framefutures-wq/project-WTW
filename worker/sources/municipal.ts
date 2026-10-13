@@ -1539,6 +1539,19 @@ export type MunicipalCandidateOneResult = {
   detail_required: boolean;
 };
 
+const hasDistinctOfficialDetailUrl = (
+  source: (typeof SOURCES)[number],
+  candidateUrl: string,
+) => {
+  const list = new URL(source.url);
+  const detail = new URL(candidateUrl);
+  return (
+    list.hostname.replace(/^www\./, "") !== detail.hostname.replace(/^www\./, "") ||
+    list.pathname !== detail.pathname ||
+    list.search !== detail.search
+  );
+};
+
 /**
  * Process one already-normalized municipal candidate without touching a list
  * or detail network resource. Detail-dependent candidates are checkpointed
@@ -1650,7 +1663,7 @@ export async function runMunicipalCandidateOne(
     mode === "structured_event" ||
     mode === "pdf_text" ||
     mode === "image_vision";
-  const detailRequired = Boolean(
+  const detailPending = Boolean(
     gate.gate === "MAIN" &&
       duplicateResult.decision === "NEW" &&
       !effectiveCandidate.parse_error &&
@@ -1658,6 +1671,9 @@ export async function runMunicipalCandidateOne(
       coreValid &&
       candidateTemporal !== "EXPIRED",
   );
+  const detailRequired =
+    detailPending &&
+    hasDistinctOfficialDetailUrl(source, effectiveCandidate.official_url);
   let decision = decideAutonomousMunicipal({
     gate: gate.gate,
     duplicate: duplicateResult.decision,
@@ -1665,7 +1681,7 @@ export async function runMunicipalCandidateOne(
     trusted: true,
     coreValid,
     parserError: Boolean(effectiveCandidate.parse_error),
-    detailError: detailRequired,
+    detailError: detailPending,
     coreConflict,
   });
   const publicationMutation = isMunicipalPublicationMutation({
@@ -1686,10 +1702,10 @@ export async function runMunicipalCandidateOne(
       reason: "daily_publish_circuit_breaker",
     };
 
-  // A generic candidate remains AUTO_RETRY until its detail has been
-  // validated.  Do not create a detail-persist job before an existing event
-  // is available: rich-detail persistence writes event-owned records.
-  if (detailRequired && existing)
+  // A generic candidate remains AUTO_RETRY until its official detail has
+  // explicitly verified its core. The job can retain verification before an
+  // event exists and never publishes from this path.
+  if (detailRequired)
     await enqueueMunicipalDetailJob(env.DB, {
       sourceKey: candidate.source,
       candidate: effectiveCandidate,

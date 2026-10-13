@@ -120,7 +120,7 @@ test("external duplicate, invalid core, expired candidate and publish cap fail c
   } finally { await mf.dispose(); }
 });
 
-test("new generic candidate defers detail work until an event exists", async () => {
+test("new generic candidate checkpoints official detail without creating an event", async () => {
   const { mf, DB } = await setup();
   const priorFetch = globalThis.fetch;
   let fetches = 0;
@@ -132,6 +132,16 @@ test("new generic candidate defers detail work until an event exists", async () 
     assert.equal(first.detail_required, true);
     assert.equal(fetches, 0);
     const jobs = await DB.prepare("SELECT candidate_id,stage FROM municipal_detail_jobs WHERE candidate_id=?").bind("detail-required").all();
-    assert.deepEqual(jobs.results, []);
+    assert.deepEqual(jobs.results.map((job) => ({ candidate_id: job.candidate_id, stage: job.stage })), [{ candidate_id: "detail-required", stage: "FETCH_PENDING" }]);
   } finally { globalThis.fetch = priorFetch; await mf.dispose(); }
+});
+
+test("generic list-page fallback does not enter the detail checkpoint", async () => {
+  const { mf, DB } = await setup();
+  try {
+    const result = await run(DB, candidate("list-page-only"), { mode: "generic_html" });
+    assert.equal(result.decision, "AUTO_RETRY");
+    assert.equal(result.detail_required, false);
+    assert.equal((await DB.prepare("SELECT COUNT(*) AS count FROM municipal_detail_jobs").first()).count, 0);
+  } finally { await mf.dispose(); }
 });
