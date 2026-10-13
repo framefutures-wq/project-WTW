@@ -126,6 +126,15 @@ test("future retries, leased, finalized, and expired source pages do not make mu
   }
 });
 
+test("a completed cycle still dispatches a retained retry when it becomes due", async () => {
+  const { mf, DB, env } = await setup(); try {
+    await insertCompletedMunicipalCycle(DB);
+    await insertSourceFinalizePage(DB, { stage: "RETRY", available_at: "2026-10-12T02:00:00.000Z" });
+    assert.equal((await fairMicroLaneReadiness(env, AT)).municipal, 0);
+    assert.equal((await fairMicroLaneReadiness(env, "2026-10-12T02:00:00.000Z")).municipal, 1);
+  } finally { await mf.dispose(); }
+});
+
 test("cursor tie-break and starvation guard give all due lanes a turn without fixed one-to-one allocation", () => {
   const state = { lease_token: null, lease_until: null, dispatch_count: 11, cursor: 1, municipal_last_dispatch: 10, official_last_dispatch: -1, tourapi_last_dispatch: 10 };
   assert.equal(chooseFairMicroLane(state, { municipal: 1, official: 1, tourapi: 1 }), "official");

@@ -21,20 +21,25 @@ export const municipalOperatingDate = (at: string) =>
     day: "2-digit",
   }).format(new Date(at));
 
-/** Future retries are active: source advancement waits for completion or expiry. */
+/**
+ * Pending stages hold either unclaimed work or a live claim, so they keep the
+ * source frontier closed. RETRY is different: it is dormant until available.
+ */
 export async function hasActiveMunicipalMicroWork(db: Env["DB"], at: string) {
   const scan = await db.prepare(
     `SELECT 1 AS active FROM municipal_scan_jobs
-     WHERE (stage IN ('LIST_PENDING','CANDIDATE_PENDING','RETRY') OR
+     WHERE (stage IN ('LIST_PENDING','CANDIDATE_PENDING') OR
+       (stage='RETRY' AND available_at<=?) OR
        (page_index=1 AND stage='DONE' AND source_finalized_at IS NULL
         AND candidate_batch_json IS NOT NULL AND safe_error_category IS NULL))
        AND expires_at>? LIMIT 1`,
-  ).bind(at).first();
+  ).bind(at, at).first();
   if (scan) return true;
   const detail = await db.prepare(
-    `SELECT 1 AS active FROM municipal_detail_jobs
-     WHERE stage IN ('FETCH_PENDING','PARSE_PENDING','PERSIST_PENDING','RETRY') AND expires_at>? LIMIT 1`,
-  ).bind(at).first();
+    `SELECT 1 AS active FROM municipal_detail_jobs WHERE
+     (stage IN ('FETCH_PENDING','PARSE_PENDING','PERSIST_PENDING') OR
+      (stage='RETRY' AND available_at<=?)) AND expires_at>? LIMIT 1`,
+  ).bind(at, at).first();
   return Boolean(detail);
 }
 

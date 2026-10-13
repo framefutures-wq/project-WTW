@@ -65,7 +65,7 @@ test("continuous cycle seeds one source, waits for drain, and advances its durab
   } finally { await mf.dispose(); }
 });
 
-test("all active scan and detail stages, including future retry and pending finalize, block a new source", async () => {
+test("pending, finalize, and due retry stages block a new source", async () => {
   for (const stage of ["LIST_PENDING", "CANDIDATE_PENDING", "RETRY", "SOURCE_FINALIZE_PENDING", "FETCH_PENDING", "PARSE_PENDING", "PERSIST_PENDING", "DETAIL_RETRY"]) {
     const { mf, DB, env } = await setup();
     try {
@@ -73,20 +73,38 @@ test("all active scan and detail stages, including future retry and pending fina
       await DB.prepare("UPDATE municipal_scan_jobs SET stage='DONE',source_finalized_at=?").bind(AT).run();
       if (stage === "SOURCE_FINALIZE_PENDING")
         await DB.prepare("UPDATE municipal_scan_jobs SET source_finalized_at=NULL,candidate_batch_json='[]'").run();
-      else if (["LIST_PENDING", "CANDIDATE_PENDING", "RETRY"].includes(stage))
+      else if (["LIST_PENDING", "CANDIDATE_PENDING"].includes(stage))
         await DB.prepare("UPDATE municipal_scan_jobs SET stage=?,available_at='2099-01-01T00:00:00.000Z'").bind(stage).run();
+      else if (stage === "RETRY")
+        await DB.prepare("UPDATE municipal_scan_jobs SET stage='RETRY',available_at=?").bind(AT).run();
       else {
         await DB.prepare(
           `INSERT INTO municipal_detail_jobs
            (id,source_key,candidate_id,event_id,official_url,candidate_json,stage,available_at,created_at,updated_at,expires_at)
            VALUES('detail-1','paju','candidate-1','event-1','https://tour.paju.go.kr/','{}',?,?,?,?,?)`,
-        ).bind(stage === "DETAIL_RETRY" ? "RETRY" : stage, "2099-01-01T00:00:00.000Z", AT, AT, "2099-01-02T00:00:00.000Z").run();
+        ).bind(stage === "DETAIL_RETRY" ? "RETRY" : stage, stage === "DETAIL_RETRY" ? AT : "2099-01-01T00:00:00.000Z", AT, AT, "2099-01-02T00:00:00.000Z").run();
       }
       assert.equal(await hasActiveMunicipalMicroWork(DB, AT), true, stage);
       assert.equal((await runMunicipalContinuousCycleOne(env, later, dependencies)).stage, "WAITING_RETRY", stage);
       assert.equal((await DB.prepare("SELECT source_cursor FROM municipal_scan_cycles").first<{ source_cursor: number }>())?.source_cursor, 1, stage);
     } finally { await mf.dispose(); }
   }
+});
+
+test("future retries do not block the next source, but become active when due", async () => {
+  const { mf, DB, env } = await setup();
+  try {
+    await runMunicipalContinuousCycleOne(env, AT, dependencies);
+    await DB.prepare("UPDATE municipal_scan_jobs SET stage='RETRY',available_at=?,retry_at=?")
+      .bind("2026-10-11T02:00:00.000Z", "2026-10-11T02:00:00.000Z").run();
+
+    assert.equal(await hasActiveMunicipalMicroWork(DB, later), false);
+    assert.equal((await runMunicipalContinuousCycleOne(env, later, dependencies)).stage, "SOURCE_SEED");
+    assert.equal((await DB.prepare("SELECT source_cursor FROM municipal_scan_cycles").first<{ source_cursor: number }>())?.source_cursor, 2);
+
+    assert.equal(await hasActiveMunicipalMicroWork(DB, "2026-10-11T02:00:00.000Z"), true);
+    assert.equal((await runMunicipalContinuousCycleOne(env, "2026-10-11T02:00:00.000Z", dependencies)).stage, "WAITING_RETRY");
+  } finally { await mf.dispose(); }
 });
 
 test("one due micro unit returns before seed, and a leased duplicate invocation cannot seed", async () => {
