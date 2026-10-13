@@ -31,9 +31,10 @@ export async function hasActiveMunicipalMicroWork(db: Env["DB"], at: string) {
      WHERE (stage IN ('LIST_PENDING','CANDIDATE_PENDING') OR
        (stage='RETRY' AND available_at<=?) OR
        (page_index=1 AND stage='DONE' AND source_finalized_at IS NULL
-        AND candidate_batch_json IS NOT NULL AND safe_error_category IS NULL))
+        AND candidate_batch_json IS NOT NULL AND safe_error_category IS NULL
+        AND available_at<=?))
        AND expires_at>? LIMIT 1`,
-  ).bind(at, at).first();
+  ).bind(at, at, at).first();
   if (scan) return true;
   const detail = await db.prepare(
     `SELECT 1 AS active FROM municipal_detail_jobs WHERE

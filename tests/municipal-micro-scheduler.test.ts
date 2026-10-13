@@ -3,12 +3,13 @@ import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { enqueueMunicipalListPage, seedMunicipalDailyScanOne } from "../worker/sources/municipal";
-import { runMunicipalMicroJobOne, type MunicipalMicroSchedulerDependencies } from "../worker/sources/municipal-micro-scheduler";
+import { municipalCandidateFastPathReady, runMunicipalMicroJobOne, type MunicipalMicroSchedulerDependencies } from "../worker/sources/municipal-micro-scheduler";
 
 const NOW = "2026-10-11T00:00:00.000Z";
 
 const emptyCleanup = async () => ({ meta: { changes: 0 } });
-const dependencies = (calls: string[], outcomes: Partial<Record<keyof MunicipalMicroSchedulerDependencies, { id?: string; job_id?: string; stage: string } | null>> = {}): MunicipalMicroSchedulerDependencies => ({
+const dependencies = (calls: string[], outcomes: Partial<Record<Exclude<keyof MunicipalMicroSchedulerDependencies, "candidateFastPathReady">, { id?: string; job_id?: string; stage: string } | null>> = {}, candidateFastPathReady = false): MunicipalMicroSchedulerDependencies => ({
+  candidateFastPathReady: async () => { calls.push("candidate-fast-path"); return candidateFastPathReady; },
   detailPersistOne: async () => { calls.push("persist"); return outcomes.detailPersistOne ?? null; },
   detailParseOne: async () => { calls.push("parse"); return outcomes.detailParseOne ?? null; },
   detailFetchOne: async () => { calls.push("fetch"); return outcomes.detailFetchOne ?? null; },
@@ -43,8 +44,42 @@ test("micro scheduler selects exactly one stage in durable priority order", asyn
     const calls: string[] = [];
     const result = await runMunicipalMicroJobOne({ DB: {} } as never, dependencies(calls, { [winner]: { id: "job-1", stage: status } }));
     assert.deepEqual(result, { stage, status, job_id: "job-1" });
-    assert.equal(calls.length, cases.findIndex(([name]) => name === winner) + 1);
+    assert.equal(calls.length, cases.findIndex(([name]) => name === winner) + 2);
   }
+});
+
+test("candidate fast path skips empty higher-priority runners but retains the candidate claim", async () => {
+  const calls: string[] = [];
+  const result = await runMunicipalMicroJobOne(
+    { DB: {} } as never,
+    dependencies(calls, {
+      runMunicipalCandidateCheckpointOne: { id: "candidate-1", stage: "CANDIDATE_PENDING" },
+    }, true),
+  );
+  assert.deepEqual(result, { stage: "CANDIDATE_PENDING", status: "CANDIDATE_PENDING", job_id: "candidate-1" });
+  assert.deepEqual(calls, ["candidate-fast-path", "candidate"]);
+});
+
+test("candidate fast-path eligibility excludes a due higher-priority detail checkpoint", async () => {
+  const { mf, DB } = await setup();
+  const readyAt = "2099-10-11T00:00:00.000Z";
+  try {
+    await DB.batch([
+      DB.prepare(
+        `INSERT INTO municipal_scan_jobs
+         (id,operating_date,source_key,page_url,page_identity,page_index,stage,candidate_batch_json,candidate_cursor,candidate_count,source_finalized_at,available_at,created_at,updated_at,expires_at)
+         VALUES('candidate','2026-10-11','gyeongbuk-경산','https://gb.go.kr/','candidate',1,'CANDIDATE_PENDING','[]',0,1,?,?,?,?,?)`,
+      ).bind(readyAt, readyAt, readyAt, readyAt, "2099-10-12T00:00:00.000Z"),
+      DB.prepare(
+        `INSERT INTO municipal_detail_jobs
+         (id,source_key,candidate_id,event_id,official_url,candidate_json,stage,available_at,created_at,updated_at,expires_at)
+         VALUES('detail','gyeongbuk-경산','detail','municipal-detail','https://gb.go.kr/','{}','FETCH_PENDING',?,?,?,?)`,
+      ).bind(readyAt, readyAt, readyAt, "2099-10-12T00:00:00.000Z"),
+    ]);
+    assert.equal(await municipalCandidateFastPathReady(DB as never, readyAt), false);
+    await DB.prepare("UPDATE municipal_detail_jobs SET stage='DONE'").run();
+    assert.equal(await municipalCandidateFastPathReady(DB as never, readyAt), true);
+  } finally { await mf.dispose(); }
 });
 
 test("micro scheduler does not claim a future retry and returns a compact no-op", async () => {
