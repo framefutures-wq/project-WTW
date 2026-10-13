@@ -44,11 +44,17 @@ async function count(db: D1Database, sql: string, at: string) {
 /** Read-only readiness deliberately excludes future retries, so they cannot occupy a turn. */
 export async function fairMicroLaneReadiness(env: Env, at: string): Promise<LaneReady> {
   const db = env.DB;
-  const [officialJobs, tourapiJobs, officialCandidates, tourapiCandidates] = await Promise.all([
+  const [officialJobs, tourapiJobs] = await Promise.all([
     count(db, "SELECT COUNT(*) AS count FROM official_detail_jobs WHERE stage<>'DONE' AND (expires_at<=? OR available_at<=?)", at),
     count(db, "SELECT COUNT(*) AS count FROM tourapi_detail_jobs WHERE stage<>'DONE' AND (expires_at<=? OR available_at<=?)", at),
-    selectOfficialDetailRecoveryCandidates(db, new Date(at), 1),
-    selectTourApiDetailCandidates(db, new Date(at), 1),
+  ]);
+  // A due checkpoint is already sufficient to make its lane selectable. Do
+  // not run the legacy whole-candidate selectors on every minute while it is
+  // waiting: they are only needed to discover work when the checkpoint lane
+  // itself is empty.
+  const [officialCandidates, tourapiCandidates] = await Promise.all([
+    officialJobs ? [] : selectOfficialDetailRecoveryCandidates(db, new Date(at), 1),
+    tourapiJobs ? [] : selectTourApiDetailCandidates(db, new Date(at), 1),
   ]);
   const activeMunicipal = await hasActiveMunicipalMicroWork(db, at);
   let municipal = 0;

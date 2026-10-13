@@ -123,6 +123,20 @@ test("real future retries do not make official or TourAPI lanes ready", async ()
   } finally { await mf.dispose(); }
 });
 
+test("due checkpoint jobs bypass the legacy candidate selectors during readiness", async () => {
+  const { mf, DB } = await setup(); try {
+    await DB.batch([
+      DB.prepare("INSERT INTO official_detail_jobs(event_id,generation,candidate_json,stage,available_at,created_at,updated_at,expires_at) VALUES('official',1,'{}','PARSE_PENDING',?,?,?,?)").bind(AT, AT, AT, "2026-10-13T01:00:00.000Z"),
+      DB.prepare("INSERT INTO tourapi_detail_jobs(event_id,generation,candidate_json,stage,available_at,created_at,updated_at,expires_at) VALUES('tourapi',1,'{}','PERSIST_ONE',?,?,?,?)").bind(AT, AT, AT, "2026-10-13T01:00:00.000Z"),
+    ]);
+    const queries: string[] = [];
+    const env = { DB: { prepare(sql: string) { queries.push(sql); return DB.prepare(sql); } } } as never;
+    assert.deepEqual(await fairMicroLaneReadiness(env, AT), { municipal: 1, official: 1, tourapi: 1 });
+    assert.equal(queries.some((sql) => sql.includes("WITH official_candidates")), false);
+    assert.equal(queries.some((sql) => sql.includes("FROM events e JOIN sources ps")), false);
+  } finally { await mf.dispose(); }
+});
+
 test("due source finalize page makes municipal ready and selectable without other active work", async () => {
   const { mf, DB, env } = await setup(); try {
     await insertSourceFinalizePage(DB);
