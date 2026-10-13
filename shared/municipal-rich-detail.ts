@@ -259,11 +259,11 @@ type RichBreakChunk = {
 
 function breakChunks(html: string): RichBreakChunk[] {
   const output: RichBreakChunk[] = [];
-  const re = /([^<]*(?:<(?!br\b)[^>]*>[^<]*)*)<br\s*\/?\s*>/gi;
+  const re = /<br\s*\/?\s*>/gi;
   let cursor = 0;
   for (const match of html.matchAll(re)) {
     const start = match.index ?? 0;
-    const raw = match[1];
+    const raw = html.slice(cursor, start);
     output.push({
       text: compact(raw),
       bold: /<(?:b|strong|h[1-6])\b|font-weight\s*:\s*bold/i.test(raw),
