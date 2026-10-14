@@ -2274,6 +2274,22 @@ const retryMunicipalScanJob = async (
     .run();
 };
 
+/** Maps list-page failures to stable, non-sensitive checkpoint categories. */
+export function classifyMunicipalListPageFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (/^(?:invalid_source_url|final_url_not_allowed)$/.test(message))
+    return "unsafe_url";
+  if (message === "candidate_batch_too_large") return message;
+  if (message === "list_health_check_failed") return message;
+  if (message === "list_parse_requires_fallback") return message;
+  const http = /^(?:official_)?http[_ ](\d{3})$/i.exec(message);
+  if (http?.[1] === "429") return "http_429";
+  if (http && Number(http[1]) >= 500 && Number(http[1]) <= 599)
+    return "http_5xx";
+  if (retryableOfficialFetchError(error)) return "network_or_timeout";
+  return "list_page_failed";
+}
+
 /** Fetches and parses one official list page, then stores only bounded normalized candidates. */
 export async function runMunicipalListPageOne(
   db: MunicipalScanDb,
@@ -2371,23 +2387,18 @@ export async function runMunicipalListPageOne(
       raw_html_stored: false,
     };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "list_page_error";
+    const category = classifyMunicipalListPageFailure(error);
     await retryMunicipalScanJob(
       db,
       job,
       "LIST_PENDING",
-      /invalid_source_url|final_url_not_allowed/.test(msg)
-        ? "unsafe_url"
-        : msg === "candidate_batch_too_large"
-          ? msg
-          : "list_page_failed",
+      category,
       now,
     );
     return {
       job_id: job.id,
       stage: "RETRY" as const,
-      safe_error_category:
-        msg === "candidate_batch_too_large" ? msg : "list_page_failed",
+      safe_error_category: category,
     };
   }
 }

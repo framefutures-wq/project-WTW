@@ -5,6 +5,7 @@ import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import {
   enqueueMunicipalListPage,
   runMunicipalListPageOne,
+  classifyMunicipalListPageFailure,
   runMunicipalCandidateCheckpointOne,
   runMunicipalSourceFinalizeOne,
   cleanupExpiredMunicipalScanJobs,
@@ -203,6 +204,66 @@ test("retry checkpoints remain unavailable until their bounded backoff is due", 
           .first()
       ).stage,
       "RETRY",
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("list-page failures use stable safe categories without retaining error details", () => {
+  const timeout = new Error("request aborted");
+  timeout.name = "TimeoutError";
+  assert.deepEqual(
+    [
+      [new Error("official_http_429"), "http_429"],
+      [new Error("HTTP 503"), "http_5xx"],
+      [new TypeError("fetch failed"), "network_or_timeout"],
+      [timeout, "network_or_timeout"],
+      [new Error("list_health_check_failed"), "list_health_check_failed"],
+      [new Error("list_parse_requires_fallback"), "list_parse_requires_fallback"],
+      [new Error("final_url_not_allowed"), "unsafe_url"],
+      [new Error("candidate_batch_too_large"), "candidate_batch_too_large"],
+      [new Error("provider response included https://private.example/token"), "list_page_failed"],
+    ].map(([error]) => classifyMunicipalListPageFailure(error)),
+    [
+      "http_429",
+      "http_5xx",
+      "network_or_timeout",
+      "network_or_timeout",
+      "list_health_check_failed",
+      "list_parse_requires_fallback",
+      "unsafe_url",
+      "candidate_batch_too_large",
+      "list_page_failed",
+    ],
+  );
+});
+
+test("list-page retry persists its classified category only", async () => {
+  const { mf, DB } = await setup();
+  try {
+    const row = await enqueueMunicipalListPage(DB, {
+      operatingDate: DATE,
+      sourceKey: "gyeongbuk-경산",
+      pageIndex: 1,
+      now: NOW,
+    });
+    const result = await runMunicipalListPageOne(DB, {
+      now: NOW,
+      fetchPage: async () => {
+        throw new Error("official_http_429");
+      },
+    });
+    assert.equal(result.safe_error_category, "http_429");
+    assert.deepEqual(
+      await DB.prepare(
+        "SELECT stage,retry_stage,safe_error_category FROM municipal_scan_jobs WHERE id=?",
+      ).bind(row.id).first(),
+      {
+        stage: "RETRY",
+        retry_stage: "LIST_PENDING",
+        safe_error_category: "http_429",
+      },
     );
   } finally {
     await mf.dispose();
