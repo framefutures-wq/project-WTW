@@ -137,14 +137,35 @@ async function resolveImprovedGenericIdentity(
   mode: SourceCandidate["mode"],
   provisionalId: string,
 ) {
+  // This is deliberately narrower than the normal generic identity bridge.
+  // Taebaek's common calendar URL can only replace a legacy identity when the
+  // parser itself extracted one complete schedule_<number> block. Older rows
+  // occasionally retained the contact line in `venue`, so exact venue equality
+  // would otherwise leave a second public event behind.
+  const verifiedTaebaekScheduleCore =
+    mode === "generic_html" &&
+    source.key === "taebaek" &&
+    candidate.official_url === source.url &&
+    candidate.self_contained_core_evidence === "taebaek_schedule_block";
+  const taebaekCommonScheduleCandidate =
+    mode === "generic_html" &&
+    source.key === "taebaek" &&
+    candidate.official_url === source.url;
   if (
     mode !== "generic_html" ||
-    candidate.official_url === source.url ||
+    (candidate.official_url === source.url && !verifiedTaebaekScheduleCore) ||
     !candidate.start_date ||
     !candidate.end_date ||
     !candidate.venue
   )
-    return { id: provisionalId, rows: 0, bridged: false };
+    return {
+      id: provisionalId,
+      rows: 0,
+      bridged: false,
+      ambiguous: false,
+      taebaekCommonScheduleCandidate,
+      verifiedTaebaekScheduleCore,
+    };
 
   const matches = await env.DB.prepare(
     `WITH identity_matches(id,rank) AS (
@@ -166,6 +187,18 @@ async function resolveImprovedGenericIdentity(
          AND start_date_snapshot=?
          AND end_date_snapshot=?
          AND venue_snapshot=?
+      UNION
+      SELECT e.id,1 FROM events e
+       JOIN sources s ON s.id=e.primary_source_id
+       WHERE ?=1
+         AND s.kind='municipality'
+         AND s.url=?
+         AND e.title=?
+         AND e.region=?
+         AND e.start_date=?
+         AND e.end_date=?
+         AND replace(replace(replace(e.venue,' ',''),char(10),''),char(13),'')
+             GLOB ('*' || replace(replace(replace(?,' ',''),char(10),''),char(13),'') || '*문의:[0-9]*')
     )
     SELECT id,MIN(rank) AS rank
     FROM identity_matches
@@ -187,6 +220,13 @@ async function resolveImprovedGenericIdentity(
       candidate.start_date,
       candidate.end_date,
       candidate.venue,
+      Number(verifiedTaebaekScheduleCore),
+      candidate.official_url,
+      candidate.title,
+      candidate.region,
+      candidate.start_date,
+      candidate.end_date,
+      candidate.venue,
     )
     .all<{ id: string; rank: number }>();
 
@@ -196,6 +236,9 @@ async function resolveImprovedGenericIdentity(
       id: provisionalId,
       rows: matches.meta.rows_read ?? 0,
       bridged: false,
+      ambiguous: false,
+      taebaekCommonScheduleCandidate,
+      verifiedTaebaekScheduleCore,
     };
 
   const legacy = matches.results.filter((row) => Number(row.rank) === 1);
@@ -204,11 +247,17 @@ async function resolveImprovedGenericIdentity(
         id: legacy[0].id,
         rows: matches.meta.rows_read ?? 0,
         bridged: legacy[0].id !== provisionalId,
+        ambiguous: false,
+        taebaekCommonScheduleCandidate,
+        verifiedTaebaekScheduleCore,
       }
     : {
         id: provisionalId,
         rows: matches.meta.rows_read ?? 0,
         bridged: false,
+        ambiguous: verifiedTaebaekScheduleCore && legacy.length > 1,
+        taebaekCommonScheduleCandidate,
+        verifiedTaebaekScheduleCore,
       };
 }
 const temporal = (candidate: MunicipalCandidate, current: string) =>
@@ -1103,6 +1152,17 @@ export async function runMunicipalAutonomous(
           detailError,
           coreConflict: coreConflict || detailCoreConflict,
         });
+        if (
+          identity.ambiguous ||
+          (identity.taebaekCommonScheduleCandidate &&
+            !identity.verifiedTaebaekScheduleCore)
+        )
+          decision = {
+            state: "AUTO_RETRY",
+            reason: identity.ambiguous
+              ? "taebaek_legacy_identity_ambiguous"
+              : "taebaek_schedule_core_unverified",
+          };
         const publicationMutation = isMunicipalPublicationMutation({
           existing,
           previousPayloadHash: previous?.last_payload_hash,
@@ -1697,6 +1757,16 @@ export async function runMunicipalCandidateOne(
     detailError: detailPending,
     coreConflict,
   });
+  if (
+    identity.ambiguous ||
+    (identity.taebaekCommonScheduleCandidate && !selfContainedGenericCore)
+  )
+    decision = {
+      state: "AUTO_RETRY",
+      reason: identity.ambiguous
+        ? "taebaek_legacy_identity_ambiguous"
+        : "taebaek_schedule_core_unverified",
+    };
   // Generic list candidates may only cross into publication after their
   // retained official-detail checkpoint verified the exact core. Apply the
   // product visibility gate before any source/event/evidence write so HOLD

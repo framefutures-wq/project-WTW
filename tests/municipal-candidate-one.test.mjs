@@ -339,3 +339,185 @@ test("Taebaek self-contained exhibition core publishes without inventing a detai
     await mf.dispose();
   }
 });
+
+test("Taebaek verified schedule corrects one contact-contaminated legacy public event after a later KST observation", async () => {
+  const { mf, DB } = await setup();
+  try {
+    const url =
+      "https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502";
+    const legacyId = "municipal-taebaek-legacy-very-long-public-identity";
+    const value = candidate("schedule-5460", {
+      source: "taebaek",
+      title: "권중모 개인전시회",
+      region: "강원",
+      locality: "태백",
+      venue: "전시컨벤션홀",
+      official_url: url,
+      category: "공식 일정표 행사",
+      self_contained_core_evidence: "taebaek_schedule_block",
+    });
+    await DB.prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('legacy-taebaek-source','municipality',2,'태백시',?,?)",
+    )
+      .bind(url, "2026-09-19T00:00:00.000Z")
+      .run();
+    await DB.prepare(
+      "INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at) VALUES(?,?,'legacy','강원','전시컨벤션홀 문 의: 01052892663','전시컨벤션홀 문 의: 01052892663',?,?, 'unknown','unknown','scheduled','verified',0,'legacy-taebaek-source',?)",
+    )
+      .bind(legacyId, value.title, FUTURE, FUTURE, "2026-09-19T00:00:00.000Z")
+      .run();
+    await DB.prepare(
+      "INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?,?,?)",
+    )
+      .bind(
+        legacyId,
+        "legacy-taebaek-source",
+        "venue",
+        "legacy evidence",
+        "2026-09-19T00:00:00.000Z",
+      )
+      .run();
+    await DB.prepare(
+      "INSERT INTO alert_events(id,event_id,alert_type,dedupe_key,created_at,effective_at,source_id) VALUES('legacy-alert',?,'NEW_EVENT','legacy-alert',?,?,?)",
+    )
+      .bind(
+        legacyId,
+        "2026-09-19T00:00:00.000Z",
+        "2026-09-19T00:00:00.000Z",
+        "legacy-taebaek-source",
+      )
+      .run();
+
+    const first = await run(DB, value, {
+      mode: "generic_html",
+      now: "2026-09-20T03:00:00.000Z",
+      koreaToday: "2026-09-20",
+    });
+    assert.deepEqual(
+      [first.candidate_id, first.decision, first.reason, first.updated],
+      [legacyId, "AUTO_RETRY", "core_conflict", 0],
+    );
+    assert.equal(
+      (
+        await DB.prepare("SELECT venue FROM events WHERE id=?")
+          .bind(legacyId)
+          .first()
+      ).venue,
+      "전시컨벤션홀 문 의: 01052892663",
+    );
+
+    const second = await run(DB, value, {
+      mode: "generic_html",
+      now: "2026-09-21T03:00:00.000Z",
+      koreaToday: "2026-09-21",
+    });
+    assert.deepEqual(
+      [second.candidate_id, second.decision, second.updated],
+      [legacyId, "AUTO_PUBLISH", 1],
+    );
+    assert.deepEqual(
+      await DB.prepare("SELECT venue FROM events WHERE id=?")
+        .bind(legacyId)
+        .first(),
+      { venue: "전시컨벤션홀" },
+    );
+    assert.equal(
+      (
+        await DB.prepare("SELECT COUNT(*) AS count FROM events WHERE title=?")
+          .bind(value.title)
+          .first()
+      ).count,
+      1,
+    );
+    assert.equal(
+      (
+        await DB.prepare(
+          "SELECT COUNT(*) AS count FROM event_evidence WHERE event_id=? AND source_id='legacy-taebaek-source'",
+        )
+          .bind(legacyId)
+          .first()
+      ).count,
+      1,
+    );
+    assert.equal(
+      (
+        await DB.prepare(
+          "SELECT COUNT(*) AS count FROM alert_events WHERE event_id=?",
+        )
+          .bind(legacyId)
+          .first()
+      ).count,
+      1,
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
+
+test("Taebaek legacy correction holds when the match is ambiguous or schedule evidence is missing", async () => {
+  const { mf, DB } = await setup();
+  try {
+    const url =
+      "https://www.taebaek.go.kr/www/selectWebScheduleUserList.do?key=1502";
+    const value = candidate("schedule-5460", {
+      source: "taebaek",
+      title: "권중모 개인전시회",
+      region: "강원",
+      locality: "태백",
+      venue: "전시컨벤션홀",
+      official_url: url,
+      category: "공식 일정표 행사",
+      self_contained_core_evidence: "taebaek_schedule_block",
+    });
+    await DB.prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('legacy-taebaek-source','municipality',2,'태백시',?,?)",
+    )
+      .bind(url, "2026-09-19T00:00:00.000Z")
+      .run();
+    for (const id of ["taebaek-legacy-a", "taebaek-legacy-b"])
+      await DB.prepare(
+        "INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at) VALUES(?,?,'legacy','강원','전시컨벤션홀 문 의: 01052892663','전시컨벤션홀 문 의: 01052892663',?,?, 'unknown','unknown','scheduled','verified',0,'legacy-taebaek-source',?)",
+      )
+        .bind(id, value.title, FUTURE, FUTURE, "2026-09-19T00:00:00.000Z")
+        .run();
+    const ambiguous = await run(DB, value, { mode: "generic_html" });
+    assert.deepEqual(
+      [
+        ambiguous.decision,
+        ambiguous.reason,
+        ambiguous.inserted,
+        ambiguous.updated,
+      ],
+      ["AUTO_RETRY", "taebaek_legacy_identity_ambiguous", 0, 0],
+    );
+    assert.equal(
+      (
+        await DB.prepare(
+          "SELECT COUNT(*) AS count FROM events WHERE id LIKE 'municipal-taebaek-schedule-5460%'",
+        ).first()
+      ).count,
+      0,
+    );
+
+    const missingEvidence = await run(
+      DB,
+      {
+        ...value,
+        source_candidate_id: "schedule-without-proof",
+        self_contained_core_evidence: undefined,
+      },
+      { mode: "generic_html" },
+    );
+    assert.deepEqual(
+      [
+        missingEvidence.decision,
+        missingEvidence.reason,
+        missingEvidence.inserted,
+        missingEvidence.updated,
+      ],
+      ["AUTO_RETRY", "taebaek_schedule_core_unverified", 0, 0],
+    );
+  } finally {
+    await mf.dispose();
+  }
+});
