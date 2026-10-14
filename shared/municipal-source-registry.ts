@@ -390,7 +390,7 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     locality: "포항",
     url: "https://www.phcf.or.kr/api/phcf/performance/getPerformanceList.do?categoryFilter=&statusFilter=&fieldFilter=&sortFilter=date&searchKeyword=&pageIndex=1&pageSize=25&searchMode=NOMAL",
     allowedHosts: ["phcf.or.kr", "www.phcf.or.kr"],
-    healthMarkers: ["\"list\"", "\"event_id\""],
+    healthMarkers: ['"list"', '"event_id"'],
     expectedSignals: ["json_payload"],
     ingestion: "registered_parser",
     pagination: { queryParam: "pageIndex", maxPages: 3 },
@@ -414,6 +414,17 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     healthMarkers: ["행사일정표", "축제/행사/공연명"],
     expectedSignals: ["html_table"],
     ingestion: "registered_parser",
+  },
+  {
+    key: "jeonbuk-전주",
+    region: "전북",
+    locality: "전주",
+    url: "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000102002000000",
+    allowedHosts: ["tour.jeonju.go.kr"],
+    healthMarkers: ['class="list"', "상세보기"],
+    expectedSignals: ["html_list"],
+    ingestion: "registered_parser",
+    pagination: { queryParam: "startPage", maxPages: 3 },
   },
 ];
 

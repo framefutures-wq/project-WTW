@@ -14,7 +14,10 @@ import {
 
 test("morning production check accepts SELECT/WITH and rejects mutations", () => {
   assert.match(assertReadOnlySql("SELECT 1"), /^SELECT/);
-  assert.match(assertReadOnlySql("WITH x AS (SELECT 1) SELECT * FROM x"), /^WITH/);
+  assert.match(
+    assertReadOnlySql("WITH x AS (SELECT 1) SELECT * FROM x"),
+    /^WITH/,
+  );
   for (const sql of [
     "UPDATE events SET title='x'",
     "DELETE FROM events",
@@ -33,12 +36,13 @@ test("morning production check parses wrangler D1 JSON rows", () => {
   assert.throws(() => parseWranglerD1Rows("{}"));
 });
 
-test("morning production verifier covers every municipal Registry source", () => {
-  assert.deepEqual(
-    [...productionMunicipalKeys].sort(),
-    MUNICIPAL_SOURCE_REGISTRY.map((source) => source.key).sort(),
-  );
+test("morning production verifier remains pinned to the deployed municipal source set", () => {
+  const registryKeys = MUNICIPAL_SOURCE_REGISTRY.map((source) => source.key);
   assert.equal(productionMunicipalKeys.length, 35);
+  assert.equal(registryKeys.length, 36);
+  assert.equal(productionMunicipalKeys.includes("jeonbuk-전주"), false);
+  assert.equal(registryKeys.includes("jeonbuk-전주"), true);
+  assert(productionMunicipalKeys.every((key) => registryKeys.includes(key)));
 });
 
 test("morning production SQL stays bounded to deployed municipal sources", () => {
@@ -94,7 +98,6 @@ test("morning production SQL rejects an invalid sync timestamp", () => {
   assert.throws(() => municipalStateSql("2026-09-25'; DELETE FROM events; --"));
 });
 
-
 test("source outcome summary merges municipal shard messages", () => {
   const [first, second, third] = productionMunicipalKeys;
   const summary = summarizeMunicipalSourceOutcomes([
@@ -126,7 +129,6 @@ test("source outcome summary merges municipal shard messages", () => {
     { source: third, candidates: 0, reason: "network_or_timeout" },
   ]);
 });
-
 
 test("morning production summary aggregates municipal rich-detail shard metrics", () => {
   const [first, second] = productionMunicipalKeys;

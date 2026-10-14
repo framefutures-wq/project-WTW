@@ -1877,6 +1877,93 @@ export function parseGeojeMonthlyEvents(html: string): MunicipalCandidate[] {
   });
 }
 
+/**
+ * Visit Jeonju's canonical festival list repeats one self-contained card per
+ * event.  Read only its explicit category, title, full-year period, venue,
+ * detail href, and event thumbnail; navigation and promotional carousel
+ * images are intentionally outside this bounded card pattern.
+ */
+export function parseJeonjuFestivalList(html: string): MunicipalCandidate[] {
+  const sourceUrl =
+    "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000102002000000";
+  const list =
+    /<div\b[^>]*class=["'][^"']*\blist\b[^"']*["'][^>]*>([\s\S]*?)<p\s+class=['"]bbs_page['"]/.exec(
+      html,
+    )?.[1] ?? "";
+  const cards =
+    list.match(
+      /<li>\s*<p\s+class=["']img["']>([\s\S]*?)<\/p>\s*<div\s+class=["']txt["']>([\s\S]*?)<\/div>\s*<\/li>/gi,
+    ) ?? [];
+  return cards.flatMap<MunicipalCandidate>((card) => {
+    const category = clean(
+      /<span\b[^>]*class=["'][^"']*\bmark_(?:festival|show|exhibition)\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i.exec(
+        card,
+      )?.[1] ?? "",
+    );
+    const title = clean(
+      /<strong>\s*제\s*목\s*<\/strong>\s*([\s\S]*?)(?=<\/li>)/i.exec(
+        card,
+      )?.[1] ?? "",
+    );
+    const period = clean(
+      /<strong>\s*기\s*간\s*<\/strong>\s*([\s\S]*?)(?=<\/li>)/i.exec(
+        card,
+      )?.[1] ?? "",
+    );
+    const venue = clean(
+      /<strong>\s*장\s*소\s*<\/strong>\s*([\s\S]*?)(?=<\/li>)/i.exec(
+        card,
+      )?.[1] ?? "",
+    );
+    const href =
+      /<a\b[^>]*href=["']([^"']*menuCd=DOM_000000102002001000[^"']*facSid=RE_\d+[^"']*)["'][^>]*>\s*상세보기\s*<\/a\s*>/i.exec(
+        card,
+      )?.[1];
+    const official_url = href
+      ? absolute(sourceUrl, href.replaceAll("&amp;", "&"))
+      : null;
+    const source_candidate_id = official_url
+      ? new URL(official_url).searchParams.get("facSid")
+      : null;
+    const image = absolute(
+      sourceUrl,
+      /<img\b[^>]*src=["']([^"']*\/upload_data\/jeonju\/RE_\d+\/[^"']+)["'][^>]*>/i.exec(
+        card,
+      )?.[1],
+    );
+    const dates = explicitDateRange(period);
+    if (
+      !["축제", "공연", "전시"].includes(category) ||
+      !title ||
+      !dates ||
+      !venue ||
+      !isValidVenue(venue) ||
+      !official_url ||
+      !source_candidate_id ||
+      !image ||
+      !new URL(image).pathname.includes(
+        `/upload_data/jeonju/${source_candidate_id}/`,
+      )
+    )
+      return [];
+    return [
+      {
+        source: "jeonbuk-전주",
+        source_candidate_id,
+        title,
+        ...dates,
+        region: "전북",
+        locality: "전주",
+        venue,
+        official_url,
+        category,
+        snippet: null,
+        image_candidate: { url: image, source_url: official_url },
+      },
+    ];
+  });
+}
+
 export function selectMunicipalGate(candidate: MunicipalCandidate): {
   gate: SelectionGate;
   reason: string;
@@ -2029,6 +2116,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "gyeongbuk-포항": parsePohangCultureApi,
   "gyeonggi-포천": parsePocheonHomepageEvents,
   "gyeongnam-거제": parseGeojeMonthlyEvents,
+  "jeonbuk-전주": parseJeonjuFestivalList,
 };
 
 type JsonRecord = Record<string, unknown>;

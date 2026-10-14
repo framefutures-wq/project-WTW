@@ -457,6 +457,7 @@ test("existing parser-backed fixtures remain on their registered parser path", (
     "gyeongbuk-포항": "fixtures/municipal-discovery-pohang.json",
     "gyeonggi-포천": "fixtures/municipal-discovery-pocheon.html",
     "gyeongnam-거제": "fixtures/municipal-discovery-geoje.html",
+    "jeonbuk-전주": "fixtures/municipal-discovery-jeonju.html",
   };
   for (const registered of MUNICIPAL_SOURCE_REGISTRY.filter(
     (source) => source.ingestion === "registered_parser",
@@ -468,6 +469,53 @@ test("existing parser-backed fixtures remain on their registered parser path", (
     assert.equal(result.mode, "registered", registered.key);
     assert(result.candidates.length > 0, registered.key);
   }
+});
+
+test("Jeonju's official list keeps only self-contained cultural-event cards with detail and image evidence", () => {
+  const source = MUNICIPAL_SOURCE_REGISTRY.find(
+    ({ key }) => key === "jeonbuk-전주",
+  );
+  assert(source);
+  const result = extractMunicipalCandidates(
+    source,
+    readFileSync("fixtures/municipal-discovery-jeonju.html", "utf8"),
+  );
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map(
+      ({
+        source_candidate_id,
+        title,
+        start_date,
+        end_date,
+        venue,
+        category,
+        official_url,
+        image_candidate,
+      }) => [
+        source_candidate_id,
+        title,
+        start_date,
+        end_date,
+        venue,
+        category,
+        official_url,
+        image_candidate?.url,
+      ],
+    ),
+    [
+      [
+        "RE_0001121",
+        "2026 하반기 국립무형유산원과 함께하는 가족영화제",
+        "2026-10-17",
+        "2026-10-18",
+        "국립무형유산원 중정",
+        "축제",
+        "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000102002001000&facSid=RE_0001121",
+        "https://tour.jeonju.go.kr/upload_data/jeonju/RE_0001121/179196877713669.jpg",
+      ],
+    ],
+  );
 });
 
 test("direct generic parser remains empty when no self-contained core exists", () => {

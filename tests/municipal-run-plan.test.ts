@@ -6,16 +6,20 @@ import {
   municipalRunPlan,
 } from "../shared/municipal-run-plan";
 
-test("daily municipal plan covers all 35 Registry sources exactly once", () => {
+test("daily municipal plan covers all 36 Registry sources exactly once", () => {
   const keys = MUNICIPAL_SOURCE_REGISTRY.map((source) => source.key);
-  const plans = Array.from({ length: MUNICIPAL_DAILY_SHARD_COUNT }, (_, index) =>
-    municipalRunPlan(keys, index),
+  const plans = Array.from(
+    { length: MUNICIPAL_DAILY_SHARD_COUNT },
+    (_, index) => municipalRunPlan(keys, index),
   );
   const flattened = plans.flatMap((plan) => plan.sourceKeys);
 
-  assert.deepEqual(plans.map((plan) => plan.sourceKeys.length), [12, 12, 11]);
-  assert.equal(flattened.length, 35);
-  assert.equal(new Set(flattened).size, 35);
+  assert.deepEqual(
+    plans.map((plan) => plan.sourceKeys.length),
+    [12, 12, 12],
+  );
+  assert.equal(flattened.length, 36);
+  assert.equal(new Set(flattened).size, 36);
   assert.deepEqual(flattened, keys);
   assert.deepEqual(plans[0].sourceKeys, [
     "paju",
@@ -35,8 +39,9 @@ test("daily municipal plan covers all 35 Registry sources exactly once", () => {
 
 test("daily municipal plan preserves the global mutation breaker and bounded fetches", () => {
   const keys = MUNICIPAL_SOURCE_REGISTRY.map((source) => source.key);
-  const plans = Array.from({ length: MUNICIPAL_DAILY_SHARD_COUNT }, (_, index) =>
-    municipalRunPlan(keys, index),
+  const plans = Array.from(
+    { length: MUNICIPAL_DAILY_SHARD_COUNT },
+    (_, index) => municipalRunPlan(keys, index),
   );
 
   assert.equal(
