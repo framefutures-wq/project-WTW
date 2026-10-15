@@ -1,5 +1,11 @@
 # 갈틈 프로젝트 컨텍스트
 
+## 2026-10-16 — bounded manual AI development pilot
+
+- Setup-only PR #91 merged as `8018217` after explicit approval; no operational deployment or production DB change. Paid AI work is manually triggered by the owner only, with read-only GitHub permissions, no persisted credentials, sandbox/drop-sudo, a 3-minute AI timeout, and validated patch/summary artifacts. It does not run continuously or publish its changes automatically.
+- First and only authorized trial succeeded: run `38787023327`, target PR #90 at `ba4df741ad8c463cdde0733020ca9add66128968`, 0 code changes. Trial limitations: missing shallow-checkout history prevented actual PR diff inspection, so only two neighboring municipal tests ran. Automatic repair and full PR-specific verification remain unproven.
+- Follow-up `fix/codex-pilot-reviewed-diff` supplies the exact base/head diff before paid execution and caps it at 64 KiB. No second paid trial is authorized. Existing unrelated full-CI failures and PR #90 remain separate tasks.
+
 > 마지막 갱신: 2026-10-12
 >
 > 이 문서는 대화 전체를 그대로 저장하는 로그가 아니라, 새 ChatGPT/Codex 세션에서도 작업을 바로 이어갈 수 있도록 **현재 상태·결정사항·운영 원칙·다음 작업**만 압축해 보존하는 handoff 문서다.
