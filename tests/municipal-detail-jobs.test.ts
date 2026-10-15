@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
-import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES, MUNICIPAL_DETAIL_TTL_MS, MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS, verifyPohangCandidateCore } from "../worker/sources/municipal-detail-jobs";
+import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES, MUNICIPAL_DETAIL_TTL_MS, MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS, verifyBusanDongguCandidateCore, verifyPohangCandidateCore } from "../worker/sources/municipal-detail-jobs";
 import { runVerifiedGenericMunicipalPublicationOne } from "../worker/sources/municipal";
 import { municipalSourceByKey } from "../shared/municipal-source-registry";
 import type { MunicipalCandidate } from "../shared/municipal-discovery";
@@ -95,6 +95,19 @@ test("Pohang new candidates verify exact official performance and festival API c
   assert.equal(verifyPohangCandidateCore({...performance,venue:"다른 장소"},performanceBody).status,"conflict");
   assert.equal(verifyPohangCandidateCore({...festival,source_candidate_id:"FST_OTHER_001"},festivalBody).status,"insufficient");
   assert.equal(verifyPohangCandidateCore(performance,performanceBody.replace("ONGOING","CANCELLED")).status,"conflict");
+});
+
+test("Busan Dong-gu verifies core facts only from one gallery detail article",()=>{
+  const candidate={source:"busan-동",source_candidate_id:"5091365",title:"《재수의 연습장 : 재수 좋은 날》",start_date:"2026-06-20",end_date:"2026-10-25",region:"부산",locality:"동구",venue:"동구 문화플랫폼 시민마당 전시장",official_url:"https://www.bsdonggu.go.kr/board/view.donggu?dataSid=5091365",category:"공연·전시",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
+  const fixture=readFileSync("fixtures/municipal-busan-dong-detail.html","utf8");
+  assert.deepEqual(verifyBusanDongguCandidateCore(candidate,fixture),{status:"verified",title:true,schedule:true,venue:true});
+  assert.deepEqual(verifyBusanDongguCandidateCore({...candidate,title:"다른 전시"},fixture),{status:"conflict",title:false,schedule:true,venue:true});
+  assert.deepEqual(verifyBusanDongguCandidateCore({...candidate,start_date:"2026-06-21"},fixture),{status:"conflict",title:true,schedule:false,venue:true});
+  assert.deepEqual(verifyBusanDongguCandidateCore({...candidate,end_date:"2026-10-24"},fixture),{status:"conflict",title:true,schedule:false,venue:true});
+  assert.deepEqual(verifyBusanDongguCandidateCore({...candidate,venue:"다른 전시장"},fixture),{status:"conflict",title:true,schedule:true,venue:false});
+  assert.deepEqual(verifyBusanDongguCandidateCore(candidate,fixture.replace("<li class=\"info_tit\">장소</li><li>동구 문화플랫폼 시민마당 전시장</li>","")),{status:"insufficient",title:true,schedule:true,venue:false});
+  const crossed=`<article class="cultrue_gallery_view"><h1 class="view_tit">${candidate.title}</h1><ul class="view_info"><li class="info_tit">기간</li><li>${candidate.start_date} ~ ${candidate.end_date}</li></ul></article><article class="cultrue_gallery_view"><ul class="view_info"><li class="info_tit">장소</li><li>${candidate.venue}</li></ul></article>`;
+  assert.deepEqual(verifyBusanDongguCandidateCore(candidate,crossed),{status:"insufficient",title:true,schedule:true,venue:false});
 });
 
 test("Pohang new detail checkpoints fetch only their official API and retain failed verification",async()=>{

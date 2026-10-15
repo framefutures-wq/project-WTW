@@ -28,8 +28,38 @@ const fieldValue = (html:string, labels:string[]) => {
   const patterns=[new RegExp(`<dt[^>]*>\\s*(?:${label})\\s*<\\/dt>\\s*<dd[^>]*>([\\s\\S]*?)<\\/dd>`,"i"),new RegExp(`<th[^>]*>\\s*(?:${label})\\s*<\\/th>\\s*<td[^>]*>([\\s\\S]*?)<\\/td>`,"i"),new RegExp(`(?:${label})\\s*[|:：]\\s*([^\\n<]{1,300})`,"i")];
   for(const pattern of patterns){const match=pattern.exec(html);if(match)return municipalRichText(match[1]);} return null;
 };
+const busanDongguDetailArticle = (html:string) => {
+  for (const match of html.matchAll(/<article\b([^>]*)>([\s\S]*?)<\/article\s*>/gi))
+    if (/\bclass\s*=\s*(["'])[^"']*\bcultrue_gallery_view\b[^"']*\1/i.test(match[1]))
+      return match[2];
+  return null;
+};
+const busanDongguViewInfo = (article:string) => {
+  const list = /<ul\b[^>]*\bclass\s*=\s*(["'])[^"']*\bview_info\b[^"']*\1[^>]*>([\s\S]*?)<\/ul\s*>/i.exec(article)?.[2];
+  if (!list) return new Map<string,string>();
+  const values = [...list.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li\s*>/gi)].map(match => municipalRichText(match[1]));
+  const fields = new Map<string,string>();
+  for (let index=0; index+1<values.length; index+=1)
+    if (["기간","장소"].includes(values[index]) && !fields.has(values[index])) fields.set(values[index],values[index+1]);
+  return fields;
+};
+/** Busan Dong-gu renders the event's three core facts as one scoped gallery article. */
+export function verifyBusanDongguCandidateCore(candidate:MunicipalCandidate, html:string):CandidateVerification {
+  const article=busanDongguDetailArticle(html);
+  if (!article) return {status:"insufficient",title:false,schedule:false,venue:false};
+  const titleValue=/<h1\b[^>]*\bclass\s*=\s*(["'])[^"']*\bview_tit\b[^"']*\1[^>]*>([\s\S]*?)<\/h1\s*>/i.exec(article)?.[2];
+  const fields=busanDongguViewInfo(article);
+  const title=Boolean(titleValue&&candidate.title&&compact(municipalRichText(titleValue))===compact(candidate.title));
+  const scheduleValue=fields.get("기간") ?? null;
+  const schedule=Boolean(scheduleValue&&candidate.start_date&&candidate.end_date&&new RegExp(datePattern(candidate.start_date)).test(scheduleValue)&&new RegExp(datePattern(candidate.end_date)).test(scheduleValue));
+  const venueValue=fields.get("장소") ?? null;
+  const venue=Boolean(venueValue&&candidate.venue&&compact(venueValue)===compact(candidate.venue));
+  const conflict=(titleValue!==undefined&&!title)||(scheduleValue!==null&&!schedule)||(venueValue!==null&&!venue);
+  return {status:title&&schedule&&venue?"verified":conflict?"conflict":"insufficient",title,schedule,venue};
+}
 /** A new candidate needs explicit official title, schedule, and venue fields. */
 export function verifyMunicipalCandidateCore(candidate:MunicipalCandidate, html:string):CandidateVerification {
+  if (candidate.source === "busan-동") return verifyBusanDongguCandidateCore(candidate,html);
   const titleValue=fieldValue(html,["행사명","공연명","전시명","제목"]);
   const headings=[...html.matchAll(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)].map(match=>municipalRichText(match[1]));
   const title=Boolean(candidate.title && [titleValue,...headings].some(value=>value!==null&&compact(value)===compact(candidate.title)));
