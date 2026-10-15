@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES, MUNICIPAL_DETAIL_TTL_MS, MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS, verifyBusanDongguCandidateCore, verifyPohangCandidateCore } from "../worker/sources/municipal-detail-jobs";
-import { runVerifiedGenericMunicipalPublicationOne } from "../worker/sources/municipal";
+import { runMunicipalCandidateOne, runVerifiedGenericMunicipalPublicationOne } from "../worker/sources/municipal";
 import { municipalSourceByKey } from "../shared/municipal-source-registry";
 import type { MunicipalCandidate } from "../shared/municipal-discovery";
 
@@ -108,6 +108,31 @@ test("Busan Dong-gu verifies core facts only from one gallery detail article",()
   assert.deepEqual(verifyBusanDongguCandidateCore(candidate,fixture.replace("<li class=\"info_tit\">장소</li><li>동구 문화플랫폼 시민마당 전시장</li>","")),{status:"insufficient",title:true,schedule:true,venue:false});
   const crossed=`<article class="cultrue_gallery_view"><h1 class="view_tit">${candidate.title}</h1><ul class="view_info"><li class="info_tit">기간</li><li>${candidate.start_date} ~ ${candidate.end_date}</li></ul></article><article class="cultrue_gallery_view"><ul class="view_info"><li class="info_tit">장소</li><li>${candidate.venue}</li></ul></article>`;
   assert.deepEqual(verifyBusanDongguCandidateCore(candidate,crossed),{status:"insufficient",title:true,schedule:true,venue:false});
+});
+
+test("only an exact Busan Dong-gu automated HOLD can re-enter the verified checkpoint path",async()=>{
+  const {mf,DB}=await setup(); try {
+    const at="2026-10-15T01:00:00.000Z";
+    const held={source:"busan-동",source_candidate_id:"held-509",title:"유규영 작가 초대전 <<엄마의 식탁>>",start_date:"2026-10-01",end_date:"2026-12-31",region:"부산",locality:"동구",venue:"동구 문화플랫폼 시민마당 전시장",official_url:"https://www.bsdonggu.go.kr/board/view.donggu?dataSid=held-509",category:"공연·전시",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
+    await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('held-source','municipality',2,'동구 공식 행사 안내',?,?)").bind(held.official_url,at).run();
+    await DB.prepare(`INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at,publish_quality_state,publish_quality_reason,publish_quality_rule_version,publish_quality_checked_at) VALUES('held-event',?,'공식','부산',?,? ,?,?,'unknown','unknown','scheduled','verified',0,'held-source',?,'HOLD','insufficient_event_signal','publish_quality_v2',?)`).bind(held.title,held.venue,held.venue,held.start_date,held.end_date,at,at).run();
+    const env={DB,APP_MODE:"production",TOUR_API_ENABLED:"false",ASSETS:{}} as any;
+    const result=await runMunicipalCandidateOne(env,{candidate:held,mode:"generic_html",now:at,koreaToday:"2026-10-15",publishMutations:0,maxPublishMutations:10});
+    assert.equal(result.detail_required,true);
+    assert.equal((await DB.prepare("SELECT event_id FROM municipal_detail_jobs").first<any>()).event_id,"held-event");
+    const html=`<article class="cultrue_gallery_view"><h1 class="view_tit">유규영 작가 초대전 &lt;&lt;엄마의 식탁&gt;&gt;</h1><ul class="view_info"><li>기간</li><li>${held.start_date} ~ ${held.end_date}</li><li>장소</li><li>${held.venue}</li></ul></article>`;
+    await detailFetchOne(DB,async()=>new Response(html)); await detailParseOne(DB); await detailPersistOne(DB);
+    await DB.prepare("UPDATE municipal_detail_jobs SET available_at=?").bind(at).run();
+    assert.equal((await runVerifiedGenericMunicipalPublicationOne(env,at))?.stage,"AUTO_PUBLISH");
+    assert.deepEqual(await DB.prepare("SELECT publish_quality_state,publish_quality_reason FROM events WHERE id='held-event'").first(),{publish_quality_state:"PUBLIC",publish_quality_reason:"explicit_public_event"});
+
+    for (const [id,state,rule,override] of [["public","PUBLIC","publish_quality_v2",{}],["manual","HOLD",null,{}],["changed","HOLD","publish_quality_v2",{venue:"다른 전시장"}]] as const) {
+      await DB.prepare(`INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at,publish_quality_state,publish_quality_reason,publish_quality_rule_version,publish_quality_checked_at) VALUES(?,?,'공식','부산',?,? ,?,?,'unknown','unknown','scheduled','verified',0,'held-source',?,?,?,?,?)`).bind(id,held.title,override.venue??held.venue,override.venue??held.venue,held.start_date,held.end_date,at,state,"insufficient_event_signal",rule,at).run();
+      const protectedResult=await runMunicipalCandidateOne(env,{candidate:held,mode:"generic_html",now:at,koreaToday:"2026-10-15",publishMutations:0,maxPublishMutations:10});
+      assert.equal(protectedResult.detail_required,false);
+    }
+    assert.equal(await runVerifiedGenericMunicipalPublicationOne(env,at),null);
+  } finally {await mf.dispose();}
 });
 
 test("Pohang new detail checkpoints fetch only their official API and retain failed verification",async()=>{

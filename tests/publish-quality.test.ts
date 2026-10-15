@@ -37,6 +37,22 @@ test("daily operation inside a bounded special event remains PUBLIC", () => {
   );
 });
 
+test("artist invitational exhibitions are explicit public events without widening generic invitations", () => {
+  assert.equal(
+    decidePublishQuality({
+      ...base,
+      title: "유규영 작가 초대전 <<엄마의 식탁>>",
+      start_date: "2026-10-01",
+      end_date: "2026-12-31",
+    }).state,
+    "PUBLIC",
+  );
+  assert.equal(
+    decidePublishQuality({ ...base, title: "가을 초대전 안내", description: "단순 공간 안내" }).state,
+    "HOLD",
+  );
+});
+
 test("ordinary perpetual facilities are EXCLUDE when no special-event signal exists", () => {
   assert.deepEqual(
     decidePublishQuality({

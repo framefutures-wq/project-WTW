@@ -49,7 +49,10 @@ import {
   MUNICIPAL_MIN_FETCH_RESERVE_PER_SOURCE,
   municipalSourceFetchCeiling,
 } from "../../shared/municipal-fetch-budget";
-import { decidePublishQuality } from "../../shared/publish-quality";
+import {
+  decidePublishQuality,
+  PUBLISH_QUALITY_RULE_VERSION,
+} from "../../shared/publish-quality";
 import { fetchOfficialPageViaReader } from "../../shared/official-reader-fallback";
 
 const SOURCES = MUNICIPAL_SOURCE_REGISTRY;
@@ -1597,6 +1600,35 @@ export type MunicipalCandidateOneResult = {
   detail_required: boolean;
 };
 
+/** This is deliberately not a general HOLD recovery. */
+const findBusanDongguHeldEventRecoveryTarget = async (
+  env: Env,
+  candidate: MunicipalCandidate,
+) => {
+  if (
+    candidate.source !== "busan-동" ||
+    candidate.region !== "부산" ||
+    candidate.locality !== "동구" ||
+    !candidate.title ||
+    !candidate.start_date ||
+    !candidate.end_date ||
+    !candidate.venue
+  )
+    return null;
+  const matches = await env.DB.prepare(
+    `SELECT id FROM events
+      WHERE title=? AND region='부산' AND start_date=? AND end_date=? AND venue=?
+        AND verification='verified' AND is_sample=0
+        AND publish_quality_state='HOLD'
+        AND publish_quality_reason='insufficient_event_signal'
+        AND publish_quality_rule_version=?
+      ORDER BY id LIMIT 2`,
+  )
+    .bind(candidate.title, candidate.start_date, candidate.end_date, candidate.venue, PUBLISH_QUALITY_RULE_VERSION)
+    .all<{ id: string }>();
+  return matches.results.length === 1 ? matches.results[0].id : null;
+};
+
 const hasDistinctOfficialDetailUrl = (
   source: (typeof SOURCES)[number],
   candidateUrl: string,
@@ -1747,6 +1779,12 @@ export async function runMunicipalCandidateOne(
   const detailRequired =
     detailPending &&
     hasDistinctOfficialDetailUrl(source, effectiveCandidate.official_url);
+  // Exact current automated HOLD only: PUBLIC, unversioned/manual, changed,
+  // non-Dong-gu, and ambiguous records never enter this path.
+  const heldEventRecoveryId = await findBusanDongguHeldEventRecoveryTarget(
+    env,
+    effectiveCandidate,
+  );
   let decision = decideAutonomousMunicipal({
     gate: gate.gate,
     duplicate: duplicateResult.decision,
@@ -1815,11 +1853,11 @@ export async function runMunicipalCandidateOne(
   // A generic candidate remains AUTO_RETRY until its official detail has
   // explicitly verified its core. The job can retain verification before an
   // event exists and never publishes from this path.
-  if (detailRequired)
+  if (detailRequired || heldEventRecoveryId)
     await enqueueMunicipalDetailJob(env.DB, {
       sourceKey: candidate.source,
       candidate: effectiveCandidate,
-      eventId: id,
+      eventId: heldEventRecoveryId ?? id,
     });
 
   let inserted = 0;
@@ -1856,7 +1894,7 @@ export async function runMunicipalCandidateOne(
     updated,
     rows_read: rowsRead,
     rows_written: rowsWritten,
-    detail_required: detailRequired,
+    detail_required: detailRequired || Boolean(heldEventRecoveryId),
   };
 }
 
@@ -1984,6 +2022,14 @@ export async function runVerifiedGenericMunicipalPublicationOne(
       >;
     } | null;
     const snapshot = checkpoint?.candidate_snapshot;
+    const heldRecovery =
+      candidate.source === "busan-동" &&
+      candidate.region === "부산" &&
+      candidate.locality === "동구" &&
+      checkpoint?.candidate_verification?.status === "verified" &&
+      checkpoint.candidate_verification.title === true &&
+      checkpoint.candidate_verification.schedule === true &&
+      checkpoint.candidate_verification.venue === true;
     const source = SOURCES.find((item) => item.key === candidate.source);
     const identity = source
       ? await resolveImprovedGenericIdentity(
@@ -2020,9 +2066,10 @@ export async function runVerifiedGenericMunicipalPublicationOne(
       !source ||
       !municipalSourceAllowsUrl(source, candidate.official_url) ||
       !identity ||
-      identity.id !== job.event_id ||
+      (!heldRecovery && identity.id !== job.event_id) ||
       !currentState ||
-      !["AUTO_RETRY", "AUTO_PUBLISH"].includes(currentState.decision_state) ||
+      (!heldRecovery &&
+        !["AUTO_RETRY", "AUTO_PUBLISH"].includes(currentState.decision_state)) ||
       currentState.source_key !== candidate.source ||
       currentState.source_candidate_id !== candidate.source_candidate_id ||
       currentState.title_snapshot !== snapshot.title ||
@@ -2037,6 +2084,65 @@ export async function runVerifiedGenericMunicipalPublicationOne(
         .bind(at, at, job.id)
         .run();
       return { id: job.id, stage: "HOLD" };
+    }
+
+    if (heldRecovery) {
+      const quality = decidePublishQuality({
+        title: candidate.title,
+        description:
+          candidate.snippet ?? "공식 지자체 행사 안내를 바탕으로 등록된 행사입니다.",
+        start_date: candidate.start_date,
+        end_date: candidate.end_date,
+        venue: candidate.venue,
+        address: candidate.venue,
+        source_kind: "municipality",
+        source_url: candidate.official_url,
+        event_official_url: exactOfficialDetailUrl(candidate),
+      });
+      if (quality.state !== "PUBLIC") {
+        await env.DB.prepare(
+          "UPDATE municipal_detail_jobs SET safe_error_category='candidate_registration_hold',available_at=?,updated_at=? WHERE id=? AND stage='DONE'",
+        )
+          .bind(at, at, job.id)
+          .run();
+        return { id: job.id, stage: "HOLD" };
+      }
+      const updated = await env.DB.prepare(
+        `UPDATE events SET publish_quality_state='PUBLIC',publish_quality_reason=?,
+           publish_quality_rule_version=?,publish_quality_checked_at=?,updated_at=?
+         WHERE id=? AND title=? AND region='부산' AND start_date=? AND end_date=? AND venue=?
+           AND verification='verified' AND is_sample=0
+           AND publish_quality_state='HOLD'
+           AND publish_quality_reason='insufficient_event_signal'
+           AND publish_quality_rule_version=?`,
+      )
+        .bind(
+          quality.reason,
+          quality.rule_version,
+          at,
+          at,
+          job.event_id,
+          candidate.title,
+          candidate.start_date,
+          candidate.end_date,
+          candidate.venue,
+          PUBLISH_QUALITY_RULE_VERSION,
+        )
+        .run();
+      if (!(updated.meta.changes ?? 0)) {
+        await env.DB.prepare(
+          "UPDATE municipal_detail_jobs SET safe_error_category='candidate_registration_hold',available_at=?,updated_at=? WHERE id=? AND stage='DONE'",
+        )
+          .bind(at, at, job.id)
+          .run();
+        return { id: job.id, stage: "HOLD" };
+      }
+      await env.DB.prepare(
+        "UPDATE municipal_detail_jobs SET safe_error_category='candidate_registration_public',available_at=?,retry_at=NULL,updated_at=? WHERE id=? AND stage='DONE'",
+      )
+        .bind(at, at, job.id)
+        .run();
+      return { id: job.id, stage: "AUTO_PUBLISH" };
     }
 
     const result = await runMunicipalCandidateOne(env, {
