@@ -1,5 +1,10 @@
 # 갈틈 프로젝트 컨텍스트
 
+## 2026-10-16 — GitHub code baseline and publication retry fix
+
+- Checked GitHub `main` at `eb3a9d5`: fair micro scheduling is connected in `worker/cron.ts`; `wrangler.production.jsonc` declares `0 1`, every-minute, and `55 8` UTC triggers. The old dormant-runtime notes below do not describe this code baseline. Actual production deployment/CPU logs and unpublished Codespaces changes were not checked.
+- Branch `fix/dispatcher-publication-retry-readiness` aligns municipal readiness with the existing publication runner's `candidate_registration_retry` handling so due retained publications remain dispatchable after cycle completion. Targeted dispatcher/detail/scheduler tests: 36/36 PASS; typecheck and diff-check PASS. No main merge, operational deploy, remote DB write, or manual ingestion was performed. User approval is required before operational changes.
+
 > 마지막 갱신: 2026-10-12
 >
 > 이 문서는 대화 전체를 그대로 저장하는 로그가 아니라, 새 ChatGPT/Codex 세션에서도 작업을 바로 이어갈 수 있도록 **현재 상태·결정사항·운영 원칙·다음 작업**만 압축해 보존하는 handoff 문서다.

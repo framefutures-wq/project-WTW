@@ -1,5 +1,13 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-16 — dispatcher publication retry readiness (branch-only)
+
+- Baseline GitHub `main`: `eb3a9d5`. Current code already connects the fair micro dispatcher and contains the rich-detail regex CPU fix plus Pohang/Busan Dong-gu verification fixes. Older dormant-runtime notes below are historical, not current code status.
+- Fixed a reproduced readiness omission: after today's municipal cycle completes, a retained `DONE/candidate_registration_retry` checkpoint was invisible to the dispatcher even after `available_at`. Readiness now accepts the same verified/retry categories as the existing publication runner, preserving its due-time and expiry guards.
+- Regression covers dispatch when due, future retry, live publication lease, and expired checkpoint. Existing publication validation and persistence are unchanged.
+- Validation: reproduced failure before the fix; after the fix, targeted dispatcher/detail/scheduler tests 36/36 PASS, typecheck PASS, diff-check PASS. Cloudflare Free CPU behavior remains unverified; this fix does not claim to resolve CPU termination.
+- Work is isolated on `fix/dispatcher-publication-retry-readiness`; no main merge, production deploy, remote D1 write, manual ingestion, or paid resource action is authorized by this task. Production runtime/CPU status and unpublished Codespaces changes were not verified here. Obtain explicit approval before operational changes.
+
 ## 2026-10-12 — official-detail micro production runtime deployed, scheduler dormant
 
 - Production D1 `weekend-mwohae-production` applied additive migration `0027_official_detail_jobs.sql`. The job table, generation/stage/lease/retry/checkpoint fields, and ready index are present; the queue contains 0 rows.
