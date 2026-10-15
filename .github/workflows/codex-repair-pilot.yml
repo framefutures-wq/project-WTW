@@ -9,6 +9,15 @@ on:
         description: "Existing internal PR number to inspect (e.g. 90)"
         required: true
         type: number
+      expected_head_sha:
+        description: "Reviewed PR head SHA (40 hex characters; prevents racing changes)"
+        required: true
+        type: string
+      budget_ready:
+        description: "Dedicated API project: enforced monthly limit <= $4, auto recharge off, usage checked"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -20,28 +29,46 @@ concurrency:
 
 jobs:
   propose:
-    if: ${{ github.repository == 'framefutures-wq/project-WTW' && github.actor == 'framefutures-wq' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'framefutures-wq/project-WTW' && github.actor == 'framefutures-wq' && github.triggering_actor == 'framefutures-wq' && github.run_attempt == 1 && inputs.budget_ready }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Reject forked, closed or unrelated PRs
+        id: target
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ inputs.pull_request }}
+          EXPECTED_SHA: ${{ inputs.expected_head_sha }}
         shell: bash
         run: |
           set -euo pipefail
           case "$PR_NUMBER" in ''|*[!0-9]*) echo "Invalid PR number" >&2; exit 1;; esac
-          origin_repo=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.repo.full_name')
-          state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.state')
-          if [ "$origin_repo" != "$GITHUB_REPOSITORY" ] || [ "$state" != open ]; then
-            echo "Only open PRs from this repository are allowed" >&2
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          metadata=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")
+          if ! jq -e --arg repo "$GITHUB_REPOSITORY" --arg sha "$EXPECTED_SHA" '
+            .head.repo.full_name == $repo and .state == "open" and
+            .user.login == "framefutures-wq" and .base.ref == "main" and .head.sha == $sha
+          ' <<< "$metadata" >/dev/null; then
+            echo "Only reviewed, open owner PRs targeting main are allowed" >&2
             exit 1
           fi
+          # Reject executable/config changes before dependency installation or API use.
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" \
+            --jq '.[] | .filename, (.previous_filename // empty)' > "$RUNNER_TEMP/pilot-pr-paths.txt"
+          if grep -Ev '^(worker|shared|src|tests|docs)/|^(PROJECT_CONTEXT|NEXT_CHAT_HANDOFF)\.md$' "$RUNNER_TEMP/pilot-pr-paths.txt"; then
+            echo "Blocked: target PR changes protected setup or configuration" >&2
+            exit 1
+          fi
+          echo "sha=$EXPECTED_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Verify API secret is present without exposing it
+        env:
+          PILOT_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: test -n "$PILOT_API_KEY"
 
       - uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ inputs.pull_request }}/head
+          ref: ${{ steps.target.outputs.sha }}
           persist-credentials: false
           fetch-depth: 1
 
@@ -51,15 +78,21 @@ jobs:
           cache: npm
 
       - name: Install existing project dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Request one bounded Codex repair
-        uses: openai/codex-action@v1
+        id: codex
+        timeout-minutes: 3
+        uses: openai/codex-action@1d82a3dba7c7988ec71ecae1ed5b8e8db96495c5 # v1.13
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           permission-profile: ":workspace"
           safety-strategy: drop-sudo
-          codex-args: '["--model", "gpt-5-codex-mini"]'
+          codex-version: "0.162.1"
+          model: gpt-5.4-mini-2026-03-17
+          effort: low
+          codex-args: '["--ephemeral"]'
+          output-file: ${{ runner.temp }}/codex-pilot-summary.md
           prompt: |
             This is a low-budget diagnostic repair PILOT on internal PR #${{ inputs.pull_request }}.
             Read AGENTS.md, PROJECT_CONTEXT.md, NEXT_CHAT_HANDOFF.md and
@@ -68,6 +101,9 @@ jobs:
             narrow fix for a failure directly caused by the PR's change.
             Pre-existing failures on main are NOT part of this task:
             do not "repair" unrelated baseline tests merely to turn CI green.
+            This task overrides the repository's default commit/push/deploy
+            instructions. No operational action is authorized. Stay within
+            this PR; do not read whole historical handoff logs unnecessarily.
             You may edit only files under worker/, shared/, src/ or tests/.
             DO NOT edit .github/, scripts/, migrations/, Cloudflare settings,
             package manifests, or documentation.
@@ -78,25 +114,40 @@ jobs:
             verified and what remains unknown.
 
       - name: Check patch scope and formatting
-        if: always()
+        id: patch
+        if: ${{ always() && steps.codex.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
-          git diff --check
-          git diff --name-only > /tmp/codex-changed-files.txt
-          if grep -Ev '^(worker|shared|src|tests)/' /tmp/codex-changed-files.txt; then
-            echo "Blocked: Codex changed out-of-scope tracked files" >&2
-            exit 1
-          fi
-          git diff --binary > codex-proposal.patch
-          echo "Changed paths:"
-          cat /tmp/codex-changed-files.txt
+          test "$(git rev-parse HEAD)" = "${{ steps.target.outputs.sha }}"
+          python3 - <<'PY'
+          import pathlib, subprocess
+          def paths(*args):
+              return subprocess.check_output(['git', *args]).decode().split('\0')[:-1]
+          untracked = paths('ls-files', '--others', '--exclude-standard', '-z')
+          changed = set(paths('diff', 'HEAD', '--no-renames', '--name-only', '-z') + untracked)
+          for name in changed:
+              path = pathlib.PurePosixPath(name)
+              if path.parts[0] not in {'worker', 'shared', 'src', 'tests'} or '..' in path.parts:
+                  raise SystemExit('Blocked: out-of-scope file')
+              if pathlib.Path(name).is_symlink():
+                  raise SystemExit('Blocked: symlink proposal')
+          if untracked:
+              subprocess.run(['git', 'add', '--intent-to-add', '--', *untracked], check=True)
+          subprocess.run(['git', 'diff', 'HEAD', '--check'], check=True)
+          import os
+          with open(pathlib.Path(os.environ['RUNNER_TEMP']) / 'codex-proposal.patch', 'wb') as output:
+              subprocess.run(['git', 'diff', 'HEAD', '--binary', '--no-ext-diff', '--no-textconv'], stdout=output, check=True)
+          print(f'Validated {len(changed)} changed paths (including staged and new files)')
+          PY
 
       - name: Save proposed patch for human verification
-        if: always()
+        if: ${{ always() && steps.patch.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: codex-proposed-patch
-          path: codex-proposal.patch
-          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/codex-proposal.patch
+            ${{ runner.temp }}/codex-pilot-summary.md
+          if-no-files-found: error
           retention-days: 3
