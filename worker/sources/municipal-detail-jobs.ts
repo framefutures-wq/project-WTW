@@ -9,6 +9,8 @@ export const MUNICIPAL_DETAIL_TTL_MS = 15 * 60_000;
 export const MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS = 14 * 24 * 60 * 60_000;
 // The API-core verifier shipped immediately after this bounded legacy window.
 const POHANG_LEGACY_VERIFICATION_CUTOFF = "2026-10-15T06:13:01.380Z";
+// The scoped Busan Dong-gu verifier shipped after this bounded legacy window.
+const BUSAN_DONGGU_LEGACY_VERIFICATION_CUTOFF = "2026-10-15T08:01:21.926Z";
 export type MunicipalDetailStage = "FETCH_PENDING" | "PARSE_PENDING" | "PERSIST_PENDING" | "DONE" | "RETRY";
 type Job = { id:string; source_key:string; candidate_id:string; event_id:string; official_url:string; candidate_json:string; stage:MunicipalDetailStage; retry_stage:MunicipalDetailStage|null; raw_html:string|null; normalized_json:string|null; attempt_count:number; expires_at:string };
 type CandidateVerification = { status:"verified"|"insufficient"|"conflict"; title:boolean; schedule:boolean; venue:boolean };
@@ -177,10 +179,11 @@ export async function enqueueMunicipalDetailJob(db:D1Database, input:{ sourceKey
       stage='FETCH_PENDING',retry_stage=NULL,raw_html=NULL,raw_html_sha256=NULL,normalized_json=NULL,
       attempt_count=municipal_detail_jobs.attempt_count+1,available_at=excluded.available_at,retry_at=NULL,
       safe_error_category=NULL,updated_at=excluded.updated_at,expires_at=excluded.expires_at
-    WHERE municipal_detail_jobs.source_key='gyeongbuk-포항'
+    WHERE municipal_detail_jobs.source_key IN ('gyeongbuk-포항','busan-동')
       AND municipal_detail_jobs.stage='DONE'
       AND municipal_detail_jobs.safe_error_category='candidate_core_conflict'
-      AND municipal_detail_jobs.updated_at<?
+      AND ((municipal_detail_jobs.source_key='gyeongbuk-포항' AND municipal_detail_jobs.updated_at<?)
+        OR (municipal_detail_jobs.source_key='busan-동' AND municipal_detail_jobs.updated_at<?))
       AND municipal_detail_jobs.attempt_count=0
       AND json_extract(municipal_detail_jobs.candidate_json,'$.source')=excluded.source_key
       AND json_extract(municipal_detail_jobs.candidate_json,'$.source_candidate_id')=excluded.candidate_id
@@ -207,7 +210,7 @@ export async function enqueueMunicipalDetailJob(db:D1Database, input:{ sourceKey
           AND state.venue_snapshot=?
           AND state.official_url_snapshot=excluded.official_url
       )`).bind(id,input.sourceKey,input.candidate.source_candidate_id,input.eventId,input.candidate.official_url,JSON.stringify(input.candidate),timestamp,timestamp,timestamp,expires,
-    POHANG_LEGACY_VERIFICATION_CUTOFF,input.candidate.title,input.candidate.start_date,input.candidate.end_date,input.candidate.venue,
+    POHANG_LEGACY_VERIFICATION_CUTOFF,BUSAN_DONGGU_LEGACY_VERIFICATION_CUTOFF,input.candidate.title,input.candidate.start_date,input.candidate.end_date,input.candidate.venue,
     input.candidate.title,input.candidate.venue,input.candidate.start_date,input.candidate.end_date,input.candidate.start_date,input.candidate.end_date,input.candidate.end_date,koreaToday(),
     input.candidate.title,input.candidate.start_date,input.candidate.end_date,input.candidate.venue).run();
   return id;

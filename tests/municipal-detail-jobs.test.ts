@@ -159,7 +159,7 @@ test("Pohang new detail checkpoints fetch only their official API and retain fai
   } finally {await mf.dispose();}
 });
 
-test("only the matched pre-cutoff Pohang verification conflict is reactivated once",async()=>{
+test("only matched pre-cutoff Pohang and Busan Dong-gu verification conflicts reactivate once",async()=>{
   const {mf,DB}=await setup(); try {
     const legacy={source:"gyeongbuk-포항",source_candidate_id:"EVT_20260831_002",title:"뮤지컬 <마리 퀴리>",start_date:"2026-12-11",end_date:"2026-12-12",region:"경북",locality:"포항",venue:"포항문화예술회관",official_url:"https://www.phcf.or.kr/phcf/performance_detail/view.do?eventId=EVT_20260831_002&menu_site_id=performance_detail",category:"공연",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
     const old="2026-10-15T06:13:01.379Z", cutoff="2026-10-15T06:13:01.380Z";
@@ -195,6 +195,35 @@ test("only the matched pre-cutoff Pohang verification conflict is reactivated on
     const pastCandidate=await prepare("pohang-past",{...legacy,source_candidate_id:"pohang-past",official_url:legacy.official_url.replace("EVT_20260831_002","pohang-past"),start_date:"2025-10-11",end_date:"2025-10-12"});
     await enqueueMunicipalDetailJob(DB,{sourceKey:pastCandidate.source,candidate:pastCandidate,eventId:"pohang-past"});
     assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='pohang-past'").first(),{stage:"DONE",attempt_count:0});
+
+    const busan={source:"busan-동",source_candidate_id:"busan-reactivate",title:"《재수의 연습장 : 재수 좋은 날》",start_date:"2026-06-20",end_date:"2026-10-25",region:"부산",locality:"동구",venue:"동구 문화플랫폼 시민마당 전시장",official_url:"https://www.bsdonggu.go.kr/board/view.donggu?dataSid=busan-reactivate",category:"공연·전시",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
+    const busanOld="2026-10-15T08:01:21.925Z", busanCutoff="2026-10-15T08:01:21.926Z";
+    const prepareBusan=async(id:string,value={...busan,source_candidate_id:id,official_url:busan.official_url.replace("busan-reactivate",id)},decision="AUTO_RETRY",reason="official_core_not_verified")=>{
+      await enqueueMunicipalDetailJob(DB,{sourceKey:value.source,candidate:value,eventId:id});
+      await insertCandidateState(DB,id,value,busanOld,decision,reason);
+      await DB.prepare("UPDATE municipal_detail_jobs SET stage='DONE',safe_error_category='candidate_core_conflict',updated_at=?,attempt_count=0,expires_at='2099-01-01T00:00:00.000Z' WHERE event_id=?").bind(busanOld,id).run();
+      return value;
+    };
+    const busanReactivationCandidate=await prepareBusan("busan-reactivate");
+    await enqueueMunicipalDetailJob(DB,{sourceKey:busanReactivationCandidate.source,candidate:busanReactivationCandidate,eventId:"busan-reactivate"});
+    assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category,attempt_count,normalized_json FROM municipal_detail_jobs WHERE event_id='busan-reactivate'").first(),{stage:"FETCH_PENDING",safe_error_category:null,attempt_count:1,normalized_json:null});
+    await enqueueMunicipalDetailJob(DB,{sourceKey:busanReactivationCandidate.source,candidate:busanReactivationCandidate,eventId:"busan-reactivate"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='busan-reactivate'").first(),{stage:"FETCH_PENDING",attempt_count:1});
+
+    const busanNewFailure=await prepareBusan("busan-new-failure");
+    await DB.prepare("UPDATE municipal_detail_jobs SET updated_at=? WHERE event_id='busan-new-failure'").bind(busanCutoff).run();
+    await enqueueMunicipalDetailJob(DB,{sourceKey:busanNewFailure.source,candidate:busanNewFailure,eventId:"busan-new-failure"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='busan-new-failure'").first(),{stage:"DONE",attempt_count:0});
+
+    const busanManual=await prepareBusan("busan-manual",undefined,"AUTO_RETRY","manual_protection");
+    await enqueueMunicipalDetailJob(DB,{sourceKey:busanManual.source,candidate:busanManual,eventId:"busan-manual"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='busan-manual'").first(),{stage:"DONE",attempt_count:0});
+
+    const busanHold=await prepareBusan("busan-hold");
+    await insertEvent(DB,"busan-hold");
+    await DB.prepare("UPDATE events SET publish_quality_state='HOLD' WHERE id='busan-hold'").run();
+    await enqueueMunicipalDetailJob(DB,{sourceKey:busanHold.source,candidate:busanHold,eventId:"busan-hold"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='busan-hold'").first(),{stage:"DONE",attempt_count:0});
 
     const other={...candidate,source_candidate_id:"old-conflict",title:"파주 공식 행사",start_date:"2099-10-03",end_date:"2099-10-04",venue:"파주 문화회관",official_url:"https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=old-conflict"};
     await prepare("paju-unchanged",other);
