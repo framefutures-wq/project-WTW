@@ -7,11 +7,14 @@ export const MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES = 300 * 1024;
 export const MUNICIPAL_DETAIL_NORMALIZED_MAX_BYTES = 64 * 1024;
 export const MUNICIPAL_DETAIL_TTL_MS = 15 * 60_000;
 export const MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS = 14 * 24 * 60 * 60_000;
+// The API-core verifier shipped immediately after this bounded legacy window.
+const POHANG_LEGACY_VERIFICATION_CUTOFF = "2026-10-15T06:13:01.380Z";
 export type MunicipalDetailStage = "FETCH_PENDING" | "PARSE_PENDING" | "PERSIST_PENDING" | "DONE" | "RETRY";
 type Job = { id:string; source_key:string; candidate_id:string; event_id:string; official_url:string; candidate_json:string; stage:MunicipalDetailStage; retry_stage:MunicipalDetailStage|null; raw_html:string|null; normalized_json:string|null; attempt_count:number; expires_at:string };
 type CandidateVerification = { status:"verified"|"insufficient"|"conflict"; title:boolean; schedule:boolean; venue:boolean };
 type CandidateCheckpoint = { detail:MunicipalRichDetail; candidate_verification:CandidateVerification; candidate_snapshot:Pick<MunicipalCandidate,"title"|"start_date"|"end_date"|"venue"|"official_url"> };
 const now = () => new Date().toISOString();
+const koreaToday = () => new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const size = (value: string) => new TextEncoder().encode(value).byteLength;
 const hash = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))), byte => byte.toString(16).padStart(2,"0")).join("");
 const retryAt = (attempt: number) => new Date(Date.now() + Math.min(24 * 60, 5 * 2 ** Math.min(attempt, 8)) * 60_000).toISOString();
@@ -130,7 +133,44 @@ export async function enqueueMunicipalDetailJob(db:D1Database, input:{ sourceKey
   if (!source || input.candidate.source!==input.sourceKey || !municipalSourceAllowsUrl(source,input.candidate.official_url)) throw new Error("municipal_detail_job_invalid_source");
   const id=`municipal-detail-${input.sourceKey}-${await hash(`${input.candidate.source_candidate_id}|${input.candidate.official_url}`)}`;
   const timestamp=now(), expires=new Date(Date.now()+MUNICIPAL_DETAIL_TTL_MS).toISOString();
-  await db.prepare("INSERT INTO municipal_detail_jobs(id,source_key,candidate_id,event_id,official_url,candidate_json,stage,available_at,created_at,updated_at,expires_at) VALUES(?,?,?,?,?,?, 'FETCH_PENDING',?,?,?,?) ON CONFLICT(source_key,candidate_id,official_url) DO NOTHING").bind(id,input.sourceKey,input.candidate.source_candidate_id,input.eventId,input.candidate.official_url,JSON.stringify(input.candidate),timestamp,timestamp,timestamp,expires).run();
+  await db.prepare(`INSERT INTO municipal_detail_jobs(id,source_key,candidate_id,event_id,official_url,candidate_json,stage,available_at,created_at,updated_at,expires_at) VALUES(?,?,?,?,?,?, 'FETCH_PENDING',?,?,?,?)
+    ON CONFLICT(source_key,candidate_id,official_url) DO UPDATE SET
+      stage='FETCH_PENDING',retry_stage=NULL,raw_html=NULL,raw_html_sha256=NULL,normalized_json=NULL,
+      attempt_count=municipal_detail_jobs.attempt_count+1,available_at=excluded.available_at,retry_at=NULL,
+      safe_error_category=NULL,updated_at=excluded.updated_at,expires_at=excluded.expires_at
+    WHERE municipal_detail_jobs.source_key='gyeongbuk-포항'
+      AND municipal_detail_jobs.stage='DONE'
+      AND municipal_detail_jobs.safe_error_category='candidate_core_conflict'
+      AND municipal_detail_jobs.updated_at<?
+      AND municipal_detail_jobs.attempt_count=0
+      AND json_extract(municipal_detail_jobs.candidate_json,'$.source')=excluded.source_key
+      AND json_extract(municipal_detail_jobs.candidate_json,'$.source_candidate_id')=excluded.candidate_id
+      AND json_extract(municipal_detail_jobs.candidate_json,'$.title')=?
+      AND json_extract(municipal_detail_jobs.candidate_json,'$.start_date')=?
+      AND json_extract(municipal_detail_jobs.candidate_json,'$.end_date')=?
+      AND json_extract(municipal_detail_jobs.candidate_json,'$.venue')=?
+      AND json_extract(municipal_detail_jobs.candidate_json,'$.official_url')=excluded.official_url
+      AND length(trim(?))>0 AND length(trim(?))>0
+      AND ? GLOB '20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]'
+      AND ? GLOB '20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]'
+      AND ?<=? AND ?>=?
+      AND NOT EXISTS (SELECT 1 FROM events WHERE id=excluded.event_id)
+      AND EXISTS (
+        SELECT 1 FROM municipal_candidate_state state
+        WHERE state.candidate_id=excluded.event_id
+          AND state.source_key=excluded.source_key
+          AND state.decision_state='AUTO_RETRY'
+          AND state.decision_reason='official_core_not_verified'
+          AND state.source_candidate_id=excluded.candidate_id
+          AND state.title_snapshot=?
+          AND state.start_date_snapshot=?
+          AND state.end_date_snapshot=?
+          AND state.venue_snapshot=?
+          AND state.official_url_snapshot=excluded.official_url
+      )`).bind(id,input.sourceKey,input.candidate.source_candidate_id,input.eventId,input.candidate.official_url,JSON.stringify(input.candidate),timestamp,timestamp,timestamp,expires,
+    POHANG_LEGACY_VERIFICATION_CUTOFF,input.candidate.title,input.candidate.start_date,input.candidate.end_date,input.candidate.venue,
+    input.candidate.title,input.candidate.venue,input.candidate.start_date,input.candidate.end_date,input.candidate.start_date,input.candidate.end_date,input.candidate.end_date,koreaToday(),
+    input.candidate.title,input.candidate.start_date,input.candidate.end_date,input.candidate.venue).run();
   return id;
 }
 export async function detailFetchOne(db:D1Database, fetcher:typeof fetch=fetch) {

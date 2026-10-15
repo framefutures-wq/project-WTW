@@ -18,9 +18,9 @@ async function insertEvent(DB:D1Database,id:string) {
   await DB.prepare("INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES(?, 'municipality',2,'파주 공식 행사 안내',?,?)").bind(`municipal-source-${id}`,candidate.official_url,"2099-01-01T00:00:00.000Z").run();
   await DB.prepare("INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at) VALUES(?,?,'공식 행사','경기','파주','파주',? ,?,'unknown','unknown','scheduled','verified',0,?,?)").bind(id,candidate.title,candidate.start_date,candidate.end_date,`municipal-source-${id}`,"2099-01-01T00:00:00.000Z").run();
 }
-async function insertCandidateState(DB:D1Database,eventId:string,value:MunicipalCandidate,at:string,decision="AUTO_RETRY") {
+async function insertCandidateState(DB:D1Database,eventId:string,value:MunicipalCandidate,at:string,decision="AUTO_RETRY",reason="test") {
   await DB.prepare("INSERT INTO municipal_candidate_state(candidate_id,source_key,first_seen_at,last_seen_at,decision_state,decision_reason,retry_until,last_payload_hash,source_candidate_id,title_snapshot,start_date_snapshot,end_date_snapshot,venue_snapshot,locality_snapshot,official_url_snapshot) VALUES(?,?,?,?,?,?,NULL,'test-hash',?,?,?,?,?,?,?)")
-    .bind(eventId,value.source,at,at,decision,"test",value.source_candidate_id,value.title,value.start_date,value.end_date,value.venue,value.locality,value.official_url).run();
+    .bind(eventId,value.source,at,at,decision,reason,value.source_candidate_id,value.title,value.start_date,value.end_date,value.venue,value.locality,value.official_url).run();
 }
 
 test("detail micro-job stages never combine fetch, parse, and persist",async()=>{
@@ -118,6 +118,50 @@ test("Pohang new detail checkpoints fetch only their official API and retain fai
     await detailFetchOne(DB,async()=>new Response(readFileSync("fixtures/municipal-pohang-performance-detail.json","utf8")));
     await detailParseOne(DB); await detailPersistOne(DB);
     assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_detail_jobs WHERE candidate_id=?").bind(failed.source_candidate_id).first(),{stage:"DONE",safe_error_category:"candidate_core_conflict"});
+  } finally {await mf.dispose();}
+});
+
+test("only the matched pre-cutoff Pohang verification conflict is reactivated once",async()=>{
+  const {mf,DB}=await setup(); try {
+    const legacy={source:"gyeongbuk-포항",source_candidate_id:"EVT_20260831_002",title:"뮤지컬 <마리 퀴리>",start_date:"2026-12-11",end_date:"2026-12-12",region:"경북",locality:"포항",venue:"포항문화예술회관",official_url:"https://www.phcf.or.kr/phcf/performance_detail/view.do?eventId=EVT_20260831_002&menu_site_id=performance_detail",category:"공연",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
+    const old="2026-10-15T06:13:01.379Z", cutoff="2026-10-15T06:13:01.380Z";
+    const prepare=async(id:string,value={...legacy,source_candidate_id:id,official_url:legacy.official_url.replace("EVT_20260831_002",id)},decision="AUTO_RETRY",reason="official_core_not_verified")=>{
+      await enqueueMunicipalDetailJob(DB,{sourceKey:value.source,candidate:value,eventId:id});
+      await insertCandidateState(DB,id,value,old,decision,reason);
+      await DB.prepare("UPDATE municipal_detail_jobs SET stage='DONE',safe_error_category='candidate_core_conflict',updated_at=?,attempt_count=0,expires_at='2099-01-01T00:00:00.000Z' WHERE event_id=?").bind(old,id).run();
+      return value;
+    };
+
+    const reactivationCandidate=await prepare("pohang-reactivate");
+    await enqueueMunicipalDetailJob(DB,{sourceKey:reactivationCandidate.source,candidate:reactivationCandidate,eventId:"pohang-reactivate"});
+    const reactivated=await DB.prepare("SELECT stage,safe_error_category,attempt_count,normalized_json FROM municipal_detail_jobs WHERE event_id='pohang-reactivate'").first<any>();
+    assert.deepEqual(reactivated,{stage:"FETCH_PENDING",safe_error_category:null,attempt_count:1,normalized_json:null});
+    await enqueueMunicipalDetailJob(DB,{sourceKey:reactivationCandidate.source,candidate:reactivationCandidate,eventId:"pohang-reactivate"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='pohang-reactivate'").first(),{stage:"FETCH_PENDING",attempt_count:1});
+
+    const newFailureCandidate=await prepare("pohang-new-failure");
+    await DB.prepare("UPDATE municipal_detail_jobs SET updated_at=? WHERE event_id='pohang-new-failure'").bind(cutoff).run();
+    await enqueueMunicipalDetailJob(DB,{sourceKey:newFailureCandidate.source,candidate:newFailureCandidate,eventId:"pohang-new-failure"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='pohang-new-failure'").first(),{stage:"DONE",attempt_count:0});
+
+    const mismatchCandidate=await prepare("pohang-state-mismatch");
+    await DB.prepare("UPDATE municipal_candidate_state SET title_snapshot='changed' WHERE candidate_id='pohang-state-mismatch'").run();
+    await enqueueMunicipalDetailJob(DB,{sourceKey:mismatchCandidate.source,candidate:mismatchCandidate,eventId:"pohang-state-mismatch"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='pohang-state-mismatch'").first(),{stage:"DONE",attempt_count:0});
+
+    const publicCandidate=await prepare("pohang-public");
+    await insertEvent(DB,"pohang-public");
+    await enqueueMunicipalDetailJob(DB,{sourceKey:publicCandidate.source,candidate:publicCandidate,eventId:"pohang-public"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='pohang-public'").first(),{stage:"DONE",attempt_count:0});
+
+    const pastCandidate=await prepare("pohang-past",{...legacy,source_candidate_id:"pohang-past",official_url:legacy.official_url.replace("EVT_20260831_002","pohang-past"),start_date:"2025-10-11",end_date:"2025-10-12"});
+    await enqueueMunicipalDetailJob(DB,{sourceKey:pastCandidate.source,candidate:pastCandidate,eventId:"pohang-past"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='pohang-past'").first(),{stage:"DONE",attempt_count:0});
+
+    const other={...candidate,source_candidate_id:"old-conflict",title:"파주 공식 행사",start_date:"2099-10-03",end_date:"2099-10-04",venue:"파주 문화회관",official_url:"https://tour.paju.go.kr/user/link/cultural/BD_view.do?idx=old-conflict"};
+    await prepare("paju-unchanged",other);
+    await enqueueMunicipalDetailJob(DB,{sourceKey:other.source,candidate:other,eventId:"paju-unchanged"});
+    assert.deepEqual(await DB.prepare("SELECT stage,attempt_count FROM municipal_detail_jobs WHERE event_id='paju-unchanged'").first(),{stage:"DONE",attempt_count:0});
   } finally {await mf.dispose();}
 });
 
