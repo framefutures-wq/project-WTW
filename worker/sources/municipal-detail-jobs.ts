@@ -17,6 +17,8 @@ const hash = async (value: string) => Array.from(new Uint8Array(await crypto.sub
 const retryAt = (attempt: number) => new Date(Date.now() + Math.min(24 * 60, 5 * 2 ** Math.min(attempt, 8)) * 60_000).toISOString();
 const normalized = (detail: MunicipalRichDetail) => JSON.stringify(detail);
 const compact = (value:string) => value.replace(/\s+/g, "").toLocaleLowerCase();
+const exactText = (left: unknown, right: string | null) =>
+  typeof left === "string" && typeof right === "string" && compact(left) === compact(right);
 const datePattern = (date:string) => date.replace(/-/g, "[-./년\\s]*").replace(/(\d{2})$/, "$1(?:일)?");
 const fieldValue = (html:string, labels:string[]) => {
   const label=labels.join("|");
@@ -35,6 +37,56 @@ export function verifyMunicipalCandidateCore(candidate:MunicipalCandidate, html:
   const titleExplicit=titleValue!==null||headings.length>0;
   const conflict=(titleExplicit&&!title)||(scheduleValue!==null&&!schedule)||(venueValue!==null&&!venue);
   return {status:title&&schedule&&venue?"verified":conflict?"conflict":"insufficient",title,schedule,venue};
+}
+type PohangDetailKind = "performance" | "festival";
+type PohangDetailRequest = { url:string; kind:PohangDetailKind };
+const pohangDetailRequest = (
+  source: NonNullable<ReturnType<typeof municipalSourceByKey>>,
+  candidate: MunicipalCandidate,
+): PohangDetailRequest | null => {
+  if (source.key !== "gyeongbuk-포항" || !/^[A-Za-z0-9_-]{1,80}$/.test(candidate.source_candidate_id)) return null;
+  let detail: URL;
+  try { detail = new URL(candidate.official_url); } catch { return null; }
+  if (detail.protocol !== "https:" || !municipalSourceAllowsUrl(source, detail.toString())) return null;
+  const endpoint = new URL(detail.origin);
+  if (detail.pathname === "/phcf/performance_detail/view.do" && detail.searchParams.get("eventId") === candidate.source_candidate_id) {
+    endpoint.pathname = "/api/phcf/performance/getPerformanceDetail.do";
+    endpoint.searchParams.set("eventId", candidate.source_candidate_id);
+    return municipalSourceAllowsUrl(source, endpoint.toString()) ? {url:endpoint.toString(),kind:"performance"} : null;
+  }
+  if (detail.pathname === "/phcf/festival_detail/view.do" && detail.searchParams.get("festivalId") === candidate.source_candidate_id) {
+    endpoint.pathname = "/api/template/festival/getSliderDetail.do";
+    endpoint.searchParams.set("PRJ_ID", "phcf");
+    endpoint.searchParams.set("FESTIVAL_ID", candidate.source_candidate_id);
+    return municipalSourceAllowsUrl(source, endpoint.toString()) ? {url:endpoint.toString(),kind:"festival"} : null;
+  }
+  return null;
+};
+const pohangFestivalDates = (value: unknown) => {
+  if (typeof value !== "string") return null;
+  const match = /^(20\d{2})년\s*(\d{1,2})월\s*(\d{1,2})일\s*[~∼]\s*(?:(20\d{2})년\s*)?(\d{1,2})월\s*(\d{1,2})일$/.exec(value.trim());
+  if (!match) return null;
+  const start = `${match[1]}-${match[2].padStart(2,"0")}-${match[3].padStart(2,"0")}`;
+  const end = `${match[4] ?? match[1]}-${match[5].padStart(2,"0")}-${match[6].padStart(2,"0")}`;
+  return start <= end ? {start,end} : null;
+};
+/** Pohang's public detail pages are client shells; validate new candidates against their documented official JSON detail APIs. */
+export function verifyPohangCandidateCore(candidate:MunicipalCandidate, body:string):CandidateVerification {
+  const request = pohangDetailRequest(municipalSourceByKey("gyeongbuk-포항")!, candidate);
+  if (!request) return {status:"insufficient",title:false,schedule:false,venue:false};
+  let payload: unknown;
+  try { payload = JSON.parse(body); } catch { return {status:"insufficient",title:false,schedule:false,venue:false}; }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {status:"insufficient",title:false,schedule:false,venue:false};
+  const root = payload as Record<string, unknown>;
+  const data = request.kind === "performance" && root.result === true && root.data && typeof root.data === "object" && !Array.isArray(root.data) ? root.data as Record<string, unknown> : request.kind === "festival" ? root : null;
+  if (!data) return {status:"insufficient",title:false,schedule:false,venue:false};
+  const cancelled = String(request.kind === "performance" ? data.event_status ?? "" : data.FESTIVAL_STATUS ?? "").toUpperCase() === "CANCELLED" || String(request.kind === "performance" ? data.event_status ?? "" : data.FESTIVAL_STATUS ?? "").toUpperCase() === "CANCELED";
+  const id = request.kind === "performance" ? data.event_id : data.FESTIVAL_ID;
+  const title = exactText(id, candidate.source_candidate_id) && exactText(request.kind === "performance" ? data.event_title : data.FESTIVAL_NAME, candidate.title);
+  const dates = request.kind === "performance" ? typeof data.start_date === "string" && typeof data.end_date === "string" ? {start:data.start_date,end:data.end_date} : null : pohangFestivalDates(data.FESTIVAL_PERIOD);
+  const schedule = Boolean(dates && candidate.start_date === dates.start && candidate.end_date === dates.end);
+  const venue = exactText(request.kind === "performance" ? data.space_name : data.MAIN_VENUE, candidate.venue);
+  return {status:!cancelled && title && schedule && venue ? "verified" : "conflict",title,schedule,venue};
 }
 const browserHeaders = {
   "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
@@ -85,12 +137,12 @@ export async function detailFetchOne(db:D1Database, fetcher:typeof fetch=fetch) 
   const job=await claim(db,"FETCH_PENDING"); if(!job) return null;
   const source=municipalSourceByKey(job.source_key);
   if(!source || !municipalSourceAllowsUrl(source,job.official_url)){ await fail(db,job,"detail_host_not_allowed"); return {id:job.id,stage:"RETRY" as const}; }
-  try { const {html}=await fetchMunicipalDetailTransport(source,job.official_url,fetcher); if(size(html)>MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES){await fail(db,job,"raw_html_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=?,raw_html_sha256=?,stage='PARSE_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='FETCH_PENDING'").bind(html,await hash(html),now(),now(),job.id).run(); return {id:job.id,stage:"PARSE_PENDING" as const}; } catch { await fail(db,job,"network_or_timeout"); return {id:job.id,stage:"RETRY" as const}; }
+  try { const candidate=JSON.parse(job.candidate_json) as MunicipalCandidate; const existing=await db.prepare("SELECT 1 AS present FROM events WHERE id=? LIMIT 1").bind(job.event_id).first(); const api=existing ? null : pohangDetailRequest(source,candidate); const {html}=await fetchMunicipalDetailTransport(source,api?.url ?? job.official_url,fetcher); if(size(html)>MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES){await fail(db,job,"raw_html_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=?,raw_html_sha256=?,stage='PARSE_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='FETCH_PENDING'").bind(html,await hash(html),now(),now(),job.id).run(); return {id:job.id,stage:"PARSE_PENDING" as const}; } catch { await fail(db,job,"network_or_timeout"); return {id:job.id,stage:"RETRY" as const}; }
 }
 export async function detailParseOne(db:D1Database) {
   const job=await claim(db,"PARSE_PENDING"); if(!job) return null;
   if(!job.raw_html){await fail(db,job,"missing_raw_html");return {id:job.id,stage:"RETRY" as const};}
-  try { const candidate=JSON.parse(job.candidate_json) as MunicipalCandidate; const detail=extractMunicipalRichDetail(job.official_url,job.raw_html); const event=await db.prepare("SELECT 1 AS present FROM events WHERE id=? LIMIT 1").bind(job.event_id).first(); const value=event?normalized(detail):JSON.stringify({detail,candidate_verification:verifyMunicipalCandidateCore(candidate,job.raw_html),candidate_snapshot:{title:candidate.title,start_date:candidate.start_date,end_date:candidate.end_date,venue:candidate.venue,official_url:candidate.official_url}} satisfies CandidateCheckpoint); if(size(value)>MUNICIPAL_DETAIL_NORMALIZED_MAX_BYTES){await fail(db,job,"normalized_detail_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=NULL,raw_html_sha256=NULL,normalized_json=?,stage='PERSIST_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='PARSE_PENDING'").bind(value,now(),now(),job.id).run(); return {id:job.id,stage:"PERSIST_PENDING" as const}; } catch {await fail(db,job,"detail_parse_failed");return {id:job.id,stage:"RETRY" as const};}
+  try { const candidate=JSON.parse(job.candidate_json) as MunicipalCandidate; const detail=extractMunicipalRichDetail(job.official_url,job.raw_html); const event=await db.prepare("SELECT 1 AS present FROM events WHERE id=? LIMIT 1").bind(job.event_id).first(); const verification=job.source_key === "gyeongbuk-포항" && !event ? verifyPohangCandidateCore(candidate,job.raw_html) : verifyMunicipalCandidateCore(candidate,job.raw_html); const value=event?normalized(detail):JSON.stringify({detail,candidate_verification:verification,candidate_snapshot:{title:candidate.title,start_date:candidate.start_date,end_date:candidate.end_date,venue:candidate.venue,official_url:candidate.official_url}} satisfies CandidateCheckpoint); if(size(value)>MUNICIPAL_DETAIL_NORMALIZED_MAX_BYTES){await fail(db,job,"normalized_detail_too_large");return {id:job.id,stage:"RETRY" as const};} await db.prepare("UPDATE municipal_detail_jobs SET raw_html=NULL,raw_html_sha256=NULL,normalized_json=?,stage='PERSIST_PENDING',available_at=?,safe_error_category=NULL,updated_at=? WHERE id=? AND stage='PARSE_PENDING'").bind(value,now(),now(),job.id).run(); return {id:job.id,stage:"PERSIST_PENDING" as const}; } catch {await fail(db,job,"detail_parse_failed");return {id:job.id,stage:"RETRY" as const};}
 }
 export async function detailPersistOne(db:D1Database) {
   const job=await claim(db,"PERSIST_PENDING"); if(!job) return null;

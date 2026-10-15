@@ -32,6 +32,7 @@ const fixtureByKey: Record<string, string> = {
   "gyeongbuk-포항": "fixtures/municipal-discovery-pohang.json",
   "gyeonggi-포천": "fixtures/municipal-discovery-pocheon.html",
   "gyeongnam-거제": "fixtures/municipal-discovery-geoje.html",
+  "jeonbuk-전주": "fixtures/municipal-discovery-jeonju.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -73,6 +74,7 @@ test("registry keeps existing parser-backed sources explicit", () => {
       "gyeongbuk-포항",
       "gyeonggi-포천",
       "gyeongnam-거제",
+      "jeonbuk-전주",
     ],
   );
   for (const source of MUNICIPAL_SOURCE_REGISTRY.filter(

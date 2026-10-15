@@ -1,0 +1,11 @@
+{
+  "result": true,
+  "data": {
+    "event_id": "EVT_20260831_002",
+    "event_title": "뮤지컬 <마리 퀴리>",
+    "start_date": "2026-12-11",
+    "end_date": "2026-12-12",
+    "space_name": "포항문화예술회관",
+    "event_status": "ONGOING"
+  }
+}

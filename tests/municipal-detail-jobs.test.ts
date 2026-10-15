@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
-import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES, MUNICIPAL_DETAIL_TTL_MS, MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS } from "../worker/sources/municipal-detail-jobs";
+import { cleanupExpiredMunicipalDetailJobs, detailFetchOne, detailParseOne, detailPersistOne, enqueueMunicipalDetailJob, fetchMunicipalDetailTransport, MUNICIPAL_DETAIL_RAW_HTML_MAX_BYTES, MUNICIPAL_DETAIL_TTL_MS, MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS, verifyPohangCandidateCore } from "../worker/sources/municipal-detail-jobs";
 import { runVerifiedGenericMunicipalPublicationOne } from "../worker/sources/municipal";
 import { municipalSourceByKey } from "../shared/municipal-source-registry";
 import type { MunicipalCandidate } from "../shared/municipal-discovery";
@@ -80,6 +80,44 @@ test("incomplete or conflicting official core stays non-public and is retained",
       assert.equal(Date.parse(row.expires_at)-Date.parse(row.updated_at),MUNICIPAL_DETAIL_VERIFICATION_RETENTION_MS);
     }
     assert.equal((await DB.prepare("SELECT COUNT(*) count FROM events WHERE id LIKE 'unregistered-%'").first<any>()).count,0);
+  } finally {await mf.dispose();}
+});
+
+test("Pohang new candidates verify exact official performance and festival API cores", async()=>{
+  const performance={source:"gyeongbuk-포항",source_candidate_id:"EVT_20260831_002",title:"뮤지컬 <마리 퀴리>",start_date:"2026-12-11",end_date:"2026-12-12",region:"경북",locality:"포항",venue:"포항문화예술회관",official_url:"https://www.phcf.or.kr/phcf/performance_detail/view.do?eventId=EVT_20260831_002&menu_site_id=performance_detail",category:"공연",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
+  const festival={source:"gyeongbuk-포항",source_candidate_id:"FST_STEEL_2026_001",title:"2026 포항스틸아트페스티벌",start_date:"2026-10-24",end_date:"2026-11-15",region:"경북",locality:"포항",venue:"동빈문화창고1969",official_url:"https://www.phcf.or.kr/phcf/festival_detail/view.do?festivalId=FST_STEEL_2026_001",category:"축제",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
+  const performanceBody=readFileSync("fixtures/municipal-pohang-performance-detail.json","utf8");
+  const festivalBody=readFileSync("fixtures/municipal-pohang-festival-detail.json","utf8");
+  assert.deepEqual(verifyPohangCandidateCore(performance,performanceBody),{status:"verified",title:true,schedule:true,venue:true});
+  assert.deepEqual(verifyPohangCandidateCore(festival,festivalBody),{status:"verified",title:true,schedule:true,venue:true});
+  assert.equal(verifyPohangCandidateCore({...performance,title:"다른 공연"},performanceBody).status,"conflict");
+  assert.equal(verifyPohangCandidateCore({...performance,start_date:"2026-12-10"},performanceBody).status,"conflict");
+  assert.equal(verifyPohangCandidateCore({...performance,venue:"다른 장소"},performanceBody).status,"conflict");
+  assert.equal(verifyPohangCandidateCore({...festival,source_candidate_id:"FST_OTHER_001"},festivalBody).status,"insufficient");
+  assert.equal(verifyPohangCandidateCore(performance,performanceBody.replace("ONGOING","CANCELLED")).status,"conflict");
+});
+
+test("Pohang new detail checkpoints fetch only their official API and retain failed verification",async()=>{
+  const {mf,DB}=await setup(); try {
+    const candidates=[
+      [{source:"gyeongbuk-포항",source_candidate_id:"EVT_20260831_002",title:"뮤지컬 <마리 퀴리>",start_date:"2026-12-11",end_date:"2026-12-12",region:"경북",locality:"포항",venue:"포항문화예술회관",official_url:"https://www.phcf.or.kr/phcf/performance_detail/view.do?eventId=EVT_20260831_002&menu_site_id=performance_detail",category:"공연",snippet:null,image_candidate:null},"fixtures/municipal-pohang-performance-detail.json","/api/phcf/performance/getPerformanceDetail.do?eventId=EVT_20260831_002"],
+      [{source:"gyeongbuk-포항",source_candidate_id:"FST_STEEL_2026_001",title:"2026 포항스틸아트페스티벌",start_date:"2026-10-24",end_date:"2026-11-15",region:"경북",locality:"포항",venue:"동빈문화창고1969",official_url:"https://www.phcf.or.kr/phcf/festival_detail/view.do?festivalId=FST_STEEL_2026_001",category:"축제",snippet:null,image_candidate:null},"fixtures/municipal-pohang-festival-detail.json","/api/template/festival/getSliderDetail.do?PRJ_ID=phcf&FESTIVAL_ID=FST_STEEL_2026_001"],
+    ] as const;
+    for (const [value,fixture,path] of candidates) {
+      await enqueueMunicipalDetailJob(DB,{sourceKey:"gyeongbuk-포항",candidate:value,eventId:`new-${value.source_candidate_id}`});
+      let requested="";
+      await detailFetchOne(DB,async url=>{requested=String(url);return new Response(readFileSync(fixture,"utf8"));});
+      assert.equal(new URL(requested).pathname+new URL(requested).search,path);
+      await detailParseOne(DB); await detailPersistOne(DB);
+      assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_detail_jobs WHERE candidate_id=?").bind(value.source_candidate_id).first(),{stage:"DONE",safe_error_category:"candidate_core_verified"});
+      const checkpoint=JSON.parse((await DB.prepare("SELECT normalized_json FROM municipal_detail_jobs WHERE candidate_id=?").bind(value.source_candidate_id).first<any>()).normalized_json);
+      assert.equal(checkpoint.candidate_snapshot.official_url,value.official_url);
+    }
+    const failed={...candidates[0][0],source_candidate_id:"EVT_20260831_999",official_url:"https://www.phcf.or.kr/phcf/performance_detail/view.do?eventId=EVT_20260831_999&menu_site_id=performance_detail"};
+    await enqueueMunicipalDetailJob(DB,{sourceKey:"gyeongbuk-포항",candidate:failed,eventId:"new-conflict"});
+    await detailFetchOne(DB,async()=>new Response(readFileSync("fixtures/municipal-pohang-performance-detail.json","utf8")));
+    await detailParseOne(DB); await detailPersistOne(DB);
+    assert.deepEqual(await DB.prepare("SELECT stage,safe_error_category FROM municipal_detail_jobs WHERE candidate_id=?").bind(failed.source_candidate_id).first(),{stage:"DONE",safe_error_category:"candidate_core_conflict"});
   } finally {await mf.dispose();}
 });
 
