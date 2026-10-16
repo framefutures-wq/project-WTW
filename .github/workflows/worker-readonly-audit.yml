@@ -1,0 +1,38 @@
+# Manual, owner-only metadata reads. No AI, deploy, D1, ingestion or retries.
+name: Worker metadata audit (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Reviewed main commit (40 hex characters)"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: worker-readonly-audit
+  cancel-in-progress: false
+jobs:
+  metadata:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'framefutures-wq/project-WTW' && github.actor == 'framefutures-wq' && github.triggering_actor == 'framefutures-wq' && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Require the reviewed main revision
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Read deployment metadata and Cron definitions
+        env:
+          CLOUDFLARE_OBSERVE_TOKEN: ${{ secrets.CLOUDFLARE_OBSERVE_TOKEN }}
+        run: node scripts/worker-readonly-audit.mjs
