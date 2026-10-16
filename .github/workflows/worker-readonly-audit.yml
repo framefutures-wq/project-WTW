@@ -1,4 +1,4 @@
-# Manual, owner-only metadata reads. No AI, deploy, D1, ingestion or retries.
+# Manual, owner-only reads with opt-in bounded live observation. No AI/deploy/D1/ingestion.
 name: Worker metadata audit (manual)
 on:
   workflow_dispatch:
@@ -7,6 +7,11 @@ on:
         description: "Reviewed main commit (40 hex characters)"
         required: true
         type: string
+      observe_live:
+        description: "Observe existing scheduled executions for 180 seconds (sanitized; no forced ingestion)"
+        required: true
+        default: false
+        type: boolean
 permissions:
   contents: read
 concurrency:
@@ -16,7 +21,7 @@ jobs:
   metadata:
     if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'framefutures-wq/project-WTW' && github.actor == 'framefutures-wq' && github.triggering_actor == 'framefutures-wq' && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 7
     steps:
       - name: Require the reviewed main revision
         env:
@@ -36,3 +41,11 @@ jobs:
         env:
           CLOUDFLARE_OBSERVE_TOKEN: ${{ secrets.CLOUDFLARE_OBSERVE_TOKEN }}
         run: node scripts/worker-readonly-audit.mjs
+      - name: Install locked CLI only when live observation is requested
+        if: ${{ inputs.observe_live }}
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Observe sanitized live scheduled executions for 180 seconds
+        if: ${{ inputs.observe_live }}
+        env:
+          CLOUDFLARE_OBSERVE_TOKEN: ${{ secrets.CLOUDFLARE_OBSERVE_TOKEN }}
+        run: node scripts/worker-live-audit.mjs
