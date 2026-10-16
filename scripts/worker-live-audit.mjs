@@ -17,6 +17,22 @@ select(type == "object" and (.event.cron? | type == "string")) |
   exception_count: ([.exceptions[]?] | length)
 }`;
 
+export function diagnosticSummary(raw) {
+  const text = raw.replace(/\x1b\[[0-9;]*m/g, "");
+  const codes = [...text.matchAll(/\[code:\s*(\d{1,6})\]/g)].map((match) =>
+    Number(match[1]),
+  );
+  let kind = "UNCLASSIFIED";
+  if (codes.length) kind = "CLOUDFLARE_API_ERROR";
+  else if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT/i.test(text))
+    kind = "TRANSPORT_ERROR";
+  else if (/Proxy environment variables detected/.test(text))
+    kind = "PROXY_ENVIRONMENT_WARNING";
+  else if (/\[ERROR\]/.test(text)) kind = "CLI_ERROR";
+  else if (/\[WARNING\]/.test(text)) kind = "CLI_WARNING";
+  return { kind, api_codes: [...new Set(codes)].slice(0, 5) };
+}
+
 export async function observeLive({
   token,
   durationMs = 180000,
@@ -59,6 +75,7 @@ export async function observeLive({
     failedCount = 0,
     cpuExceeded = 0,
     bytes = 0;
+  let diagnostic = "";
   let stopReason = null,
     hardKill = false,
     deadline,
@@ -108,7 +125,10 @@ export async function observeLive({
     });
   });
   // Raw streams remain in pipes only. Never forward stderr or persist CLI logs.
-  tail.stderr.on("data", () => stop("TAIL_DIAGNOSTIC_REQUIRES_REVIEW"));
+  tail.stderr.on("data", (chunk) => {
+    diagnostic = (diagnostic + chunk.toString("utf8")).slice(0, 16384);
+    stop("TAIL_DIAGNOSTIC_REQUIRES_REVIEW");
+  });
   jq.stderr.on("data", () => stop("FILTER_FAILED"));
   jq.stdin.on("error", () => stop("FILTER_FAILED"));
   tail.stdout.on("data", (chunk) => {
@@ -152,6 +172,7 @@ export async function observeLive({
     started_at: startedAt,
     ended_at: new Date().toISOString(),
     stop_reason: stopReason,
+    diagnostic: diagnosticSummary(diagnostic),
     hard_kill: hardKill,
     window_completed:
       stopReason === "WINDOW_COMPLETE" &&

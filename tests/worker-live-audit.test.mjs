@@ -1,7 +1,31 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { observeLive, LIVE_FILTER } from "../scripts/worker-live-audit.mjs";
+import {
+  observeLive,
+  LIVE_FILTER,
+  diagnosticSummary,
+} from "../scripts/worker-live-audit.mjs";
+
+test("diagnostics expose fixed classes and API codes only, never raw details", () => {
+  assert.deepEqual(diagnosticSummary("DO_NOT_OUTPUT [code: 10000]"), {
+    kind: "CLOUDFLARE_API_ERROR",
+    api_codes: [10000],
+  });
+  assert.equal(
+    diagnosticSummary("DO_NOT_OUTPUT Proxy environment variables detected")
+      .kind,
+    "PROXY_ENVIRONMENT_WARNING",
+  );
+  assert.equal(
+    diagnosticSummary("fetch failed DO_NOT_OUTPUT").kind,
+    "TRANSPORT_ERROR",
+  );
+  assert.doesNotMatch(
+    JSON.stringify(diagnosticSummary("[ERROR] DO_NOT_OUTPUT")),
+    /DO_NOT_OUTPUT/,
+  );
+});
 
 const scheduled = {
   event: {
