@@ -1251,7 +1251,9 @@ test("scheduled recovery stops a slow direct fetch and does not start the next c
     const startedAt = Date.now();
     const result = await runOfficialDetailRecovery({ DB } as never, new Date("2026-09-28T01:00:00Z"), {
       maxDurationMs: 100,
-      minExternalRequestRemainingMs: 1,
+      // Keep a guard band: a timer boundary must not admit another request
+      // with only 1ms left. Production requires 1000ms before a request.
+      minExternalRequestRemainingMs: 10,
       fetchPage: async () => {
         started += 1;
         return new Promise<never>(() => {});
