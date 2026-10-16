@@ -47,8 +47,6 @@ export async function observeLive({
     "wrangler.production.jsonc",
     "--format",
     "json",
-    "--sampling-rate",
-    "1",
   ],
 } = {}) {
   if (typeof token !== "string" || !token || /\s/.test(token))
