@@ -1,5 +1,12 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-17 — live scheduled execution evidence verified
+
+- Manual authenticated run `38941111900` on `9825d05` completed a 180-second live window, 02:37:41–02:40:41 KST. Three sampled Cron invocations returned `ok`: municipal CPU 12/22 ms with `LANE_MUNICIPAL_FINISHED`, official CPU 26 ms with `LANE_OFFICIAL_FINISHED`. Exceptions and `exceededCpu` outcomes were zero; no forced termination or report truncation. This proves the official lane returned in one observed invocation, not a D1 job reaching DONE or permanent CPU recovery.
+- The owner-only workflow now supports metadata reads and opt-in bounded live observation using the same per-Worker Metadata Read-Only token. Code PRs #97–99 merged; final code CI `38940596898` passed 568/568 unit tests plus integration/typecheck/build/inventory. Initial live trials had an invalid CLI sampling argument; it was reproduced and removed before the successful run.
+- No production deploy, DB write, forced collection, permission expansion or further paid AI call. Deployed Git mapping and unpublished Codespaces work remain unknown. Next product gate is actual queue/publication progress and useful public event coverage; existing token grants no D1 row access, so do not silently add that permission. Do not repeat completed AI pilot setup or infer publication from successful Cron outcomes.
+
+
 ## 2026-10-17 — authenticated metadata and bounded live observation
 
 - PR #96 merged as `d687798`. Owner registered a seven-day account-owned token scoped only to `weekend-mwohae`, with Individual Workers Metadata Read-Only. Manual run `38937281342` succeeded in 16s: latest returned version `5738282d-70ec-45c9-bb73-829b2b1834e2` at 100%, Cron UTC `* * * * *`, `0 1 * * *`, `55 8 * * *`. The metadata credential gate is satisfied.

@@ -40,3 +40,7 @@ A completed window with no scheduled event fails verification. Any observed non-
 - https://developers.cloudflare.com/workers/wrangler/commands/workers/
 
 Local installed-CLI validation reproduced the initial startup failure: Wrangler 4.135.0 rejects an explicit `--sampling-rate 1` before any tail request. The observation command now omits that optional filter. Runs `38939055921` and `38940201655` ended before scheduled events; neither verified collector execution or CPU behavior.
+
+## Verified live window — 2026-10-17 KST
+
+Run https://github.com/framefutures-wq/project-WTW/actions/runs/38941111900 on `9825d05` completed 180 seconds, with three sampled scheduled invocations: municipal CPU 12/22 ms and official CPU 26 ms. All returned `ok`, emitted their lane FINISHED marker, had zero exceptions, and no `exceededCpu` outcome. The CLI exited without forced termination; the report retained all three events. These are invocation/lane observations, not proof of D1 job DONE, published rows, deployed Git identity or permanent recovery. The earlier metadata-only run remains separately verified. No new permissions or production mutation occurred.
