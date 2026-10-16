@@ -209,6 +209,28 @@ test("future retries, leased, finalized, and expired source pages do not make mu
   }
 });
 
+test("publication retries are dispatched when due after the municipal cycle completes", async () => {
+  const { mf, DB, env } = await setup(); try {
+    await insertCompletedMunicipalCycle(DB);
+    const due = "2026-10-12T02:00:00.000Z";
+    const expires = "2026-10-13T01:00:00.000Z";
+    await DB.prepare(
+      `INSERT INTO municipal_detail_jobs(id,source_key,candidate_id,event_id,official_url,candidate_json,stage,normalized_json,available_at,safe_error_category,created_at,updated_at,expires_at)
+       VALUES('publication-retry','paju','retry','municipal-paju-retry','https://tour.paju.go.kr/', '{}','DONE','{}',?,'candidate_registration_retry',?,?,?)`,
+    ).bind(due, AT, AT, expires).run();
+    assert.equal((await fairMicroLaneReadiness(env, AT)).municipal, 0, "future retry stays dormant");
+    const calls: string[] = [];
+    assert.equal((await runFairMicroDispatcherOne(env, due, {
+      ...deps({}, calls), ready: fairMicroLaneReadiness,
+    })).lane, "municipal");
+    assert.deepEqual(calls, ["municipal"]);
+    await DB.prepare("UPDATE municipal_detail_jobs SET available_at=?").bind("2026-10-12T02:01:00.000Z").run();
+    assert.equal((await fairMicroLaneReadiness(env, due)).municipal, 0, "live publication lease stays dormant");
+    await DB.prepare("UPDATE municipal_detail_jobs SET available_at=?,expires_at=?").bind(AT, due).run();
+    assert.equal((await fairMicroLaneReadiness(env, due)).municipal, 0, "expired publication is not dispatched");
+  } finally { await mf.dispose(); }
+});
+
 test("a completed cycle still dispatches a retained retry when it becomes due", async () => {
   const { mf, DB, env } = await setup(); try {
     await insertCompletedMunicipalCycle(DB);

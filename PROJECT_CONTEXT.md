@@ -1,5 +1,17 @@
 # 갈틈 프로젝트 컨텍스트
 
+## 2026-10-16 — current development checkpoint
+
+- PR #94 fixed three baseline test failures without changing production behavior: per-test Date mocks prevent approval fixtures expiring, and the fallback guard assertion tolerates whitespace. Full local and GitHub CI passed 553/553 tests plus integration/typecheck/build/inventory; merged as `61b0bd8`.
+- PR #93 merged as `97df619` after full GitHub CI passed. The manual AI pilot now runs 1–4 changed existing test files on the ordinary runner before AI and supplies the exact command, exit code and bounded log. AI sandbox protections remain intact; proposed edits require subsequent ordinary-runner verification.
+- Third pilot run `38863258588` completed successfully on workflow commit `97df619`: ordinary-runner dispatcher tests 17/17 passed, AI read the exact diff and baseline report, performed no extra test/server runs, and scope validation recorded zero changed paths. Diff-to-test-evidence-to-AI-review-to-artifact delivery is verified. Automatic repair remains unproven because this target had no isolated failing change. No recurring trigger or further paid run was enabled.
+- PR #90 is being updated with current main while preserving both handoff histories. No production deployment, remote DB write or manual ingestion has occurred. Actual production CPU state and unpublished Codespaces changes remain unverified. Older statements about missing CI fixes or dormant code are historical.
+
+## 2026-10-16 — GitHub code baseline and publication retry fix
+
+- Checked GitHub `main` at `eb3a9d5`: fair micro scheduling is connected in `worker/cron.ts`; `wrangler.production.jsonc` declares `0 1`, every-minute, and `55 8` UTC triggers. The old dormant-runtime notes below do not describe this code baseline. Actual production deployment/CPU logs and unpublished Codespaces changes were not checked.
+- Branch `fix/dispatcher-publication-retry-readiness` aligns municipal readiness with the existing publication runner's `candidate_registration_retry` handling so due retained publications remain dispatchable after cycle completion. Targeted dispatcher/detail/scheduler tests: 36/36 PASS; typecheck and diff-check PASS. No main merge, operational deploy, remote DB write, or manual ingestion was performed. User approval is required before operational changes.
+
 ## 2026-10-16 — second pilot reviewed; ordinary-runner tests prepared
 
 - User approved PR #92 merge and one second trial. Merge: `06b02e5`; run `38859933445` completed in 1m34s with zero proposed changes. The AI read the exact reviewed diff and dispatcher paths. Workflow success does not mean test success: an overly broad npm command ran, isolated tests lacked granular output, and a direct Miniflare diagnostic hit sandbox `listen EPERM 127.0.0.1`.

@@ -105,7 +105,7 @@ export async function fairMicroLaneReadiness(env: Env, at: string): Promise<Lane
         "SELECT 1 AS done FROM municipal_scan_cycles WHERE operating_date=? AND status='DONE' LIMIT 1",
       ).bind(today).first(),
       db.prepare(
-        "SELECT 1 AS pending FROM municipal_detail_jobs WHERE stage='DONE' AND safe_error_category='candidate_core_verified' AND available_at<=? AND expires_at>? LIMIT 1",
+        "SELECT 1 AS pending FROM municipal_detail_jobs WHERE stage='DONE' AND safe_error_category IN ('candidate_core_verified','candidate_registration_retry') AND available_at<=? AND expires_at>? LIMIT 1",
       ).bind(at, at).first(),
     ]);
     municipal = cycle || !done || verifiedPublication ? 1 : 0;
