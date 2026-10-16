@@ -1,5 +1,12 @@
 # 갈틈 프로젝트 컨텍스트
 
+## 2026-10-17 — authenticated metadata and bounded live observation
+
+- PR #96 merged as `d687798`. Owner registered a seven-day account-owned token scoped only to `weekend-mwohae`, with Individual Workers Metadata Read-Only. Manual run `38937281342` succeeded in 16s: latest returned version `5738282d-70ec-45c9-bb73-829b2b1834e2` at 100%, Cron UTC `* * * * *`, `0 1 * * *`, `55 8 * * *`. The metadata credential gate is satisfied.
+- The same guarded manual workflow is being extended with opt-in 180-second `wrangler tail` observation. It retains only scheduled outcomes, numeric timing fields (null means unknown), and fixed Dispatcher stages. Raw headers/URLs/log messages/errors are suppressed; CLI disk logging and metrics are disabled. No historical-log Write permission, deployed Tail Worker, production deploy, DB access, or forced collection is added.
+- A short live sample cannot prove persistent queue progress, published event count, deployed Git mapping, or lasting CPU recovery. Do not broaden permissions if live observation fails. Unpublished Codespaces work remains unknown.
+
+
 ## 2026-10-16 — production metadata access checkpoint
 
 - PR #90 merged as `1a2e367` after full CI passed (554/554 unit tests plus integration/typecheck/build/inventory). This session has not deployed it; unpublished Codespaces work and the active deployment's Git commit remain unknown.
