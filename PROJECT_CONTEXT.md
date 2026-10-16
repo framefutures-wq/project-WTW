@@ -1,5 +1,11 @@
 # 갈틈 프로젝트 컨텍스트
 
+## 2026-10-16 — second pilot reviewed; ordinary-runner tests prepared
+
+- User approved PR #92 merge and one second trial. Merge: `06b02e5`; run `38859933445` completed in 1m34s with zero proposed changes. The AI read the exact reviewed diff and dispatcher paths. Workflow success does not mean test success: an overly broad npm command ran, isolated tests lacked granular output, and a direct Miniflare diagnostic hit sandbox `listen EPERM 127.0.0.1`.
+- Next bounded change `fix/codex-pilot-runner-tests` runs only 1–4 changed existing Node test files on the ordinary runner before AI, saves the exact argv/exit/log tail, and tells AI to use that evidence without broad-suite or sandbox server retries. Timeout/absent tests stop before API calls. Any AI edit remains unverified until retested on the ordinary runner. Keep sandbox protections.
+- Routine reversible fixes/verification should continue without repeated confirmation. Production deployment, production DB changes and budget expansion still require approval. No third paid trial or PR #90 merge has been performed. Do not put account billing or credentials in public docs.
+
 ## 2026-10-16 — bounded manual AI development pilot
 
 - Setup-only PR #91 merged as `8018217` after explicit approval; no operational deployment or production DB change. Paid AI work is manually triggered by the owner only, with read-only GitHub permissions, no persisted credentials, sandbox/drop-sudo, a 3-minute AI timeout, and validated patch/summary artifacts. It does not run continuously or publish its changes automatically.
