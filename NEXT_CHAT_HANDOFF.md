@@ -1,5 +1,12 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-16 — current development checkpoint
+
+- PR #94 fixed three baseline test failures without changing production behavior: per-test Date mocks prevent approval fixtures expiring, and the fallback guard assertion tolerates whitespace. Full local and GitHub CI passed 553/553 tests plus integration/typecheck/build/inventory; merged as `61b0bd8`.
+- PR #93 merged as `97df619` after full GitHub CI passed. The manual AI pilot now runs 1–4 changed existing test files on the ordinary runner before AI and supplies the exact command, exit code and bounded log. AI sandbox protections remain intact; proposed edits require subsequent ordinary-runner verification.
+- Third pilot run `38863258588` completed successfully on workflow commit `97df619`: ordinary-runner dispatcher tests 17/17 passed, AI read the exact diff and baseline report, performed no extra test/server runs, and scope validation recorded zero changed paths. Diff-to-test-evidence-to-AI-review-to-artifact delivery is verified. Automatic repair remains unproven because this target had no isolated failing change. No recurring trigger or further paid run was enabled.
+- PR #90 is being updated with current main while preserving both handoff histories. No production deployment, remote DB write or manual ingestion has occurred. Actual production CPU state and unpublished Codespaces changes remain unverified. Older statements about missing CI fixes or dormant code are historical.
+
 ## 2026-10-16 — dispatcher publication retry readiness (branch-only)
 
 - Baseline GitHub `main`: `eb3a9d5`. Current code already connects the fair micro dispatcher and contains the rich-detail regex CPU fix plus Pohang/Busan Dong-gu verification fixes. Older dormant-runtime notes below are historical, not current code status.
@@ -7,6 +14,20 @@
 - Regression covers dispatch when due, future retry, live publication lease, and expired checkpoint. Existing publication validation and persistence are unchanged.
 - Validation: reproduced failure before the fix; after the fix, targeted dispatcher/detail/scheduler tests 36/36 PASS, typecheck PASS, diff-check PASS. Cloudflare Free CPU behavior remains unverified; this fix does not claim to resolve CPU termination.
 - Work is isolated on `fix/dispatcher-publication-retry-readiness`; no main merge, production deploy, remote D1 write, manual ingestion, or paid resource action is authorized by this task. Production runtime/CPU status and unpublished Codespaces changes were not verified here. Obtain explicit approval before operational changes.
+
+## 2026-10-16 — second pilot reviewed; ordinary-runner tests prepared
+
+- User approved PR #92 merge and one second trial. Merge: `06b02e5`; run `38859933445` completed in 1m34s with zero proposed changes. The AI read the exact reviewed diff and dispatcher paths. Workflow success does not mean test success: an overly broad npm command ran, isolated tests lacked granular output, and a direct Miniflare diagnostic hit sandbox `listen EPERM 127.0.0.1`.
+- Next bounded change `fix/codex-pilot-runner-tests` runs only 1–4 changed existing Node test files on the ordinary runner before AI, saves the exact argv/exit/log tail, and tells AI to use that evidence without broad-suite or sandbox server retries. Timeout/absent tests stop before API calls. Any AI edit remains unverified until retested on the ordinary runner. Keep sandbox protections.
+- Routine reversible fixes/verification should continue without repeated confirmation. Production deployment, production DB changes and budget expansion still require approval. No third paid trial or PR #90 merge has been performed. Do not put account billing or credentials in public docs.
+
+## 2026-10-16 — manual Codex pilot first run complete
+
+- User approved setup-only PR #91 merge and exactly one paid trial. PR #91 merged as `8018217`; it adds the owner-only manual workflow, immutable PR head validation, workspace/drop-sudo protection, 3-minute AI timeout, patch scope checks and summary artifact. No recurring AI trigger, operational deployment or production DB action is enabled.
+- First trial: https://github.com/framefutures-wq/project-WTW/actions/runs/38787023327 — SUCCESS, artifact `codex-proposed-patch` saved, 0 changed paths. Target was PR #90 head `ba4df741ad8c463cdde0733020ca9add66128968`; PR #90 remains unmerged.
+- This proves authenticated execution and output capture, not effective automatic repair. The shallow checkout lacked parent/base history: AI could not read the actual diff, inspected neighboring municipal paths, and passed only `municipal-publication.test.ts` + `municipal-retry-worker.test.mjs`. Do not claim that PR #90's dispatcher regression suite was verified by this trial.
+- Follow-up branch `fix/codex-pilot-reviewed-diff` provides the immutable base/head diff from GitHub before paid work, rejects empty/>64 KiB diffs, and instructs the AI to inspect changed paths/tests before historical context. This follow-up is prepared separately; do not run a second paid trial without explicit authorization.
+- Existing baseline CI still has 3 unrelated failures (`image-lightbox-ui`, two `municipal-approval` assertions). User's exception applied to PR #91 only. Billing/account settings and Secrets must never be copied into public project documentation or logs.
 
 ## 2026-10-12 — official-detail micro production runtime deployed, scheduler dormant
 

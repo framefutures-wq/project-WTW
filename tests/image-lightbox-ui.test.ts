@@ -121,7 +121,7 @@ test("detail and cards without an image use their respective event-data graphics
   assert.match(card, /role="img"/);
   assert.doesNotMatch(card, /주제 일러스트|체험을 만나는 하루/);
   assert.doesNotMatch(app, /scene-sun|hill-one|hill-two|scene-stem|scene-dot/);
-  assert.match(app, /imageFailed\) && \(/);
+  assert.match(app, /\(!image\s*\|\|\s*imageFailed\)\s*&&/);
   assert.match(redesign, /\.detail-info-graphic\s*\{[\s\S]*background: #f7f4ee/);
   assert.match(redesign, /\.detail-info-graphic-orbit[\s\S]*#f26b38/);
   const graphicStyles = redesign.slice(
