@@ -1,5 +1,13 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-16 — manual Codex pilot first run complete
+
+- User approved setup-only PR #91 merge and exactly one paid trial. PR #91 merged as `8018217`; it adds the owner-only manual workflow, immutable PR head validation, workspace/drop-sudo protection, 3-minute AI timeout, patch scope checks and summary artifact. No recurring AI trigger, operational deployment or production DB action is enabled.
+- First trial: https://github.com/framefutures-wq/project-WTW/actions/runs/38787023327 — SUCCESS, artifact `codex-proposed-patch` saved, 0 changed paths. Target was PR #90 head `ba4df741ad8c463cdde0733020ca9add66128968`; PR #90 remains unmerged.
+- This proves authenticated execution and output capture, not effective automatic repair. The shallow checkout lacked parent/base history: AI could not read the actual diff, inspected neighboring municipal paths, and passed only `municipal-publication.test.ts` + `municipal-retry-worker.test.mjs`. Do not claim that PR #90's dispatcher regression suite was verified by this trial.
+- Follow-up branch `fix/codex-pilot-reviewed-diff` provides the immutable base/head diff from GitHub before paid work, rejects empty/>64 KiB diffs, and instructs the AI to inspect changed paths/tests before historical context. This follow-up is prepared separately; do not run a second paid trial without explicit authorization.
+- Existing baseline CI still has 3 unrelated failures (`image-lightbox-ui`, two `municipal-approval` assertions). User's exception applied to PR #91 only. Billing/account settings and Secrets must never be copied into public project documentation or logs.
+
 ## 2026-10-12 — official-detail micro production runtime deployed, scheduler dormant
 
 - Production D1 `weekend-mwohae-production` applied additive migration `0027_official_detail_jobs.sql`. The job table, generation/stage/lease/retry/checkpoint fields, and ready index are present; the queue contains 0 rows.
