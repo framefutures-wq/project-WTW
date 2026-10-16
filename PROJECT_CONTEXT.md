@@ -1,5 +1,12 @@
 # 갈틈 프로젝트 컨텍스트
 
+## 2026-10-16 — production metadata access checkpoint
+
+- PR #90 merged as `1a2e367` after full CI passed (554/554 unit tests plus integration/typecheck/build/inventory). This session has not deployed it; unpublished Codespaces work and the active deployment's Git commit remain unknown.
+- User-supplied dashboard evidence showed version `5738282d-70ec-45c9-bb73-829b2b1834e2`; one every-minute invocation ended `ok` with 18 ms CPU, 3596 ms wall time and `LANE_MUNICIPAL_FINISHED`. This does not establish official-detail CPU recovery or public event persistence.
+- A separate owner-only manual metadata audit is prepared with two GET endpoints and synthetic safety tests. Cloudflare authentication remains `PAUSED_USER_ACTION`; see `docs/WORKER_READONLY_AUDIT.md`. No token, production mutation, manual ingestion, recurring execution or further paid AI trial is enabled.
+
+
 ## 2026-10-16 — current development checkpoint
 
 - PR #94 fixed three baseline test failures without changing production behavior: per-test Date mocks prevent approval fixtures expiring, and the fallback guard assertion tolerates whitespace. Full local and GitHub CI passed 553/553 tests plus integration/typecheck/build/inventory; merged as `61b0bd8`.
