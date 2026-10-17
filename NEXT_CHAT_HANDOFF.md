@@ -1,5 +1,17 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-17 — D1 Read authorization received; registration pending
+
+- Owner approved adding a separate D1 Read credential. Do not ask again for that scope. Keep the Worker observation/deployment credentials unchanged. Secure creation and GitHub Secret `CLOUDFLARE_D1_READ_TOKEN` registration remain the owner step; no value has been read or requested in chat.
+- Existing owner-only manual workflow gains opt-in `observe_collection` (false by default). One fixed DB endpoint receives only the three reviewed SELECT statements; output is aggregate-only, bounded and validated, requires zero-write metadata, and never retries automatically. No live D1 query or production mutation has occurred. See `docs/COLLECTION_PROGRESS_READONLY.md`.
+
+
+## 2026-10-17 — collection progress read-only query prepared
+
+- `scripts/collection-progress.sql` prepares three fixed SELECT/WITH statements for current cycle, all four retained queue stages and municipal registration/event persistence. All 29 repository migrations plus synthetic due/future/expired/DONE and missing/existing-event fixtures passed in disposable SQLite with a read-only authorizer; the existing morning-check SQL guard also passed.
+- Live queue/publication evidence remains `PAUSED_USER_ACTION`: current Worker-only observation token grants no D1 rows. Separate short-lived D1 Read authorization/secure registration is required; existing tokens were not modified or probed. See `docs/COLLECTION_PROGRESS_READONLY.md`. No production query, deploy, DB write, new workflow or paid AI invocation occurred. Event existence is not proof of public UI visibility.
+
+
 ## 2026-10-17 — live scheduled execution evidence verified
 
 - Manual authenticated run `38941111900` on `9825d05` completed a 180-second live window, 02:37:41–02:40:41 KST. Three sampled Cron invocations returned `ok`: municipal CPU 12/22 ms with `LANE_MUNICIPAL_FINISHED`, official CPU 26 ms with `LANE_OFFICIAL_FINISHED`. Exceptions and `exceededCpu` outcomes were zero; no forced termination or report truncation. This proves the official lane returned in one observed invocation, not a D1 job reaching DONE or permanent CPU recovery.
