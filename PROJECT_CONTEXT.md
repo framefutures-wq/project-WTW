@@ -1,5 +1,11 @@
 # 갈틈 프로젝트 컨텍스트
 
+## 2026-10-17 — D1 Read authorization received; registration pending
+
+- Owner approved adding a separate D1 Read credential. Do not ask again for that scope. Keep the Worker observation/deployment credentials unchanged. Secure creation and GitHub Secret `CLOUDFLARE_D1_READ_TOKEN` registration remain the owner step; no value has been read or requested in chat.
+- Existing owner-only manual workflow gains opt-in `observe_collection` (false by default). One fixed DB endpoint receives only the three reviewed SELECT statements; output is aggregate-only, bounded and validated, requires zero-write metadata, and never retries automatically. No live D1 query or production mutation has occurred. See `docs/COLLECTION_PROGRESS_READONLY.md`.
+
+
 ## 2026-10-17 — collection progress read-only query prepared
 
 - `scripts/collection-progress.sql` prepares three fixed SELECT/WITH statements for current cycle, all four retained queue stages and municipal registration/event persistence. All 29 repository migrations plus synthetic due/future/expired/DONE and missing/existing-event fixtures passed in disposable SQLite with a read-only authorizer; the existing morning-check SQL guard also passed.
