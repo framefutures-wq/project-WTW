@@ -1,9 +1,9 @@
 # Collection progress checkpoint
 
-Status: owner authorized a separate D1 Read credential on 2026-10-17;
-`PAUSED_USER_ACTION` now applies only to credential creation/registration. Main's successful 180-second
-tail sample proves lane completion only. The existing Worker Metadata Read-Only
-credential does not grant D1 row access. No production query has been run here.
+Status: `VERIFIED` for credential connection and fixed aggregate reads on
+2026-10-17. Runs `39009589344` and `39009668880` succeeded on `967ce6e`.
+The registered D1 Read credential is separate from Worker observation credentials.
+Do not repeat authorization/registration or infer public visibility from this gate.
 
 `scripts/collection-progress.sql` is a fixed, SELECT/WITH-only snapshot against
 the existing schema through migration 0029. It reports three recent municipal
@@ -47,8 +47,8 @@ https://developers.cloudflare.com/api/resources/d1/subresources/database/methods
 ## Credential handoff and execution
 
 Owner authorization is recorded; do not request it again for the same D1 Read
-scope. The remaining step is secure credential registration by the owner because
-the available Cloudflare session is inaccessible here.
+scope. The owner completed secure credential registration. Do not repeat that
+step; the available Cloudflare dashboard session remains inaccessible here.
 
 Create a separate short-lived token named `galteum-d1-read` with only Account /
 D1 / Read for the account containing `weekend-mwohae-production`, seven-day
@@ -69,3 +69,22 @@ The runner suppresses upstream errors and unapproved fields, caps response size
 at 256 KiB, allows only known enums/numbers/timestamps, and requires all three
 result metadata entries to report zero writes/changes and `changed_db=false`.
 Absent metadata is a failed verification. No raw response or artifact is saved.
+
+## Actual evidence — 2026-10-17
+
+Snapshots were 15:21:21.769 and 15:22:40.610 KST (79 seconds apart), each
+reporting rows_read `[10,824,80]`, zero writes/changes and unchanged queue counts.
+Municipal scan: 188 DONE, 75 RETRY (5 due, 70 future), one due candidate.
+Municipal detail: 68 DONE. Official: 8 DONE and one due FETCH_PENDING.
+TourAPI detail: 71 DONE. No unfinished expired row was reported.
+Today's cycle remained ACTIVE at 36/36, while the two preceding cycles were DONE.
+Candidate latest_update advanced one minute; cursor movement was not queried.
+
+Six municipal registration checkpoints joined existing verified/PUBLIC, non-sample
+events, last updated 2026-10-15T20:45:03.151Z. This is a retained subset, not total
+publicly visible events or new publications today. No backlog reduction, per-job
+completion or public UI visibility was established by this short comparison.
+Next inspect retry reasons and per-job cursor/stage movement before proposing fixes.
+
+- https://github.com/framefutures-wq/project-WTW/actions/runs/39009589344
+- https://github.com/framefutures-wq/project-WTW/actions/runs/39009668880

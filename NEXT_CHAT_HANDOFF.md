@@ -1,5 +1,13 @@
 # 갈틈 새 채팅 인수인계
 
+## 2026-10-17 — authenticated D1 reads verified; backlog reduction unproven
+
+- Owner created/registered the separate D1 Read credential. PR #101 merged as `967ce6e` after CI `39008631165` passed 573/573 tests plus integration/typecheck/build/inventory. Credential values were never read. No further authorization is needed for the same bounded read-only inspection scope.
+- Manual runs `39009589344` and `39009668880` succeeded on `967ce6e`; snapshots at 15:21:21.769 and 15:22:40.610 KST read 914 rows each and reported zero writes/changes. Municipal registration markers joined six existing non-sample verified/PUBLIC event rows; this is a subset, not the site's public event count or UI visibility proof. All six markers were last updated before today.
+- Counts did not decrease across the 79-second sample: municipal scan RETRY 75 (5 due, 70 future), CANDIDATE_PENDING 1 due; official FETCH_PENDING 1 due. No unfinished expired rows were reported. Retained DONE counts: municipal scan 188, municipal detail 68, official 8, TourAPI detail 71; DONE can include terminal failure. The candidate row group's latest update advanced by one minute; per-job cursor movement was not queried, so completion is unproven.
+- Today's cycle was ACTIVE at cursor 36/36, without completed_at; Oct 15/16 cycles were DONE at 36/36. This does not prove today's cycle is stuck. Next priority is classify the 75 scan retries and inspect candidate cursor/official stage movement through approved bounded D1 reads before proposing a fix. Public UI exposure, exact deployed Git and unpublished Codespaces work remain unverified. No deploy, DB write, forced ingestion or additional paid AI call occurred.
+
+
 ## 2026-10-17 — D1 Read authorization received; registration pending
 
 - Owner approved adding a separate D1 Read credential. Do not ask again for that scope. Keep the Worker observation/deployment credentials unchanged. Secure creation and GitHub Secret `CLOUDFLARE_D1_READ_TOKEN` registration remain the owner step; no value has been read or requested in chat.
