@@ -1,3 +1,15 @@
+## Actual evidence — 2026-10-19
+
+Manual run `39142641493` on main `eec05c5` completed successfully using four fixed SELECTs.
+The snapshot was observed at `2026-10-18T15:55:21.977Z`; result metadata required zero writes.
+Municipal retry groups included `list_parse_requires_fallback` 59 (4 due, 55 future),
+`http_5xx` 21 (all future), `network_or_timeout` 3 (all future), and
+`candidate_one_failed` 4 (all future, all source `taebaek`). Source-level HTTP 5xx groups:
+`jeonnam-gwangju-곡성` 18, `busan-해운대` 2, `gyeongnam-거제` 1; all were future-active.
+Candidate progress had 5 retained checkpoints (1 due, 4 future), cursor range 0–14 of 25,
+and no expired unfinished rows. The previous snapshot cursor maximum was 8, so the aggregate
+range is consistent with some cursor advance; it does not prove every candidate completed.
+
 ## Follow-up source-level diagnosis
 
 The fourth fixed SELECT groups `http_5xx` and `candidate_one_failed` retry counts by the
