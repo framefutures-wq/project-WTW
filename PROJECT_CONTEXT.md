@@ -1,3 +1,9 @@
+## 2026-10-19 — source-grouped read-only snapshot
+
+- PR #105 merged as `eec05c5`; its fixed query and allowlisted source-key validator passed CI. Manual run `39142641493` on that exact main SHA succeeded with four read-only result sets and zero writes.
+- At `2026-10-18T15:55:21.977Z`: `list_parse_requires_fallback` 59 (4 due/55 future); `http_5xx` 21 (all future); `network_or_timeout` 3 (future); `candidate_one_failed` 4, all source `taebaek` and future. HTTP 5xx by source: Gokseong 18, Haeundae 2, Geoje 1, all future. Candidate progress: 5 retained, 1 due/4 future, cursors 0–14 of 25, no expired unfinished rows. Compared with prior max cursor 8, the aggregate indicates some movement but not per-job completion.
+- The largest retry group is now `list_parse_requires_fallback`; current diagnostic branch extends source grouping to this category. No production Worker code, DB write, or deployment change. Next: CI, merge the read-only diagnostic extension, and run a later fixed snapshot to identify parse-fallback sources before changing parsing behavior.
+
 ## 2026-10-19 — source-key retry diagnostics prepared
 
 - The latest verified D1 snapshot remains the 2026-10-18T15:25:53.665Z run. A new snapshot has not been confirmed because this connection currently exposes workflow-run reads but not manual dispatch.
