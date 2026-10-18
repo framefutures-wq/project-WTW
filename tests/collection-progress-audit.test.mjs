@@ -104,13 +104,11 @@ test("only fixed SELECT/WITH SQL reaches the one fixed database; unapproved fiel
         new URL("../scripts/collection-progress.sql", import.meta.url),
         "utf8",
       )
-        .replace(/--[^
-]*/g, "")
+        .replace(/--[^\n]*/g, "")
         .split(";")
         .filter((s) => s.trim())
         .map((s) => s.trim())
-        .join(";
-");
+        .join(";\n");
       assert.equal(sql, reviewed);
       assert.doesNotMatch(
         sql,
