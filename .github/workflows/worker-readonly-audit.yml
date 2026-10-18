@@ -13,7 +13,7 @@ on:
         default: false
         type: boolean
       observe_collection:
-        description: "Read one collection snapshot using three fixed SELECT queries"
+        description: "Read one collection snapshot using four fixed SELECT queries"
         required: true
         default: false
         type: boolean
