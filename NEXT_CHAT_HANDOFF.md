@@ -1,3 +1,9 @@
+## 2026-10-19 — source-key retry diagnostics prepared
+
+- The latest verified D1 snapshot remains the 2026-10-18T15:25:53.665Z run. A new snapshot has not been confirmed because this connection currently exposes workflow-run reads but not manual dispatch.
+- Prepared branch `diagnostics/group-municipal-retry-source`: extend the existing fourth fixed SELECT with allowlisted municipal source keys for `http_5xx` and `candidate_one_failed`. It returns no URLs or payloads; runner validates source keys against the current registry. Synthetic tests cover valid grouping and reject injected values.
+- No Worker runtime behavior, production DB, or deployment change. Next: CI review, then obtain a new approved snapshot through an authorized manual Actions path before changing source behavior.
+
 # 갈틈 새 채팅 인수인계
 
 ## 2026-10-17 — authenticated D1 reads verified; backlog reduction unproven

@@ -1,3 +1,10 @@
+## Follow-up source-level diagnosis
+
+The fourth fixed SELECT groups `http_5xx` and `candidate_one_failed` retry counts by the
+existing municipal source key. The runner accepts only keys in the current registry.
+This identifies affected source groups without returning URLs, event payloads, IDs or raw
+errors. Other retry categories remain grouped by category alone. The query remains read-only.
+
 # Collection progress checkpoint
 
 Status: `VERIFIED` for credential connection and fixed aggregate reads on
