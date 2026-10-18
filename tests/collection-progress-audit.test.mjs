@@ -49,6 +49,7 @@ const fixture = () => ({
         stage: "RETRY",
         retry_stage: "LIST_PENDING",
         reason: "http_5xx",
+        source_key: "paju",
         retained: 2,
         due_active: 1,
         future_active: 1,
@@ -66,6 +67,7 @@ const fixture = () => ({
         stage: "CANDIDATE_PENDING",
         retry_stage: null,
         reason: "none",
+        source_key: null,
         retained: 1,
         due_active: 1,
         future_active: 0,
@@ -119,6 +121,8 @@ test("only fixed SELECT/WITH SQL reaches the one fixed database; unapproved fiel
   });
   assert.equal(calls, 1);
   assert.equal(report.jobs[0].due_active, 1);
+  assert.equal(report.scan_diagnostics[0].source_key, "paju");
+  assert.equal(report.scan_diagnostics[1].source_key, null);
   assert.deepEqual(report.scan_diagnostics.map(({ kind, reason, min_candidate_cursor }) => ({
     kind, reason, min_candidate_cursor,
   })), [
@@ -188,6 +192,9 @@ test("injected values, excessive rows, oversized body and missing query results 
     },
     (d) => {
       d.result[3].results[0].reason = "::warning::DO_NOT_OUTPUT";
+    },
+    (d) => {
+      d.result[3].results[0].source_key = "::warning::DO_NOT_OUTPUT";
     },
   ]) {
     const data = fixture();
