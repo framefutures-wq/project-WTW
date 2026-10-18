@@ -104,11 +104,13 @@ test("only fixed SELECT/WITH SQL reaches the one fixed database; unapproved fiel
         new URL("../scripts/collection-progress.sql", import.meta.url),
         "utf8",
       )
-        .replace(/--[^\n]*/g, "")
+        .replace(/--[^
+]*/g, "")
         .split(";")
         .filter((s) => s.trim())
         .map((s) => s.trim())
-        .join(";\n");
+        .join(";
+");
       assert.equal(sql, reviewed);
       assert.doesNotMatch(
         sql,
@@ -184,7 +186,10 @@ test("injected values, excessive rows, oversized body and missing query results 
       d.result[1].results = Array(101).fill(d.result[1].results[0]);
     },
     (d) => {
-      d.result.pop();\n    },\n    (d) => {\n      d.result[3].results[0].reason = "::warning::DO_NOT_OUTPUT";
+      d.result.pop();
+    },
+    (d) => {
+      d.result[3].results[0].reason = "::warning::DO_NOT_OUTPUT";
     },
   ]) {
     const data = fixture();
@@ -213,7 +218,8 @@ test("empty queues remain empty without claiming successful progress", async () 
     token: "synthetic",
     fetcher: async () => Response.json(data),
   });
-  assert.deepEqual(report.jobs, []);\n  assert.deepEqual(report.scan_diagnostics, []);
+  assert.deepEqual(report.jobs, []);
+  assert.deepEqual(report.scan_diagnostics, []);
   assert.deepEqual(report.publication, []);
   assert.equal(report.progress_comparison, "SECOND_SNAPSHOT_REQUIRED");
 });
