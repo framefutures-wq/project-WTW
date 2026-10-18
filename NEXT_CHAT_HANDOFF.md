@@ -1,3 +1,9 @@
+## 2026-10-19 — latest bounded read and parser-fallback diagnosis
+
+- PR #105 merged as `eec05c5`; it groups allowlisted source keys for selected municipal retry categories. Manual snapshot `39142641493` on that SHA succeeded with four fixed SELECTs and zero writes.
+- Snapshot at `2026-10-18T15:55:21.977Z`: parse fallback 59 (4 due, 55 future); HTTP 5xx 21 (future) across Gokseong 18, Haeundae 2, Geoje 1; network timeout 3 (future); candidate failure 4 (all Taebaek, future). Candidate progress: 5 retained, 1 due/4 future, cursor range 0–14 of 25; no expired unfinished rows. This aggregate suggests some cursor movement from prior max 8 but does not establish per-job completion.
+- Branch `diagnostics/group-parse-retries-by-source` extends source attribution to the largest `list_parse_requires_fallback` group. No runtime behavior, production DB or deployment changes. After CI and merge, run one later read-only snapshot; then investigate actual parse-fallback sources before making parser changes.
+
 ## 2026-10-19 — source-key retry diagnostics prepared
 
 - The latest verified D1 snapshot remains the 2026-10-18T15:25:53.665Z run. A new snapshot has not been confirmed because this connection currently exposes workflow-run reads but not manual dispatch.
