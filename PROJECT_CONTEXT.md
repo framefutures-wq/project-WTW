@@ -1,3 +1,9 @@
+## 2026-10-19 — source-key retry diagnostics prepared
+
+- The latest verified D1 snapshot remains the 2026-10-18T15:25:53.665Z run. A new snapshot has not been confirmed because this connection currently exposes workflow-run reads but not manual dispatch.
+- Prepared branch `diagnostics/group-municipal-retry-source`: extend the existing fourth fixed SELECT with allowlisted municipal source keys for `http_5xx` and `candidate_one_failed`. It returns no URLs or payloads; runner validates source keys against the current registry. Synthetic tests cover valid grouping and reject injected values.
+- No Worker runtime behavior, production DB, or deployment change. Next: CI review, then obtain a new approved snapshot through an authorized manual Actions path before changing source behavior.
+
 ## 2026-10-18 — retry/cursor aggregates and short live sample
 
 - PR #103 added a fourth fixed read-only aggregate query for municipal retry categories and candidate cursor ranges; merged as `860df8b`. Main run `39140432719` on that exact reviewed code completed successfully. Four fixed SELECTs were validated as zero-write; the new diagnostic query reports candidate progress and collapsed retry categories without IDs, URLs, payloads or freeform errors.
