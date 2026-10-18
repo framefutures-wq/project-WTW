@@ -1,3 +1,11 @@
+## 2026-10-18 — retry/cursor aggregates and short live sample
+
+- PR #103 added a fourth fixed read-only aggregate query for municipal retry categories and candidate cursor ranges; merged as `860df8b`. Main run `39140432719` on that exact reviewed code completed successfully. Four fixed SELECTs were validated as zero-write; the new diagnostic query reports candidate progress and collapsed retry categories without IDs, URLs, payloads or freeform errors.
+- Snapshot at `2026-10-18T15:25:53.665Z`: 4 candidate checkpoints (all future-active, 0 due, 0 expired), attempts 10–14, cursor 0–8 of 25 candidates; 4 retained candidate retries, all future-active, category `candidate_one_failed`. Municipal list retries: 21 `LIST_PENDING/http_5xx` (attempts 9–15), all future-active; zero due and zero expired unfinished rows. This shows repeated provider failures and candidate-item failures, but does not identify specific URLs or prove a permanent source outage.
+- Earlier fixed snapshots (15:02:38Z and 15:04:35Z) showed municipal scan RETRY 87 and DONE 231, one pending candidate moving to official detail persistence, and TourAPI `FETCH_COMMON` due. These are time-bounded observations, not per-job success proof.
+- The previously approved 180-second live observation run `39138877483` sampled 3 natural Cron executions: all `ok`, CPU 16–29 ms, zero exceptions and zero exceeded-CPU events. Dispatcher selected/started/finished municipal twice and TourAPI once. This is a short sample only; persistent CPU health and production Git mapping remain unverified.
+- No Worker code behavior changed for this diagnosis. No deploy, production DB write, forced ingestion, or paid AI invocation occurred. Public UI visibility and possible unpublished Codespaces work remain unknown. Next priority: observe a later fixed snapshot to see whether HTTP 5xx and candidate retries recover/advance; consider source-specific changes only with direct failure evidence. UI/UX remains a separate product priority after collection correctness is measurable.
+
 # 갈틈 프로젝트 컨텍스트
 
 ## 2026-10-17 — authenticated D1 reads verified; backlog reduction unproven
