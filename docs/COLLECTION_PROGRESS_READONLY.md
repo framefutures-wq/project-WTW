@@ -19,7 +19,7 @@ URLs, candidate JSON, credentials or freeform diagnostic messages.
   registration. Do not use an existing deployment token or request D1 Write.
 - Cloudflare documents D1 Read as an accepted permission for the query API.
   Query transport uses POST; the SQL determines whether the operation writes.
-  This file contains three read-only statements. Do not pass arbitrary SQL.
+  This file contains four read-only statements. Do not pass arbitrary SQL.
 - The existing owner-only manual Worker audit workflow gains an optional
   `observe_collection` input, default false, using `CLOUDFLARE_D1_READ_TOKEN`
   only in its final guarded step. No recurring job, Worker, public endpoint or
@@ -62,13 +62,28 @@ After registration and reviewed-main merge, dispatch the existing workflow on
 main with its exact reviewed SHA, `observe_collection=true`, `observe_live=false`.
 The existing metadata step remains required. Run the second snapshot separately
 at a recorded later time, without reruns or automatic retry. One run performs
-one API request containing the three reviewed SELECT statements; normal D1 read
+one API request containing the four reviewed SELECT statements; normal D1 read
 usage applies, with no subscription or budget expansion.
 
 The runner suppresses upstream errors and unapproved fields, caps response size
 at 256 KiB, allows only known enums/numbers/timestamps, and requires all three
 result metadata entries to report zero writes/changes and `changed_db=false`.
 Absent metadata is a failed verification. No raw response or artifact is saved.
+
+## Actual evidence — 2026-10-18
+
+PR #103 added the fourth fixed SELECT for municipal retry reasons and candidate cursor ranges;
+main commit `860df8b` passed the existing CI, and manual read-only snapshot run `39140432719`
+succeeded with four result sets, zero writes/changes, and no saved raw response.
+
+At `2026-10-18T15:25:53.665Z`, four candidate checkpoints were retained, all future-active
+(0 due, 0 expired), with attempts 10–14 and cursor range 0–8 of 25 candidates. Four candidate
+retries were `candidate_one_failed`, also all future-active. Municipal list retries included
+21 `LIST_PENDING/http_5xx` rows (attempts 9–15), all future-active, with no due or expired
+unfinished rows. Categories are aggregate only; this does not expose which provider URLs failed
+or establish a permanent outage. A separate 180-second live sample recorded three natural Cron
+events, all `ok`, CPU 16–29 ms, zero exceptions and zero CPU-limit events. It is a short sample,
+not proof of sustained recovery. No production deploy, DB write or forced ingestion occurred.
 
 ## Actual evidence — 2026-10-17
 
