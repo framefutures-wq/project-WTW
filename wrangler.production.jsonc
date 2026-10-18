@@ -1,0 +1,39 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "weekend-mwohae",
+  "account_id": "a3ced956d23f59da4cfcf41377cf3ec6",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-18",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/*"],
+  },
+  "ai": { "binding": "AI" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "weekend-mwohae-production",
+      "database_id": "91c55189-7bea-4111-8b20-448e8c1a9dd3",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": {
+    "APP_MODE": "production",
+    "TOUR_API_ENABLED": "true",
+    "FAIR_MICRO_DISPATCHER_ENABLED": "true",
+    "MUNICIPAL_DOCUMENT_AI_ENABLED": "true",
+    "WEB_PUSH_ENABLED": "true",
+    "WEB_PUSH_VAPID_PUBLIC_KEY": "BNHKagyZenwP0ldvTxb-Uw0eTKqom0s6kzx0xEEjOFWMGWeSk2W0UVIhqD0qTQUR7U0JxmTAyL01Xe1ib3tphno",
+    "WEB_PUSH_VAPID_SUBJECT": "https://galteum.com/",
+    "ANALYTICS_ENABLED": "true",
+    "GA4_MEASUREMENT_ID": "G-54MW6BKLHY",
+    "CLOUDFLARE_WEB_ANALYTICS_TOKEN": "f7e9dd44e251461a8363d37185f90394",
+  },
+  "secrets": { "required": ["TOUR_API_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"] },
+  "triggers": {
+    "crons": ["0 1 * * *","* * * * *","55 8 * * *"],
+  },
+  "observability": { "enabled": true },
+}

@@ -1,0 +1,61 @@
+# Manual, owner-only reads. No AI/deploy/DB writes/ingestion.
+name: Worker metadata audit (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Reviewed main commit (40 hex characters)"
+        required: true
+        type: string
+      observe_live:
+        description: "Observe existing scheduled executions for 180 seconds (sanitized; no forced ingestion)"
+        required: true
+        default: false
+        type: boolean
+      observe_collection:
+        description: "Read one collection snapshot using four fixed SELECT queries"
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: worker-readonly-audit
+  cancel-in-progress: false
+jobs:
+  metadata:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'framefutures-wq/project-WTW' && github.actor == 'framefutures-wq' && github.triggering_actor == 'framefutures-wq' && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Require the reviewed main revision
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Read deployment metadata and Cron definitions
+        env:
+          CLOUDFLARE_OBSERVE_TOKEN: ${{ secrets.CLOUDFLARE_OBSERVE_TOKEN }}
+        run: node scripts/worker-readonly-audit.mjs
+      - name: Install locked CLI only when live observation is requested
+        if: ${{ inputs.observe_live }}
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Observe sanitized live scheduled executions for 180 seconds
+        if: ${{ inputs.observe_live }}
+        env:
+          CLOUDFLARE_OBSERVE_TOKEN: ${{ secrets.CLOUDFLARE_OBSERVE_TOKEN }}
+        run: node scripts/worker-live-audit.mjs
+      - name: Read fixed collection progress aggregates
+        if: ${{ inputs.observe_collection }}
+        env:
+          CLOUDFLARE_D1_READ_TOKEN: ${{ secrets.CLOUDFLARE_D1_READ_TOKEN }}
+        run: node scripts/collection-progress-audit.mjs

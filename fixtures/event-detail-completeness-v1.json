@@ -1,0 +1,159 @@
+{
+  "auditDate": "2026-09-20",
+  "scope": "Eight bounded production events. Official sources are cited as URLs; this fixture stores only field-level expectations, never article bodies or assets.",
+  "events": [
+    {
+      "id": "tourapi-1100492",
+      "title": "고양호수예술축제",
+      "type": ["fireworks", "performance", "experience", "multi_date"],
+      "officialSources": [
+        "https://www.goyang.go.kr/news/user/bbs/BD_selectBbs.do?q_bbsCode=1090&q_bbscttSn=20260914143031770&q_estnColumn1=Y"
+      ],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "programs": [
+          {
+            "name": "Hey, Listen",
+            "occurrences": [
+              {
+                "startDate": "2026-09-19",
+                "endDate": "2026-09-19",
+                "startTime": "19:30",
+                "endTime": null,
+                "venue": "한울광장"
+              }
+            ]
+          },
+          {
+            "name": "불꽃 드론 쇼와 불꽃놀이",
+            "occurrences": [
+              {
+                "startDate": "2026-09-19",
+                "endDate": "2026-09-19",
+                "startTime": "20:30",
+                "endTime": null,
+                "venue": null
+              },
+              {
+                "startDate": "2026-09-20",
+                "endDate": "2026-09-20",
+                "startTime": "20:30",
+                "endTime": null,
+                "venue": null
+              }
+            ]
+          },
+          {
+            "name": "서커스 빌리지",
+            "occurrences": [
+              {
+                "startDate": "2026-09-18",
+                "endDate": "2026-09-18",
+                "startTime": "15:00",
+                "endTime": "19:00",
+                "venue": "일산호수공원 내 가로수정원"
+              },
+              {
+                "startDate": "2026-09-19",
+                "endDate": "2026-09-20",
+                "startTime": "14:00",
+                "endTime": "19:00",
+                "venue": "일산호수공원 내 가로수정원"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "tourapi-2657619",
+      "title": "2026 화성행궁 야간개장",
+      "type": ["event_wide_operating_hours", "long_running"],
+      "officialSources": [
+        "https://paldal.suwon.go.kr/bbsplus/view.asp?bd_gubn=15&code=tbl_bbs_sub200510&menuid=sub200510&no=MTk5NjEg&page=1"
+      ],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "operatingHours": [
+          {
+            "startDate": "2026-09-20",
+            "endDate": "2026-09-20",
+            "startTime": "18:00",
+            "endTime": "21:30",
+            "venue": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tourapi-2987489",
+      "title": "2026 고흥 녹동항 드론쇼",
+      "type": ["drone", "program_only_time", "recurring"],
+      "officialSources": ["https://nokdongdrone.co.kr/overview/"],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "programs": [{ "name": "녹동항 드론쇼", "required": true }]
+      }
+    },
+    {
+      "id": "tourapi-2786391",
+      "title": "광안리 M(Marvelous) 드론 라이트쇼",
+      "type": ["drone", "program_only_time", "seasonal"],
+      "officialSources": [
+        "https://www.gwangallimdrone.co.kr/notice/gwanganri-m-deuronraiteusyo-hajeolgi-gongyeon-sigan-annae"
+      ],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "programs": [{ "name": "광안리 M 드론 라이트쇼", "required": true }]
+      }
+    },
+    {
+      "id": "tourapi-292961",
+      "title": "서울 왕궁수문장 교대의식",
+      "type": ["performance", "experience", "program_venue"],
+      "officialSources": ["https://www.royalguard.kr/content/royalguard"],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "programs": [{ "name": "교대의식", "required": true }]
+      }
+    },
+    {
+      "id": "tourapi-2809535",
+      "title": "남산봉수의식 등 전통문화행사",
+      "type": ["performance", "experience", "ambiguous_parent_event"],
+      "officialSources": ["https://namsanbongsu.kr/"],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "programs": [{ "name": "남산봉수대 봉화의식", "required": true }]
+      }
+    },
+    {
+      "id": "tourapi-2434545",
+      "title": "새연교 주말 문화공연 '금토금토 새연쇼'",
+      "type": ["performance", "fireworks", "sparse_official_detail"],
+      "officialSources": ["https://www.data.go.kr/data/15101578/openapi.do"],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "programs": [{ "name": "금토금토 새연쇼", "required": true }]
+      }
+    },
+    {
+      "id": "tourapi-3473295",
+      "title": "DDP 건축투어",
+      "type": ["experience", "program_only_time", "sparse_official_detail"],
+      "officialSources": ["https://www.data.go.kr/data/15101578/openapi.do"],
+      "expected": {
+        "summaryRequired": true,
+        "allowAdditionalPrograms": false,
+        "programs": [{ "name": "DDP 건축투어", "required": true }]
+      }
+    }
+  ]
+}

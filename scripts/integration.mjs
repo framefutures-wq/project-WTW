@@ -1,0 +1,831 @@
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { build } from "esbuild";
+import { Miniflare, convertV4MiniflareOptions } from "miniflare";
+// Real workerd + isolated D1: production visibility cannot be tested with mock arrays.
+const bundle = await build({
+  entryPoints: ["worker/index.ts"],
+  bundle: true,
+  write: false,
+  format: "esm",
+  platform: "browser",
+  target: "es2022",
+});
+const mf = new Miniflare(
+  convertV4MiniflareOptions({
+    modules: true,
+    script: bundle.outputFiles[0].text,
+    compatibilityDate: "2026-09-18",
+    d1Databases: ["DB"],
+    bindings: { APP_MODE: "production", TOUR_API_ENABLED: "false" },
+    cf: false,
+    unsafeTriggerHandlers: true,
+  }),
+);
+try {
+  const db = await mf.getD1Database("DB");
+  // Split by semicolon: this migration has no compound triggers or semicolons in strings.
+  for (const file of readdirSync("migrations")
+    .filter((f) => f.endsWith(".sql"))
+    .sort())
+    for (const sql of readFileSync(`migrations/${file}`, "utf8")
+      .split(";")
+      .map((s) => s.trim())
+      .filter(Boolean))
+      await db.prepare(sql).run();
+  const now = new Date().toISOString(),
+    old = new Date(Date.now() - 96 * 3600_000).toISOString();
+  const future = new Date(Date.now() + 96 * 3600_000).toISOString();
+  const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+  await db
+    .prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('official','organizer',1,'테스트 전용 출처','https://example.org/event',?)",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('tourapi','tourapi',3,'TourAPI 테스트 출처','https://api.visitkorea.or.kr',?)",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('municipality','municipality',2,'지자체 테스트 출처','https://city.example.go.kr/event',?)",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      "INSERT INTO sources(id,kind,priority,name,url,fetched_at) VALUES('private-korean-folk-village-source-test','organizer',1,'한국민속촌 공식 출처','https://www.koreanfolk.co.kr/',?)",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      "INSERT INTO sources(id,kind,priority,name,fetched_at) VALUES('sample','sample',5,'가상 출처',?)",
+    )
+    .bind(now)
+    .run();
+  async function fixture(
+    id,
+    {
+      sample = false,
+      verification = "verified",
+      status = "scheduled",
+      checked = now,
+      cost = "unknown",
+      pet = "unknown",
+      lat = null,
+      lng = null,
+      source = "official",
+      start = today,
+      end = today,
+    } = {},
+  ) {
+    await db
+      .prepare(
+        `INSERT INTO events(id,title,description,region,venue,address,start_date,end_date,cost,pet_policy,lat,lng,status,verification,is_sample,primary_source_id,checked_at)
+      VALUES(?,?,'검증 테스트 전용','서울','테스트 장소','테스트 주소',?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .bind(
+        id,
+        id,
+        start,
+        end,
+        cost,
+        pet,
+        lat,
+        lng,
+        status,
+        sample ? "sample" : verification,
+        sample ? 1 : 0,
+        sample ? "sample" : source,
+        checked,
+      )
+      .run();
+  }
+  async function evidence(id, fields, checked = now, source = "official") {
+    for (const field of fields)
+      await db
+        .prepare(
+          "INSERT INTO event_evidence(event_id,source_id,field,excerpt,checked_at) VALUES(?,?,?,?,?)",
+        )
+        .bind(id, source, field, "테스트 근거", checked)
+        .run();
+  }
+  const required = ["schedule", "venue", "status"];
+  await fixture("verified");
+  await evidence("verified", required);
+  const beforeAudit = await db
+    .prepare("SELECT * FROM events WHERE id='verified'")
+    .first();
+  await db
+    .prepare(
+      "INSERT INTO official_source_audits(id,run_id,event_id,origin_source_id,checked_at,baseline_json,detail_json,url_inventory_json,candidate_status) VALUES('audit-test','run-test','verified','official',?,'{}','{}','[]','candidates_found')",
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      `INSERT INTO official_source_links(id,audit_id,url,source_types,checked_at,http_status,access_status,official,reason,excerpt,content_hash,provenance_json) VALUES('link-test','audit-test','https://example.org/event','["event_official","organizer_official"]',?,200,'ok',1,'합성 기관 근거','합성 근거','synthetic-hash','[]')`,
+    )
+    .bind(now)
+    .run();
+  await db
+    .prepare(
+      "INSERT INTO official_source_comparisons(id,audit_id,link_id,field,result,tourapi_value,official_value,evidence_url,excerpt,checked_at,reason) VALUES('comparison-test','audit-test','link-test','start_date','mismatch','2026-01-01','2026-01-02','https://example.org/event','합성 근거',?,'합성 일정 불일치')",
+    )
+    .bind(now)
+    .run();
+  assert.deepEqual(
+    await db.prepare("SELECT * FROM events WHERE id='verified'").first(),
+    beforeAudit,
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT count(*) n FROM event_evidence WHERE event_id='verified'",
+        )
+        .first()
+    ).n,
+    3,
+  );
+  await assert.rejects(() =>
+    db
+      .prepare(
+        "UPDATE official_source_links SET access_status='http_error' WHERE id='link-test'",
+      )
+      .run(),
+  );
+  await assert.rejects(() =>
+    db
+      .prepare(
+        "UPDATE official_source_comparisons SET official_value=NULL WHERE id='comparison-test'",
+      )
+      .run(),
+  );
+  await assert.rejects(() =>
+    db
+      .prepare(
+        "UPDATE official_source_audits SET event_id='missing-event' WHERE id='audit-test'",
+      )
+      .run(),
+  );
+  console.log(
+    "PASS: 공식 출처 감사 migration, 복수 유형, 비교 근거 제약, 외래키, 기존 행사·공개 근거 불변",
+  );
+  await fixture("quality-hold-hidden");
+  await evidence("quality-hold-hidden", required);
+  await db
+    .prepare(
+      "UPDATE events SET publish_quality_state='HOLD',publish_quality_reason='insufficient_event_signal',publish_quality_rule_version='publish_quality_v1',publish_quality_checked_at=? WHERE id='quality-hold-hidden'",
+    )
+    .bind(now)
+    .run();
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT publish_quality_state,publish_quality_rule_version FROM events WHERE id='verified'",
+        )
+        .first()
+    ).publish_quality_state,
+    "PUBLIC",
+  );
+  await fixture("sample-hidden", { sample: true });
+  await fixture("pending-hidden", { verification: "pending" });
+  await evidence("pending-hidden", required);
+  await fixture("no-evidence-hidden");
+  await fixture("stale-hidden", { checked: old });
+  await evidence("stale-hidden", required, old);
+  // Municipality retains verified last-known-good facts across a transient fetch outage.
+  await fixture("municipality-lkg-visible", { checked: old, source: "municipality" });
+  await evidence("municipality-lkg-visible", required, old, "municipality");
+  await fixture("municipality-한글-id", { source: "municipality" });
+  await evidence("municipality-한글-id", required, now, "municipality");
+  // Freshness remains mandatory for TourAPI and missing/stale municipal facts never escape.
+  await fixture("tourapi-stale-hidden", { checked: old, source: "tourapi" });
+  await evidence("tourapi-stale-hidden", required, old, "tourapi");
+  await fixture("municipality-missing-evidence-hidden", { checked: old, source: "municipality" });
+  await evidence("municipality-missing-evidence-hidden", ["schedule", "venue"], old, "municipality");
+  await fixture("municipality-stale-hidden", { verification: "stale", checked: old, source: "municipality" });
+  await evidence("municipality-stale-hidden", required, old, "municipality");
+  // Trusted, explicitly-named private organizer sources retain last-known-good facts.
+  await fixture("private-lkg-visible", { checked: old, source: "private-korean-folk-village-source-test" });
+  await evidence("private-lkg-visible", required, old, "private-korean-folk-village-source-test");
+  await fixture("private-missing-evidence-hidden", { checked: old, source: "private-korean-folk-village-source-test" });
+  await evidence("private-missing-evidence-hidden", ["schedule", "venue"], old, "private-korean-folk-village-source-test");
+  await fixture("private-stale-hidden", { verification: "stale", checked: old, source: "private-korean-folk-village-source-test" });
+  await evidence("private-stale-hidden", required, old, "private-korean-folk-village-source-test");
+  await fixture("stale-evidence-hidden");
+  await evidence("stale-evidence-hidden", required, old);
+  await fixture("future-hidden", { checked: future });
+  await evidence("future-hidden", required);
+  await fixture("cancelled-hidden", { status: "cancelled" });
+  await evidence("cancelled-hidden", required);
+  await fixture("postponed-hidden", { status: "postponed" });
+  await evidence("postponed-hidden", required);
+  await fixture("no-price-hidden", { cost: "free" });
+  await evidence("no-price-hidden", required);
+  await fixture("free-verified", { cost: "free" });
+  await evidence("free-verified", [...required, "price"]);
+  await fixture("sample-evidence-hidden");
+  await evidence("sample-evidence-hidden", required, now, "sample");
+  await fixture("no-tag-evidence-hidden");
+  await evidence("no-tag-evidence-hidden", required);
+  await db
+    .prepare(
+      "INSERT INTO event_tags(event_id,tag) VALUES('no-tag-evidence-hidden','kids')",
+    )
+    .run();
+  await db
+    .prepare(
+      `INSERT INTO event_tags(event_id,tag,classifier_type,rule_version,rule_id,evidence_source_ref,evidence_field,evidence_excerpt)
+       VALUES('verified','experience','deterministic_rule','fact_rules_v1','fact.experience.v1','fixture','program','합성 체험 근거')`,
+    )
+    .run();
+  for (const [type, state] of [
+    ["child", "fit"],
+    ["couple", "fit"],
+    ["parents", "fit"],
+  ])
+    await db
+      .prepare(
+        `INSERT INTO event_companion_suitability(
+          event_id,companion_type,suitability_state,classifier_type,rule_version,rule_id,
+          positive_reason_codes,caution_reason_codes,source_fact_tags
+        ) VALUES('verified',?,?,'deterministic_rule','companion_rules_v1',?, '[]','[]','[]')`,
+      )
+      .bind(type, state, `companion.${type}.fixture.v1`)
+      .run();
+  await fixture("no-coordinate-evidence-hidden", { lat: 37, lng: 127 });
+  await evidence("no-coordinate-evidence-hidden", required);
+  await fixture("no-pet-evidence-hidden", { pet: "allowed" });
+  await evidence("no-pet-evidence-hidden", required);
+  await fixture("pet-verified", { pet: "allowed" });
+  await evidence("pet-verified", [...required, "pet_policy", "pets"]);
+  await db
+    .prepare(
+      `INSERT INTO event_companion_suitability(
+        event_id,companion_type,suitability_state,classifier_type,rule_version,rule_id,
+        positive_reason_codes,caution_reason_codes,source_fact_tags
+      ) VALUES('pet-verified','pet','allowed','deterministic_rule','companion_rules_v1',
+        'companion.pet.explicit_allowed.v1','[\"pet.explicit_pet_allowed\"]','[]','[]')`,
+    )
+    .run();
+  await fixture("nearby-first", { lat: 37.566, lng: 126.978 });
+  await fixture("nearby-second", { lat: 37.666, lng: 126.978 });
+  await evidence("nearby-first", [...required, "coordinates"]);
+  await evidence("nearby-second", [...required, "coordinates"]);
+  await db
+    .prepare("UPDATE events SET address='서울특별시 종로구 갈틈검색길 7' WHERE id='verified'")
+    .run();
+  await db
+    .prepare("UPDATE events SET address='서울특별시 중구 주변검색길 11' WHERE id='nearby-first'")
+    .run();
+  const addDays = (date, days) => {
+    const value = new Date(`${date}T00:00:00Z`);
+    value.setUTCDate(value.getUTCDate() + days);
+    return value.toISOString().slice(0, 10);
+  };
+  const rankingRange = { start: today, end: addDays(today, 1) };
+  for (const [id, start, end] of [
+    ["ranking-temporal-within-day", rankingRange.start, rankingRange.start],
+    ["ranking-temporal-within-range", rankingRange.start, rankingRange.end],
+    ["ranking-temporal-starts", rankingRange.start, addDays(today, 8)],
+    ["ranking-temporal-ends", addDays(today, -8), rankingRange.end],
+    ["ranking-temporal-ongoing", addDays(today, -8), addDays(today, 8)],
+  ]) {
+    await fixture(id, { start, end });
+    await evidence(id, required);
+  }
+  for (let index = 0; index < 25; index += 1) {
+    const id = `ranking-page-${String(index).padStart(2, "0")}`;
+    await fixture(id, { start: rankingRange.start, end: rankingRange.start });
+    await evidence(id, required);
+  }
+  async function get(path, status = 200) {
+    const r = await mf.dispatchFetch("http://localhost" + path);
+    assert.equal(r.status, status, path);
+    return r.json();
+  }
+  async function post(path, body, status = 200) {
+    const r = await mf.dispatchFetch("http://localhost" + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    assert.equal(r.status, status, path);
+    return r.json();
+  }
+  assert.equal(
+    (await get("/api/events/verified")).event.official_url,
+    "https://example.org/event",
+  );
+  const data = await get("/api/events?period=today&limit=50");
+  assert.deepEqual(data.events.map((e) => e.id).filter((id) => !id.startsWith("ranking-")).sort(), [
+    "free-verified",
+    "municipality-lkg-visible",
+    "municipality-한글-id",
+    "nearby-first",
+    "nearby-second",
+    "pet-verified",
+    "private-lkg-visible",
+    "verified",
+  ]);
+  assert.equal((await get("/api/events?period=today&cost=free")).total, 1);
+  assert.equal(
+    (await get("/api/events?period=today&audience=pets")).events[0].id,
+    "pet-verified",
+  );
+  for (const audience of ["kids", "couple", "parents"])
+    assert.equal(
+      (await get(`/api/events?period=today&audience=${audience}`)).events[0].id,
+      "verified",
+    );
+  assert.equal(
+    (await get("/api/events?period=today&region=서울&audience=kids")).total,
+    1,
+  );
+  assert.deepEqual(
+    (await get("/api/events?period=today&q=갈틈검색길")).events.map((event) => event.id),
+    ["verified"],
+  );
+  const nearby = await post("/api/events/nearby", {
+    lat: 37.566,
+    lng: 126.978,
+    period: "today",
+    limit: 1,
+  });
+  assert.equal(nearby.events[0].id, "nearby-first");
+  assert.deepEqual(
+    (
+      await post("/api/events/nearby", {
+        lat: 37.566,
+        lng: 126.978,
+        period: "today",
+        q: "주변검색길",
+        limit: 10,
+      })
+    ).events.map((event) => event.id),
+    ["nearby-first"],
+  );
+  const nearbyNext = await post("/api/events/nearby", {
+    lat: 37.566,
+    lng: 126.978,
+    period: "today",
+    page: 2,
+    limit: 1,
+  });
+  assert.equal(nearbyNext.events[0].id, "nearby-second");
+  assert.equal(nearby.events[0].distance_km < nearbyNext.events[0].distance_km, true);
+  await post("/api/events/nearby", { lat: 91, lng: 127 }, 400);
+  assert.equal(
+    (await get("/api/events?period=today&theme=experience&audience=kids"))
+      .total,
+    1,
+  );
+  assert.equal(
+    (await get("/api/events?period=today&cost=unknown&audience=kids")).total,
+    1,
+  );
+  await get("/api/events/sample-hidden", 404);
+  await get("/api/events/quality-hold-hidden", 404);
+  assert(
+    !(await get("/api/events?period=today&limit=50")).events.some(
+      (e) => e.id === "quality-hold-hidden",
+    ),
+  );
+  await get("/api/events/no-evidence-hidden", 404);
+  await get("/api/events/tourapi-stale-hidden", 404);
+  await get("/api/events/municipality-missing-evidence-hidden", 404);
+  await get("/api/events/municipality-stale-hidden", 404);
+  await get("/api/events/private-missing-evidence-hidden", 404);
+  await get("/api/events/private-stale-hidden", 404);
+  assert.equal((await get("/api/events/municipality-lkg-visible")).event.id, "municipality-lkg-visible");
+  assert.equal((await get("/api/events/private-lkg-visible")).event.id, "private-lkg-visible");
+  assert.equal(
+    (await get(`/api/events/${encodeURIComponent("municipality-한글-id")}`)).event.id,
+    "municipality-한글-id",
+  );
+  const rankingParams = new URLSearchParams({ period: "custom", startDate: rankingRange.start, endDate: rankingRange.end, q: "ranking-temporal", sort: "recommended", limit: "10" });
+  assert.deepEqual(
+    (await get(`/api/events?${rankingParams}`)).events.map((row) => row.id),
+    ["ranking-temporal-within-day", "ranking-temporal-within-range", "ranking-temporal-starts", "ranking-temporal-ends", "ranking-temporal-ongoing"],
+  );
+  rankingParams.set("sort", "date");
+  assert.deepEqual(
+    (await get(`/api/events?${rankingParams}`)).events.map((row) => row.id),
+    ["ranking-temporal-ends", "ranking-temporal-ongoing", "ranking-temporal-starts", "ranking-temporal-within-day", "ranking-temporal-within-range"],
+  );
+  const pageParams = new URLSearchParams({ period: "custom", date: rankingRange.start, q: "ranking-page", sort: "recommended", limit: "12" });
+  const rankedPages = [];
+  for (const page of [1, 2, 3]) {
+    pageParams.set("page", String(page));
+    rankedPages.push(...(await get(`/api/events?${pageParams}`)).events.map((row) => row.id));
+  }
+  assert.deepEqual(rankedPages, Array.from({ length: 25 }, (_, index) => `ranking-page-${String(index).padStart(2, "0")}`));
+  pageParams.set("page", "1");
+  assert.deepEqual(
+    (await get(`/api/events?${pageParams}`)).events.map((row) => row.id),
+    rankedPages.slice(0, 12),
+  );
+  assert.equal(
+    (await get("/api/events/cancelled-hidden")).event.status,
+    "cancelled",
+  );
+  assert.equal((await get("/api/events/verified")).evidence.length, 3);
+  const adapterBundle = await build({
+    entryPoints: ["worker/sources/tourapi.ts"],
+    bundle: true,
+    write: false,
+    format: "esm",
+    platform: "node",
+    target: "es2022",
+  });
+  const adapter = await import(
+    "data:text/javascript;base64," +
+      Buffer.from(adapterBundle.outputFiles[0].text).toString("base64")
+  );
+  const raw = {
+    contentid: "101",
+    contenttypeid: "15",
+    title: "TourAPI 계약 축제 테스트 전용",
+    addr1: "합성 테스트 주소",
+    lDongRegnCd: "11",
+    eventstartdate: today.replaceAll("-", ""),
+    eventenddate: today.replaceAll("-", ""),
+    progresstype: "선택안함",
+    mapx: "127",
+    mapy: "37",
+    tel: "02-1234-5678",
+    firstimage: "https://images.example.test/tourapi-101-primary.jpg",
+    firstimage2: "https://images.example.test/tourapi-101-secondary.jpg",
+  };
+  const tourEvent = adapter.mapFestival(raw, new Map([["11", "서울"]]), now);
+  const snapshot = {
+    candidates: [{ event: tourEvent, raw }],
+    rejected: 0,
+    fetched: 1,
+    today,
+    until: today,
+    checkedAt: now,
+  };
+  await adapter.saveFestivalSnapshot(db, snapshot);
+  await adapter.saveFestivalSnapshot(db, snapshot);
+  assert.deepEqual(
+    (await db.prepare("SELECT event_id,image_url,source_type,sort_order FROM event_additional_images WHERE event_id='tourapi-101'").all()).results,
+    [{ event_id: "tourapi-101", image_url: raw.firstimage2, source_type: "tourapi", sort_order: 2 }],
+  );
+  await db.prepare("DELETE FROM event_additional_images WHERE event_id='tourapi-101'").run();
+  await db.prepare("INSERT INTO event_additional_images(event_id,image_url,source_type,source_page_url,sort_order,image_status,last_checked_at) VALUES(?,?,?,?,2,'ok',?)")
+    .bind("tourapi-101", "https://images.example.test/official-secondary.jpg", "official", "https://example.test/event", now)
+    .run();
+  await adapter.saveFestivalSnapshot(db, snapshot);
+  assert.deepEqual(
+    (await db.prepare("SELECT image_url,source_type,sort_order FROM event_additional_images WHERE event_id='tourapi-101'").all()).results,
+    [{ image_url: "https://images.example.test/official-secondary.jpg", source_type: "official", sort_order: 2 }],
+  );
+  assert.equal(
+    (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='NEW_EVENT'").first()).n,
+    1,
+  );
+  assert.equal(
+    (await db.prepare("SELECT publish_quality_state state FROM events WHERE id='tourapi-101'").first()).state,
+    "HOLD",
+  );
+  // Simulate the post-detail promotion path covered by tourapi-detail unit tests:
+  // a sparse list record is hidden until event-specific official evidence arrives.
+  await db.prepare(
+    "UPDATE events SET publish_quality_state='PUBLIC',publish_quality_reason='explicit_public_event',publish_quality_rule_version='publish_quality_v2',publish_quality_checked_at=? WHERE id='tourapi-101'",
+  ).bind(now).run();
+  await db.prepare(
+    "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES('tourapi-101','tourapi-101-source','https://festival.example.org/tourapi-101',?)",
+  ).bind(now).run();
+  const real = await get("/api/events/tourapi-101");
+  assert.equal(real.event.is_sample, 0);
+  assert.equal(real.event.status, "unknown");
+  assert.equal(real.event.cost, "unknown");
+  assert.deepEqual(real.contact_phone, {
+    display: "02-1234-5678",
+    href: "tel:0212345678",
+  });
+  assert.deepEqual(real.event.tags, []);
+  assert.equal(
+    real.event.official_url,
+    "https://festival.example.org/tourapi-101",
+  );
+  assert.equal(real.evidence.length, 4);
+  assert.equal(
+    (
+      await db
+        .prepare("SELECT count(*) n FROM events WHERE id='tourapi-101'")
+        .first()
+    ).n,
+    1,
+  );
+  assert(
+    (await get("/api/events?period=today&region=서울&limit=50")).events.some(
+      (e) => e.id === "tourapi-101",
+    ),
+  );
+  assert(
+    !(await get("/api/events?period=today&region=부산")).events.some(
+      (e) => e.id === "tourapi-101",
+    ),
+  );
+  assert(
+    !(await get("/api/events?period=today&cost=free")).events.some(
+      (e) => e.id === "tourapi-101",
+    ),
+  );
+  const ambiguousRaw = {
+    ...raw,
+    contentid: "105",
+    title: "가을 나들이",
+  };
+  const ambiguousEvent = adapter.mapFestival(
+    ambiguousRaw,
+    new Map([["11", "서울"]]),
+    now,
+  );
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    candidates: [{ event: ambiguousEvent, raw: ambiguousRaw }],
+  });
+  assert.deepEqual(
+    await db
+      .prepare(
+        "SELECT publish_quality_state,publish_quality_reason,publish_quality_rule_version FROM events WHERE id='tourapi-105'",
+      )
+      .first(),
+    {
+      publish_quality_state: "HOLD",
+      publish_quality_reason: "insufficient_event_signal",
+      publish_quality_rule_version: "publish_quality_v2",
+    },
+  );
+  await get("/api/events/tourapi-105", 404);
+  const movedRaw = { ...raw, contentid: "104", eventstartdate: "20991010", eventenddate: "20991011" };
+  const movedChecked = new Date().toISOString();
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    checkedAt: movedChecked,
+    candidates: [{ raw: { ...movedRaw, eventstartdate: raw.eventstartdate, eventenddate: raw.eventenddate }, event: adapter.mapFestival({ ...movedRaw, eventstartdate: raw.eventstartdate, eventenddate: raw.eventenddate }, new Map([["11", "서울"]]), movedChecked) }],
+  });
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    checkedAt: movedChecked,
+    candidates: [{ raw: movedRaw, event: adapter.mapFestival(movedRaw, new Map([["11", "서울"]]), movedChecked) }],
+  });
+  assert.equal((await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-104' AND alert_type='SCHEDULE_CHANGED'").first()).n, 1);
+  const cancelledRaw = { ...raw, progresstype: "취소" };
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    checkedAt: movedChecked,
+    candidates: [
+      {
+        raw: cancelledRaw,
+        event: adapter.mapFestival(
+          cancelledRaw,
+          new Map([["11", "서울"]]),
+          movedChecked,
+        ),
+      },
+    ],
+  });
+  assert.equal(
+    (await db.prepare("SELECT status FROM events WHERE id='tourapi-101'").first()).status,
+    "cancelled",
+  );
+  await get("/api/events/tourapi-101", 404);
+  assert.equal(
+    (await db.prepare("SELECT count(*) n FROM alert_events WHERE event_id='tourapi-101' AND alert_type='CANCELLED_OR_POSTPONED'").first()).n,
+    1,
+  );
+  assert(
+    !(await get("/api/events?period=today")).events.some(
+      (e) => e.id === "tourapi-101",
+    ),
+  );
+  assert.equal((await db.prepare("SELECT count(*) n FROM event_changes WHERE event_id='tourapi-101'").first()).n, 1);
+  const nextRaw = { ...raw, contentid: "103" };
+  const nextChecked = new Date().toISOString();
+  await adapter.saveFestivalSnapshot(db, {
+    ...snapshot,
+    checkedAt: nextChecked,
+    candidates: [
+      {
+        raw: nextRaw,
+        event: adapter.mapFestival(
+          nextRaw,
+          new Map([["11", "서울"]]),
+          nextChecked,
+        ),
+      },
+    ],
+  });
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT verification,status FROM events WHERE id='tourapi-101'",
+        )
+        .first()
+    ).verification,
+    "stale",
+  );
+  await get("/api/events/tourapi-101", 404);
+  const broken = { ...tourEvent, id: "tourapi-102", lat: 200 };
+  await assert.rejects(() =>
+    adapter.saveFestivalSnapshot(db, {
+      ...snapshot,
+      candidates: [{ event: broken, raw }],
+    }),
+  );
+  assert.equal(
+    await db
+      .prepare("SELECT id FROM sources WHERE id='tourapi-102-source'")
+      .first(),
+    null,
+  );
+  console.log(
+    "PASS: TourAPI 합성 계약 데이터 D1 트랜잭션, 재실행 중복 방지, 기간/지역/무료 필터, 미확인 정보 유지, 취소 갱신 제외, 실패 롤백",
+  );
+  await db
+    .prepare(
+      "INSERT INTO sync_runs(id,started_at,status,provider) VALUES('reject-test',?,'running','tourapi')",
+    )
+    .bind(now)
+    .run();
+  const originalFetch = globalThis.fetch;
+  let fixtureItems;
+  const provinceNames = [
+    "서울특별시",
+    "전남광주통합특별시",
+    "부산광역시",
+    "대구광역시",
+    "인천광역시",
+    "대전광역시",
+    "울산광역시",
+    "경기도",
+    "충청북도",
+    "충청남도",
+    "경상북도",
+    "경상남도",
+    "제주특별자치도",
+    "강원특별자치도",
+    "전북특별자치도",
+    "세종특별자치시",
+  ];
+  globalThis.fetch = async (url) => {
+    const items = new URL(url).pathname.endsWith("/ldongCode2")
+      ? provinceNames.map((name, i) => ({
+          name,
+          code: i === 0 ? "11" : String(100 + i),
+        }))
+      : fixtureItems;
+    return Response.json({
+      response: {
+        header: { resultCode: "0000" },
+        body: { totalCount: items.length, items: { item: items } },
+      },
+    });
+  };
+  const env = {
+    DB: db,
+    TOUR_API_ENABLED: "true",
+    TOUR_API_KEY: "synthetic-contract-only",
+  };
+  const badRaw = {
+    ...raw,
+    contentid: "901",
+    eventenddate: "20260230",
+    untouched: { official: "원문 보존" },
+  };
+  try {
+    fixtureItems = [raw, badRaw];
+    const result = await adapter.syncTourApi(env, "reject-test");
+    assert.equal(result.imported, 1);
+    assert.equal(result.rejected, 1);
+    const rejected = await db
+      .prepare("SELECT * FROM tourapi_rejections WHERE content_id='901'")
+      .first();
+    assert.equal(rejected.sync_run_id, "reject-test");
+    assert.equal(rejected.title, badRaw.title);
+    assert.deepEqual(JSON.parse(rejected.raw_payload), badRaw);
+    assert.deepEqual(JSON.parse(rejected.reason), ["INVALID_END_DATE"]);
+    assert(Number.isFinite(Date.parse(rejected.rejected_at)));
+    assert.equal(
+      await db.prepare("SELECT id FROM events WHERE id='tourapi-901'").first(),
+      null,
+    );
+    fixtureItems = [{ ...badRaw, contentid: "902" }];
+    await assert.rejects(() => adapter.syncTourApi(env, "reject-test"));
+    assert(
+      await db
+        .prepare("SELECT id FROM tourapi_rejections WHERE content_id='902'")
+        .first(),
+    );
+    // Force normal-event storage to fail, after an invalid item's rejection was committed.
+    await db
+      .prepare(
+        "CREATE TRIGGER reject_test_failure BEFORE INSERT ON events WHEN NEW.id='tourapi-999' BEGIN SELECT RAISE(ABORT,'synthetic storage failure'); END",
+      )
+      .run();
+    fixtureItems = [
+      { ...raw, contentid: "999" },
+      { ...badRaw, contentid: "903" },
+    ];
+    await assert.rejects(() => adapter.syncTourApi(env, "reject-test"));
+    assert(
+      await db
+        .prepare("SELECT id FROM tourapi_rejections WHERE content_id='903'")
+        .first(),
+    );
+    assert.deepEqual(
+      JSON.parse(
+        (
+          await db
+            .prepare(
+              "SELECT reason FROM tourapi_rejections WHERE content_id='999'",
+            )
+            .first()
+        ).reason,
+      ),
+      ["EVENT_TRANSACTION_FAILED"],
+    );
+    assert.equal(
+      await db
+        .prepare("SELECT id FROM sources WHERE id='tourapi-999-source'")
+        .first(),
+      null,
+    );
+    await db.prepare("DROP TRIGGER reject_test_failure").run();
+    fixtureItems = [raw, raw];
+    await assert.rejects(() => adapter.syncTourApi(env, "reject-test"));
+    assert(
+      await db
+        .prepare(
+          "SELECT id FROM tourapi_rejections WHERE reason LIKE '%DUPLICATE_CONTENT_ID%'",
+        )
+        .first(),
+    );
+    assert.deepEqual(
+      (await db.prepare("PRAGMA foreign_key_check").all()).results,
+      [],
+    );
+    await assert.rejects(() =>
+      adapter.saveRejections(db, "missing-run", [
+        { raw: badRaw, reasons: ["INVALID_END_DATE"] },
+      ]),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    await db
+      .prepare(
+        "UPDATE sync_runs SET status='success',finished_at=? WHERE id='reject-test'",
+      )
+      .bind(new Date().toISOString())
+      .run();
+  }
+  console.log(
+    "PASS: TourAPI 거절 원문·사유·시각·sync_run 연결, 전체 거절·중복 실패 기록, 행사 롤백 후 거절 기록 보존, 외래키 검증",
+  );
+  const cron = await mf.dispatchFetch(
+    "http://localhost/cdn-cgi/local/scheduled?cron=0+1+*+*+*",
+  );
+  assert.equal(cron.status, 200);
+  assert.equal(
+    (
+      await db
+        .prepare("SELECT verification FROM events WHERE id='stale-hidden'")
+        .first()
+    ).verification,
+    "stale",
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT reason FROM event_changes WHERE event_id='stale-hidden'",
+        )
+        .first()
+    ).reason,
+    "근거 확인 후 72시간 경과",
+  );
+  const run = await db
+    .prepare(
+      "SELECT status,stale_count FROM sync_runs WHERE provider='tourapi' AND id!='reject-test' ORDER BY started_at DESC LIMIT 1",
+    )
+    .first();
+  assert.equal(run.status, "skipped");
+  assert.equal(run.stale_count, 2);
+  console.log(
+    "PASS: 실제 workerd/D1 운영 샘플 차단, 필수 근거·가격·태그·좌표·반려동물 검증, 오래된/미래 근거 제외, 취소·연기 제외, Cron 상태/감사 이력",
+  );
+} finally {
+  await mf.dispose();
+}
