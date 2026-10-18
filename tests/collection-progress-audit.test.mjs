@@ -42,6 +42,42 @@ const fixture = () => ({
         latest_event_update: null,
       },
     ],
+    [
+      {
+        observed_at: at,
+        kind: "scan_retry",
+        stage: "RETRY",
+        retry_stage: "LIST_PENDING",
+        reason: "http_5xx",
+        retained: 2,
+        due_active: 1,
+        future_active: 1,
+        expired_unfinished: 0,
+        min_attempt_count: 2,
+        max_attempt_count: 3,
+        min_candidate_cursor: null,
+        max_candidate_cursor: null,
+        min_candidate_count: null,
+        max_candidate_count: null,
+      },
+      {
+        observed_at: at,
+        kind: "candidate_progress",
+        stage: "CANDIDATE_PENDING",
+        retry_stage: null,
+        reason: "none",
+        retained: 1,
+        due_active: 1,
+        future_active: 0,
+        expired_unfinished: 0,
+        min_attempt_count: 4,
+        max_attempt_count: 4,
+        min_candidate_cursor: 7,
+        max_candidate_cursor: 7,
+        min_candidate_count: 25,
+        max_candidate_count: 25,
+      },
+    ],
   ].map((results) => ({
     success: true,
     meta: { changed_db: false, changes: 0, rows_written: 0, rows_read: 7 },
@@ -83,6 +119,12 @@ test("only fixed SELECT/WITH SQL reaches the one fixed database; unapproved fiel
   });
   assert.equal(calls, 1);
   assert.equal(report.jobs[0].due_active, 1);
+  assert.deepEqual(report.scan_diagnostics.map(({ kind, reason, min_candidate_cursor }) => ({
+    kind, reason, min_candidate_cursor,
+  })), [
+    { kind: "scan_retry", reason: "http_5xx", min_candidate_cursor: null },
+    { kind: "candidate_progress", reason: "none", min_candidate_cursor: 7 },
+  ]);
   assert.equal(report.publication[0].persistence, "MISSING_EVENT");
   assert.equal(report.public_visibility, "NOT_VERIFIED");
   assert.equal(report.progress_comparison, "SECOND_SNAPSHOT_REQUIRED");
@@ -144,6 +186,9 @@ test("injected values, excessive rows, oversized body and missing query results 
     (d) => {
       d.result.pop();
     },
+    (d) => {
+      d.result[3].results[0].reason = "::warning::DO_NOT_OUTPUT";
+    },
   ]) {
     const data = fixture();
     mutate(data);
@@ -172,6 +217,7 @@ test("empty queues remain empty without claiming successful progress", async () 
     fetcher: async () => Response.json(data),
   });
   assert.deepEqual(report.jobs, []);
+  assert.deepEqual(report.scan_diagnostics, []);
   assert.deepEqual(report.publication, []);
   assert.equal(report.progress_comparison, "SECOND_SNAPSHOT_REQUIRED");
 });

@@ -12,7 +12,7 @@ const SQL = readFileSync(
   .split(";")
   .filter((s) => s.trim())
   .map(assertReadOnlySql);
-if (SQL.length !== 3) throw new Error("Invalid fixed collection queries");
+if (SQL.length !== 4) throw new Error("Invalid fixed collection queries");
 const fail = () => {
   throw new Error("Collection progress response rejected");
 };
@@ -82,7 +82,7 @@ export async function auditCollection({ token, fetcher = fetch } = {}) {
   if (
     body?.success !== true ||
     !Array.isArray(body.result) ||
-    body.result.length !== 3
+    body.result.length !== 4
   )
     fail();
   const results = body.result.map((result) => {
@@ -123,6 +123,42 @@ export async function auditCollection({ token, fetcher = fetch } = {}) {
     expired_unfinished: count(r.expired_unfinished),
     latest_update: timestamp(r.latest_update),
   }));
+
+  const scanDiagnostics = results[3].rows.map((r) => {
+    const kind = choice(r.kind, ["scan_retry", "candidate_progress"]);
+    const stage = choice(r.stage, ["RETRY", "CANDIDATE_PENDING"]);
+    const retryStage = r.retry_stage === null
+      ? null
+      : choice(r.retry_stage, ["LIST_PENDING", "CANDIDATE_PENDING"]);
+    const reason = choice(r.reason, [
+      "unsafe_url", "candidate_batch_too_large", "list_health_check_failed",
+      "list_parse_requires_fallback", "http_429", "http_5xx",
+      "network_or_timeout", "list_page_failed", "candidate_batch_invalid",
+      "candidate_cursor_invalid", "candidate_one_failed", "other", "none",
+    ]);
+    const nullableCount = (value) => value === null ? null : count(value);
+    if (kind === "scan_retry" && (stage !== "RETRY" || retryStage === null || reason === "none")) fail();
+    if (kind === "candidate_progress" && (stage !== "CANDIDATE_PENDING" || retryStage !== null || reason !== "none")) fail();
+    return {
+      observed_at: timestamp(r.observed_at), kind, stage, retry_stage: retryStage, reason,
+      retained: count(r.retained), due_active: count(r.due_active),
+      future_active: count(r.future_active), expired_unfinished: count(r.expired_unfinished),
+      min_attempt_count: nullableCount(r.min_attempt_count),
+      max_attempt_count: nullableCount(r.max_attempt_count),
+      min_candidate_cursor: nullableCount(r.min_candidate_cursor),
+      max_candidate_cursor: nullableCount(r.max_candidate_cursor),
+      min_candidate_count: nullableCount(r.min_candidate_count),
+      max_candidate_count: nullableCount(r.max_candidate_count),
+    };
+  });
+  if (scanDiagnostics.some((r) => {
+    if (r.kind === "scan_retry")
+      return [r.min_candidate_cursor, r.max_candidate_cursor, r.min_candidate_count, r.max_candidate_count].some((v) => v !== null);
+    if (r.retained === 0)
+      return [r.min_candidate_cursor, r.max_candidate_cursor, r.min_candidate_count, r.max_candidate_count].some((v) => v !== null);
+    return [r.min_candidate_cursor, r.max_candidate_cursor, r.min_candidate_count, r.max_candidate_count].some((v) => v === null);
+  })) fail();
+  
   const publication = results[2].rows.map((r) => ({
     observed_at: timestamp(r.observed_at),
     persistence: choice(r.persistence, ["MISSING_EVENT", "EVENT_EXISTS"]),
@@ -151,6 +187,7 @@ export async function auditCollection({ token, fetcher = fetch } = {}) {
     cycles,
     jobs,
     publication,
+    scan_diagnostics: scanDiagnostics,
     public_visibility: "NOT_VERIFIED",
     progress_comparison: "SECOND_SNAPSHOT_REQUIRED",
   };
