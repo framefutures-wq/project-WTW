@@ -1,3 +1,10 @@
+## 2026-10-19 — latest source-level parse-fallback snapshot
+
+- PR #106 merged as `32eb5d5`; both CI runs `39142785949` and `39142839744` passed. Manual snapshot #12 `39143166637` ran against exact main SHA `32eb5d54f53ca7570f94c9357acf7e1764752f15`; four fixed SELECTs succeeded with zero writes (row counts 14/1122/82/275).
+- At `2026-10-18T16:02:19.885Z`: parse-fallback 59 (4 due/55 future) across Yongin 18 (3 due), Gwacheon 12, Icheon 6 (1 due), Wonju 6, Gangnam 6, Ulsan Buk-gu 6, Daegu Seo-gu 5. Attempts 9–16; no expired unfinished rows.
+- Today's cycle is ACTIVE at cursor 2/36. Candidate progress has 5 retained checkpoints (1 due/4 future), cursor 0–19 of 25, attempts 10–20. Compared with the previous max cursor 14, this indicates aggregate movement only, not per-job completion.
+- Root cause remains unresolved: the list runner records the same `list_parse_requires_fallback` label for extractor `retry` and partial candidates. Next task is source parser reproduction for the highest-count sources using current official HTML; change parsing only after the failure mode is confirmed. No worker behavior change, deploy, DB write, ingestion, or AI charge occurred.
+
 ## 2026-10-19 — latest bounded read and parser-fallback diagnosis
 
 - PR #105 merged as `eec05c5`; it groups allowlisted source keys for selected municipal retry categories. Manual snapshot `39142641493` on that SHA succeeded with four fixed SELECTs and zero writes.

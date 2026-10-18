@@ -1,4 +1,11 @@
-## 2026-10-19 — source-grouped read-only snapshot
+## 2026-10-19 — source-level parse-fallback snapshot
+
+- PR #106 merged as `32eb5d5`. Both CI runs `39142785949` and `39142839744` passed (`npm run check` and `npm run municipal:inventory:check`).
+- Manual run #12 `39143166637` on exact main SHA `32eb5d54f53ca7570f94c9357acf7e1764752f15` succeeded with four fixed SELECTs: 0 writes; result row counts 14/1122/82/275. Snapshot observed `2026-10-18T16:02:19.885Z` (KST Oct 19 01:02).
+- `list_parse_requires_fallback`: 59 retained, 4 due and 55 future, across seven source keys: Yongin 18 (3 due/15 future), Gwacheon 12, Icheon 6 (1 due/5 future), Wonju 6, Gangnam 6, Ulsan Buk-gu 6, Daegu Seo-gu 5. Attempts range 9–16. No expired unfinished rows.
+- Current daily cycle is ACTIVE at cursor 2/36. Candidate progress is 5 retained (1 due/4 future), cursor 0–19 of 25, attempts 10–20; compared with the previous cursor maximum 14 this indicates aggregate movement, not proof of an individual job completing.
+- The failure label still combines two cases in `runMunicipalListPageOne`: extractor mode `retry` and nonempty partial candidates. The snapshot contains neither raw URLs nor payloads, so the source breakdown does not identify which case applies. Next: reproduce parser output for the highest-count sources using current first-party HTML, then make only an evidence-backed parser change.
+- Diagnostics only. No scheduled live observation, production DB write, deployment, ingestion trigger, or paid AI call occurred.
 
 - PR #105 merged as `eec05c5`; its fixed query and allowlisted source-key validator passed CI. Manual run `39142641493` on that exact main SHA succeeded with four read-only result sets and zero writes.
 - At `2026-10-18T15:55:21.977Z`: `list_parse_requires_fallback` 59 (4 due/55 future); `http_5xx` 21 (all future); `network_or_timeout` 3 (future); `candidate_one_failed` 4, all source `taebaek` and future. HTTP 5xx by source: Gokseong 18, Haeundae 2, Geoje 1, all future. Candidate progress: 5 retained, 1 due/4 future, cursors 0–14 of 25, no expired unfinished rows. Compared with prior max cursor 8, the aggregate indicates some movement but not per-job completion.
