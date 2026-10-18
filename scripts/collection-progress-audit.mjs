@@ -100,7 +100,7 @@ export async function auditCollection({ token, fetcher = fetch } = {}) {
     if (
       result.success !== true ||
       !Array.isArray(result.results) ||
-      result.results.length > 100
+      result.results.length > 150
     )
       fail();
     // Missing write counters are not evidence of zero writes.
@@ -151,7 +151,7 @@ export async function auditCollection({ token, fetcher = fetch } = {}) {
     const sourceKey = r.source_key === null ? null : choice(r.source_key, municipalSourceKeys);
     if (kind === "scan_retry" && (stage !== "RETRY" || retryStage === null || reason === "none")) fail();
     if (kind === "candidate_progress" && (stage !== "CANDIDATE_PENDING" || retryStage !== null || reason !== "none" || sourceKey !== null)) fail();
-    if (kind === "scan_retry" && (["http_5xx", "candidate_one_failed"].includes(reason) !== (sourceKey !== null))) fail();
+    if (kind === "scan_retry" && (["http_5xx", "candidate_one_failed", "list_parse_requires_fallback"].includes(reason) !== (sourceKey !== null))) fail();
     return {
       observed_at: timestamp(r.observed_at), kind, stage, retry_stage: retryStage, reason, source_key: sourceKey,
       retained: count(r.retained), due_active: count(r.due_active),
