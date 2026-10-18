@@ -458,6 +458,7 @@ test("existing parser-backed fixtures remain on their registered parser path", (
     "gyeonggi-포천": "fixtures/municipal-discovery-pocheon.html",
     "gyeongnam-거제": "fixtures/municipal-discovery-geoje.html",
     "jeonbuk-전주": "fixtures/municipal-discovery-jeonju.html",
+    "gyeonggi-이천": "fixtures/municipal-discovery-icheon.html",
   };
   for (const registered of MUNICIPAL_SOURCE_REGISTRY.filter(
     (source) => source.ingestion === "registered_parser",

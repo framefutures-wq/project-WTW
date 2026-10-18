@@ -1,6 +1,7 @@
 import { normalizeMunicipalTitle } from "./municipal-duplicate";
 import {
   assessMunicipalSourceDocument,
+  MUNICIPAL_SOURCE_REGISTRY,
   municipalSourceAllowsUrl,
   type MunicipalSourceDefinition,
 } from "./municipal-source-registry";
@@ -696,6 +697,80 @@ const elementBlocks = (html: string, tag: string, classPattern?: string) => {
   }
   return blocks;
 };
+
+/** Parses Icheon's server-rendered list endpoint; its calendar shell is JS-only. */
+export function parseIcheonCalendarList(html: string): MunicipalCandidate[] {
+  const source = MUNICIPAL_SOURCE_REGISTRY.find(
+    (item) => item.key === "gyeonggi-이천",
+  );
+  if (!source) return [];
+
+  return elementBlocks(html, "li").flatMap<MunicipalCandidate>((block) => {
+    const source_candidate_id = /\bdata-idx=["'](\d+)["']/i.exec(block)?.[1];
+    const title = clean(
+      /<div\b[^>]*class=["'][^"']*\btxt\b[^"']*["'][^>]*>\s*<p\b[^>]*>([\s\S]*?)<\/p>/i.exec(
+        block,
+      )?.[1] ?? "",
+    );
+    const periodMarkup =
+      /<li\b[^>]*class=["'][^"']*\bdate\b[^"']*["'][^>]*>([\s\S]*?)<\/li>/i.exec(
+        block,
+      )?.[1];
+    const period = clean(periodMarkup ?? "").replace(/^기간\s*/, "");
+    const dates =
+      explicitDateRange(period) ??
+      (() => {
+        const listedDates = period.split(/\s*,\s*/).map(singleExplicitDate);
+        if (listedDates.length < 2 || listedDates.some((date) => !date))
+          return null;
+        const dates = listedDates.filter((date): date is string =>
+          Boolean(date),
+        );
+        const start_date = dates.reduce((first, date) =>
+          date < first ? date : first,
+        );
+        const end_date = dates.reduce((last, date) =>
+          date > last ? date : last,
+        );
+        const distinctDates = new Set(dates);
+        const spanDays =
+          (Date.parse(`${end_date}T00:00:00Z`) -
+            Date.parse(`${start_date}T00:00:00Z`)) /
+            86_400_000 +
+          1;
+        return validRange(start_date, end_date) &&
+          distinctDates.size === spanDays
+          ? { start_date, end_date }
+          : null;
+      })();
+    const venueMarkup =
+      /<li\b[^>]*class=["'][^"']*\bloca\b[^"']*["'][^>]*>([\s\S]*?)<\/li>/i.exec(
+        block,
+      )?.[1];
+    const venue = firstValidVenue(
+      clean(venueMarkup ?? "").replace(/^장소\s*/, ""),
+    );
+    const official_url = discoverMunicipalDetailUrl(source, block);
+    if (!source_candidate_id || !title || !dates || !venue || !official_url)
+      return [];
+
+    return [
+      {
+        source: source.key,
+        source_candidate_id,
+        title,
+        ...dates,
+        venue,
+        region: source.region,
+        locality: source.locality,
+        official_url,
+        category: classValue(block, "\\bcate\\b") ?? "문화행사",
+        snippet: null,
+        image_candidate: null,
+      },
+    ];
+  });
+}
 
 /** Reads only repeated, self-contained blocks. It intentionally never joins fields across blocks. */
 export function parseGenericMunicipalHtml(
@@ -2117,6 +2192,7 @@ export const MUNICIPAL_PARSERS: Partial<
   "gyeonggi-포천": parsePocheonHomepageEvents,
   "gyeongnam-거제": parseGeojeMonthlyEvents,
   "jeonbuk-전주": parseJeonjuFestivalList,
+  "gyeonggi-이천": parseIcheonCalendarList,
 };
 
 type JsonRecord = Record<string, unknown>;

@@ -33,6 +33,7 @@ const fixtureByKey: Record<string, string> = {
   "gyeonggi-포천": "fixtures/municipal-discovery-pocheon.html",
   "gyeongnam-거제": "fixtures/municipal-discovery-geoje.html",
   "jeonbuk-전주": "fixtures/municipal-discovery-jeonju.html",
+  "gyeonggi-이천": "fixtures/municipal-discovery-icheon.html",
 };
 
 test("registry keeps existing parser-backed sources explicit", () => {
@@ -158,7 +159,10 @@ test("Pyeongtaek, Yeoju, and Gyeongsan are bounded generic sources without dedic
   const expected = [
     ["gyeonggi-평택", "https://www.pccf.or.kr/pfmc/pfmcAllList.do"],
     ["gyeonggi-여주", "https://www.yjcf.or.kr/reserve/board/1/M/L/menu/401"],
-    ["gyeongbuk-경산", "https://gsctf.or.kr/user/performance/all/gal?pageNum=1"],
+    [
+      "gyeongbuk-경산",
+      "https://gsctf.or.kr/user/performance/all/gal?pageNum=1",
+    ],
   ] as const;
   for (const [key, url] of expected) {
     const source = municipalSourceByKey(key);
@@ -178,7 +182,6 @@ test("Pyeongtaek, Yeoju, and Gyeongsan are bounded generic sources without dedic
     maxPages: 3,
   });
 });
-
 
 test("Seohae and Gokseong are bounded generic sources without dedicated parsers", () => {
   const expected = [
@@ -260,11 +263,7 @@ test("Pyeongtaek and Gyeongsan registry contracts parse their retained live-shap
     assert(source, key);
     const html = readFileSync(fixture, "utf8");
     const assessment = assessMunicipalSourceDocument(source, html);
-    assert.equal(
-      assessment.status,
-      "healthy",
-      `${key}: ${assessment.reason}`,
-    );
+    assert.equal(assessment.status, "healthy", `${key}: ${assessment.reason}`);
     const extracted = extractMunicipalCandidates(source, html);
     assert.equal(extracted.mode, "generic_html", key);
     assert(extracted.candidates.length > 0, key);
@@ -288,16 +287,11 @@ test("Wonju generic table source parses complete rows and rejects rows without a
       extraction.candidates[0].end_date,
       extraction.candidates[0].venue,
     ],
-    [
-      "백건우 & 슈베르트",
-      "2026-09-03",
-      "2026-09-03",
-      "원주백운아트홀",
-    ],
+    ["백건우 & 슈베르트", "2026-09-03", "2026-09-03", "원주백운아트홀"],
   );
 });
 
-test("Yongin and Icheon use bounded generic source contracts", () => {
+test("Yongin remains generic and Icheon uses its bounded HTML list contract", () => {
   const yongin = municipalSourceByKey("gyeonggi-용인");
   assert(yongin);
   assert.equal(yongin.ingestion, "generic_fallback");
@@ -307,9 +301,17 @@ test("Yongin and Icheon use bounded generic source contracts", () => {
 
   const icheon = municipalSourceByKey("gyeonggi-이천");
   assert(icheon);
-  assert.equal(icheon.ingestion, "generic_fallback");
-  assert.equal(MUNICIPAL_PARSERS[icheon.key], undefined);
-  assert.equal(icheon.pagination, undefined);
+  assert.equal(icheon.ingestion, "registered_parser");
+  assert.equal(typeof MUNICIPAL_PARSERS[icheon.key], "function");
+  assert.deepEqual(icheon.pagination, {
+    queryParam: "currentPageNo",
+    maxPages: 3,
+  });
+  assert.deepEqual(icheon.detailLinkTemplate, {
+    path: "/portal/universal/kalendar/view.do",
+    idParam: "idx",
+    fixedQuery: { mid: "0401030000" },
+  });
   assert.equal(municipalSourceAllowsUrl(icheon, icheon.url), true);
 
   for (const source of [yongin, icheon]) {
@@ -321,10 +323,62 @@ test("Yongin and Icheon use bounded generic source contracts", () => {
   }
 });
 
+test("Icheon calendar list parses explicit date ranges and comma-separated event days", () => {
+  const source = municipalSourceByKey("gyeonggi-이천");
+  assert(source);
+  const html = readFileSync(fixtureByKey[source.key], "utf8");
+  const result = extractMunicipalCandidates(source, html);
+  assert.equal(result.mode, "registered");
+  assert.deepEqual(
+    result.candidates.map(
+      ({
+        source_candidate_id,
+        title,
+        start_date,
+        end_date,
+        venue,
+        category,
+        official_url,
+      }) => [
+        source_candidate_id,
+        title,
+        start_date,
+        end_date,
+        venue,
+        category,
+        official_url,
+      ],
+    ),
+    [
+      [
+        "900001",
+        "이천 가을 공연",
+        "2026-10-31",
+        "2026-11-01",
+        "이천아트홀 대공연장",
+        "공연",
+        "https://www.icheon.go.kr/portal/universal/kalendar/view.do?mid=0401030000&idx=900001",
+      ],
+      [
+        "900002",
+        "이천 미술 전시",
+        "2026-11-05",
+        "2026-11-08",
+        "이천아트홀 갤러리",
+        "전시",
+        "https://www.icheon.go.kr/portal/universal/kalendar/view.do?mid=0401030000&idx=900002",
+      ],
+    ],
+  );
+});
+
 test("Uijeongbu official annual event table parses explicit split dates and venue", () => {
   const source = municipalSourceByKey("gyeonggi-의정부");
   assert(source);
-  const html = readFileSync("fixtures/municipal-generic-uijeongbu.html", "utf8");
+  const html = readFileSync(
+    "fixtures/municipal-generic-uijeongbu.html",
+    "utf8",
+  );
   const assessment = assessMunicipalSourceDocument(source, html);
   assert.equal(assessment.status, "healthy");
   const extraction = extractMunicipalCandidates(source, html);
@@ -377,12 +431,7 @@ test("Okcheon parser keeps the explicit venue instead of mistaking the title for
         "2026-04-05",
         "옥천묘목공원 （옥천군 이원면 이원리 503번지 일원）",
       ],
-      [
-        "청산생선국수 축제",
-        "2026-04-11",
-        "2026-04-12",
-        "청산체육공원",
-      ],
+      ["청산생선국수 축제", "2026-04-11", "2026-04-12", "청산체육공원"],
     ],
   );
 });
@@ -601,12 +650,7 @@ test("Ulsan Jung parser carries explicit rowspan venue only within the same offi
     [
       ["에어로폰 마유희", "2026-05-09", "2026-05-09", "문화의 거리"],
       ["블루데일", "2026-05-10", "2026-05-10", "문화의 거리"],
-      [
-        "정글밴문화원 / 샤인롱기타",
-        "2026-05-24",
-        "2026-05-24",
-        "문화의 거리",
-      ],
+      ["정글밴문화원 / 샤인롱기타", "2026-05-24", "2026-05-24", "문화의 거리"],
     ],
   );
 });
