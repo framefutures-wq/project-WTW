@@ -49,6 +49,17 @@ const queues = [
   "official_detail",
   "tourapi_detail",
 ];
+const municipalSourceKeys = [
+  "paju", "suwon", "goyang", "hwaseong", "bucheon", "taebaek",
+  "seoul-hangang", "daejeon-fvu", "incheon-res", "gyeonggi-과천",
+  "gyeonggi-하남", "gyeongbuk-상주", "gyeonggi-평택", "gyeonggi-여주",
+  "gyeongbuk-경산", "incheon-서해", "jeonnam-gwangju-곡성", "gyeonggi-광주",
+  "seoul-gangnam", "ulsan-북", "daegu-서", "gangwon-원주", "gyeonggi-용인",
+  "gyeonggi-이천", "gyeonggi-의정부", "chungbuk-옥천", "gyeongbuk-안동",
+  "busan-동", "gyeongbuk-영주", "busan-해운대", "gyeongbuk-경주",
+  "ulsan-jung", "gyeongbuk-포항", "gyeonggi-포천", "gyeongnam-거제",
+  "jeonbuk-전주",
+];
 
 export async function auditCollection({ token, fetcher = fetch } = {}) {
   if (typeof token !== "string" || !token || /\s/.test(token))
@@ -137,10 +148,12 @@ export async function auditCollection({ token, fetcher = fetch } = {}) {
       "candidate_cursor_invalid", "candidate_one_failed", "other", "none",
     ]);
     const nullableCount = (value) => value === null ? null : count(value);
+    const sourceKey = r.source_key === null ? null : choice(r.source_key, municipalSourceKeys);
     if (kind === "scan_retry" && (stage !== "RETRY" || retryStage === null || reason === "none")) fail();
-    if (kind === "candidate_progress" && (stage !== "CANDIDATE_PENDING" || retryStage !== null || reason !== "none")) fail();
+    if (kind === "candidate_progress" && (stage !== "CANDIDATE_PENDING" || retryStage !== null || reason !== "none" || sourceKey !== null)) fail();
+    if (kind === "scan_retry" && (["http_5xx", "candidate_one_failed"].includes(reason) !== (sourceKey !== null))) fail();
     return {
-      observed_at: timestamp(r.observed_at), kind, stage, retry_stage: retryStage, reason,
+      observed_at: timestamp(r.observed_at), kind, stage, retry_stage: retryStage, reason, source_key: sourceKey,
       retained: count(r.retained), due_active: count(r.due_active),
       future_active: count(r.future_active), expired_unfinished: count(r.expired_unfinished),
       min_attempt_count: nullableCount(r.min_attempt_count),
