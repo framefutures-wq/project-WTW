@@ -63,6 +63,24 @@ const fixture = () => ({
       },
       {
         observed_at: at,
+        kind: "scan_retry",
+        stage: "RETRY",
+        retry_stage: "LIST_PENDING",
+        reason: "list_parse_requires_fallback",
+        source_key: "taebaek",
+        retained: 3,
+        due_active: 1,
+        future_active: 2,
+        expired_unfinished: 0,
+        min_attempt_count: 2,
+        max_attempt_count: 4,
+        min_candidate_cursor: null,
+        max_candidate_cursor: null,
+        min_candidate_count: null,
+        max_candidate_count: null,
+      },
+      {
+        observed_at: at,
         kind: "candidate_progress",
         stage: "CANDIDATE_PENDING",
         retry_stage: null,
@@ -122,11 +140,13 @@ test("only fixed SELECT/WITH SQL reaches the one fixed database; unapproved fiel
   assert.equal(calls, 1);
   assert.equal(report.jobs[0].due_active, 1);
   assert.equal(report.scan_diagnostics[0].source_key, "paju");
-  assert.equal(report.scan_diagnostics[1].source_key, null);
+  assert.equal(report.scan_diagnostics[1].source_key, "taebaek");
+  assert.equal(report.scan_diagnostics[2].source_key, null);
   assert.deepEqual(report.scan_diagnostics.map(({ kind, reason, min_candidate_cursor }) => ({
     kind, reason, min_candidate_cursor,
   })), [
     { kind: "scan_retry", reason: "http_5xx", min_candidate_cursor: null },
+    { kind: "scan_retry", reason: "list_parse_requires_fallback", min_candidate_cursor: null },
     { kind: "candidate_progress", reason: "none", min_candidate_cursor: 7 },
   ]);
   assert.equal(report.publication[0].persistence, "MISSING_EVENT");
@@ -185,7 +205,7 @@ test("injected values, excessive rows, oversized body and missing query results 
       d.result[1].results[0].retained = -1;
     },
     (d) => {
-      d.result[1].results = Array(101).fill(d.result[1].results[0]);
+      d.result[1].results = Array(151).fill(d.result[1].results[0]);
     },
     (d) => {
       d.result.pop();
