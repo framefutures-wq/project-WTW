@@ -6,7 +6,7 @@ Manual run #12 `39143166637` on exact main SHA `32eb5d54f53ca7570f94c9357acf7e17
 
 Root cause is not yet known: the list worker uses the same retry label for extractor mode `retry` and nonempty partial candidates. The aggregate returns no URLs, payloads, or raw errors. Next: reproduce the parser outcome for the highest-count sources using current first-party HTML before making a parser change. No production DB write, scheduled observation, deployment, ingestion, or paid AI call occurred.
 
-## Actual evidence — 2026-10-19
+## Previous snapshot — 2026-10-18T15:55Z
 
 ## Actual evidence — 2026-10-19
 
