@@ -33,6 +33,18 @@ const fixture = () => ({
     [
       {
         observed_at: at,
+        persistence: "MISSING_EVENT",
+        publish_quality_state: null,
+        verification: null,
+        is_sample: null,
+        checkpoints: 1,
+        latest_checkpoint_update: at,
+        latest_event_update: null,
+      },
+    ],
+    [
+      {
+        observed_at: at,
         kind: "scan_retry",
         stage: "RETRY",
         retry_stage: "LIST_PENDING",
@@ -64,18 +76,6 @@ const fixture = () => ({
         max_candidate_cursor: 7,
         min_candidate_count: 25,
         max_candidate_count: 25,
-      },
-    ],
-    [
-      {
-        observed_at: at,
-        persistence: "MISSING_EVENT",
-        publish_quality_state: null,
-        verification: null,
-        is_sample: null,
-        checkpoints: 1,
-        latest_checkpoint_update: at,
-        latest_event_update: null,
       },
     ],
   ].map((results) => ({
