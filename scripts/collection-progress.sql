@@ -61,7 +61,7 @@ SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now') AS observed_at,
     WHEN 'candidate_one_failed' THEN 'candidate_one_failed'
     ELSE 'other'
   END AS reason,
-  CASE WHEN safe_error_category IN ('http_5xx','candidate_one_failed')
+  CASE WHEN safe_error_category IN ('http_5xx','candidate_one_failed','list_parse_requires_fallback')
     THEN source_key ELSE NULL END AS source_key,
   COUNT(*) AS retained,
   SUM(CASE WHEN julianday(expires_at)>julianday('now')
@@ -74,7 +74,7 @@ SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now') AS observed_at,
   NULL AS min_candidate_count,NULL AS max_candidate_count
 FROM municipal_scan_jobs WHERE stage='RETRY'
 GROUP BY retry_stage,reason,
-  CASE WHEN safe_error_category IN ('http_5xx','candidate_one_failed')
+  CASE WHEN safe_error_category IN ('http_5xx','candidate_one_failed','list_parse_requires_fallback')
     THEN source_key ELSE NULL END
 UNION ALL
 SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now') AS observed_at,
