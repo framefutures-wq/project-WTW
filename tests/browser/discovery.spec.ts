@@ -263,10 +263,19 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await page.getByRole("button", { name: "내 주변 찾기" }).click();
   await expect(page.getByLabel("정렬: 가까운순")).toBeVisible();
   await expect(page.locator(".event-card").first()).toContainText("1km 미만");
+  const locationButton = page.getByRole("button", { name: "내 주변 해제" });
+  const filterBody = page.locator(".advanced-filter-body");
+  await expect(filterBody).toBeVisible();
+  const buttonBox = await locationButton.boundingBox();
+  const filterBox = await filterBody.boundingBox();
+  expect(buttonBox).not.toBeNull();
+  expect(filterBox).not.toBeNull();
+  expect(filterBox!.y).toBeGreaterThanOrEqual(buttonBox!.y + buttonBox!.height);
   await page.getByRole("button", { name: "내 주변 해제" }).click();
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue(
-    "recommended",
+  await expect(page.getByRole("button", { name: "내 주변 찾기" })).toHaveAttribute(
+    "aria-pressed", "false",
   );
+  await expect(page).not.toHaveURL(/[?&]sort=/);
   await expect(page.locator(".distance")).toHaveCount(0);
 });
 
