@@ -1,5 +1,52 @@
 import { test, expect, type Page } from "@playwright/test";
 
+for (const returnMethod of ["button", "history"] as const) {
+  test(`상세에서 ${returnMethod} 복귀 시 열었던 카드로 포커스가 돌아간다`, async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const card = page.locator(".event-card").first().getByRole("link");
+    await expect(card).toBeVisible();
+    await card.click();
+    const detail = page.getByRole("region", { name: "행사 상세 정보" });
+    await expect(detail).toBeVisible();
+    if (returnMethod === "history") {
+      await page.goBack();
+    } else {
+      await detail
+        .getByRole("button", { name: "목록으로", exact: true })
+        .click();
+    }
+    await expect(detail).not.toBeVisible();
+    await expect(card).toBeFocused();
+  });
+}
+
+// Synthetic media only: exercise the documented image-first composition without
+// changing sample DB rows or relying on external image downloads.
+async function withFeaturedImages(page: Page) {
+  await page.route("https://tong.visitkorea.or.kr/ui-fixture-*.svg", (route) =>
+    route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><text x="30" y="60">SYNTHETIC TEST IMAGE</text></svg>',
+    }),
+  );
+  await page.route("**/api/events?*", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.events = body.events.map(
+      (event: Record<string, unknown>, index: number) => ({
+        ...event,
+        image_url:
+          index < 3
+            ? `https://tong.visitkorea.or.kr/ui-fixture-${index}.svg`
+            : null,
+      }),
+    );
+    await route.fulfill({ response, json: body });
+  });
+}
+
 async function scrollToLoadedResults(page: Page) {
   await expect(page.locator(".event-card").first()).toBeVisible();
   await page
@@ -14,8 +61,10 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   await page.goto("/");
   await expect(page.getByText("샘플 미리보기", { exact: true })).toBeVisible();
   await expect(page.locator(".event-card").first()).toBeVisible();
+  await expect(page.locator(".featured-events")).toHaveCount(0);
+  await expect(page.locator(".card-info-graphic").first()).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "이번 주말, 여기 어때요?" }),
+    page.getByRole("heading", { name: "이번 주말, 어디 갈까?" }),
   ).toBeVisible();
   const regionResponse = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -90,9 +139,9 @@ test("샘플 안내·복합 필터·상세·빈 목록·한국 날짜 선택", a
   expect(errors).toEqual([]);
 });
 test("필터 초기화는 추천순 기본 탐색으로 돌아간다", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("정렬", { exact: true }).selectOption("date");
-  await page.getByLabel("지역", { exact: true }).selectOption("서울");
+  await page.goto("/?sort=date&region=서울");
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue("date");
+  await expect(page.getByLabel("지역", { exact: true })).toHaveValue("서울");
   await expect(page).toHaveURL(/sort=date/);
 
   await page
@@ -100,12 +149,11 @@ test("필터 초기화는 추천순 기본 탐색으로 돌아간다", async ({ 
     .last()
     .click();
 
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue(
-    "recommended",
-  );
-  await expect(page).not.toHaveURL(/sort=date/);
+  await expect(page.getByLabel("정렬", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("지역", { exact: true })).toHaveValue("");
+  await expect(page).not.toHaveURL(/[?&](sort|region)=/);
   await expect(
-    page.getByRole("heading", { name: "이번 주말, 여기 어때요?" }),
+    page.getByRole("heading", { name: "이번 주말, 어디 갈까?" }),
   ).toBeVisible();
 });
 
@@ -245,10 +293,19 @@ test("현재 위치를 사용한 거리순과 위치 해제", async ({ page, con
   await page.getByRole("button", { name: "내 주변 찾기" }).click();
   await expect(page.getByLabel("정렬: 가까운순")).toBeVisible();
   await expect(page.locator(".event-card").first()).toContainText("1km 미만");
+  const locationButton = page.getByRole("button", { name: "내 주변 해제" });
+  const filterBody = page.locator(".advanced-filter-body");
+  await expect(filterBody).toBeVisible();
+  const buttonBox = await locationButton.boundingBox();
+  const filterBox = await filterBody.boundingBox();
+  expect(buttonBox).not.toBeNull();
+  expect(filterBox).not.toBeNull();
+  expect(filterBox!.y).toBeGreaterThanOrEqual(buttonBox!.y + buttonBox!.height);
   await page.getByRole("button", { name: "내 주변 해제" }).click();
-  await expect(page.getByLabel("정렬", { exact: true })).toHaveValue(
-    "recommended",
-  );
+  await expect(
+    page.getByRole("button", { name: "내 주변 찾기" }),
+  ).toHaveAttribute("aria-pressed", "false");
+  await expect(page).not.toHaveURL(/[?&]sort=/);
   await expect(page.locator(".distance")).toHaveCount(0);
 });
 
@@ -318,9 +375,17 @@ test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분
   page,
 }) => {
   await page.setViewportSize({ width: 1365, height: 900 });
+  await withFeaturedImages(page);
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
   await expect(page.locator(".all-events-section")).toBeVisible();
+  await expect
+    .poll(() =>
+      page.locator(".featured-events .scene-image-foreground").first().evaluate(
+        (image: HTMLImageElement) => image.naturalWidth,
+      ),
+    )
+    .toBeGreaterThan(0);
 
   const featuredStyle = await page
     .locator(".featured-events")
@@ -338,15 +403,20 @@ test("추천 영역과 전체 목록은 박스 중첩 없이 시각적으로 분
   expect(featuredStyle.borderRadius).toBe(0);
   expect(featuredStyle.backgroundColor).toBe("rgba(0, 0, 0, 0)");
 
-  const allStyle = await page.locator(".all-events-section").evaluate((el) => {
-    const style = getComputedStyle(el);
-    return {
-      paddingTop: parseFloat(style.paddingTop),
-      borderTopWidth: parseFloat(style.borderTopWidth),
-    };
-  });
-  expect(allStyle.paddingTop).toBeGreaterThanOrEqual(28);
-  expect(allStyle.borderTopWidth).toBeGreaterThanOrEqual(1);
+  const featuredBox = await page.locator(".featured-events").boundingBox();
+  const decisionBox = await page.locator(".decision-bar").boundingBox();
+  const allBox = await page.locator(".all-events-section").boundingBox();
+  expect(featuredBox).not.toBeNull();
+  expect(decisionBox).not.toBeNull();
+  expect(allBox).not.toBeNull();
+  expect(featuredBox!.y + featuredBox!.height).toBeLessThanOrEqual(
+    decisionBox!.y,
+  );
+  expect(decisionBox!.y + decisionBox!.height).toBeLessThanOrEqual(allBox!.y);
+  const divider = await page
+    .locator(".decision-bar")
+    .evaluate((el) => parseFloat(getComputedStyle(el).borderBottomWidth));
+  expect(divider).toBeGreaterThanOrEqual(1);
 
   const titleStyle = await page
     .locator(".featured-events .card-content h3")
@@ -378,6 +448,7 @@ test("홈 벤치마크는 추천을 주인공으로 두고 카드 메타를 한 
   page,
 }) => {
   await page.setViewportSize({ width: 1365, height: 900 });
+  await withFeaturedImages(page);
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
 
@@ -395,9 +466,7 @@ test("홈 벤치마크는 추천을 주인공으로 두고 카드 메타를 한 
   expect(featured.borderRadius).toBe(0);
   expect(featured.backgroundColor).toBe("rgba(0, 0, 0, 0)");
 
-  await expect(
-    page.getByRole("heading", { name: "이번 주말 먼저 볼 곳" }),
-  ).toBeVisible();
+  await expect(page.getByText("이번 주말 추천", { exact: true })).toBeVisible();
   await expect(page.getByText("먼저 볼 곳", { exact: true })).toHaveCount(0);
 
   const firstCard = page.locator(".event-card").first();
@@ -585,19 +654,28 @@ test("모바일 홈부터 상세까지 탐색 흐름이 끊기지 않는다", as
   await expect(firstCardButton).toBeFocused();
 });
 
-test("모바일 추천 카드 위계는 큰 1열과 가로 넘침 없이 유지된다", async ({
-  page,
-}) => {
+test("모바일 추천은 큰 카드의 수평 레일 안에서 탐색된다", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await withFeaturedImages(page);
   await page.goto("/");
   await expect(page.locator(".featured-events")).toBeVisible();
 
-  const columns = await page
-    .locator(".featured-grid")
-    .evaluate(
-      (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
-    );
-  expect(columns).toBe(1);
+  const rail = page.locator(".featured-composition");
+  const dimensions = await rail.evaluate((el) => ({
+    width: el.clientWidth,
+    scrollWidth: el.scrollWidth,
+    firstCardWidth: el.firstElementChild!.getBoundingClientRect().width,
+  }));
+  expect(dimensions.firstCardWidth).toBeGreaterThanOrEqual(
+    dimensions.width * 0.9,
+  );
+  expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.width);
+  await rail.evaluate((el) => {
+    el.scrollLeft = el.scrollWidth;
+  });
+  await expect
+    .poll(() => rail.evaluate((el) => el.scrollLeft))
+    .toBeGreaterThan(0);
 
   const titleSize = await page
     .locator(".featured-events .card-content h3")
@@ -698,19 +776,25 @@ test("하단 신뢰영역과 footer는 밝은 브랜드 마감으로 이어지�
   ).toBe(true);
 });
 
-test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 눌리지 않는다", async ({
-  page,
-}) => {
+test("900px 상세는 미디어·결정 요약·출처가 겹치지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 800 });
   await page.goto("/");
   await page.locator(".event-card").first().getByRole("link").click();
   const detailPage = page.locator(".event-detail-page");
   await expect(detailPage).toBeVisible();
 
-  const hero = await detailPage
-    .locator(".detail-hero-grid")
-    .evaluate((el) => getComputedStyle(el).display);
-  expect(hero).toBe("block");
+  const media = await detailPage.locator(".scene-detail").boundingBox();
+  const summary = await detailPage
+    .locator(".detail-summary-panel")
+    .boundingBox();
+  expect(media).not.toBeNull();
+  expect(summary).not.toBeNull();
+  expect(media!.x + media!.width).toBeLessThanOrEqual(summary!.x);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 
   const sourceRow = detailPage.locator(".detail-source-row");
   await sourceRow.scrollIntoViewIfNeeded();
@@ -729,7 +813,7 @@ test("상세는 900px 이하에서 세로형으로 바뀌고 출처 영역이 �
   expect(back!.width).toBeGreaterThan(240);
 });
 
-test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된다", async ({
+test("470px 상세는 결정 요약 다음 미디어를 보여주고 가로로 넘치지 않는다", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 470, height: 760 });
@@ -738,11 +822,13 @@ test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된�
   const detailPage = page.locator(".event-detail-page");
   await expect(detailPage).toBeVisible();
 
-  expect(
-    await detailPage
-      .locator(".detail-hero-grid")
-      .evaluate((el) => getComputedStyle(el).display),
-  ).toBe("block");
+  const summary = await detailPage
+    .locator(".detail-summary-panel")
+    .boundingBox();
+  const media = await detailPage.locator(".scene-detail").boundingBox();
+  expect(summary).not.toBeNull();
+  expect(media).not.toBeNull();
+  expect(summary!.y + summary!.height).toBeLessThanOrEqual(media!.y);
 
   expect(
     await page.evaluate(
@@ -760,7 +846,7 @@ test("470px 상세는 한 열·전체폭 버튼·가로 넘침 없이 표시된�
   expect(back!.width).toBeGreaterThan(90);
 });
 
-test("데스크톱 상세 대표이미지는 얕은 전체폭 상단 배너로 표시된다", async ({
+test("데스크톱 상세 미디어와 결정 요약은 첫 화면에 나란히 표시된다", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -771,12 +857,18 @@ test("데스크톱 상세 대표이미지는 얕은 전체폭 상단 배너로 �
   await expect(scene).toBeVisible();
   const box = await scene.boundingBox();
   expect(box).not.toBeNull();
-  expect(box!.height).toBeGreaterThanOrEqual(190);
-  expect(box!.height).toBeLessThanOrEqual(320);
-  expect(box!.width / box!.height).toBeGreaterThan(3.5);
+  const summary = await detailPage
+    .locator(".detail-summary-panel")
+    .boundingBox();
+  expect(summary).not.toBeNull();
+  expect(box!.height).toBeGreaterThan(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(summary!.x);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(900);
+  expect(summary!.y).toBeLessThan(box!.y + box!.height);
+  expect(summary!.y + summary!.height).toBeGreaterThan(box!.y);
 });
 
-test("모바일 상세 대표이미지는 높이가 제한된 전체폭 상단 배너로 표시된다", async ({
+test("모바일 상세 미디어는 결정 요약 뒤에서 높이가 제한된다", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 470, height: 760 });
@@ -787,6 +879,12 @@ test("모바일 상세 대표이미지는 높이가 제한된 전체폭 상단 �
   const box = await scene.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.height).toBeGreaterThanOrEqual(180);
-  expect(box!.height).toBeLessThanOrEqual(260);
-  expect(box!.width / box!.height).toBeGreaterThan(1.8);
+  expect(box!.height).toBeLessThanOrEqual(300);
+  const summary = await detailPage
+    .locator(".detail-summary-panel")
+    .boundingBox();
+  expect(summary).not.toBeNull();
+  expect(summary!.y + summary!.height).toBeLessThanOrEqual(box!.y);
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(470);
 });

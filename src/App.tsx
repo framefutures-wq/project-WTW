@@ -680,6 +680,7 @@ export default function App() {
       cancelled_or_postponed: true,
     });
   const opener = useRef<HTMLElement | null>(null),
+    detailOpener = useRef<HTMLAnchorElement | null>(null),
     resultsRef = useRef<HTMLElement | null>(null),
     heroRef = useRef<HTMLElement | null>(null),
     regionFilterRef = useRef<HTMLSelectElement | null>(null),
@@ -1002,6 +1003,12 @@ export default function App() {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
+  }, [selected]);
+  useEffect(() => {
+    if (!selected) {
+      detailOpener.current?.focus();
+      detailOpener.current = null;
+    }
   }, [selected]);
   useEffect(() => {
     if (about) {
@@ -1394,6 +1401,7 @@ export default function App() {
           )
             return;
           clickEvent.preventDefault();
+          detailOpener.current = clickEvent.currentTarget;
           setSelected(event.id);
         }}
         aria-label={`${event.title} 상세 보기`}
