@@ -1910,7 +1910,7 @@ export default function App() {
           aria-label="추천 행사"
           aria-busy={busy}
         >
-          {!discoveryMode && <div className="result-heading">
+          <div className="result-heading">
             <div>
               <span className="section-kicker">
                 {discoveryMode ? "이번 주말" : "찾은 행사"}
@@ -1957,7 +1957,7 @@ export default function App() {
                 </label>
               )}
             </div>
-          </div>}
+          </div>
           <div role="status" className="sr-only">
             {busy
               ? "행사를 불러오는 중"
