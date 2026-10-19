@@ -1,5 +1,23 @@
 import { test, expect, type Page } from "@playwright/test";
 
+for (const returnMethod of ["button", "history"] as const) {
+  test(`상세에서 ${returnMethod} 복귀 시 열었던 카드로 포커스가 돌아간다`, async ({ page }) => {
+    await page.goto("/");
+    const card = page.locator(".event-card").first().getByRole("link");
+    await expect(card).toBeVisible();
+    await card.click();
+    const detail = page.getByRole("region", { name: "행사 상세 정보" });
+    await expect(detail).toBeVisible();
+    if (returnMethod === "history") {
+      await page.goBack();
+    } else {
+      await detail.getByRole("button", { name: "목록으로", exact: true }).click();
+    }
+    await expect(detail).not.toBeVisible();
+    await expect(card).toBeFocused();
+  });
+}
+
 async function scrollToLoadedResults(page: Page) {
   await expect(page.locator(".event-card").first()).toBeVisible();
   await page

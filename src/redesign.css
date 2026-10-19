@@ -4702,14 +4702,14 @@ footer {
 }
 
 /* Detail density v3: media becomes a shallow top banner, facts stay packed below it. */
-.event-detail-page .detail-hero-grid {
+.detail-hero-grid {
   display: block;
   padding: 0;
   border-bottom: 0;
 }
 
-.event-detail-page .detail-hero-grid > .detail-media,
-.event-detail-page .detail-hero-grid > .scene-detail {
+.detail-hero-grid > .detail-media,
+.detail-hero-grid > .scene-detail {
   width: 100%;
   height: clamp(190px, 22vw, 230px);
   max-height: 230px;
@@ -4717,7 +4717,7 @@ footer {
   border-radius: 0;
 }
 
-.event-detail-page .detail-media {
+.detail-media {
   height: clamp(190px, 22vw, 230px);
   max-height: 230px;
   aspect-ratio: auto;
@@ -4725,7 +4725,7 @@ footer {
   background: #e8e4dc;
 }
 
-.event-detail-page .detail-media-pair {
+.detail-media-pair {
   height: 100%;
   max-height: none;
   aspect-ratio: auto;
@@ -4733,191 +4733,191 @@ footer {
   gap: 3px;
 }
 
-.event-detail-page .detail-media-pair button,
-.event-detail-page .detail-media-single {
+.detail-media-pair button,
+.detail-media-single {
   height: 100%;
   max-height: none;
   aspect-ratio: auto;
 }
 
-.event-detail-page .detail-hero-grid .scene-image-backdrop {
+.detail-hero-grid .scene-image-backdrop {
   opacity: 0.2;
   filter: blur(12px) brightness(0.84);
 }
 
-.event-detail-page .detail-summary-panel {
+.detail-summary-panel {
   padding: 15px 26px 12px;
 }
 
-.event-detail-page .detail-summary-panel h2 {
+.detail-summary-panel h2 {
   margin: 5px 50px 8px 0;
   font-size: 28px;
   line-height: 1.12;
 }
 
-.event-detail-page .detail-summary-panel .detail-warning,
-.event-detail-page .detail-summary-panel .detail-status-note,
-.event-detail-page .detail-summary-panel .trust-info {
+.detail-summary-panel .detail-warning,
+.detail-summary-panel .detail-status-note,
+.detail-summary-panel .trust-info {
   margin-bottom: 8px;
 }
 
-.event-detail-page .detail-primary-facts {
+.detail-primary-facts {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 9px;
 }
 
-.event-detail-page .detail-primary-fact {
+.detail-primary-fact {
   min-height: 64px;
   padding: 10px 12px;
   border-radius: 13px;
 }
 
-.event-detail-page .detail-primary-fact strong {
+.detail-primary-fact strong {
   font-size: 14px;
 }
 
-.event-detail-page .detail-glance {
+.detail-glance {
   margin-top: 8px;
   gap: 4px 8px;
 }
 
-.event-detail-page .detail-action-row {
+.detail-action-row {
   margin-top: 8px;
   gap: 7px;
 }
 
-.event-detail-page .detail-official-link-top,
-.event-detail-page .detail-map-link {
+.detail-official-link-top,
+.detail-map-link {
   min-height: 42px;
 }
 
-.event-detail-page .detail-supporting-facts {
+.detail-supporting-facts {
   margin-top: 6px;
   gap: 10px;
 }
 
-.event-detail-page .detail-supporting-fact {
+.detail-supporting-fact {
   padding: 6px 1px;
 }
 
-.event-detail-page .detail-summary-panel > .trust-info,
-.event-detail-page .detail-quick-note {
+.detail-summary-panel > .trust-info,
+.detail-quick-note {
   margin-top: 6px;
 }
 
-.event-detail-page .detail-body {
+.detail-body {
   padding: 6px 26px 24px;
 }
 
-.event-detail-page .detail-description,
-.event-detail-page .detail-enrichment,
-.event-detail-page .detail-event-tags,
-.event-detail-page .detail-exploration {
+.detail-description,
+.detail-enrichment,
+.detail-event-tags,
+.detail-exploration {
   margin-top: 16px;
 }
 
-.event-detail-page .detail-description h3,
-.event-detail-page .detail-enrichment h3,
-.event-detail-page .detail-exploration h3 {
+.detail-description h3,
+.detail-enrichment h3,
+.detail-exploration h3 {
   margin-bottom: 8px;
 }
 
-.event-detail-page .detail-program-list .detail-programs {
+.detail-program-list .detail-programs {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 9px;
 }
 
-.event-detail-page .detail-program-card {
+.detail-program-card {
   min-height: 104px;
   padding: 12px;
   border-radius: 13px;
 }
 
-.event-detail-page .detail-program-card p {
+.detail-program-card p {
   margin-top: 6px;
   line-height: 1.5;
 }
 
-.event-detail-page .detail-source-row {
+.detail-source-row {
   margin-top: 22px;
 }
 
 @media (max-width: 760px) {
-  .event-detail-page .detail-hero-grid > .detail-media,
-  .event-detail-page .detail-hero-grid > .scene-detail,
-  .event-detail-page .detail-media {
+  .detail-hero-grid > .detail-media,
+  .detail-hero-grid > .scene-detail,
+  .detail-media {
     height: clamp(180px, 54vw, 220px);
     max-height: 220px;
   }
 
-  .event-detail-page .detail-media-pair {
+  .detail-media-pair {
     grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.85fr);
   }
 
-  .event-detail-page .detail-summary-panel {
+  .detail-summary-panel {
     padding: 14px 16px 12px;
   }
 
-  .event-detail-page .detail-summary-panel h2 {
+  .detail-summary-panel h2 {
     margin: 4px 42px 7px 0;
     font-size: 24px;
     line-height: 1.13;
   }
 
-  .event-detail-page .detail-primary-facts {
+  .detail-primary-facts {
     grid-template-columns: 1fr;
     gap: 6px;
     margin-top: 8px;
   }
 
-  .event-detail-page .detail-primary-fact {
+  .detail-primary-fact {
     min-height: 0;
     padding: 9px 10px;
   }
 
-  .event-detail-page .detail-action-row {
+  .detail-action-row {
     margin-top: 7px;
   }
 
-  .event-detail-page .detail-supporting-facts {
+  .detail-supporting-facts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     margin-top: 5px;
   }
 
-  .event-detail-page .detail-supporting-fact {
+  .detail-supporting-fact {
     display: grid;
     grid-template-columns: 16px minmax(0, 1fr);
     padding: 5px 0;
   }
 
-  .event-detail-page .detail-supporting-fact > a {
+  .detail-supporting-fact > a {
     grid-column: 2;
     justify-self: start;
     margin-left: 0;
   }
 
-  .event-detail-page .detail-supporting-fact strong {
+  .detail-supporting-fact strong {
     font-size: 11px;
   }
 
-  .event-detail-page .detail-body {
+  .detail-body {
     padding: 2px 16px 24px;
   }
 
-  .event-detail-page .detail-description,
-  .event-detail-page .detail-enrichment,
-  .event-detail-page .detail-event-tags,
-  .event-detail-page .detail-exploration {
+  .detail-description,
+  .detail-enrichment,
+  .detail-event-tags,
+  .detail-exploration {
     margin-top: 14px;
   }
 
-  .event-detail-page .detail-program-list .detail-programs {
+  .detail-program-list .detail-programs {
     grid-template-columns: 1fr;
   }
 
-  .event-detail-page .detail-program-card {
+  .detail-program-card {
     min-height: 0;
     padding: 11px 12px;
   }
