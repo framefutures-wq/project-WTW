@@ -1276,9 +1276,14 @@ test("scheduled Reader fallback is clamped by the remaining recovery budget", as
       throw new TypeError("direct failed");
     }) as typeof fetch;
     const startedAt = Date.now();
-    const result = await runOfficialDetailRecovery({ DB } as never, new Date("2026-09-28T01:00:00Z"), { maxDurationMs: 100, minExternalRequestRemainingMs: 1 });
+    // Match the slow direct-fetch test's guard band: a timer may fire with
+    // 1ms left, which must not admit a second Reader request. Production
+    // requires 1000ms; the smaller budget here keeps the regression fast.
+    const result = await runOfficialDetailRecovery({ DB } as never, new Date("2026-09-28T01:00:00Z"), { maxDurationMs: 100, minExternalRequestRemainingMs: 10 });
     assert.ok(Date.now() - startedAt < 500);
     assert.equal(result.reader_attempts, 1);
+    assert.equal(result.reader_failures, 1);
+    assert.equal(result.reader_failure_reasons?.official_reader_timeout, 1);
     assert.equal(result.budget_exhausted, true);
   } finally {
     globalThis.fetch = originalFetch;
