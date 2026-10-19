@@ -74,10 +74,10 @@ test("the registry worst-case cycle is bounded by one non-overlapping cursor", (
     { sources, pages, candidates, detailStages, workUnits },
     {
       sources: 36,
-      pages: 54,
+      pages: 56,
       candidates: 900,
       detailStages: 2700,
-      workUnits: 3726,
+      workUnits: 3728,
     },
   );
   assert.ok((workUnits + 1) / 1435 < 3);

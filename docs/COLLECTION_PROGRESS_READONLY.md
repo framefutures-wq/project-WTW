@@ -4,7 +4,7 @@ Manual run #12 `39143166637` on exact main SHA `32eb5d54f53ca7570f94c9357acf7e17
 
 `list_parse_requires_fallback` had 59 retained rows: 4 due, 55 future, 0 expired, across seven allowlisted keys: Yongin 18 (3 due), Gwacheon 12, Icheon 6 (1 due), Wonju 6, Gangnam 6, Ulsan Buk-gu 6, and Daegu Seo-gu 5. The active daily cycle was at cursor 2/36. Candidate progress had 5 retained rows (1 due, 4 future), cursor 0–19 of 25, and attempts 10–20. Aggregate cursor movement does not prove individual job completion.
 
-Root cause is not yet known: the list worker uses the same retry label for extractor mode `retry` and nonempty partial candidates. The aggregate returns no URLs, payloads, or raw errors. Next: reproduce the parser outcome for the highest-count sources using current first-party HTML before making a parser change. No production DB write, scheduled observation, deployment, ingestion, or paid AI call occurred.
+The Icheon fallback was reproduced against its official server-rendered calendar endpoint: the registered `kalendar/index.do` page is an empty JS shell until client execution, while `portal/universal/kalendar/list.do` returns actual cards. A bounded 3-page live GET using the proposed registered parser returned 9 candidates per page; detail links use the official `view.do` route. PR #108 proposes the source-specific parser and fails closed on non-contiguous date ranges. This is code-level source validation only; production DB write, scheduled observation, deployment, ingestion, and paid AI call did not occur. Remaining fallback groups are led by Yongin (18), Gwacheon (12), Wonju/Gangnam/Ulsan Buk-gu (6 each), Daegu Seo-gu (5).
 
 ## Previous snapshot — 2026-10-18T15:55Z
 
