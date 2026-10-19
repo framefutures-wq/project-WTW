@@ -300,7 +300,7 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     ingestion: "registered_parser",
     pagination: { queryParam: "currentPageNo", maxPages: 3 },
     detailLinkTemplate: {
-      path: "/portal/universal/kalendar/view.do",
+      path: "/portal/universal/kalendar/detail.do",
       idParam: "idx",
       fixedQuery: { mid: "0401030000" },
     },

@@ -308,7 +308,7 @@ test("Yongin remains generic and Icheon uses its bounded HTML list contract", ()
     maxPages: 3,
   });
   assert.deepEqual(icheon.detailLinkTemplate, {
-    path: "/portal/universal/kalendar/view.do",
+    path: "/portal/universal/kalendar/detail.do",
     idParam: "idx",
     fixedQuery: { mid: "0401030000" },
   });
@@ -357,7 +357,7 @@ test("Icheon calendar list parses explicit date ranges and comma-separated event
         "2026-11-01",
         "이천아트홀 대공연장",
         "공연",
-        "https://www.icheon.go.kr/portal/universal/kalendar/view.do?mid=0401030000&idx=900001",
+        "https://www.icheon.go.kr/portal/universal/kalendar/detail.do?mid=0401030000&idx=900001",
       ],
       [
         "900002",
@@ -366,7 +366,7 @@ test("Icheon calendar list parses explicit date ranges and comma-separated event
         "2026-11-08",
         "이천아트홀 갤러리",
         "전시",
-        "https://www.icheon.go.kr/portal/universal/kalendar/view.do?mid=0401030000&idx=900002",
+        "https://www.icheon.go.kr/portal/universal/kalendar/detail.do?mid=0401030000&idx=900002",
       ],
     ],
   );
