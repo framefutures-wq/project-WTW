@@ -273,7 +273,7 @@ const venueFromBlock = (html: string, text: string) =>
     htmlAttribute(html, "data-venue"),
     definitionValue(html, ["행사장", "장소", "위치", "venue", "location"]),
     classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]),
-    classValue(html, "__way\\b")?.replace(/^장소\\s*/, "") ?? null,
+    classValue(html, "__way\\b")?.replace(/^장소\s*/, "") ?? null,
     labeledValue(text, ["행사장", "장소", "위치", "venue", "location"]),
     inlineLabeledValue(text, ["행사장", "장소", "위치", "venue", "location"]),
     classValue(html, "(?:venue|location|place)"),
