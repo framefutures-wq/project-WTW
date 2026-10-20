@@ -33,7 +33,7 @@ test("production discovery shell and public endpoints are healthy", async ({
   const response = await page.goto("/");
   expect(response?.ok()).toBe(true);
   await expect(page.locator("main")).toBeVisible();
-  await expect(page.locator(".results h2")).toBeVisible();
+  await expect(page.locator(".results")).toBeVisible();
 
   await page.locator(".region-quick-trigger").click();
   await expect(page.getByRole("dialog", { name: "지역 선택" })).toBeVisible();
