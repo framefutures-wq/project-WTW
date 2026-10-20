@@ -5855,3 +5855,49 @@ footer {
   .results { margin-top: 28px; }
   .all-events-section .subsection-heading h3 { font-size: 21px; }
 }
+
+/* Keep the current detail-density layout effective against legacy scoped rules. */
+.event-detail-page .detail-hero-grid {
+  display: block;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.event-detail-page .detail-hero-grid > .detail-media,
+.event-detail-page .detail-hero-grid > .scene-detail {
+  width: 100%;
+  height: clamp(190px, 22vw, 230px);
+  max-height: 230px;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
+.event-detail-page .detail-media-pair {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+  grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.8fr);
+  gap: 3px;
+}
+
+.event-detail-page .detail-media-pair button,
+.event-detail-page .detail-media-single {
+  height: 100%;
+  max-height: none;
+}
+
+@media (max-width: 760px) {
+  .event-detail-page .detail-hero-grid > .detail-media,
+  .event-detail-page .detail-hero-grid > .scene-detail {
+    height: clamp(180px, 54vw, 220px);
+    max-height: 220px;
+  }
+
+  .event-detail-page .detail-media-pair {
+    grid-auto-flow: unset;
+    grid-auto-columns: unset;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.85fr);
+    overflow: hidden;
+    scroll-snap-type: none;
+  }
+}

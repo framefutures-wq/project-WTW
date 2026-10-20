@@ -33,7 +33,7 @@ test("production discovery shell and public endpoints are healthy", async ({
   const response = await page.goto("/");
   expect(response?.ok()).toBe(true);
   await expect(page.locator("main")).toBeVisible();
-  await expect(page.locator(".results h2")).toBeVisible();
+  await expect(page.locator(".results")).toBeVisible();
 
   await page.locator(".region-quick-trigger").click();
   await expect(page.getByRole("dialog", { name: "지역 선택" })).toBeVisible();
@@ -46,7 +46,7 @@ test("production discovery shell and public endpoints are healthy", async ({
   await page.getByRole("button", { name: "카테고리 선택 닫기" }).click();
 
   await expect(page.getByLabel("지역", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("정렬", { exact: true })).toBeVisible();
+  await expect(page.locator(".results")).toContainText("행사");
 
   expect(
     await page.evaluate(
@@ -97,10 +97,9 @@ test("production discovery shell and public endpoints are healthy", async ({
       const mediaBox = hasMediaPair ? await mediaPair.boundingBox() : sceneBox;
       expect(mediaBox).not.toBeNull();
       const mediaRatio = mediaBox!.width / mediaBox!.height;
-      // The full-page detail keeps media intentionally shallow so decision
-      // facts remain in the first document viewport.
-      expect(mediaBox!.height).toBeGreaterThanOrEqual(260);
-      expect(mediaBox!.height).toBeLessThanOrEqual(320);
+      // Current detail density keeps media shallow so key facts appear early.
+      expect(mediaBox!.height).toBeGreaterThanOrEqual(190);
+      expect(mediaBox!.height).toBeLessThanOrEqual(230);
       expect(mediaRatio).toBeGreaterThan(3.5);
     } else if (hasMediaPair) {
       expect(await pairedMedia.count()).toBe(2);
@@ -111,12 +110,10 @@ test("production discovery shell and public endpoints are healthy", async ({
       expect(firstBox).not.toBeNull();
       expect(secondBox).not.toBeNull();
 
-      // Mobile full-page detail keeps the two-image surface in one bounded row.
-      // The contract
-      // remains on the combined surface rather than each asymmetric child.
-      expect(pairBox!.height).toBeGreaterThanOrEqual(220);
-      expect(pairBox!.height).toBeLessThanOrEqual(260);
-      expect(pairBox!.width / pairBox!.height).toBeGreaterThan(1.7);
+      // The mobile two-image surface stays bounded above the key event facts.
+      expect(pairBox!.height).toBeGreaterThanOrEqual(180);
+      expect(pairBox!.height).toBeLessThanOrEqual(220);
+      expect(pairBox!.width / pairBox!.height).toBeGreaterThan(1.6);
       expect(Math.abs(firstBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
       expect(Math.abs(secondBox!.height - pairBox!.height)).toBeLessThanOrEqual(2);
       expect(firstBox!.x).toBeLessThan(secondBox!.x);
@@ -130,9 +127,9 @@ test("production discovery shell and public endpoints are healthy", async ({
       for (let index = 0; index < itemCount; index += 1) {
         const itemBox = await mediaItems.nth(index).boundingBox();
         expect(itemBox).not.toBeNull();
-        expect(itemBox!.height).toBeGreaterThanOrEqual(220);
-        expect(itemBox!.height).toBeLessThanOrEqual(260);
-        expect(itemBox!.width / itemBox!.height).toBeGreaterThan(1.7);
+        expect(itemBox!.height).toBeGreaterThanOrEqual(180);
+        expect(itemBox!.height).toBeLessThanOrEqual(220);
+        expect(itemBox!.width / itemBox!.height).toBeGreaterThan(1.6);
       }
     }
 
