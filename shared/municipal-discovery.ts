@@ -263,7 +263,7 @@ const titleFromBlock = (html: string, text: string) =>
   classValue(html, "tit_view_sub\\b") ??
   classValue(
     html,
-    "(?:reservation-name|title|tit(?:_|\\b)|subject|name\\b|heading(?:-|\\b))",
+    "(?:reservation-name|title|tit(?:_|\\b)|subject|name\\b|heading(?:-|\\b)|__h[1-6]\\b)",
   ) ??
   definitionValue(html, ["행사명", "축제명", "공연명", "제목"]) ??
   labeledValue(text, ["행사명", "축제명", "공연명", "제목"]);
@@ -273,6 +273,7 @@ const venueFromBlock = (html: string, text: string) =>
     htmlAttribute(html, "data-venue"),
     definitionValue(html, ["행사장", "장소", "위치", "venue", "location"]),
     classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]),
+    classValue(html, "__way\\b")?.replace(/^장소\s*/, "") ?? null,
     labeledValue(text, ["행사장", "장소", "위치", "venue", "location"]),
     inlineLabeledValue(text, ["행사장", "장소", "위치", "venue", "location"]),
     classValue(html, "(?:venue|location|place)"),
