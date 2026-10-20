@@ -46,7 +46,7 @@ test("production discovery shell and public endpoints are healthy", async ({
   await page.getByRole("button", { name: "카테고리 선택 닫기" }).click();
 
   await expect(page.getByLabel("지역", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("정렬", { exact: true })).toBeVisible();
+  await expect(page.locator(".result-tools .sort")).toBeVisible();
 
   expect(
     await page.evaluate(
