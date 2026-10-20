@@ -1,0 +1,47 @@
+name: Production Worker deploy (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Reviewed main commit (40 lowercase hex characters)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'framefutures-wq/project-WTW' && github.actor == 'framefutures-wq' && github.triggering_actor == 'framefutures-wq' && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
+    steps:
+      - name: Require the reviewed main revision and deploy credential
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            echo "::error::Configure the CLOUDFLARE_DEPLOY_TOKEN repository secret with the scoped Cloudflare token described in docs/PRODUCTION_DEPLOYMENT_ACTION.md."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Run the existing verified production deployment
+        run: npm run deploy:verified
