@@ -7,7 +7,7 @@ import {
   selectMunicipalGate,
 } from "../shared/municipal-discovery.ts";
 
-const KEYS = ["gyeonggi-과천", "gyeonggi-하남", "gyeongbuk-상주"];
+const KEYS = ["gyeonggi-용인", "gyeonggi-과천", "gyeonggi-이천"];
 const TIMEOUT_MS = 20_000;
 
 const read = async (url) => {
