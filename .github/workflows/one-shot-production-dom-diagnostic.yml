@@ -1,0 +1,56 @@
+name: One-shot production DOM diagnostic
+
+on:
+  push:
+    branches:
+      - ops/one-shot-production-smoke-20261021
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install chromium
+      - name: Read public page DOM and API status
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from "@playwright/test";
+          const browser = await chromium.launch({ headless: true });
+          try {
+            for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+              const page = await browser.newPage({ viewport, isMobile: viewport.width < 500 });
+              const response = await page.goto("https://galteum.com/", { waitUntil: "networkidle", timeout: 30000 });
+              const dom = await page.evaluate(() => ({
+                title: document.title,
+                headings: [...document.querySelectorAll("h1,h2,h3")].slice(0, 20).map((el) => el.innerText.trim()),
+                mainClass: document.querySelector("main")?.className ?? null,
+                mainText: document.querySelector("main")?.innerText.slice(0, 1200) ?? null,
+                selectors: Object.fromEntries([".results", ".results h2", ".region-quick-trigger", ".category-quick-trigger", ".featured-grid"].map((s) => [s, !!document.querySelector(s)])),
+                scrollWidth: document.documentElement.scrollWidth,
+                viewportWidth: innerWidth,
+              }));
+              const health = await page.request.get("https://galteum.com/api/health");
+              const events = await page.request.get("https://galteum.com/api/events?period=weekend&limit=1&sort=date");
+              let eventSummary = null;
+              if (events.ok()) {
+                const body = await events.json();
+                eventSummary = { count: body.events?.length ?? null, hasFirstId: !!body.events?.[0]?.id };
+              }
+              console.log(JSON.stringify({ viewport, pageStatus: response?.status(), dom, healthStatus: health.status(), eventsStatus: events.status(), eventSummary }));
+              await page.close();
+            }
+          } finally {
+            await browser.close();
+          }
+          NODE
