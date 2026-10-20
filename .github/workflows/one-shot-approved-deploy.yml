@@ -1,0 +1,40 @@
+name: One-shot approved production deploy PR115
+
+on:
+  push:
+    branches:
+      - ops/approved-deploy-pr115-20261021
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.repository == 'framefutures-wq/project-WTW' && github.actor == 'framefutures-wq' && github.ref == 'refs/heads/ops/approved-deploy-pr115-20261021' && github.run_attempt == 1 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
+      EXPECTED_MAIN_SHA: e8df396b7ead8bb1a5e3d397540cd22345b11753
+    steps:
+      - name: Checkout only the approved merged main revision
+        uses: actions/checkout@v4
+        with:
+          ref: e8df396b7ead8bb1a5e3d397540cd22345b11753
+          persist-credentials: false
+      - name: Require exact main revision and deploy credential
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN_SHA"
+          test -n "${CLOUDFLARE_API_TOKEN:-}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Run the existing verified production deployment
+        run: npm run deploy:verified
