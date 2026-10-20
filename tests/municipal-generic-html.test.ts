@@ -150,6 +150,33 @@ test("generic HTML extractor reads explicit core from a list item", () => {
   );
 });
 
+test("generic extractor reads Yongin event-list heading and labeled venue", () => {
+  const source = genericSource(
+    "gyeonggi-용인",
+    "용인",
+    "https://www.yicf.or.kr/main/show/list.do?menuNo=010000&show_type=all&subMenuNo=010100&thirdMenuNo=&viewType=img",
+  );
+  const result = extractMunicipalCandidates(
+    source,
+    `<ul><li class="event-list__ul__li">
+      <a href="#" onclick="goAction('16922'); return false;">
+        <h3 class="event-list__ul__li__a__h3">낭독극 우리의 하루</h3>
+      </a>
+      <p class="event-list__ul__li__date"><strong class="mobile-item">날짜</strong> 2026-10-20 ~ 2026-10-20</p>
+      <p class="event-list__ul__li__way"><strong class="mobile-item">장소</strong> 국제회의실</p>
+    </li></ul>`,
+  );
+  assert.deepEqual(
+    result.candidates.map(({ title, start_date, end_date, venue }) => [
+      title,
+      start_date,
+      end_date,
+      venue,
+    ]),
+    [["낭독극 우리의 하루", "2026-10-20", "2026-10-20", "국제회의실"]],
+  );
+});
+
 test("generic HTML extractor reads explicit core from a card block", () => {
   const result = extracted(`
     <section class="event-card"><a class="title" href="/events/card">가상구 거리축제</a><p class="period">2026년 10월 24일 ~ 2026년 10월 26일</p><p class="location">가상로 일원</p></section>
