@@ -1,0 +1,26 @@
+name: One-shot municipal source diagnostic
+
+on:
+  push:
+    branches:
+      - ops/one-shot-municipal-source-diagnostic
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: ${{ github.repository == 'framefutures-wq/project-WTW' && github.ref == 'refs/heads/ops/one-shot-municipal-source-diagnostic' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Fetch the three existing allowlisted municipal sources
+        run: npm run diagnose:municipal:3
