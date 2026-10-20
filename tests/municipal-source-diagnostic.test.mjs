@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-test("municipal source diagnostic is read-only and bounded to the deployed batch", () => {
+test("municipal source diagnostic is read-only and targets the highest parse-fallback sources", () => {
   const script = readFileSync("scripts/municipal-source-diagnostic.mjs", "utf8");
-  for (const key of ["gyeonggi-과천", "gyeonggi-하남", "gyeongbuk-상주"]) {
+  for (const key of ["gyeonggi-용인", "gyeonggi-과천", "gyeonggi-이천"]) {
     assert.match(script, new RegExp(key));
   }
   assert.doesNotMatch(script, /wrangler\s+d1|env\.DB|INSERT|UPDATE|DELETE|runMunicipalAutonomous|manual ingestion/i);
