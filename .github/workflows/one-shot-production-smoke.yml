@@ -1,0 +1,29 @@
+name: One-shot production browser smoke
+
+on:
+  push:
+    branches:
+      - ops/one-shot-production-smoke-20261021
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Check production UI and public endpoints on desktop and mobile
+        env:
+          TEST_BASE_URL: https://galteum.com
+          TEST_OUTPUT_DIR: test-results/public-smoke
+        run: npm run test:ui:prod
