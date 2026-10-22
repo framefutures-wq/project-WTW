@@ -563,9 +563,13 @@ const tableRows = (source: MunicipalSourceDefinition, html: string) => {
         return verticalCandidate ? [verticalCandidate] : [];
     const horizontalCandidates = rows.flatMap<MunicipalCandidate>((row) => {
       if (!/<td\b/i.test(row)) return [];
-      const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(
-        (cell) => cell[1],
-      );
+      const cells = [...row.matchAll(/<(td|th)\b([^>]*)>([\s\S]*?)<\/\1>/gi)]
+        .filter(
+          (cell) =>
+            cell[1].toLowerCase() === "td" ||
+            /\bscope=["']row["']/i.test(cell[2]),
+        )
+        .map((cell) => cell[3]);
       if (
         !cells[titleIndex] ||
         !cells[venueIndex] ||
