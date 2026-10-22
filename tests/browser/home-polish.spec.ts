@@ -89,9 +89,6 @@ test("home gives the lead recommendation visual priority before its utilities", 
   const noImageCard = page.locator(".event-card", { hasText: "이미지 없는 행사" });
   await expect(noImageCard.locator(".card-info-graphic-label")).toBeVisible();
   await expect(noImageCard.locator(".card-info-graphic-brand")).toBeVisible();
-  await noImageCard.locator(".scene").screenshot({
-    path: `test-results/ui-ci/no-image-card-${width >= 760 ? "desktop" : "mobile"}.png`,
-  });
 
   const layout = await page.evaluate(() => {
     const featured = document.querySelector<HTMLElement>(".featured-composition")!;
@@ -158,6 +155,9 @@ test("home gives the lead recommendation visual priority before its utilities", 
   );
   await page.screenshot({
     path: `test-results/ui-ci/home-first-viewport-${page.viewportSize()!.width >= 760 ? "desktop" : "mobile"}.png`,
+  });
+  await noImageCard.locator(".scene").screenshot({
+    path: `test-results/ui-ci/no-image-card-${width >= 760 ? "desktop" : "mobile"}.png`,
   });
 });
 
