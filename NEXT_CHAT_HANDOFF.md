@@ -1,3 +1,13 @@
+## 2026-10-22 — parser stabilization checkpoint
+
+- Main is `392ed710c1219403f549abfc95c5f3142e4cc260`.
+- PR #117 (Gangnam bold venue label) and PR #118 (Wonju row-header table alignment) are merged. Both GitHub workflows (Project checks and UI browser smoke) passed. Local full suite for the final parser change passed 577/577 plus integration/typecheck/build.
+- Current live parser probes succeeded for Gangnam (4 candidates) and Wonju (5). The fixes have not yet been deployed to production; do not claim they changed production collection or D1 retry counts.
+- Production deploy is an approval-gated operation under the user’s standing instructions. No D1 write or forced ingestion was performed.
+- Daegu Seo, Ulsan Buk-gu, and Gokseong direct reads returned HTTP 503 in this execution environment; the response body indicated upstream connection timeout. This is not evidence that the official sites themselves are down. Avoid repeating identical probes; retry only through an independently authorized path or after the transport context changes.
+- Next: pause deployment until approval; continue only read-only source diagnosis where evidence is accessible. Once deployment is approved and completed, verify public behavior and obtain a fresh bounded read-only collection snapshot before ranking remaining retries. Keep the separate UI/UX benchmark track in the roadmap.
+- Working directory in the local executor may have parser/test changes left from the already-merged #118 work; do not use reset/restore to clean it. GitHub main is the verified source of truth for the merged change.
+
 ## 2026-10-19 — latest source-level parse-fallback snapshot
 
 - PR #106 merged as `32eb5d5`; both CI runs `39142785949` and `39142839744` passed. Manual snapshot #12 `39143166637` ran against exact main SHA `32eb5d54f53ca7570f94c9357acf7e1764752f15`; four fixed SELECTs succeeded with zero writes (row counts 14/1122/82/275).
