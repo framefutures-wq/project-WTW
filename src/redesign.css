@@ -5858,9 +5858,12 @@ footer {
 
 /* Keep the current detail-density layout effective against legacy scoped rules. */
 .event-detail-page .detail-hero-grid {
-  display: block;
-  padding: 0;
-  border-bottom: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: clamp(20px, 3vw, 40px);
+  padding: 0 0 24px;
+  border-bottom: 1px solid #ded8cf;
 }
 
 .event-detail-page .detail-hero-grid > .detail-media,
@@ -5887,10 +5890,26 @@ footer {
 }
 
 @media (max-width: 760px) {
+  .event-detail-page .detail-hero-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 0 16px 24px;
+  }
+
+  .event-detail-page .detail-summary-panel {
+    order: -1;
+    width: 100%;
+    padding: 0;
+  }
+
   .event-detail-page .detail-hero-grid > .detail-media,
   .event-detail-page .detail-hero-grid > .scene-detail {
+    width: 100%;
     height: clamp(180px, 54vw, 220px);
     max-height: 220px;
+    border-radius: 14px;
   }
 
   .event-detail-page .detail-media-pair {
