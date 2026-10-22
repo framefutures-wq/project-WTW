@@ -154,7 +154,7 @@ test("home gives the lead recommendation visual priority before its utilities", 
     1,
   );
   await page.screenshot({
-    path: `test-results/home-first-viewport-${page.viewportSize()!.width >= 760 ? "desktop" : "mobile"}.png`,
+    path: `test-results/ui-ci/home-first-viewport-${page.viewportSize()!.width >= 760 ? "desktop" : "mobile"}.png`,
   });
 });
 
