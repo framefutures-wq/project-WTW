@@ -98,6 +98,15 @@ const inlineLabeledValue = (text: string, labels: string[]) => {
   return match ? match[1].trim() || null : null;
 };
 
+const boldLabeledValue = (html: string, labels: string[]) => {
+  const label = labels.map((value) => value.split("").join("\\s*")).join("|");
+  const match = new RegExp(
+    `<(?:b|strong)\\b[^>]*>\\s*(?:${label})\\s*<\\/(?:b|strong)>\\s*[:：]?\\s*([^<]+)`,
+    "i",
+  ).exec(html);
+  return match ? clean(match[1]) || null : null;
+};
+
 const definitionValue = (html: string, labels: string[]) => {
   const label = `(?:${labels.join("|")})`;
   const pair = new RegExp(
@@ -271,6 +280,7 @@ const titleFromBlock = (html: string, text: string) =>
 const venueFromBlock = (html: string, text: string) =>
   firstValidVenue(
     htmlAttribute(html, "data-venue"),
+    boldLabeledValue(html, ["행사장소", "행사장", "장소", "위치"]),
     definitionValue(html, ["행사장", "장소", "위치", "venue", "location"]),
     classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]),
     classValue(html, "__way\\b")?.replace(/^장소\s*/, "") ?? null,
