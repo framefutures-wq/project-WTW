@@ -973,6 +973,19 @@ test("structured fallback stays retry-only when explicit core is incomplete", ()
   assert.equal(selectMunicipalGate(extracted.candidates[0]).gate, "REVIEW");
 });
 
+test("Gangnam festival cards parse the bold 행사장소 label in the same card", () => {
+  const source = municipalSourceByKey("seoul-gangnam");
+  assert(source);
+  const html = `<ul><li class="grid-item"><div class="tit"><a href="/office/gfac/board/gfac_lifeculture/6/view.do?mid=gfac_festival06">2026 강남생활문화축제</a></div><p><b>행사기간</b> 2026.10.17.(토)~2026.10.18.(일) 11:00~17:00</p><p><b>행사장소</b> 일원에코파크 및 에코센터</p></li></ul>`;
+  const result = extractMunicipalCandidates(source, html);
+  assert.equal(result.mode, "generic_html");
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.candidates[0].title, "2026 강남생활문화축제");
+  assert.equal(result.candidates[0].start_date, "2026-10-17");
+  assert.equal(result.candidates[0].end_date, "2026-10-18");
+  assert.equal(result.candidates[0].venue, "일원에코파크 및 에코센터");
+});
+
 test("PDF or poster-only format changes remain fail-closed for later verified extractors", () => {
   const source = municipalSourceByKey("bucheon");
   assert(source);
