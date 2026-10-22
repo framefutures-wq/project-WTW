@@ -5920,3 +5920,92 @@ footer {
     scroll-snap-type: none;
   }
 }
+
+
+/* No-photo cards should read as intentional date information, not empty image slots. */
+.event-grid .scene:not(.scene-with-image) .card-info-graphic {
+  isolation: isolate;
+  justify-content: space-between;
+  padding: 18px 16px;
+  background:
+    radial-gradient(circle at 100% 100%, rgba(242, 107, 56, 0.11), transparent 48%),
+    linear-gradient(145deg, #fffdfa 0%, #f3eee5 100%);
+  text-align: left;
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic::before {
+  top: 18px;
+  right: 16px;
+  width: 32px;
+  height: 3px;
+  border-radius: 999px;
+  background: #f26b38;
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic::after {
+  right: -24%;
+  bottom: -18%;
+  z-index: 0;
+  width: 76%;
+  height: 48%;
+  border: 1px solid rgba(23, 26, 29, 0.1);
+  border-radius: 50%;
+  box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.16), 0 0 0 36px rgba(255, 255, 255, 0.12);
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic-label,
+.event-grid .scene:not(.scene-with-image) .card-info-graphic-brand {
+  display: inline-flex;
+  z-index: 1;
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic-label {
+  color: #6c6259;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic-facts {
+  align-self: flex-start;
+  justify-items: start;
+  gap: 9px;
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic-date {
+  font-size: clamp(21px, 2.1vw, 29px);
+  letter-spacing: -0.045em;
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic-meta {
+  color: #59636b;
+  font-size: 11px;
+}
+
+.event-grid .scene:not(.scene-with-image) .card-info-graphic-brand {
+  align-self: flex-end;
+  padding: 5px 9px;
+  border: 1px solid rgba(23, 26, 29, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #a9411e;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 760px) {
+  .event-grid .scene:not(.scene-with-image) .card-info-graphic {
+    padding: 14px 12px;
+  }
+
+  .event-grid .scene:not(.scene-with-image) .card-info-graphic-label {
+    font-size: 9px;
+  }
+
+  .event-grid .scene:not(.scene-with-image) .card-info-graphic-date {
+    font-size: clamp(18px, 6vw, 24px);
+  }
+
+  .event-grid .scene:not(.scene-with-image) .card-info-graphic-meta {
+    font-size: 10px;
+  }
+}
