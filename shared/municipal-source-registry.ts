@@ -177,7 +177,11 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     detailLinkTemplate: {
       path: "/life/page/10452/10182.tc",
       idParam: "fstvlNo",
-      fixedQuery: { importUrl: "/festival/view.tc", pageDtlOrdrNo: "1" },
+      fixedQuery: {
+        importUrl: "/festival/view.tc",
+        pageDtlOrdrNo: "1",
+        pageIndex: "",
+      },
     },
   },
   {

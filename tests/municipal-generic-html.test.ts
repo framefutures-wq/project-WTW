@@ -339,7 +339,7 @@ test("generic extractor resolves Sangju JavaScript festival links to their offic
         "2026-10-10",
         "2026-10-12",
         "상주시민문화공원 일원",
-        "https://www.sangju.go.kr/life/page/10452/10182.tc?importUrl=%2Ffestival%2Fview.tc&pageDtlOrdrNo=1&fstvlNo=100999",
+        "https://www.sangju.go.kr/life/page/10452/10182.tc?importUrl=%2Ffestival%2Fview.tc&pageDtlOrdrNo=1&pageIndex=&fstvlNo=100999",
       ],
     ],
   );
