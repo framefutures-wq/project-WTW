@@ -291,6 +291,29 @@ test("Wonju generic table source parses complete rows and rejects rows without a
   );
 });
 
+test("generic table rows preserve the first column when it uses a row header", () => {
+  const source = municipalSourceByKey("gangwon-원주");
+  assert(source);
+  const html = `<h3>월간일정 (2026년 10월)</h3><table><thead><tr><th>구분</th><th>행사명</th><th>기간</th><th>시간</th><th>장소명</th><th>주최/주관</th></tr></thead><tbody><tr><th scope="row">백</th><td><a href="./ctyhllCldrView.do?key=213&amp;ctyhllCldrNo=3499">김시라의 품바 Original 원주</a></td><td>2026-10-30 ~ 2026-10-30</td><td>20시</td><td>원주백운아트홀</td><td>(주)좋은콘서트</td></tr></tbody></table>`;
+  const extraction = extractMunicipalCandidates(source, html);
+  assert.equal(extraction.mode, "generic_html");
+  assert.equal(extraction.candidates.length, 1);
+  assert.deepEqual(
+    [
+      extraction.candidates[0].title,
+      extraction.candidates[0].start_date,
+      extraction.candidates[0].end_date,
+      extraction.candidates[0].venue,
+    ],
+    [
+      "김시라의 품바 Original 원주",
+      "2026-10-30",
+      "2026-10-30",
+      "원주백운아트홀",
+    ],
+  );
+});
+
 test("Yongin remains generic and Icheon uses its bounded HTML list contract", () => {
   const yongin = municipalSourceByKey("gyeonggi-용인");
   assert(yongin);
