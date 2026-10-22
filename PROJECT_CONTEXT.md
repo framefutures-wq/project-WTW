@@ -1,3 +1,12 @@
+## 2026-10-22 — municipal parser fixes merged; production deploy pending
+
+- PR #117 merged as `69c75eb`: generic municipal event cards now read official bold `행사장소` labels. The current Gangnam official page returned HTTP 200 and the parser extracted 4 candidates, including the 2026 festival with explicit dates, venue, and first-party detail URL.
+- PR #118 merged as `392ed71`: generic event tables now preserve column positions when a data row begins with `<th scope="row">`. The current Wonju page returned HTTP 200 and the parser extracted 5 candidates with dates, venues, and official detail URLs.
+- Both PRs passed GitHub Project checks and UI browser smoke. Local validation for #118: 577 tests plus integration checks, typecheck, and production build passed.
+- Latest verified read-only production collection snapshot predates these code fixes. No production D1 writes or forced ingestion occurred. **Worker production deploy remains pending user approval**; code merged to main is not deployed.
+- Read-only direct requests from this execution environment returned HTTP 503 for Daegu Seo, Ulsan Buk-gu, and Gokseong, with an upstream connection timeout body. Treat these as environment/transport-limited observations, not confirmed official-source outages. No parser edits were made for those sources.
+- Roadmap: collection parse stability has two evidence-backed fixes merged; next is approval-gated production deploy and then a fresh read-only snapshot to measure whether persisted retries drain. Continue source diagnosis only where current responses can be inspected. UI/UX benchmark and polish remain a later project track.
+
 ## 2026-10-19 — source-level parse-fallback snapshot
 
 - PR #106 merged as `32eb5d5`. Both CI runs `39142785949` and `39142839744` passed (`npm run check` and `npm run municipal:inventory:check`).
