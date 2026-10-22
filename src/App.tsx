@@ -435,9 +435,6 @@ export function Scene({
               loading="lazy"
             />
             <span className="card-info-graphic-label">공식 일정</span>
-            <span className="card-info-graphic-symbol" aria-hidden="true">
-              {icons[theme as keyof typeof icons]}
-            </span>
             <div className="card-info-graphic-facts">
               {cardInfo.date && (
                 <strong className="card-info-graphic-date">

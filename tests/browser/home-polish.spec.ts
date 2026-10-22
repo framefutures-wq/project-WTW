@@ -87,7 +87,13 @@ test("home gives the lead recommendation visual priority before its utilities", 
       .locator(".card-info-graphic"),
   ).toBeVisible();
   const noImageCard = page.locator(".event-card", { hasText: "이미지 없는 행사" });
+  const fallbackArt = noImageCard.locator(".card-info-graphic-art");
+  await expect(fallbackArt).toBeVisible();
+  await expect
+    .poll(() => fallbackArt.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
   await expect(noImageCard.locator(".card-info-graphic-label")).toBeVisible();
+  await expect(noImageCard.locator(".card-info-graphic-symbol")).toHaveCount(0);
   await expect(noImageCard.locator(".card-info-graphic-brand")).toBeVisible();
 
   const layout = await page.evaluate(() => {
