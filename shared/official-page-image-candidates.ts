@@ -160,12 +160,16 @@ export function extractOfficialPageImageCandidates(
     const url = safeHttps(pageUrl, href);
     if (!url || looksDecorative(url, label || null)) continue;
     const path = new URL(url).pathname;
-    if (!/\.(?:avif|webp|png|jpe?g|gif)$/i.test(path)) continue;
-    if (
-      !/(?:포스터|poster|행사|축제|festival|event|공연|전시)/i.test(
-        `${label} ${decodeURIComponent(path)}`,
-      )
-    )
+    const attachmentLabel = `${label} ${decodeURIComponent(path)}`;
+    // Some official municipal pages expose poster attachments through a
+    // generic download endpoint (for example /file/readFile.tc?fileId=...)
+    // while the actual image extension appears only in the attachment name.
+    // Keep this bounded to explicitly named image files and image download
+    // endpoints so ordinary documents and site links are not treated as art.
+    const namedImage = /\.(?:avif|webp|png|jpe?g|gif)(?:\s|\(|$)/i.test(label);
+    const imageDownloadEndpoint = /\/(?:file\/readFile\.tc|file\/download|comm\/getImage)$/i.test(path);
+    if (!/\.(?:avif|webp|png|jpe?g|gif)$/i.test(path) && !(namedImage && imageDownloadEndpoint)) continue;
+    if (!imageDownloadEndpoint && !/(?:포스터|poster|행사|축제|festival|event|공연|전시)/i.test(attachmentLabel))
       continue;
     pushUnique(output, seen, {
       url,

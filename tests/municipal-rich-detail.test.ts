@@ -73,6 +73,28 @@ test("extracts Seoul Hangang-style official rich detail without guessing", () =>
   assert.equal(rich.programs[0]?.schedule_text, "15:00, 17:00");
 });
 
+test("extracts Sangju official festival poster files behind generic download links", () => {
+  const html = `
+    <h1>2026 상주 슬로라이프 페스티벌</h1>
+    <section class="attached-files">
+      <a href="/file/readFile.tc?fileId=FL00000008544&amp;fileNo=1">2026슬라페-SNS(800x800)-01.jpg</a>
+      <a href="/file/readFile.tc?fileId=FL00000008544&amp;fileNo=2">2026슬라페-SNS(800x800)-02.jpg</a>
+      <a href="/file/readFile.tc?fileId=FL00000008544&amp;fileNo=3">2026슬라페-SNS(800x800)-03.jpg</a>
+      <a href="/file/readFile.tc?fileId=FL00000008544&amp;fileNo=4">2026슬라페-SNS(800x800)-04.jpg</a>
+    </section>`;
+  const rich = extractMunicipalRichDetail(
+    "https://www.sangju.go.kr/life/page/10452/10182.tc?fstvlNo=100065",
+    html,
+  );
+  assert.deepEqual(
+    rich.images.map((image) => image.url),
+    [1, 2, 3, 4].map(
+      (fileNo) =>
+        `https://www.sangju.go.kr/file/readFile.tc?fileId=FL00000008544&fileNo=${fileNo}`,
+    ),
+  );
+});
+
 test("extracts explicit table labels and rejects off-site body images", () => {
   const html = `
     <table>
