@@ -98,6 +98,15 @@ const inlineLabeledValue = (text: string, labels: string[]) => {
   return match ? match[1].trim() || null : null;
 };
 
+const boldLabeledValue = (html: string, labels: string[]) => {
+  const label = labels.map((value) => value.split("").join("\\s*")).join("|");
+  const match = new RegExp(
+    `<(?:b|strong)\\b[^>]*>\\s*(?:${label})\\s*<\\/(?:b|strong)>\\s*[:：]?\\s*([^<]+)`,
+    "i",
+  ).exec(html);
+  return match ? clean(match[1]) || null : null;
+};
+
 const definitionValue = (html: string, labels: string[]) => {
   const label = `(?:${labels.join("|")})`;
   const pair = new RegExp(
