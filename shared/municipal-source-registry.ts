@@ -174,6 +174,11 @@ export const MUNICIPAL_SOURCE_REGISTRY: readonly MunicipalSourceDefinition[] = [
     expectedSignals: ["html_list"],
     ingestion: "generic_fallback",
     pagination: { queryParam: "pageIndex", maxPages: 2 },
+    detailLinkTemplate: {
+      path: "/life/page/10452/10182.tc",
+      idParam: "fstvlNo",
+      fixedQuery: { importUrl: "/festival/view.tc", pageDtlOrdrNo: "1" },
+    },
   },
   {
     key: "gyeonggi-평택",
