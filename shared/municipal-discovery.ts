@@ -280,6 +280,7 @@ const titleFromBlock = (html: string, text: string) =>
 const venueFromBlock = (html: string, text: string) =>
   firstValidVenue(
     htmlAttribute(html, "data-venue"),
+    boldLabeledValue(html, ["행사장소", "행사장", "장소", "위치"]),
     definitionValue(html, ["행사장", "장소", "위치", "venue", "location"]),
     classPairValue(html, ["행사장", "장소", "위치", "venue", "location"]),
     classValue(html, "__way\\b")?.replace(/^장소\s*/, "") ?? null,
