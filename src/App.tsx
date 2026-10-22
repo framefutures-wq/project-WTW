@@ -427,6 +427,13 @@ export function Scene({
               .filter(Boolean)
               .join(", ")}`}
           >
+            <img
+              className="card-info-graphic-art"
+              src="/event-fallback-illustration.webp"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+            />
             <span className="card-info-graphic-label">공식 일정</span>
             <div className="card-info-graphic-facts">
               {cardInfo.date && (

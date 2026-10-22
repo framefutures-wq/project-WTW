@@ -315,12 +315,10 @@ test("generic venue validation rejects labels, contact data, URLs, dates, and ti
   assert.deepEqual(extracted(html).candidates, []);
 });
 
-test("generic extractor reads the bounded Sangju list item and keeps its list URL for a JavaScript detail link", () => {
-  const source = genericSource(
-    "gyeongbuk-상주",
-    "상주",
-    "https://www.sangju.go.kr/life/page/10452/10182.tc",
-  );
+test("generic extractor resolves Sangju JavaScript festival links to their official detail URL", () => {
+  const source = MUNICIPAL_SOURCE_REGISTRY.find(
+    (candidate) => candidate.key === "gyeongbuk-상주",
+  )!;
   const result = extractMunicipalCandidates(
     source,
     readFileSync("fixtures/municipal-generic-sangju.html", "utf8"),
@@ -341,7 +339,7 @@ test("generic extractor reads the bounded Sangju list item and keeps its list UR
         "2026-10-10",
         "2026-10-12",
         "상주시민문화공원 일원",
-        source.url,
+        "https://www.sangju.go.kr/life/page/10452/10182.tc?importUrl=%2Ffestival%2Fview.tc&pageDtlOrdrNo=1&pageIndex=&fstvlNo=100999",
       ],
     ],
   );

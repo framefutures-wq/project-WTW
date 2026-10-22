@@ -123,6 +123,25 @@ test("extracts explicit poster image attachments from exact official pages", () 
   );
 });
 
+test("extracts image attachments served by a generic official download endpoint", () => {
+  const html = `
+    <section class="attached-files">
+      <a href="/file/readFile.tc?fileId=FL00000008544&amp;fileNo=1">2026슬라페-SNS(800x800)-01.jpg</a>
+      <a href="/file/readFile.tc?fileId=FL00000008544&amp;fileNo=2">2026슬라페-SNS(800x800)-02.jpg</a>
+      <a href="/file/readFile.tc?fileId=FL00000008544&amp;fileNo=5">행사계획서.pdf</a>
+    </section>`;
+  assert.deepEqual(
+    extractOfficialPageImageCandidates(
+      "https://www.sangju.go.kr/life/page/10452/10182.tc?fstvlNo=100065",
+      html,
+    ).map(({ url, signal }) => ({ url, signal })),
+    [1, 2].map((fileNo) => ({
+      url: `https://www.sangju.go.kr/file/readFile.tc?fileId=FL00000008544&fileNo=${fileNo}`,
+      signal: "ATTACHMENT_IMAGE",
+    })),
+  );
+});
+
 
 test("rejects common site chrome and default placeholder images", () => {
   const html = `
