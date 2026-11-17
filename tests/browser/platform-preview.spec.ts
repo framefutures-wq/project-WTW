@@ -38,7 +38,7 @@ test("통합 서비스 미리보기는 PC·모바일에서 보이고 기존 행�
   await page.getByRole("link", { name: /서비스 둘러보기/ }).click();
   await expect(page).toHaveURL(/#services$/);
   await page.getByRole("link", { name: /주말 행사 찾기/ }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/");
   await expect(page.locator(".platform")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "이번 주말, 어디 갈까?" }),
