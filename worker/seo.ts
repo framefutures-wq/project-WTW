@@ -193,6 +193,38 @@ export function renderSeoHtml(
   return base.replace(/<\/head>/i, `    ${tags}\n  </head>`);
 }
 
+
+/** The new product-platform root is independent of the retired events homepage. */
+export function renderPlatformRootHtml(html: string) {
+  const title = "GALTEUM | 비즈니스를 위한 디지털 도구";
+  const description =
+    "도매상품 발굴부터 AI 상세페이지 제작까지. 비즈니스에 필요한 디지털 도구를 준비합니다.";
+  return html
+    .replace(/<title>[\\s\\S]*?<\\/title>/i, `<title>${title}</title>`)
+    .replace(
+      /<meta\\s+name=["']description["'][^>]*>/i,
+      `<meta name="description" content="${description}" />`,
+    )
+    .replace(
+      /<meta\\s+name=["']theme-color["'][^>]*>/i,
+      '<meta name="theme-color" content="#0b0d10" />',
+    )
+    .replace(
+      /<\\/head>/i,
+      [
+        '<meta name="galteum-platform-root" content="true" />',
+        `<link rel="canonical" href="${CANONICAL_ORIGIN}/" />`,
+        '<meta property="og:type" content="website" />',
+        `<meta property="og:title" content="${title}" />`,
+        `<meta property="og:description" content="${description}" />`,
+        `<meta property="og:url" content="${CANONICAL_ORIGIN}/" />`,
+        '<meta property="og:site_name" content="GALTEUM" />',
+        '<meta name="twitter:card" content="summary" />',
+        '</head>',
+      ].join("\\n    "),
+    );
+}
+
 function xmlEscape(value: string) {
   return value
     .replace(/&/g, "&amp;")
