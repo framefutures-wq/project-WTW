@@ -304,7 +304,7 @@ test("selector does not rank historical official links before checking event eli
     assert.match(selectorSql, /JOIN event_official_links ol ON ol.event_id=eligible.id/);
     assert.match(selectorSql, /JOIN official_source_audits a ON a.event_id=eligible.id/);
     assert.match(selectorSql, /JOIN ranked r ON r.event_id=e.id AND r.rn<=4/);
-    assert.equal((selectorSql.match(/\\?/g) ?? []).length, 10, "preserve existing parameter contract");
+    assert.equal((selectorSql.match(/\?/g) ?? []).length, 10, "preserve existing parameter contract");
 
     // D1's local row-read counter is not available in all Miniflare versions.
     // Log the bounded measurement when supported; compare it to production
