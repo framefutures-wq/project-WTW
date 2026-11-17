@@ -548,92 +548,27 @@ export async function selectOfficialDetailRecoveryCandidates(
   const transientRetryBefore = new Date(
     now.getTime() - OFFICIAL_DETAIL_TRANSIENT_RETRY_MS,
   ).toISOString();
+  // Materialize the same eligibility gates BEFORE unioning/ranking official
+  // links. The previous global ROW_NUMBER() CTE scanned historical sources
+  // even when no public, current event was due for recovery. All retry,
+  // image, source-rank and final ordering rules are deliberately unchanged.
   const rows = await db
     .prepare(
-      `WITH official_candidates AS (
-         SELECT
-           ol.event_id,
-           ol.url,
-           ol.source_id,
-           s.kind AS source_kind,
-           s.priority AS source_priority,
-           ol.checked_at,
-           0 AS source_rank
-         FROM event_official_links ol
-         JOIN sources s ON s.id=ol.source_id
-         WHERE ol.url LIKE 'https://%'
-         UNION ALL
-         SELECT
-           a.event_id,
+      `WITH eligible_events AS MATERIALIZED (
+         SELECT e.id,e.title,e.region,e.venue,e.start_date,e.end_date,
+           e.primary_source_id,
+           ps.kind AS primary_source_kind,
+           mcs.source_key,
            CASE
-             WHEN l.final_url LIKE 'https://%' THEN l.final_url
-             ELSE l.url
-           END AS url,
-           a.origin_source_id AS source_id,
-           s.kind AS source_kind,
-           s.priority AS source_priority,
-           l.checked_at,
-           1 AS source_rank
-         FROM official_source_audits a
-         JOIN official_source_links l ON l.audit_id=a.id
-         JOIN sources s ON s.id=a.origin_source_id
-         WHERE l.official=1
-           AND l.access_status='ok'
-           AND (l.final_url LIKE 'https://%' OR l.url LIKE 'https://%')
-         UNION ALL
-         SELECT
-           mcs.candidate_id AS event_id,
-           mcs.official_url_snapshot AS url,
-           e.primary_source_id AS source_id,
-           ps.kind AS source_kind,
-           ps.priority AS source_priority,
-           mcs.last_seen_at AS checked_at,
-           2 AS source_rank
-         FROM municipal_candidate_state mcs
-         JOIN events e ON e.id=mcs.candidate_id
-         JOIN sources ps ON ps.id=e.primary_source_id
-         WHERE mcs.official_url_snapshot LIKE 'https://%'
-         UNION ALL
-         SELECT
-           e.id AS event_id,
-           ps.url,
-           ps.id AS source_id,
-           ps.kind AS source_kind,
-           ps.priority AS source_priority,
-           ps.fetched_at AS checked_at,
-           3 AS source_rank
+             WHEN ei.event_id IS NULL OR ei.image_url IS NULL OR ei.image_status!='ok'
+             THEN 1 ELSE 0
+           END AS image_missing
          FROM events e
          JOIN sources ps ON ps.id=e.primary_source_id
-         WHERE ps.kind IN ('municipality','organizer')
-           AND ps.url LIKE 'https://%'
-       ),
-       ranked AS (
-         SELECT *,
-           ROW_NUMBER() OVER (
-             PARTITION BY event_id
-             ORDER BY source_rank,source_priority,checked_at DESC
-           ) AS rn
-         FROM official_candidates
-       )
-       SELECT
-         e.id,e.title,e.region,e.venue,e.start_date,e.end_date,
-         r.url AS official_url,
-         r.source_id AS link_source_id,
-         r.source_kind AS link_source_kind,
-         ps.kind AS primary_source_kind,
-         mcs.source_key,
-         r.source_rank,
-         CASE
-           WHEN ei.event_id IS NULL OR ei.image_url IS NULL OR ei.image_status!='ok'
-           THEN 1 ELSE 0
-         END AS image_missing
-       FROM events e
-       JOIN ranked r ON r.event_id=e.id AND r.rn<=4
-       JOIN sources ps ON ps.id=e.primary_source_id
-       LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
-       LEFT JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
-       LEFT JOIN sources attempt ON attempt.id='official-detail-' || e.id
-       LEFT JOIN sources poster_state ON poster_state.id='official-poster-' || e.id
+         LEFT JOIN event_images ei ON ei.event_id=e.id AND ei.is_primary=1
+         LEFT JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
+         LEFT JOIN sources attempt ON attempt.id='official-detail-' || e.id
+         LEFT JOIN sources poster_state ON poster_state.id='official-poster-' || e.id
        WHERE e.is_sample=0
          AND (? IS NULL OR e.id=?)
          AND e.verification='verified'
@@ -679,6 +614,85 @@ export async function selectOfficialDetailRecoveryCandidates(
              )
            )
          )
+       ),
+       official_candidates AS (
+         SELECT
+           ol.event_id,
+           ol.url,
+           ol.source_id,
+           s.kind AS source_kind,
+           s.priority AS source_priority,
+           ol.checked_at,
+           0 AS source_rank
+         FROM eligible_events eligible
+         JOIN event_official_links ol ON ol.event_id=eligible.id
+         JOIN sources s ON s.id=ol.source_id
+         WHERE ol.url LIKE 'https://%'
+         UNION ALL
+         SELECT
+           a.event_id,
+           CASE
+             WHEN l.final_url LIKE 'https://%' THEN l.final_url
+             ELSE l.url
+           END AS url,
+           a.origin_source_id AS source_id,
+           s.kind AS source_kind,
+           s.priority AS source_priority,
+           l.checked_at,
+           1 AS source_rank
+         FROM eligible_events eligible
+         JOIN official_source_audits a ON a.event_id=eligible.id
+         JOIN official_source_links l ON l.audit_id=a.id
+         JOIN sources s ON s.id=a.origin_source_id
+         WHERE l.official=1
+           AND l.access_status='ok'
+           AND (l.final_url LIKE 'https://%' OR l.url LIKE 'https://%')
+         UNION ALL
+         SELECT
+           mcs.candidate_id AS event_id,
+           mcs.official_url_snapshot AS url,
+           e.primary_source_id AS source_id,
+           ps.kind AS source_kind,
+           ps.priority AS source_priority,
+           mcs.last_seen_at AS checked_at,
+           2 AS source_rank
+         FROM eligible_events e
+         JOIN municipal_candidate_state mcs ON mcs.candidate_id=e.id
+         JOIN sources ps ON ps.id=e.primary_source_id
+         WHERE mcs.official_url_snapshot LIKE 'https://%'
+         UNION ALL
+         SELECT
+           e.id AS event_id,
+           ps.url,
+           ps.id AS source_id,
+           ps.kind AS source_kind,
+           ps.priority AS source_priority,
+           ps.fetched_at AS checked_at,
+           3 AS source_rank
+         FROM eligible_events e
+         JOIN sources ps ON ps.id=e.primary_source_id
+         WHERE ps.kind IN ('municipality','organizer')
+           AND ps.url LIKE 'https://%'
+       ),
+       ranked AS (
+         SELECT *,
+           ROW_NUMBER() OVER (
+             PARTITION BY event_id
+             ORDER BY source_rank,source_priority,checked_at DESC
+           ) AS rn
+         FROM official_candidates
+       )
+       SELECT
+         e.id,e.title,e.region,e.venue,e.start_date,e.end_date,
+         r.url AS official_url,
+         r.source_id AS link_source_id,
+         r.source_kind AS link_source_kind,
+         e.primary_source_kind,
+         e.source_key,
+         r.source_rank,
+         e.image_missing
+       FROM eligible_events e
+       JOIN ranked r ON r.event_id=e.id AND r.rn<=4
        ORDER BY image_missing DESC,r.source_rank,e.start_date,e.id,r.rn
        LIMIT ?`,
     )
