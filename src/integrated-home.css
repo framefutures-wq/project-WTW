@@ -121,3 +121,14 @@
   .platform-footer small { grid-column: 2; grid-row: 1; margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .platform-hero-action { transition: none; } }
+
+/* Isolate the platform footer from the legacy event-site footer theme. */
+.platform > footer.platform-footer {
+  width: 100%;
+  max-width: 1260px;
+  margin: 0 auto;
+  background: #0b0d10;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
