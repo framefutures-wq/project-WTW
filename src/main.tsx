@@ -9,7 +9,7 @@ import "./redesign.css";
 import "./region-drawer.css";
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {window.location.pathname === "/platform-preview" ? <IntegratedHome /> : <>
+    {(window.location.pathname === "/platform-preview" || document.querySelector('meta[name="galteum-platform-root"]')) ? <IntegratedHome /> : <>
       <RegionQuickSwitch />
       <CategoryQuickSwitch />
       <App />
