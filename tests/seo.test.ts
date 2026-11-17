@@ -227,9 +227,18 @@ test("root canonical, sitemap, robots, and event 404s follow the public visibili
     const root = await worker.fetch(new Request("https://galteum.com/?q=private"), env as never);
     const rootBody = await root.text();
     assert.match(rootBody, /<link rel="canonical" href="https:\/\/galteum\.com\/"/);
-    assert.match(rootBody, /<meta property="og:title" content="갈틈 · 오늘 갈 만한 곳을 한눈에"/);
-    assert.match(rootBody, /<meta property="og:image" content="https:\/\/galteum\.com\/galteum-share\.png"/);
-    assert.match(rootBody, /<meta name="twitter:card" content="summary_large_image"/);
+    assert.match(rootBody, /<meta name="galteum-platform-root" content="true"/);
+    assert.match(rootBody, /<meta property="og:title" content="GALTEUM/);
+    assert.match(rootBody, /비즈니스에 필요한 디지털 도구/);
+    assert.match(rootBody, /<meta name="twitter:card" content="summary"/);
+    assert.doesNotMatch(rootBody, /오늘 갈 만한 곳을 한눈에/);
+    const sample = await worker.fetch(
+      new Request("https://galteum.com/?q=private"),
+      { ...env, APP_MODE: "sample" } as never,
+    );
+    const sampleHtml = await sample.text();
+    assert.match(sampleHtml, /갈틈 · 오늘 갈 만한 곳을 한눈에/);
+    assert.doesNotMatch(sampleHtml, /galteum-platform-root/);
     const sitemap = await worker.fetch(new Request("https://galteum.com/sitemap.xml"), env as never);
     const sitemapBody = await sitemap.text();
     assert.equal(sitemap.status, 200);

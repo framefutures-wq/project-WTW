@@ -159,7 +159,8 @@ test("Pohang new detail checkpoints fetch only their official API and retain fai
   } finally {await mf.dispose();}
 });
 
-test("only matched pre-cutoff Pohang and Busan Dong-gu verification conflicts reactivate once",async()=>{
+test("only matched pre-cutoff Pohang and Busan Dong-gu verification conflicts reactivate once",async(t)=>{
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-16T00:00:00.000Z") });
   const {mf,DB}=await setup(); try {
     const legacy={source:"gyeongbuk-포항",source_candidate_id:"EVT_20260831_002",title:"뮤지컬 <마리 퀴리>",start_date:"2026-12-11",end_date:"2026-12-12",region:"경북",locality:"포항",venue:"포항문화예술회관",official_url:"https://www.phcf.or.kr/phcf/performance_detail/view.do?eventId=EVT_20260831_002&menu_site_id=performance_detail",category:"공연",snippet:null,image_candidate:null} satisfies MunicipalCandidate;
     const old="2026-10-15T06:13:01.379Z", cutoff="2026-10-15T06:13:01.380Z";
