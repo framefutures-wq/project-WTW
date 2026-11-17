@@ -13,6 +13,9 @@ test('통합 플랫폼은 다크톤 두 서비스를 안내하고 기존 행사 
   const platform = page.locator('.platform');
   await expect(platform).toBeVisible();
   await expect(platform).toHaveCSS('background-color', 'rgb(11, 13, 16)');
+  const footer = page.locator('.platform-footer');
+  await expect(footer).toHaveCSS('background-color', 'rgb(11, 13, 16)');
+  await expect(footer).toHaveCSS('border-top-left-radius', '0px');
   await expect(page.getByRole('heading', { name: /필요한 일을/ })).toBeVisible();
 
   const cards = page.locator('.platform-service-card');
