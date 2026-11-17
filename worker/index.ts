@@ -47,6 +47,7 @@ import { legacyHostRedirect } from "./host";
 import {
   decodeSeoEventId,
   renderSeoHtml,
+  renderPlatformRootHtml,
   robotsTxt,
   sitemapXml,
   type SeoEvent,
@@ -503,6 +504,7 @@ async function seoHtml(
   env: Env,
   event: SeoEvent | null,
   landing = seoLandingForPath(new URL(request.url).pathname),
+  platformRoot = false,
 ) {
   const shellRequest = new Request(new URL("/", request.url), request);
   const asset = await env.ASSETS.fetch(shellRequest);
@@ -514,7 +516,8 @@ async function seoHtml(
   headers.delete("Content-Length");
   headers.delete("Content-Encoding");
   headers.delete("ETag");
-  return new Response(renderSeoHtml(await asset.text(), event, landing), {
+  const html = await asset.text();
+  return new Response(platformRoot ? renderPlatformRootHtml(html) : renderSeoHtml(html, event, landing), {
     status: asset.status,
     statusText: asset.statusText,
     headers,
@@ -588,7 +591,7 @@ export default {
         headers: { "Content-Type": "text/plain; charset=UTF-8", "Cache-Control": "no-store" },
       });
     if (!url.pathname.startsWith("/api/"))
-      return url.pathname === "/" ? seoHtml(request, env, null) : env.ASSETS.fetch(request);
+      return url.pathname === "/" ? seoHtml(request, env, null, null, env.APP_MODE !== "sample") : env.ASSETS.fetch(request);
     const isNearby = url.pathname === "/api/events/nearby";
     const isPushWrite =
       ["/api/push/subscribe", "/api/push/unsubscribe"].includes(url.pathname) &&
