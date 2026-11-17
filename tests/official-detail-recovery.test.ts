@@ -281,7 +281,7 @@ test("selector does not rank historical official links before checking event eli
         if (!sql.includes("ROW_NUMBER() OVER")) return DB.prepare(sql);
         selectorSql = sql;
         return {
-          bind(...values: unknown[]) {
+          bind(...values: Parameters<D1PreparedStatement["bind"]>) {
             const statement = DB.prepare(sql).bind(...values);
             return {
               async all() {
