@@ -246,6 +246,78 @@ test("scheduled selector filters DONE rows before applying the final limit", asy
   } finally { await mf.dispose(); }
 });
 
+test("selector does not rank historical official links before checking event eligibility", async () => {
+  const { mf, DB } = await setup();
+  try {
+    await seed(DB);
+    // The old query ranked all of these sources before excluding expired events.
+    // A bounded fixture makes this regression visible without any remote D1 reads.
+    const statements = [];
+    for (let i = 0; i < 180; i++) {
+      const id = `history-${String(i).padStart(3, "0")}`;
+      statements.push(DB.prepare(
+        `INSERT INTO events (
+           id,title,description,region,venue,address,start_date,end_date,
+           cost,pet_policy,status,verification,is_sample,primary_source_id,checked_at,
+           publish_quality_state,publish_quality_reason,publish_quality_rule_version,
+           publish_quality_checked_at
+         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ).bind(
+        id, id, "archived official detail", "경기", "archived venue", "archived address",
+        "2026-01-01", "2026-01-02", "unknown", "unknown", "scheduled",
+        "verified", 0, "municipality", "2026-01-01T00:00:00Z",
+        "PUBLIC", "ok", "v1", "2026-01-01T00:00:00Z",
+      ));
+      statements.push(DB.prepare(
+        "INSERT INTO event_official_links(event_id,source_id,url,checked_at) VALUES(?,?,?,?)",
+      ).bind(id, "municipality", `https://example.test/${id}`, "2026-01-01T00:00:00Z"));
+    }
+    await DB.batch(statements);
+
+    let selectorSql = "";
+    let readRows: number | null = null;
+    const instrumented = {
+      prepare(sql: string) {
+        if (!sql.includes("ROW_NUMBER() OVER")) return DB.prepare(sql);
+        selectorSql = sql;
+        return {
+          bind(...values: unknown[]) {
+            const statement = DB.prepare(sql).bind(...values);
+            return {
+              async all() {
+                const result = await statement.all();
+                readRows = typeof result.meta?.rows_read === "number"
+                  ? result.meta.rows_read : null;
+                return result;
+              },
+            };
+          },
+        };
+      },
+    } as unknown as D1Database;
+    const selected = await selectOfficialDetailRecoveryCandidates(
+      instrumented, new Date("2026-09-28T01:00:00Z"), 3,
+    );
+
+    assert.deepEqual(selected.map((row) => row.id), ["event-1"]);
+    assert.match(selectorSql, /WITH eligible_events AS MATERIALIZED/);
+    assert.match(selectorSql, /JOIN event_official_links ol ON ol.event_id=eligible.id/);
+    assert.match(selectorSql, /JOIN official_source_audits a ON a.event_id=eligible.id/);
+    assert.match(selectorSql, /JOIN ranked r ON r.event_id=e.id AND r.rn<=4/);
+    assert.equal((selectorSql.match(/\\?/g) ?? []).length, 10, "preserve existing parameter contract");
+
+    // D1's local row-read counter is not available in all Miniflare versions.
+    // Log the bounded measurement when supported; compare it to production
+    // Insights after an authorized deploy rather than claiming local parity.
+    console.log("official_detail_eligibility_probe", {
+      historical_events: 180, selected: selected.length,
+      rows_read: readRows ?? "unavailable",
+    });
+  } finally {
+    await mf.dispose();
+  }
+});
+
 test("exact official link self-heals poster and rich detail without source-specific parser", async () => {
   const { mf, DB } = await setup();
   try {
