@@ -82,7 +82,8 @@ test("candidate fast-path eligibility excludes a due higher-priority detail chec
   } finally { await mf.dispose(); }
 });
 
-test("micro scheduler does not claim a future retry and returns a compact no-op", async () => {
+test("micro scheduler does not claim a future retry and returns a compact no-op", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date(NOW) });
   const { mf, DB, env } = await setup();
   try {
     await enqueueMunicipalListPage(DB, { operatingDate: "2026-10-11", sourceKey: "gyeongbuk-경산", pageIndex: 1, now: NOW });
