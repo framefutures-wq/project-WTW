@@ -1,3 +1,10 @@
+## 2026-11-18 — 사용자 결정: 기존 행사 수집 자동화 운영 종료
+
+- 사용자 승인: 갈틈의 기존 행사 수집 서비스를 더 이상 운영하지 않으므로 기존 자동 수집 Cron 3개(UTC `0 1 * * *`, `* * * * *`, `55 8 * * *`)만 중단한다. 하루 500만 행 D1 Free 계정 공통 읽기 한도 소진이 같은 계정의 여기딱 검색 장애에 영향을 주던 증거는 [parking-adsense #162](https://github.com/framefutures-wq/parking-adsense/issues/162)에 보존되어 있다.
+- 운영 Worker `weekend-mwohae`, D1 `weekend-mwohae-production`과 기존 행사 데이터, Secrets, galteum.com 도메인, 신규 서비스 미리보기와 코드, UI, API는 보존한다. 수동 ingestion/복구 작업은 시작하지 않는다. 기존 수집 로직은 향후 복구 가능하도록 보존하되 운영 Cron은 빈 배열로 명시하여 재배포 시 자동 실행되지 않도록 한다.
+- 실제 Cloudflare Cron 중단 여부는 Dashboard 또는 승인된 운영 조회로 따로 검증한다. 저장소 변경만으로 운영 Cron을 중단했다고 보고하지 않는다. 기존 owner-only 배포 게이트는 우회하지 않는다.
+- 기존 행사 자동 갱신 및 해당 Cron에 연결된 예약 푸시 실행도 멈춘다. 새 서비스 운영 방향과 무관한 수집을 다시 활성화하지 않는다. 사용자 승인 없이 Worker, DB, 도메인, 요금제는 변경하지 않는다.
+
 ## 2026-10-22 — municipal parser fixes merged; production deploy pending
 
 - PR #117 merged as `69c75eb`: generic municipal event cards now read official bold `행사장소` labels. The current Gangnam official page returned HTTP 200 and the parser extracted 4 candidates, including the 2026 festival with explicit dates, venue, and first-party detail URL.
