@@ -1,11 +1,16 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { parse } from "jsonc-parser";
+import { assertPlatformConfig, PLATFORM_D1_PROBE, assertPlatformProbe } from "./platform-deploy-preflight.mjs";
 const cliArgs = new Set(process.argv.slice(2));
 const configPath = cliArgs.has("--sample")
   ? "wrangler.sample.jsonc"
   : "wrangler.production.jsonc";
 const verifiedDeploy = cliArgs.has("--verified");
+const platformHome = cliArgs.has("--platform-home");
+if (platformHome && (!verifiedDeploy || configPath !== "wrangler.production.jsonc")) {
+  throw new Error("Platform deployment requires verified production mode.");
+}
 const config = readFileSync(configPath, "utf8");
 if (config.includes("REPLACE_WITH_PRODUCTION_D1_ID")) {
   console.error(
@@ -15,7 +20,8 @@ if (config.includes("REPLACE_WITH_PRODUCTION_D1_ID")) {
 }
 if (configPath === "wrangler.production.jsonc") {
   const settings = parse(config);
-  if (settings.vars.TOUR_API_ENABLED !== "true")
+  if (platformHome) assertPlatformConfig(settings);
+  if (!platformHome && settings.vars.TOUR_API_ENABLED !== "true")
     throw new Error("운영 TourAPI 수집 설정이 비활성입니다.");
   const secrets = spawnSync(
     "npx",
@@ -44,14 +50,18 @@ if (configPath === "wrangler.production.jsonc") {
       configPath,
       "--json",
       "--command",
-      `SELECT count(*) AS n FROM events e JOIN sources s ON s.id=e.primary_source_id WHERE e.is_sample=0 AND e.verification='verified' AND s.kind='tourapi' AND e.status IN ('unknown','scheduled') AND e.checked_at >= '${cutoff}'`,
+      platformHome ? PLATFORM_D1_PROBE : `SELECT count(*) AS n FROM events e JOIN sources s ON s.id=e.primary_source_id WHERE e.is_sample=0 AND e.verification='verified' AND s.kind='tourapi' AND e.status IN ('unknown','scheduled') AND e.checked_at >= '${cutoff}'`,
     ],
     { encoding: "utf8" },
   );
-  if (result.status !== 0 || !JSON.parse(result.stdout)[0]?.results[0]?.n)
+  if (platformHome) {
+    assertPlatformProbe(result.status, result.stdout);
+    console.log("Platform preflight passed: existing D1 schema reachable; legacy Cron remains disabled.");
+  } else if (result.status !== 0 || !JSON.parse(result.stdout)[0]?.results[0]?.n) {
     throw new Error(
       "배포 중단: 원격 D1에 최근 실제 TourAPI 데이터가 없습니다. tourapi:sync를 먼저 실행하세요.",
     );
+  }
 }
 const commands = verifiedDeploy
   ? [
