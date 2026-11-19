@@ -10,6 +10,7 @@ const services = [
     description: '도매상품을 찾고 경쟁가격과 예상 수익을 비교해, 판매할 상품을 판단하는 도구.',
     features: ['도매상품 검색', '경쟁가격 비교', '예상 수익 분석'],
     icon: Search,
+    href: 'https://wholesale.galteum.com/wholesale/',
   },
   {
     id: '02',
@@ -18,6 +19,7 @@ const services = [
     description: '상품 자료를 정리하고 판매에 필요한 상세페이지 콘텐츠를 제작하는 도구.',
     features: ['상품 정보 구성', '이미지·문구 제작', '상세페이지 구성'],
     icon: Layers3,
+    href: null,
   },
 ] as const;
 
@@ -45,7 +47,7 @@ export default function IntegratedHome() {
   return (
     <div className="platform" id="top">
       <header className="platform-header">
-        <a className="platform-brand" href="/platform-preview" aria-label="GALTEUM 홈">
+        <a className="platform-brand" href="#top" aria-label="GALTEUM 홈">
           GALTEUM<span className="platform-brand-dot">.</span>
         </a>
         <span className="platform-header-center">TOOLS FOR THE WAY YOU WORK</span>
@@ -68,12 +70,12 @@ export default function IntegratedHome() {
                 서비스 살펴보기 <ArrowDownRight size={19} aria-hidden="true" />
               </a>
               <div className="platform-hero-progress">
-                <span className="platform-progress-line" /> 현재 개발 중인 서비스 <strong>02</strong>
+                <span className="platform-progress-line" /> 이용 가능 01 · 준비 중 01
               </div>
             </div>
 
             <div className="platform-visual" aria-hidden="true">
-              <div className="platform-visual-head"><span>WORKSPACE / 00</span><span>IN DEVELOPMENT</span></div>
+              <div className="platform-visual-head"><span>WORKSPACE / 00</span><span>PRIVATE WORKSPACE</span></div>
               <div className="platform-visual-core">
                 <div className="platform-orbit platform-orbit-one" />
                 <div className="platform-orbit platform-orbit-two" />
@@ -95,7 +97,7 @@ export default function IntegratedHome() {
               <p className="platform-section-kicker">01 / OUR SERVICES</p>
               <h2 id="platform-services-heading">필요한 일을,<br /><span>더 단순하게.</span></h2>
             </div>
-            <p className="platform-section-lead">두 가지 서비스를 먼저 준비하고 있습니다.<br />개발이 완료된 도구부터 이곳에 연결됩니다.</p>
+            <p className="platform-section-lead">도매상품 발굴기는 승인된 계정으로 이용할 수 있습니다.<br />상세페이지 연구소는 준비 중입니다.</p>
           </div>
 
           <div className="platform-service-grid">
@@ -105,15 +107,20 @@ export default function IntegratedHome() {
                 <article className="platform-service-card" key={service.id}>
                   <div className="platform-service-top">
                     <span className="platform-service-number">{service.id} <span>/ {service.category}</span></span>
-                    <span className="platform-service-status"><span /> 준비 중</span>
+                    <span className="platform-service-status"><span /> {service.href ? "이용 가능 · 로그인 필요" : "준비 중"}</span>
                   </div>
                   <div className="platform-service-icon"><ServiceIcon size={27} strokeWidth={1.6} aria-hidden="true" /></div>
                   <h3>{service.title}</h3>
                   <p className="platform-service-description">{service.description}</p>
-                  <div className="platform-service-features" aria-label="예정 기능">
-                    <span className="platform-feature-label">예정 기능</span>
+                  <div className="platform-service-features" aria-label={service.href ? "제공 기능" : "예정 기능"}>
+                    <span className="platform-feature-label">{service.href ? "제공 기능" : "예정 기능"}</span>
                     <div>{service.features.map((feature) => <span key={feature}>{feature}</span>)}</div>
                   </div>
+                  {service.href && (
+                    <a className="platform-service-action" href={service.href}>
+                      도매상품 발굴기 이용하기 <ArrowUpRight size={17} aria-hidden="true" />
+                    </a>
+                  )}
                 </article>
               );
             })}
@@ -125,7 +132,7 @@ export default function IntegratedHome() {
             <p className="platform-section-kicker">02 / WHAT'S NEXT</p>
             <h2 id="platform-note-heading">도구는 하나씩.<br />기준은 분명하게.</h2>
           </div>
-          <p>사용할 수 있는 서비스만 실제로 연결하겠습니다.<br />지금은 두 제품을 개발하고 있습니다.</p>
+          <p>도매상품 발굴기는 로그인 후 이용할 수 있습니다.<br />새로운 도구는 준비가 완료되면 연결합니다.</p>
         </section>
       </main>
 
