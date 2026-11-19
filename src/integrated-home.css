@@ -132,3 +132,6 @@
   border-radius: 0;
   box-shadow: none;
 }
+
+.platform .platform-service-action { display: inline-flex; align-items: center; justify-content: space-between; align-self: stretch; gap: 12px; margin-top: 22px; padding: 14px 16px; min-height: 44px; color: #111815; background: var(--platform-accent); font-size: 14px; font-weight: 750; }
+.platform .platform-service-action:hover { background: #d4ffe9; }

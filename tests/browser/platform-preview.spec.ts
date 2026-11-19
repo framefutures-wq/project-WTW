@@ -22,8 +22,10 @@ test('통합 플랫폼은 다크톤 두 서비스를 안내하고 기존 행사 
   await expect(cards).toHaveCount(2);
   await expect(cards.getByRole('heading', { name: '도매상품 수익 발굴기' })).toBeVisible();
   await expect(cards.getByRole('heading', { name: 'AI 상세페이지 연구소' })).toBeVisible();
-  await expect(cards.locator('.platform-service-status')).toHaveText(['준비 중', '준비 중']);
-  await expect(cards.locator('a, button')).toHaveCount(0);
+  await expect(cards.locator('.platform-service-status')).toHaveText(['이용 가능 · 로그인 필요', '준비 중']);
+  const wholesale = cards.first().getByRole('link', { name: '도매상품 발굴기 이용하기' });
+  await expect(wholesale).toHaveAttribute('href', 'https://wholesale.galteum.com/wholesale/');
+  await expect(cards.last().locator('a, button')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /주말 행사 찾기/ })).toHaveCount(0);
   await expect(page.getByText(/여행|주말 행사|축제/)).toHaveCount(0);
 
@@ -37,7 +39,11 @@ test('통합 플랫폼은 다크톤 두 서비스를 안내하고 기존 행사 
   await expect(page).toHaveURL(/#services$/);
   await expect(cards.first()).toBeVisible();
 
-  // Existing production homepage remains independently routable during preview review.
+  await page.route('https://wholesale.galteum.com/wholesale/', route => route.fulfill({ status: 200, contentType: 'text/plain', body: 'Mock destination' }));
+  await wholesale.click();
+  await expect(page).toHaveURL('https://wholesale.galteum.com/wholesale/');
+
+  // Existing sample homepage remains independently routable during preview review.
   await page.goto('/');
   await expect(platform).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '이번 주말, 어디 갈까?' })).toBeVisible();
@@ -58,5 +64,7 @@ test('운영 루트 셸은 새 플랫폼 렌더링으로 전환하고 여행 화
   await expect(page.getByRole('heading', { name: /상품 발굴부터/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: '이번 주말, 어디 갈까?' })).toHaveCount(0);
   await expect(page.locator('.region-quick-trigger')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '도매상품 발굴기 이용하기' })).toHaveAttribute('href', 'https://wholesale.galteum.com/wholesale/');
+  await expect(page.locator('.platform-service-card').last().locator('a, button')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
