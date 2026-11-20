@@ -45,3 +45,6 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Run the existing verified production deployment
         run: npm run deploy:verified
+
+      - name: Verify public platform and protected wholesale access
+        run: node scripts/verify-platform-live.mjs

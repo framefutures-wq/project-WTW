@@ -8,6 +8,8 @@ export interface Env {
   /** Cost guard. AI document conversion stays off unless this is exactly "true". */
   MUNICIPAL_DOCUMENT_AI_ENABLED?: string;
   APP_MODE: "sample" | "production";
+  /** Production-only retirement switch; legacy code/data retained for rollback. */
+  LEGACY_EVENT_SERVICE_RETIRED?: string;
   TOUR_API_ENABLED: string;
   /** Explicit cutover switch. Any other value keeps the legacy Cron routing. */
   FAIR_MICRO_DISPATCHER_ENABLED?: string;
