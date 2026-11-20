@@ -7,6 +7,8 @@ export function assertPlatformConfig(settings) {
   if (
     settings?.name !== "weekend-mwohae" ||
     settings?.vars?.APP_MODE !== "production" ||
+    settings?.vars?.LEGACY_EVENT_SERVICE_RETIRED !== "true" ||
+    ["TOUR_API_ENABLED", "FAIR_MICRO_DISPATCHER_ENABLED", "MUNICIPAL_DOCUMENT_AI_ENABLED", "WEB_PUSH_ENABLED"].some(key => settings.vars[key] !== "false") ||
     settings?.assets?.directory !== "./dist" ||
     settings?.assets?.binding !== "ASSETS" ||
     !Array.isArray(settings?.triggers?.crons) ||
