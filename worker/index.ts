@@ -550,11 +550,58 @@ async function publicSitemap(env: Env) {
   return sitemapXml(rows.results);
 }
 
+function eventServiceRetired(env: Env) {
+  return env.APP_MODE === "production" && env.LEGACY_EVENT_SERVICE_RETIRED === "true";
+}
+
+async function platformOnlyFetch(request: Request, env: Env, url: URL) {
+  const path = url.pathname;
+  if (path === "/")
+    return seoHtml(request, env, null, null, true);
+  if (path === "/platform-preview" || path === "/platform-preview/")
+    return Response.redirect(new URL("/", url).href, 301);
+  if (path === "/robots.txt")
+    return textResponse(robotsTxt, "text/plain; charset=UTF-8", "no-cache");
+  if (path === "/sitemap.xml")
+    return textResponse(
+      '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://galteum.com/</loc></url></urlset>',
+      "application/xml; charset=UTF-8",
+      "no-cache",
+    );
+  if (path === "/api/health" && request.method === "GET")
+    return json({ ok: true, mode: "platform", ingestion: "disabled", push: "disabled" });
+  if (path === "/api/analytics/config" && request.method === "GET")
+    return json(analyticsRuntimeConfig(env));
+  if (path === "/api" || path.startsWith("/api/"))
+    return new Response(JSON.stringify({ error: "기존 행사 서비스가 종료되었습니다." }), {
+      status: 410,
+      headers: { "Content-Type": "application/json; charset=UTF-8", "Cache-Control": "no-store" },
+    });
+  if (path === "/events" || path.startsWith("/events/") || path === "/weekend" || path.startsWith("/weekend/"))
+    return new Response("기존 행사 서비스가 종료되었습니다.", {
+      status: 410,
+      headers: { "Content-Type": "text/plain; charset=UTF-8", "Cache-Control": "no-store" },
+    });
+  if (path === "/sw.js")
+    return textResponse(
+      'self.addEventListener("install", () => self.skipWaiting()); self.addEventListener("activate", event => event.waitUntil(self.registration.unregister()));',
+      "application/javascript; charset=UTF-8",
+      "no-cache",
+    );
+  if (path.startsWith("/assets/")) {
+    const asset = await env.ASSETS.fetch(request);
+    if (asset.ok && !(asset.headers.get("Content-Type") ?? "").includes("text/html"))
+      return asset;
+  }
+  return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
+}
+
 export async function handleScheduled(
   controller: Pick<ScheduledController, "cron">,
   env: Env,
   dependencies?: ScheduledDependencies,
 ) {
+  if (eventServiceRetired(env)) return;
   await runScheduled(env, controller.cron, new Date(), dependencies);
 }
 
@@ -563,6 +610,7 @@ export default {
     const url = new URL(request.url);
     const legacyRedirect = legacyHostRedirect(url);
     if (legacyRedirect) return legacyRedirect;
+    if (eventServiceRetired(env)) return platformOnlyFetch(request, env, url);
     if (url.pathname === "/robots.txt")
       return textResponse(robotsTxt, "text/plain; charset=UTF-8", "public, max-age=86400");
     if (url.pathname === "/sitemap.xml")
